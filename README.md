@@ -1,6 +1,6 @@
 # Anaesthetic Physiology — Interactive Teaching Tools
 
-A collection of interactive, browser-based physiology visualisations built for anaesthetic trainees and medical students. No installation required — open directly in any browser.
+A collection of interactive, browser-based physiology visualisations built for doctors, anaesthetic trainees and medical students. No installation required — open directly in any browser.
 
 ---
 
