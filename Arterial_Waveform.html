@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arterial Waveform · Anaesthetic Physiology</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #07090f;
+    --surface: #0a0d17;
+    --border:  #141c2e;
+    --text:    #e2e8f0;
+    --muted:   #8a9db5;
+    --dim:     #4a6070;
+    --accent:  #60a5fa;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    zoom: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'EB Garamond', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 48px;
+  }
+  header { text-align: center; margin-bottom: 24px; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 4px;
+    color: var(--dim); text-transform: uppercase; margin-bottom: 6px;
+  }
+  header h1 {
+    font-size: clamp(22px, 5vw, 30px);
+    font-weight: 400; letter-spacing: 1px; color: #f1f5f9;
+  }
+  .subtitle { font-size: 13px; color: var(--muted); margin-top: 6px; font-style: italic; }
+
+  .layout {
+    width: 100%; max-width: 920px;
+    display: grid; grid-template-columns: 1fr; gap: 14px;
+  }
+  @media (min-width: 700px) { .layout { grid-template-columns: 1fr 300px; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; transition: border-color 0.3s;
+  }
+  .card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px; color: var(--dim);
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+
+  .mod-groups { display: flex; flex-direction: column; gap: 6px; align-items: center; margin-bottom: 14px; }
+  .mod-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .mod-btn {
+    padding: 5px 14px; border-radius: 20px;
+    font-family: 'EB Garamond', serif; font-size: 12px;
+    min-width: 130px; text-align: center; cursor: pointer;
+    background: transparent; border: 1.5px solid #1a2030;
+    color: var(--muted); transition: all 0.2s;
+  }
+  .mod-btn:hover { border-color: #2a3a5a; color: #94a3b8; }
+
+  .svg-wrap {
+    background: #070a12; border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px 10px 10px; overflow: hidden;
+  }
+  #waveSvg { display: block; width: 100%; height: auto; }
+
+  .feature-btns {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    justify-content: center; margin-bottom: 12px;
+  }
+  .feature-btn {
+    padding: 5px 12px; border-radius: 8px;
+    font-family: 'EB Garamond', serif; font-size: 12px;
+    cursor: pointer; background: var(--surface);
+    border: 1.5px solid var(--border); color: var(--muted); transition: all 0.2s;
+  }
+  .feature-btn:hover { color: #94a3b8; }
+
+  .info-highlight {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .info-desc { font-size: 13px; color: #b0bfcc; line-height: 1.7; }
+  .info-placeholder { font-size: 13px; color: var(--dim); line-height: 1.7; font-style: italic; }
+
+  .stats {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    justify-content: center; margin-bottom: 14px;
+  }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 12px; text-align: center; min-width: 72px;
+  }
+  .stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px; color: var(--accent);
+  }
+  .stat-label {
+    font-size: 9px; color: var(--dim); margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  .key-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 5px 0; border-bottom: 1px solid #0d1220;
+    font-size: 12px; gap: 12px;
+  }
+  .key-row:last-child { border-bottom: none; }
+  .key-label { color: #8a9db5; flex-shrink: 0; }
+  .key-val { color: #5a7a9a; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-align: right; }
+
+  footer {
+    margin-top: 40px; width: 100%; max-width: 920px;
+    border-top: 1px solid #141c2e; padding-top: 20px; text-align: center;
+  }
+  .footer-inner {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; align-items: center;
+  }
+  .footer-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    color: #60a5fa; background: #60a5fa14;
+    border: 1px solid #60a5fa33; padding: 3px 8px; border-radius: 20px;
+  }
+  .footer-dot { color: #1f2d40; font-size: 12px; }
+  .footer-title { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #a0b0c0; font-style: normal; }
+  .footer-series { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #6a7a8a; font-style: normal; }
+  .footer-author { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #60a5fa99; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Anaesthetic Physiology</div>
+  <h1>Arterial Pressure Waveform</h1>
+  <p class="subtitle">The PV loop unrolled into time · Tap features to explore</p>
+</header>
+
+<div class="layout">
+  <!-- LEFT COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- Modifier buttons -->
+    <div id="modGroups" class="mod-groups"></div>
+
+    <!-- Modifier explanation card -->
+    <div class="card" id="modCard">
+      <div class="card-title">Current State</div>
+      <div class="info-highlight" id="modHighlight"></div>
+      <div class="info-desc" id="modDesc"></div>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="stats" id="statsStrip"></div>
+
+    <!-- SVG waveform -->
+    <div class="svg-wrap">
+      <svg id="waveSvg" viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- Feature buttons -->
+    <div id="featureBtns" class="feature-btns"></div>
+
+    <!-- Feature explanation card -->
+    <div class="card" id="featureCard" style="min-height:90px;">
+      <div class="info-placeholder">Tap a feature button — or click on the waveform — to learn what that part represents physiologically.</div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- PV loop link box -->
+    <div class="card">
+      <div class="card-title">Link to PV Loop</div>
+      <div id="pvLinkContent" style="font-size:13px;color:#b0bfcc;line-height:1.7;"></div>
+    </div>
+
+    <!-- Key relationships -->
+    <div class="card">
+      <div class="card-title">Key Relationships</div>
+      <div class="key-row"><span class="key-label">SBP</span><span class="key-val">Peak of waveform</span></div>
+      <div class="key-row"><span class="key-label">DBP</span><span class="key-val">Trough before next beat</span></div>
+      <div class="key-row"><span class="key-label">Pulse pressure</span><span class="key-val">SBP − DBP</span></div>
+      <div class="key-row"><span class="key-label">MAP</span><span class="key-val">DBP + ⅓ pulse pressure</span></div>
+      <div class="key-row"><span class="key-label">Dicrotic notch</span><span class="key-val">Aortic valve closes = ESP</span></div>
+      <div class="key-row"><span class="key-label">Upstroke slope</span><span class="key-val">Reflects contractility</span></div>
+      <div class="key-row"><span class="key-label">Downslope rate</span><span class="key-val">Reflects SVR</span></div>
+      <div class="key-row"><span class="key-label">Aortic compliance</span><span class="key-val">Buffers peak, maintains DBP</span></div>
+    </div>
+
+    <!-- Clinical tip box -->
+    <div class="card" id="clinicalTip">
+      <div class="card-title">Clinical Relevance</div>
+      <div class="info-desc" id="clinicalTipText"></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-tag">Built for teaching</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-title">Anaesthetic Physiology — Interactive Arterial Waveform</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-author">Developed by Dr Ed Kim</span>
+  </div>
+</footer>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const MODIFIERS = [
+  {
+    id:"normal", label:"Normal", color:"#60a5fa",
+    highlight:"Normal arterial waveform",
+    description:"Healthy adult at rest. SBP ~120 mmHg, DBP ~80 mmHg, pulse pressure 40 mmHg. The waveform shows a sharp upstroke, clear peak, dicrotic notch, and smooth diastolic runoff. MAP ~93 mmHg.",
+    clinical:"In anaesthesia, the arterial line gives you this trace continuously — beat to beat. You can read contractility, SVR, and fluid status just from the shape, without any other monitoring.",
+    pvLink:"The upstroke = isovolumetric contraction → ejection. The peak = top of the arch on the PV loop. The dicrotic notch = AV closes = ESP point. The diastolic runoff = blood flowing through SVR between beats.",
+    sbp:120, dbp:80, notchP:100
+  },
+  {
+    id:"high_svr", label:"↑ SVR", color:"#f97316",
+    highlight:"High SVR — vasoconstricted",
+    description:"Increased peripheral resistance. Diastolic pressure is elevated — blood can't run off easily so pressure is maintained between beats. Pulse pressure narrows slightly. Waveform appears taller with a slower downslope. Seen with: vasopressors (noradrenaline), hypothermia, pain, hypertension.",
+    clinical:"On an arterial line you'd see a slow gradual downslope after the dicrotic notch — blood is draining slowly through constricted vessels. DBP is high. Common after giving metaraminol or noradrenaline intraoperatively.",
+    pvLink:"High SVR = high afterload on the PV loop. The loop becomes taller and narrower — ESV rises, SV may fall. The waveform reflects this as a higher, more sustained pressure trace.",
+    sbp:150, dbp:100, notchP:118
+  },
+  {
+    id:"low_svr", label:"↓ SVR", color:"#4ade80",
+    highlight:"Low SVR — vasodilated",
+    description:"Reduced peripheral resistance. Blood runs off rapidly into a low resistance circulation — DBP falls steeply. Pulse pressure widens. The downslope is steep and fast. Seen with: sepsis, spinal anaesthesia, propofol, vasodilators, anaphylaxis.",
+    clinical:"Classic septic shock waveform — wide pulse pressure, low DBP, steep downslope. The waveform is bounding. On induction with propofol you'll often see this as SVR drops acutely.",
+    pvLink:"Low SVR = low afterload. On the PV loop the loop shortens and widens — ESV falls, SV increases. But MAP falls because SVR is the main determinant of diastolic pressure.",
+    sbp:105, dbp:45, notchP:75
+  },
+  {
+    id:"low_co", label:"↓ CO", color:"#f87171",
+    highlight:"Low cardiac output — poor contractility",
+    description:"Reduced stroke volume and/or contractility. The upstroke is slow and sluggish — the ventricle can't generate pressure quickly. Peak pressure is low. Waveform appears small and damped. Seen with: cardiogenic shock, severe heart failure, myocardial depression from volatile agents.",
+    clinical:"A slow, slurred upstroke on the arterial line is a warning sign — it means the ventricle is struggling. The rate of pressure rise (dP/dt) is reduced. This is one of the most important things to recognise intraoperatively.",
+    pvLink:"Low CO = reduced contractility on the PV loop. ESV rises, the arch flattens, stroke volume falls. The waveform reflects the flattened arch — a lower, broader, sluggish trace.",
+    sbp:85, dbp:60, notchP:72
+  },
+  {
+    id:"hypovolaemia", label:"Hypovolaemia", color:"#818cf8",
+    highlight:"Low preload — reduced filling",
+    description:"Reduced circulating volume means less ventricular filling — lower EDV, lower SV. The waveform is small in amplitude. Pulse pressure narrows. In ventilated patients, pulse pressure variation (PPV) increases — the waveform height swings markedly with each breath. This is a key sign of fluid responsiveness.",
+    clinical:"Pulse pressure variation >13% in a ventilated patient strongly suggests fluid responsiveness — the patient will likely improve with a fluid bolus. This is one of the most useful dynamic assessments in anaesthesia and ITU.",
+    pvLink:"Hypovolaemia = low preload. On the PV loop the loop shifts left and narrows — EDV and SV both fall. The waveform becomes small. Frank-Starling predicts that a fluid bolus will widen the loop and increase SV.",
+    sbp:95, dbp:65, notchP:78
+  },
+  {
+    id:"stiff_aorta", label:"Stiff Aorta", color:"#e879f9",
+    highlight:"Reduced aortic compliance — elderly/hypertensive",
+    description:"The aortic wall loses elasticity with age and hypertension. Without the Windkessel buffering effect, systolic pressure spikes higher (nothing absorbs the impact) and diastolic pressure falls (no elastic recoil to maintain it). Wide pulse pressure. This is isolated systolic hypertension.",
+    clinical:"Very common in elderly patients presenting for surgery. SBP may be 170+, DBP 60–65. The wide pulse pressure means coronary perfusion (which depends on DBP) may be compromised, and the high SBP increases cardiac workload.",
+    pvLink:"Stiff aorta doesn't change the PV loop directly, but it means the afterload the ventricle faces changes character — the ventricle sees a high impedance early in ejection (spike) rather than a steady resistance. Over time this drives LV hypertrophy.",
+    sbp:168, dbp:62, notchP:128
+  },
+];
+
+const FEATURES = [
+  {
+    id:"upstroke", label:"① Upstroke",  color:"#4ade80",
+    highlight:"Sharp upstroke — aortic valve opens",
+    description:"The rapid rise in pressure marks the aortic valve opening and the start of ejection. The steepness of this rise reflects contractility and stroke volume — specifically dP/dt (rate of pressure rise). A steep upstroke means the ventricle is ejecting forcefully and quickly. A slow sluggish upstroke suggests poor contractility or low stroke volume."
+  },
+  {
+    id:"peak", label:"② Peak SBP", color:"#f97316",
+    highlight:"Peak — systolic blood pressure",
+    description:"The highest point of the waveform. This is systolic blood pressure. Determined by stroke volume, SVR, and aortic compliance together. A high peak with wide pulse pressure in an elderly patient suggests a stiff aorta. A low peak with a sluggish upstroke suggests low cardiac output."
+  },
+  {
+    id:"downslope", label:"③ Downslope", color:"#facc15",
+    highlight:"Downslope — reflects SVR",
+    description:"After peak systole, pressure falls as ejection slows. The rate of this fall reflects SVR. Steep fast downslope = low SVR (vasodilated — blood runs off quickly). Slow gradual downslope = high SVR (vasoconstricted — blood drains slowly). This is one of the most useful things to read from an arterial trace."
+  },
+  {
+    id:"notch", label:"④ Dicrotic Notch", color:"#f87171",
+    highlight:"Dicrotic notch — aortic valve closes",
+    description:"A small downward flick followed by a slight bump. This marks the exact moment the aortic valve closes — blood tries to flow back into the ventricle, snaps the valve shut, and creates a brief pressure wave. This is the ESP point from your PV loop. Everything before the notch is systole. Everything after is diastole."
+  },
+  {
+    id:"runoff", label:"⑤ Diastolic Runoff", color:"#818cf8",
+    highlight:"Diastolic runoff — blood flowing through SVR",
+    description:"After the aortic valve closes, pressure gradually falls as blood flows through the peripheral circulation driven by aortic compliance recoil and SVR. The rate of fall again reflects SVR. This continues until the next ventricular ejection. Coronary perfusion occurs almost entirely during this phase."
+  },
+  {
+    id:"trough", label:"⑥ Trough DBP", color:"#e879f9",
+    highlight:"Trough — diastolic blood pressure",
+    description:"The lowest point just before the next upstroke. This is diastolic blood pressure. Maintained by aortic elastic recoil (Windkessel) and SVR. Falls in vasodilation, stiff aorta (no recoil), or aortic regurgitation (valve leaks — blood flows back into ventricle, pressure can't be maintained). Coronary perfusion pressure = DBP − LVEDP."
+  },
+];
+
+const modifierGroups = [["normal"],["high_svr","low_svr"],["low_co","hypovolaemia"],["stiff_aorta"]];
+
+// ─── WAVEFORM GENERATION ─────────────────────────────────────────────────────
+
+// Generate one cycle of arterial waveform as SVG path points
+// Returns array of {x, y} for two beats, plus feature x-ranges
+function generateWaveform(sbp, dbp, notchP, W, H, presMin, presMax, beats=2) {
+  const py = p => H - ((p - presMin) / (presMax - presMin)) * H;
+  const beatW = W / beats;
+
+  // Key pressure levels
+  const yDBP   = py(dbp);
+  const ySBP   = py(sbp);
+  const yNotch = py(notchP);
+  const yMid   = py(dbp + (sbp - dbp) * 0.5);
+
+  // Within one beat (0 to 1 normalised):
+  // 0.00 — start (DBP trough)
+  // 0.12 — upstroke begins (AV opens)
+  // 0.28 — peak SBP
+  // 0.42 — downslope to notch
+  // 0.48 — dicrotic notch dip
+  // 0.54 — post-notch bump
+  // 1.00 — next trough (DBP)
+
+  function beatPath(x0, beatWidth) {
+    const x = f => x0 + f * beatWidth;
+    // Control points for smooth bezier curves
+    // Upstroke: fast rise
+    const upCP1x = x(0.08), upCP1y = yDBP;
+    const upCP2x = x(0.18), upCP2y = ySBP + 5;
+    // Downslope: arch then fall
+    const downCP1x = x(0.38), downCP1y = ySBP;
+    const downCP2x = x(0.40), downCP2y = yNotch + 8;
+    // Notch dip
+    const notchDipY = py(notchP - 6);
+    const notchBumpY = py(notchP + 3);
+    // Diastolic runoff
+    const runCP1x = x(0.62), runCP1y = yNotch - 2;
+    const runCP2x = x(0.85), runCP2y = yDBP - 4;
+
+    return {
+      start: { x: x(0), y: yDBP },
+      d: [
+        `M ${x(0)} ${yDBP}`,
+        // Upstroke
+        `C ${upCP1x} ${upCP1y}, ${upCP2x} ${upCP2y}, ${x(0.27)} ${ySBP}`,
+        // Peak and downslope to notch
+        `C ${downCP1x} ${downCP1y}, ${downCP2x} ${downCP2y}, ${x(0.44)} ${yNotch + 4}`,
+        // Dicrotic notch dip
+        `C ${x(0.455)} ${notchDipY}, ${x(0.47)} ${notchDipY}, ${x(0.485)} ${yNotch}`,
+        // Post-notch bump
+        `C ${x(0.50)} ${notchBumpY}, ${x(0.525)} ${notchBumpY}, ${x(0.545)} ${yNotch + 2}`,
+        // Diastolic runoff to trough
+        `C ${runCP1x} ${runCP1y}, ${runCP2x} ${runCP2y}, ${x(1.0)} ${yDBP}`,
+      ].join(" "),
+      features: {
+        upstroke:  { x1: x(0),    x2: x(0.27) },
+        peak:      { x1: x(0.22), x2: x(0.34) },
+        downslope: { x1: x(0.27), x2: x(0.44) },
+        notch:     { x1: x(0.42), x2: x(0.56) },
+        runoff:    { x1: x(0.56), x2: x(0.88) },
+        trough:    { x1: x(0.88), x2: x(1.0)  },
+      },
+      keyPoints: {
+        peak:      { x: x(0.27), y: ySBP },
+        notchDip:  { x: x(0.47), y: notchDipY },
+        notchBump: { x: x(0.515),y: notchBumpY },
+        trough:    { x: x(1.0),  y: yDBP },
+        upStart:   { x: x(0.12), y: yDBP },
+      }
+    };
+  }
+
+  const b1 = beatPath(0, beatW);
+  const b2 = beatPath(beatW, beatW);
+  return { b1, b2 };
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+
+let activeFeature = null;
+let modifier = "normal";
+
+const ANIM_KEYS = ["sbp","dbp","notchP"];
+let animFrom  = (({sbp,dbp,notchP}) => ({sbp,dbp,notchP}))(MODIFIERS.find(m=>m.id==="normal"));
+let animTo    = Object.assign({}, animFrom);
+let animT     = 1.0;
+let animRAF   = null;
+let animStart = null;
+const ANIM_MS = 500;
+
+function easeInOut(t) { return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+function animParams() {
+  if (animT >= 1.0) return Object.assign({}, animTo);
+  const e = easeInOut(animT);
+  const out = {};
+  // Math.round so stats stay as integers — no decimals, no box resizing
+  ANIM_KEYS.forEach(k => out[k] = Math.round(animFrom[k] + (animTo[k] - animFrom[k]) * e));
+  return out;
+}
+
+function triggerAnim(newModifier) {
+  animFrom  = animParams();
+  modifier  = newModifier;
+  const m   = MODIFIERS.find(x => x.id === newModifier);
+  animTo    = { sbp: m.sbp, dbp: m.dbp, notchP: m.notchP };
+  animT     = 0;
+  animStart = null;
+  if (animRAF) cancelAnimationFrame(animRAF);
+  function tick(ts) {
+    if (!animStart) animStart = ts;
+    animT = Math.min((ts - animStart) / ANIM_MS, 1.0);
+    renderSVG();
+    if (animT < 1.0) animRAF = requestAnimationFrame(tick);
+    else animT = 1.0;
+  }
+  animRAF = requestAnimationFrame(tick);
+}
+
+const SVG_W = 500, SVG_H = 220;
+const presMin = 30, presMax = 200;
+const NS = "http://www.w3.org/2000/svg";
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function txt(tag, attrs, text, parent) {
+  const e = el(tag, attrs, parent);
+  e.textContent = text;
+  return e;
+}
+
+const featureColors = { upstroke:"#4ade80", peak:"#f97316", downslope:"#facc15", notch:"#f87171", runoff:"#818cf8", trough:"#e879f9" };
+
+function renderSVG() {
+  const svg = document.getElementById("waveSvg");
+  svg.innerHTML = "";
+  const modInfo = MODIFIERS.find(m => m.id === modifier);
+  const { sbp, dbp, notchP } = animParams();
+  const W = SVG_W, H = SVG_H - 30;
+  const py = p => H - ((p - presMin) / (presMax - presMin)) * H;
+
+  const g = el("g", { transform: "translate(32, 8)" }, svg);
+  const plotW = W - 50;
+
+  // Grid lines
+  [40, 60, 80, 100, 120, 140, 160].forEach(p => {
+    if (p < presMin || p > presMax) return;
+    const y = py(p);
+    el("line",{x1:0,y1:y,x2:plotW,y2:y,stroke:"#0d1520","stroke-width":1},g);
+    txt("text",{x:-4,y:y+3,fill:"#4a6878","font-size":8,"text-anchor":"end","font-family":"JetBrains Mono, monospace"},String(p),g);
+  });
+
+  // Time axis ticks
+  [0, 0.5, 1.0].forEach(f => {
+    const x = f * plotW;
+    el("line",{x1:x,y1:H,x2:x,y2:H+5,stroke:"#1a2d40","stroke-width":1},g);
+  });
+
+  // Axis labels
+  txt("text",{x:plotW/2,y:H+20,fill:"#5a7a90","font-size":9,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"Time (2 cardiac cycles)",g);
+  const axLbl = txt("text",{x:-(H/2),y:-22,fill:"#5a7a90","font-size":9,"text-anchor":"middle","transform":"rotate(-90)","font-family":"JetBrains Mono, monospace"},"Pressure (mmHg)",g);
+
+  // Generate waveform
+  const { b1, b2 } = generateWaveform(sbp, dbp, notchP, plotW, H, presMin, presMax, 2);
+
+  // Feature highlight regions (beat 1 only, shown as subtle shaded bands)
+  if (activeFeature) {
+    const feat = b1.features[activeFeature];
+    if (feat) {
+      const color = featureColors[activeFeature];
+      el("rect",{
+        x: feat.x1, y: 0, width: feat.x2 - feat.x1, height: H,
+        fill: color, opacity: 0.06, rx: 3
+      }, g);
+      // Also highlight beat 2
+      const feat2 = b2.features[activeFeature];
+      if (feat2) el("rect",{
+        x: feat2.x1, y: 0, width: feat2.x2 - feat2.x1, height: H,
+        fill: color, opacity: 0.06, rx: 3
+      }, g);
+    }
+  }
+
+  // SBP / DBP reference lines
+  el("line",{x1:0,y1:py(sbp),x2:plotW,y2:py(sbp),stroke:modInfo.color+"44","stroke-width":1,"stroke-dasharray":"3,4"},g);
+  el("line",{x1:0,y1:py(dbp),x2:plotW,y2:py(dbp),stroke:modInfo.color+"33","stroke-width":1,"stroke-dasharray":"3,4"},g);
+  txt("text",{x:plotW+3,y:py(sbp)+3,fill:modInfo.color+"99","font-size":7,"font-family":"JetBrains Mono, monospace"},"SBP",g);
+  txt("text",{x:plotW+3,y:py(dbp)+3,fill:modInfo.color+"77","font-size":7,"font-family":"JetBrains Mono, monospace"},"DBP",g);
+
+  // MAP line
+  const map = Math.round(dbp + (sbp - dbp) / 3);
+  el("line",{x1:0,y1:py(map),x2:plotW,y2:py(map),stroke:"#60a5fa33","stroke-width":1,"stroke-dasharray":"2,5"},g);
+  txt("text",{x:plotW+3,y:py(map)+3,fill:"#60a5fa66","font-size":7,"font-family":"JetBrains Mono, monospace"},"MAP",g);
+
+  // Notch reference line
+  el("line",{x1:0,y1:py(notchP),x2:plotW,y2:py(notchP),stroke:"#f8717133","stroke-width":1,"stroke-dasharray":"2,5"},g);
+
+  // Main waveform — draw as coloured segments if feature active, else full colour
+  const fullD = b1.d + " " + b2.d.replace(/^M [^ ]+ [^ ]+/, `L ${b2.b1 ? "" : ""}`);
+
+  // Redraw full path concatenated
+  const beat1D = b1.d;
+  // For beat 2, continuation
+  const beat2Parts = b2.d.split(" ");
+  beat2Parts[0] = `L`; // connect smoothly
+  beat2Parts[1] = `${b1.keyPoints.trough.x + (SVG_W/2 - 50)/2}`;
+
+  // Just draw both beats as one continuous path
+  const waveD = b1.d + " " + (() => {
+    const parts = b2.d.split(" ");
+    // Replace M with continuation
+    return "L " + b2.b1?.start?.x + " " + b2.b1?.start?.y + " " + parts.slice(1).join(" ");
+  })();
+
+  // Draw full waveform
+  el("path",{
+    d: b1.d,
+    fill:"none", stroke: modInfo.color,
+    "stroke-width": 2.5, "stroke-linecap":"round", "stroke-linejoin":"round",
+    opacity: activeFeature ? 0.25 : 0.9
+  }, g);
+  el("path",{
+    d: b2.d,
+    fill:"none", stroke: modInfo.color,
+    "stroke-width": 2.5, "stroke-linecap":"round", "stroke-linejoin":"round",
+    opacity: activeFeature ? 0.25 : 0.9
+  }, g);
+
+  // If feature active, draw highlighted segment on top for beat 1
+  if (activeFeature) {
+    const color = featureColors[activeFeature];
+    // Draw the full waveform in the feature colour clipped to region
+    // Use a simpler approach: draw full path with clip
+    const feat = b1.features[activeFeature];
+    if (feat) {
+      const clipId = "clip_feat";
+      const defs = el("defs",{},g);
+      const clip = el("clipPath",{id:clipId},defs);
+      el("rect",{x:feat.x1-2,y:0,width:feat.x2-feat.x1+4,height:H+10},clip);
+      el("path",{
+        d: b1.d, fill:"none", stroke: color,
+        "stroke-width": 3.5, "stroke-linecap":"round",
+        "clip-path":`url(#${clipId})`
+      }, g);
+      // Beat 2
+      const feat2 = b2.features[activeFeature];
+      if (feat2) {
+        const clipId2 = "clip_feat2";
+        const clip2 = el("clipPath",{id:clipId2},defs);
+        el("rect",{x:feat2.x1-2,y:0,width:feat2.x2-feat2.x1+4,height:H+10},clip2);
+        el("path",{
+          d: b2.d, fill:"none", stroke: color,
+          "stroke-width": 3.5, "stroke-linecap":"round",
+          "clip-path":`url(#${clipId2})`
+        }, g);
+      }
+    }
+  }
+
+  // Key point annotations (beat 1)
+  const kp = b1.keyPoints;
+
+  // Peak dot + label
+  el("circle",{cx:kp.peak.x,cy:kp.peak.y,r:4,fill:modInfo.color,opacity:0.8},g);
+  txt("text",{x:kp.peak.x,y:kp.peak.y-8,fill:modInfo.color,"font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},`${sbp}`,g);
+
+  // Dicrotic notch dot
+  el("circle",{cx:kp.notchDip.x,cy:kp.notchDip.y,r:3,fill:"#f87171",opacity:0.7},g);
+
+  // Trough dot
+  el("circle",{cx:kp.trough.x - plotW/2 + 1,cy:kp.trough.y,r:3.5,fill:modInfo.color,opacity:0.5},g);
+  txt("text",{x:kp.trough.x - plotW/2 + 1,y:kp.trough.y+13,fill:modInfo.color,"font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace",opacity:0.6},`${dbp}`,g);
+
+  // Notch label — always drawn on top
+  txt("text",{x:kp.notchDip.x+8,y:kp.notchDip.y-8,fill:"#f87171","font-size":10,"font-weight":"500","font-family":"JetBrains Mono, monospace",opacity:1.0},"Dicrotic notch",g);
+
+  // Pulse pressure bracket on right
+  const bracketX = plotW - 8;
+  el("line",{x1:bracketX,y1:py(sbp),x2:bracketX,y2:py(dbp),stroke:"#60a5fa","stroke-width":1},g);
+  el("line",{x1:bracketX-4,y1:py(sbp),x2:bracketX+4,y2:py(sbp),stroke:"#60a5fa","stroke-width":1},g);
+  el("line",{x1:bracketX-4,y1:py(dbp),x2:bracketX+4,y2:py(dbp),stroke:"#60a5fa","stroke-width":1},g);
+  txt("text",{x:bracketX+6,y:py(sbp+(dbp-sbp)/2)+3,fill:"#60a5fa","font-size":7,"font-family":"JetBrains Mono, monospace"},"PP",g);
+
+  // Stats
+  const pp = sbp - dbp;
+  const statsEl = document.getElementById("statsStrip");
+  statsEl.innerHTML = "";
+  [{l:"SBP",v:`${sbp}`},{l:"DBP",v:`${dbp}`},{l:"PP",v:`${pp}`},{l:"MAP",v:`${map}`}].forEach(s => {
+    const d = document.createElement("div");
+    d.className = "stat";
+    d.innerHTML = `<div class="stat-val">${s.v}</div><div class="stat-label">${s.l} mmHg</div>`;
+    statsEl.appendChild(d);
+  });
+}
+
+function renderModCard() {
+  const m = MODIFIERS.find(x => x.id === modifier);
+  const card = document.getElementById("modCard");
+  card.style.borderColor = m.color + "44";
+  document.getElementById("modHighlight").style.color = m.color;
+  document.getElementById("modHighlight").textContent = m.highlight;
+  document.getElementById("modDesc").textContent = m.description;
+  document.getElementById("clinicalTipText").textContent = m.clinical;
+  document.getElementById("pvLinkContent").textContent = m.pvLink;
+}
+
+function renderFeatureCard() {
+  const f = FEATURES.find(x => x.id === activeFeature);
+  const card = document.getElementById("featureCard");
+  if (f) {
+    card.style.borderColor = f.color + "44";
+    card.innerHTML = `<div class="info-highlight" style="color:${f.color};">${f.highlight}</div><div class="info-desc">${f.description}</div>`;
+  } else {
+    card.style.borderColor = "#141c2e";
+    card.innerHTML = `<div class="info-placeholder">Tap a feature button to learn what that part of the waveform represents physiologically.</div>`;
+  }
+}
+
+function renderModButtons() {
+  const container = document.getElementById("modGroups");
+  container.innerHTML = "";
+  modifierGroups.forEach(group => {
+    const row = document.createElement("div");
+    row.className = "mod-row";
+    group.forEach(id => {
+      const m = MODIFIERS.find(x => x.id === id);
+      const btn = document.createElement("button");
+      btn.className = "mod-btn";
+      btn.textContent = m.label;
+      if (modifier === id) {
+        btn.style.borderColor = m.color;
+        btn.style.background = m.color + "22";
+        btn.style.color = m.color;
+      }
+      btn.addEventListener("click", () => { if(modifier===id) return; activeFeature=null; triggerAnim(id); renderModCard(); renderModButtons(); renderFeatureButtons(); renderFeatureCard(); });
+      row.appendChild(btn);
+    });
+    container.appendChild(row);
+  });
+}
+
+function renderFeatureButtons() {
+  const container = document.getElementById("featureBtns");
+  container.innerHTML = "";
+  FEATURES.forEach(f => {
+    const btn = document.createElement("button");
+    btn.className = "feature-btn";
+    btn.textContent = f.label;
+    if (activeFeature === f.id) {
+      btn.style.borderColor = f.color;
+      btn.style.background = f.color + "18";
+      btn.style.color = f.color;
+    }
+    btn.addEventListener("click", () => { activeFeature = activeFeature === f.id ? null : f.id; renderAll(); });
+    container.appendChild(btn);
+  });
+}
+
+function renderAll() {
+  renderModButtons();
+  renderModCard();
+  renderSVG();
+  renderFeatureButtons();
+  renderFeatureCard();
+}
+
+renderAll();
+</script>
+</body>
+</html>

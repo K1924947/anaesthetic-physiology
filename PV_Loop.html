@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pressure–Volume Loop · Anaesthetic Physiology</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #07090f;
+    --surface:   #0a0d17;
+    --border:    #141c2e;
+    --text:      #e2e8f0;
+    --muted:     #8a9db5;
+    --dim:       #4a6070;
+    --accent:    #60a5fa;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    zoom: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'EB Garamond', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 48px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  header h1 {
+    font-size: clamp(24px, 5vw, 32px);
+    font-weight: 400;
+    letter-spacing: 1px;
+    color: #f1f5f9;
+    line-height: 1.2;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* ── Layout wrapper ── */
+  .layout {
+    width: 100%;
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 700px) {
+    .layout {
+      grid-template-columns: 1fr 320px;
+    }
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    transition: border-color 0.3s;
+  }
+  .card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* ── Modifier buttons ── */
+  .mod-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .mod-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .mod-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-family: 'EB Garamond', serif;
+    font-size: 12px;
+    min-width: 120px;
+    text-align: center;
+    cursor: pointer;
+    background: transparent;
+    border: 1.5px solid #1a2030;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+  .mod-btn:hover { border-color: #2a3a5a; color: #94a3b8; }
+  .mod-btn.active { /* set inline */ }
+
+  /* ── SVG wrap ── */
+  .svg-wrap {
+    background: #070a12;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 10px 10px;
+    overflow: hidden;
+  }
+  #pvSvg { display: block; width: 100%; height: auto; }
+
+  /* ── Info card ── */
+  .info-highlight {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .info-desc {
+    font-size: 13px;
+    color: #b0bfcc;
+    line-height: 1.7;
+  }
+  .info-placeholder { font-size: 13px; color: var(--dim); line-height: 1.7; font-style: italic; }
+
+  /* ── Phase buttons ── */
+  .phase-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .phase-btn {
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-family: 'EB Garamond', serif;
+    font-size: 12px;
+    cursor: pointer;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+  .phase-btn:hover { color: #94a3b8; }
+
+  /* ── Key facts ── */
+  .key-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px solid #0d1220;
+    font-size: 12px;
+    gap: 12px;
+  }
+  .key-row:last-child { border-bottom: none; }
+  .key-label { color: #8a9db5; flex-shrink: 0; }
+  .key-val { color: #5a7a9a; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-align: right; }
+
+  /* ── Stats strip ── */
+  .stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    text-align: center;
+    min-width: 80px;
+  }
+  .stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--dim);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 40px; width: 100%; max-width: 900px;
+    border-top: 1px solid #141c2e; padding-top: 20px; text-align: center;
+  }
+  .footer-inner {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; align-items: center;
+  }
+  .footer-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    color: #60a5fa; background: #60a5fa14;
+    border: 1px solid #60a5fa33; padding: 3px 8px; border-radius: 20px;
+  }
+  .footer-dot { color: #1f2d40; font-size: 12px; }
+  .footer-title { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; font-style: normal; }
+  .footer-series { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #374151; font-style: normal; }
+  .footer-author { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #60a5fa99; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Anaesthetic Physiology</div>
+  <h1>Pressure–Volume Loop</h1>
+  <p class="subtitle">Tap modifiers and phases &middot; Compare to normal (dashed)</p>
+</header>
+
+<!-- Modifier buttons -->
+<div class="mod-groups" id="modGroups"></div>
+
+<!-- Stats strip -->
+<div class="stats" id="statsStrip"></div>
+
+<div class="layout">
+  <!-- Left: SVG + phase buttons + modifier info -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- Modifier explanation -->
+    <div class="card" id="modCard">
+      <div class="info-highlight" id="modHighlight"></div>
+      <div class="info-desc" id="modDesc"></div>
+    </div>
+
+    <!-- SVG -->
+    <div class="svg-wrap">
+      <svg id="pvSvg" viewBox="0 0 362 318" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- Phase buttons -->
+    <div class="phase-btns" id="phaseBtns"></div>
+
+    <!-- Phase explanation -->
+    <div class="card" id="phaseCard">
+      <div class="info-placeholder">Tap a phase above — or click a segment on the loop — to see what's happening at that point in the cardiac cycle.</div>
+    </div>
+
+  </div>
+
+  <!-- Right: Key relationships -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="card">
+      <div class="card-title">Key Relationships</div>
+      <div class="key-row"><span class="key-label">Stroke Volume</span><span class="key-val">EDV − ESV</span></div>
+      <div class="key-row"><span class="key-label">Preload</span><span class="key-val">= EDV</span></div>
+      <div class="key-row"><span class="key-label">↑ Afterload</span><span class="key-val">↑ ESV, taller loop</span></div>
+      <div class="key-row"><span class="key-label">Contractility</span><span class="key-val">Slope of ESPVR</span></div>
+      <div class="key-row"><span class="key-label">Compliance</span><span class="key-val">Slope of EDPVR</span></div>
+      <div class="key-row"><span class="key-label">Ejection shape</span><span class="key-val">Arch — peak mid-eject</span></div>
+      <div class="key-row"><span class="key-label">Loop area</span><span class="key-val">= Stroke work</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Valve Events</div>
+      <div class="key-row"><span class="key-label" style="color:#4ade80">● MV opens</span><span class="key-val">Start of filling (ESV)</span></div>
+      <div class="key-row"><span class="key-label" style="color:#facc15">● MV closes</span><span class="key-val">Start of ISO contraction</span></div>
+      <div class="key-row"><span class="key-label" style="color:#f87171">● AV opens</span><span class="key-val">~80 mmHg aortic DBP</span></div>
+      <div class="key-row"><span class="key-label" style="color:#818cf8">● AV closes</span><span class="key-val">ESP — start of ISO relax</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Clinical Correlation</div>
+      <div class="key-row"><span class="key-label">↑ Preload</span><span class="key-val">Fluids, pregnancy</span></div>
+      <div class="key-row"><span class="key-label">↓ Preload</span><span class="key-val">Haemorrhage, diuretics</span></div>
+      <div class="key-row"><span class="key-label">↑ Afterload</span><span class="key-val">HTN, aortic stenosis</span></div>
+      <div class="key-row"><span class="key-label">↓ Afterload</span><span class="key-val">Propofol, GTN, sepsis</span></div>
+      <div class="key-row"><span class="key-label">↑ Inotropy</span><span class="key-val">Adrenaline, dobutamine</span></div>
+      <div class="key-row"><span class="key-label">↓ Inotropy</span><span class="key-val">Volatiles, β-blockers</span></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-tag">Built for teaching</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-title">Anaesthetic Physiology — Interactive PV Loop</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-author">Developed by Dr Ed Kim</span>
+  </div>
+</footer>
+
+<script>
+const PHASES = [
+  { id:"filling",       label:"① Filling (Diastole)",          color:"#4ade80", highlight:"EDPVR — exponential compliance curve", description:"Mitral valve opens. The ventricle is compliant early — large volume increase with little pressure rise (flat). As it fills, it stiffens — pressure rises more steeply toward EDV. This exponential curve is the EDPVR. EDV = PRELOAD." },
+  { id:"isocontraction",label:"② Isovolumetric Contraction",    color:"#facc15", highlight:"Vertical — no volume change",           description:"Mitral closes, aortic still closed. Both valves shut — ventricle contracts hard, pressure rises steeply. Volume cannot change. Ends when pressure exceeds aortic diastolic pressure (~80 mmHg) and the aortic valve opens." },
+  { id:"ejection",      label:"③ Ejection (Systole)",           color:"#f87171", highlight:"Arch shape — pressure peaks then falls",description:"Aortic valve opens. Blood ejects — volume falls. Pressure first rises to a PEAK (the dome/arch), then falls as the ventricle empties and weakens. This arch shape is key. Ends at ESV when aortic valve closes. SV = EDV − ESV." },
+  { id:"isorelaxation", label:"④ Isovolumetric Relaxation",     color:"#818cf8", highlight:"Vertical — no volume change",           description:"Aortic valve closes at ESP. Ventricle relaxes — pressure drops rapidly back to near zero. Volume stays fixed. Ends when pressure drops below left atrial pressure and mitral valve opens." }
+];
+
+const MODIFIERS = [
+  { id:"normal",           label:"Normal",         color:"#60a5fa", highlight:"Baseline reference loop",                          description:"Normal healthy ventricle. EDV ~120 mL, ESV ~50 mL, stroke volume ~70 mL. The loop has a clear arch top, curved EDPVR filling, and vertical isovolumetric phases. All subsequent loops are compared to this." },
+  { id:"preload_up",       label:"↑ Preload",       color:"#4ade80", highlight:"Loop shifts RIGHT — more filling, more output",    description:"More venous return fills the ventricle to a higher EDV. By Frank-Starling, the stretched fibres contract more forcefully — ESV stays similar but SV increases. The loop widens rightward. Seen with: IV fluids, lying flat, exercise, pregnancy." },
+  { id:"preload_down",     label:"↓ Preload",       color:"#86efac", highlight:"Loop shifts LEFT — less filling, less output",     description:"Less venous return means lower EDV. The ventricle has less to eject — stroke volume falls and the loop narrows and shifts left. Seen with: haemorrhage, dehydration, vasodilation (e.g. spinal anaesthesia), diuretics, sitting upright." },
+  { id:"afterload_up",     label:"↑ Afterload",     color:"#f97316", highlight:"Loop becomes TALLER and NARROWER",                description:"Higher resistance means the aortic valve opens later (more pressure needed) and the ventricle can't empty as well — ESV rises. Stroke volume falls. The loop gets taller but narrower. Seen with: hypertension, aortic stenosis, vasoconstrictors, hypothermia." },
+  { id:"afterload_down",   label:"↓ Afterload",     color:"#fdba74", highlight:"Loop becomes SHORTER and WIDER",                  description:"Lower resistance means the aortic valve opens earlier and the ventricle empties more — ESV falls, SV increases. Loop shortens and widens. Seen with: vasodilators (e.g. propofol, GTN, ACE inhibitors), sepsis, spinal anaesthesia." },
+  { id:"contractility_up", label:"↑ Contractility", color:"#a78bfa", highlight:"ESPVR steepens — ventricle squeezes harder",      description:"Increased intrinsic squeeze — ESV falls significantly as the ventricle empties more completely. SV increases without any change in preload or afterload. The ESPVR slope steepens. Seen with: adrenaline, noradrenaline, digoxin, dobutamine, exercise (sympathetic drive)." },
+  { id:"contractility_down",label:"↓ Contractility",color:"#c4b5fd", highlight:"ESPVR flattens — ventricle squeezes weakly",      description:"Reduced intrinsic squeeze — ESV rises as the ventricle can't empty properly. SV falls. The ESPVR slope flattens. Seen with: volatile anaesthetic agents, propofol, beta-blockers, heart failure, myocardial infarction, acidosis, hypoxia." },
+  { id:"heart_failure",    label:"Heart Failure",   color:"#f87171", highlight:"Dilated, weak loop — high filling pressure, low output", description:"The failing ventricle dilates to compensate (high EDV) but can't eject effectively (high ESV). Stroke volume is small. Filling pressures are high (steep EDPVR) — this causes pulmonary oedema. The loop is small, shifted right, and the arch is flattened. Both contractility and compliance are impaired." },
+];
+
+const modifierGroups = [["normal"],["preload_up","preload_down"],["afterload_up","afterload_down"],["contractility_up","contractility_down"],["heart_failure"]];
+
+function getParams(mod) {
+  switch(mod) {
+    case "preload_up":         return { esv:52,  edv:155, esp:115, peakP:130, edp:12 };
+    case "preload_down":       return { esv:42,  edv:85,  esp:110, peakP:122, edp:5  };
+    case "afterload_up":       return { esv:80,  edv:120, esp:148, peakP:158, edp:8  };
+    case "afterload_down":     return { esv:35,  edv:120, esp:95,  peakP:108, edp:8  };
+    case "contractility_up":   return { esv:28,  edv:120, esp:132, peakP:148, edp:8  };
+    case "contractility_down": return { esv:75,  edv:125, esp:95,  peakP:108, edp:10 };
+    case "heart_failure":      return { esv:100, edv:170, esp:80,  peakP:90,  edp:24 };
+    default:                   return { esv:50,  edv:120, esp:118, peakP:132, edp:8  };
+  }
+}
+
+const W=330, H=280, volMin=20, volMax=210, presMin=0, presMax=175;
+const cx = v => ((v-volMin)/(volMax-volMin))*W;
+const cy = p => H - ((p-presMin)/(presMax-presMin))*H;
+
+function buildPaths(p) {
+  const {esv,edv,esp,peakP,edp} = p;
+  const x_esv=cx(esv), x_edv=cx(edv);
+  const y_esp=cy(esp), y_edp=cy(edp);
+  const y_aov=cy(80), y_base=cy(3), y_peak=cy(peakP);
+  const x_peak=cx(esv+(edv-esv)*0.37);
+  return {
+    fillPath:    `M ${x_esv} ${y_base} C ${cx(esv+(edv-esv)*0.65)} ${y_base}, ${x_edv} ${cy(edp*0.3)}, ${x_edv} ${y_edp}`,
+    isoConPath:  `M ${x_edv} ${y_edp} L ${x_edv} ${y_aov}`,
+    ejPath:      `M ${x_edv} ${y_aov} C ${cx(edv-(edv-esv)*0.15)} ${y_peak}, ${cx(esv+(edv-esv)*0.25)} ${y_peak}, ${x_esv} ${y_esp}`,
+    isoRelPath:  `M ${x_esv} ${y_esp} L ${x_esv} ${y_base}`,
+    fullPath:    `M ${x_esv} ${y_base} C ${cx(esv+(edv-esv)*0.65)} ${y_base}, ${x_edv} ${cy(edp*0.3)}, ${x_edv} ${y_edp} L ${x_edv} ${y_aov} C ${cx(edv-(edv-esv)*0.15)} ${y_peak}, ${cx(esv+(edv-esv)*0.25)} ${y_peak}, ${x_esv} ${y_esp} Z`,
+    x_esv, x_edv, y_esp, y_edp, y_aov, y_base, y_peak, x_peak
+  };
+}
+
+let activePhase = null;
+let modifier = "normal";
+
+const ANIM_KEYS = ["esv","edv","esp","peakP","edp"];
+let animFrom  = Object.assign({}, getParams("normal"));
+let animTo    = Object.assign({}, getParams("normal"));
+let animT     = 1.0;
+let animRAF   = null;
+let animStart = null;
+const ANIM_MS = 500;
+
+function easeInOut(t) { return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+function animParams() {
+  if (animT >= 1.0) return Object.assign({}, animTo);
+  const e = easeInOut(animT);
+  const out = {};
+  // Round to integers so stats never show decimals
+  ANIM_KEYS.forEach(k => out[k] = Math.round(animFrom[k] + (animTo[k] - animFrom[k]) * e));
+  return out;
+}
+
+function triggerAnim(newModifier) {
+  animFrom  = animParams();
+  modifier  = newModifier;
+  animTo    = getParams(newModifier);
+  animT     = 0;
+  animStart = null;
+  if (animRAF) cancelAnimationFrame(animRAF);
+  function tick(ts) {
+    if (!animStart) animStart = ts;
+    animT = Math.min((ts - animStart) / ANIM_MS, 1.0);
+    renderSVG();
+    if (animT < 1.0) animRAF = requestAnimationFrame(tick);
+    else animT = 1.0;
+  }
+  animRAF = requestAnimationFrame(tick);
+}
+
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function txt(tag, attrs, text, parent) {
+  const e = el(tag, attrs, parent);
+  e.textContent = text;
+  return e;
+}
+
+function renderSVG() {
+  const svg = document.getElementById("pvSvg");
+  svg.innerHTML = "";
+  const g = el("g", {transform:"translate(28,6)"}, svg);
+
+  const params = animParams();
+  const normalParams = getParams("normal");
+  const paths = buildPaths(params);
+  const normalPaths = buildPaths(normalParams);
+  const showGhost = modifier !== "normal";
+  const modInfo = MODIFIERS.find(m => m.id === modifier);
+  const sv = params.edv - params.esv;
+  const ef = Math.round((sv / params.edv) * 100);
+  const svMidX = paths.x_esv + (paths.x_edv - paths.x_esv) / 2;
+
+  // Grid lines
+  [25,50,75,100,125,150].forEach(p => {
+    const y = cy(p);
+    el("line",{x1:0,y1:y,x2:W,y2:y,stroke:"#0d1220","stroke-width":1},g);
+    txt("text",{x:-5,y:y+3,fill:"#4a6878","font-size":8,"text-anchor":"end","font-family":"JetBrains Mono, monospace"},String(p),g);
+  });
+  [40,60,80,100,120,140,160,180].forEach(v => {
+    const x = cx(v);
+    el("line",{x1:x,y1:0,x2:x,y2:H,stroke:"#0d1220","stroke-width":1},g);
+    txt("text",{x:x,y:H+13,fill:"#4a6878","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},String(v),g);
+  });
+  txt("text",{x:W/2,y:H+26,fill:"#5a7a90","font-size":9,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"Volume (mL)",g);
+  const yLbl = txt("text",{x:-(H/2),y:-18,fill:"#5a7a90","font-size":9,"text-anchor":"middle","transform":"rotate(-90)","font-family":"JetBrains Mono, monospace"},"Pressure (mmHg)",g);
+
+  // EDPVR
+  const edpvrPath = `M ${cx(30)} ${cy(1)} C ${cx(80)} ${cy(1)}, ${cx(140)} ${cy(5)}, ${cx(190)} ${cy(35)}`;
+  el("path",{d:edpvrPath,fill:"none",stroke:"#1a3a2a","stroke-width":1.2,"stroke-dasharray":"4,3"},g);
+
+  // ESPVR
+  const espvrSlope = modifier==="heart_failure"?0.9:modifier==="contractility_up"?3.0:modifier==="contractility_down"?1.1:2.0;
+  const ex1=cx(params.esv-18), ey1=cy(params.esp-espvrSlope*18);
+  const ex2=cx(params.esv+22), ey2=cy(params.esp+espvrSlope*22);
+  el("line",{x1:ex1,y1:ey1,x2:ex2,y2:ey2,stroke:"#1a2a4a","stroke-width":1.2,"stroke-dasharray":"4,3"},g);
+
+  // Ghost loop
+  if (showGhost) el("path",{d:normalPaths.fullPath,fill:"none",stroke:"#1e3050","stroke-width":1.5,"stroke-dasharray":"5,3",opacity:0.6},g);
+
+  // Phase paths
+  const phaseColors  = {filling:"#4ade80",isocontraction:"#facc15",ejection:"#f87171",isorelaxation:"#818cf8"};
+  const phasePaths   = {filling:paths.fillPath,isocontraction:paths.isoConPath,ejection:paths.ejPath,isorelaxation:paths.isoRelPath};
+  PHASES.forEach(phase => {
+    const isActive = activePhase === phase.id;
+    const pathEl = el("path",{
+      d: phasePaths[phase.id], fill:"none", stroke: phaseColors[phase.id],
+      "stroke-width": isActive ? 4 : 2.4, "stroke-linecap":"round",
+      opacity: isActive ? 1 : (activePhase ? 0.15 : 0.88),
+      style: "cursor:pointer"
+    },g);
+    pathEl.addEventListener("click", () => { activePhase = activePhase===phase.id?null:phase.id; renderAll(); });
+  });
+
+  // Valve dots + labels
+  [
+    {x:paths.x_esv, y:paths.y_base,  r:3.5, fill:"#4ade80", tx:6,  ty:-5, label:"MV opens",        anchor:"start"},
+    {x:paths.x_edv, y:paths.y_edp,   r:3.5, fill:"#facc15", tx:6,  ty:-5, label:"MV closes",       anchor:"start"},
+    {x:paths.x_edv, y:paths.y_aov,   r:3.5, fill:"#f87171", tx:6,  ty:-5, label:"AV opens",        anchor:"start"},
+    {x:paths.x_esv, y:paths.y_esp,   r:4,   fill:modInfo.color, tx:-7, ty:-7, label:"AV closes (ESP)", anchor:"end"},
+    {x:paths.x_peak,y:paths.y_peak,  r:3.5, fill:"#f87171", tx:10, ty:-5, label:"Peak P",          anchor:"start",  opacity:1.0,  textOpacity:1.0},
+  ].forEach(d => {
+    el("circle",{cx:d.x,cy:d.y,r:d.r,fill:d.fill,opacity:d.opacity||1},g);
+    const lfs = d.label==="Peak P" ? 9 : 7;
+    txt("text",{x:d.x+d.tx,y:d.y+d.ty,fill:d.fill,"font-size":lfs,"font-weight":d.label==="Peak P"?"500":"normal","text-anchor":d.anchor,"font-family":"JetBrains Mono, monospace",opacity:d.textOpacity||1},d.label,g);
+  });
+
+  txt("text",{x:cx(170),y:cy(27),fill:"#3a8a5a","font-size":9,"font-weight":"500","font-style":"italic","font-family":"JetBrains Mono, monospace"},"EDPVR",g);
+  txt("text",{x:ex2+5,y:ey2,fill:"#4a6ab0","font-size":9,"font-weight":"500","font-style":"italic","font-family":"JetBrains Mono, monospace"},"ESPVR",g);
+
+  // ESV / EDV x-axis labels
+  txt("text",{x:paths.x_esv,y:H+13,fill:"#5a7a90","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"ESV",g);
+  txt("text",{x:paths.x_edv,y:H+13,fill:"#5a7a90","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"EDV",g);
+
+  // SV bracket
+  if (!activePhase) {
+    el("line",{x1:paths.x_esv,y1:H-9,x2:paths.x_edv,y2:H-9,stroke:"#60a5fa","stroke-width":1},g);
+    el("line",{x1:paths.x_esv,y1:H-14,x2:paths.x_esv,y2:H-4,stroke:"#60a5fa","stroke-width":1},g);
+    el("line",{x1:paths.x_edv,y1:H-14,x2:paths.x_edv,y2:H-4,stroke:"#60a5fa","stroke-width":1},g);
+    txt("text",{x:svMidX,y:H-12,fill:"#60a5fa","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},`SV = ${sv} mL`,g);
+  }
+
+  // Stats strip
+  const stats = document.getElementById("statsStrip");
+  stats.innerHTML = "";
+  [{label:"EDV",val:params.edv+" mL"},{label:"ESV",val:params.esv+" mL"},{label:"SV",val:sv+" mL"},{label:"EF",val:ef+"%"},{label:"Peak P",val:params.peakP+" mmHg"},{label:"ESP",val:params.esp+" mmHg"}]
+  .forEach(s => {
+    const d = document.createElement("div");
+    d.className = "stat";
+    d.innerHTML = `<div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div>`;
+    stats.appendChild(d);
+  });
+}
+
+function renderModCard() {
+  const modInfo = MODIFIERS.find(m => m.id === modifier);
+  const card = document.getElementById("modCard");
+  card.style.borderColor = modInfo.color + "44";
+  document.getElementById("modHighlight").style.color = modInfo.color;
+  document.getElementById("modHighlight").textContent = modInfo.highlight;
+  document.getElementById("modDesc").textContent = modInfo.description;
+}
+
+function renderPhaseCard() {
+  const phase = PHASES.find(p => p.id === activePhase);
+  const card = document.getElementById("phaseCard");
+  if (phase) {
+    card.style.borderColor = phase.color + "44";
+    card.innerHTML = `<div class="info-highlight" style="color:${phase.color};">${phase.highlight}</div><div class="info-desc">${phase.description}</div>`;
+  } else {
+    card.style.borderColor = "#141c2e";
+    card.innerHTML = `<div class="info-placeholder">Tap a phase above — or click a segment on the loop — to see what's happening at that point in the cardiac cycle.</div>`;
+  }
+}
+
+function renderModButtons() {
+  const container = document.getElementById("modGroups");
+  container.innerHTML = "";
+  modifierGroups.forEach(group => {
+    const row = document.createElement("div");
+    row.className = "mod-row";
+    group.forEach(id => {
+      const m = MODIFIERS.find(x => x.id === id);
+      const btn = document.createElement("button");
+      btn.className = "mod-btn" + (modifier===id?" active":"");
+      btn.textContent = m.label;
+      if (modifier===id) {
+        btn.style.borderColor = m.color;
+        btn.style.background = m.color+"22";
+        btn.style.color = m.color;
+      }
+      btn.addEventListener("click", () => { if(modifier===id) return; activePhase=null; triggerAnim(id); renderModButtons(); renderModCard(); renderPhaseButtons(); renderPhaseCard(); });
+      row.appendChild(btn);
+    });
+    container.appendChild(row);
+  });
+}
+
+function renderPhaseButtons() {
+  const container = document.getElementById("phaseBtns");
+  container.innerHTML = "";
+  PHASES.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "phase-btn";
+    btn.textContent = p.label;
+    if (activePhase===p.id) {
+      btn.style.borderColor = p.color;
+      btn.style.background = p.color+"18";
+      btn.style.color = p.color;
+    }
+    btn.addEventListener("click", () => { activePhase=activePhase===p.id?null:p.id; renderAll(); });
+    container.appendChild(btn);
+  });
+}
+
+function renderAll() {
+  renderModButtons();
+  renderModCard();
+  renderSVG();
+  renderPhaseButtons();
+  renderPhaseCard();
+}
+
+renderAll();
+</script>
+</body>
+</html>
