@@ -40,6 +40,35 @@
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+
+  /* Smooth card content crossfade */
+  .info-card-content {
+    transition: opacity 0.25s ease;
+  }
+  .comp-fill {
+    transition: opacity 0.4s ease !important;
+  }
+  .comp-label {
+    transition: color 0.4s ease;
+  }
+  /* Gantt marker smooth slide */
+  .gantt-marker {
+    position: absolute; top: -3px; width: 2px; height: 14px;
+    background: #60a5fa; border-radius: 1px; opacity: 0.7;
+    transform: translateX(-50%);
+    transition: left 0.5s cubic-bezier(0.22,1,0.36,1);
+  }
+  /* Timeline button transitions */
+  .t-btn {
+    transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease, transform 0.2s ease !important;
+  }
+  /* Axis tick active color */
+  .axis-tick {
+    transition: color 0.4s ease;
+    position: absolute; transform: translateX(-50%);
+    font-family: JetBrains Mono, monospace; font-size: 8px;
+    white-space: nowrap; top: 2px;
+  }
   @keyframes fadeIn {
     from { opacity: 0; }
     to   { opacity: 1; }
@@ -406,208 +435,245 @@ function svgTxt(attrs, text, parent) {
   return e;
 }
 
-function renderHeart() {
+// ─── HEART SVG — persistent elements, animated via CSS transitions ───────────
+
+function buildHeartSVG() {
   const svg = document.getElementById("heartSvg");
-  // Smooth morph — fade out, redraw, fade in
-  svg.style.transition = "opacity 0.2s ease";
-  svg.style.opacity = "0.55";
-  setTimeout(() => {
-    svg.innerHTML = "";
-    const stage = STAGES[activeStage];
-    // rest of render happens synchronously below
-    _doRenderHeart(svg, stage);
-    svg.style.opacity = "1";
-  }, 140);
-}
-function _doRenderHeart(svg, stage) {
+  svg.innerHTML = "";
+  const cx = 130, cy = 100, outerRx = 85, outerRy = 78;
 
-  // Background
-  svgEl("rect", { x:0, y:0, width:560, height:200, fill:"transparent" }, svg);
-
-  // ── Cross section of LV wall ──
-  // Outer wall (epicardium) - big ellipse
-  // Inner cavity (endocardium) - smaller ellipse
-  // Infarct zone shown as a wedge in the anterior wall
-
-  const cx = 130, cy = 100;
-  const outerRx = 85, outerRy = 78;
-  const innerRx = 48, innerRy = 44;
-
-  // Wall thinning based on stage
-  const thin = stage.wallThinning;
-  const thinOffset = thin * 5;
+  // Static structure — drawn once
+  svgEl("rect", { id:"hBg", x:0, y:0, width:560, height:200, fill:"transparent" }, svg);
 
   // Outer wall
-  svgEl("ellipse", { cx, cy, rx: outerRx, ry: outerRy, fill: "#1a0a0a", stroke: "#3a1a1a", "stroke-width": 1.5 }, svg);
+  svgEl("ellipse", { id:"hOuter", cx, cy, rx:outerRx, ry:outerRy, fill:"#1a0a0a", stroke:"#3a1a1a", "stroke-width":1.5 }, svg);
 
-  // Myocardium fill (healthy tissue)
-  svgEl("ellipse", { cx, cy, rx: outerRx - 2, ry: outerRy - 2, fill: "#6b1a1a" }, svg);
+  // Myocardium
+  svgEl("ellipse", { id:"hMyo", cx, cy, rx:outerRx-2, ry:outerRy-2, fill:"#6b1a1a" }, svg);
 
-  // Infarct wedge — anterior wall (top-left of ellipse)
-  // Draw as a path clipped to the wall region
-  const infarctOpacity = stage.infarctOpacity;
-  const infarctColor = stage.infarctColor;
+  // Infarct wedge — built as a path, updated each stage
+  svgEl("path", { id:"hInfarct", fill:"#8b1a1a", opacity:"0", style:"transition:fill 0.6s ease, opacity 0.6s ease, d 0.6s ease" }, svg);
+  svgEl("path", { id:"hInfarctBorder", fill:"none", "stroke-width":1.5, opacity:"0", style:"transition:stroke 0.6s ease, opacity 0.4s ease, d 0.6s ease" }, svg);
 
-  // Infarct arc — covers roughly 60° of the anterior wall
-  const startAngle = -150 * Math.PI / 180;
-  const endAngle = -50 * Math.PI / 180;
-  const steps = 20;
+  // LV cavity — rx/ry animate
+  svgEl("ellipse", { id:"hCavity", cx, cy, rx:48, ry:44, fill:"#0a0510", style:"transition:rx 0.6s ease, ry 0.6s ease" }, svg);
+  svgTxt({ id:"hCavityLbl", x:cx, y:cy+3, fill:"#94a3b8", "font-size":11, "text-anchor":"middle", "font-family":"JetBrains Mono, monospace" }, "LV cavity", svg);
 
-  // Outer arc points
-  const outerPts = [];
-  for (let i = 0; i <= steps; i++) {
-    const a = startAngle + (endAngle - startAngle) * i / steps;
-    outerPts.push([cx + (outerRx - 1) * Math.cos(a), cy + (outerRy - 1) * Math.sin(a)]);
-  }
-  // Inner arc points (reversed, with thinning)
-  const innerPts = [];
+  // Infarct zone label + arrow
+  svgTxt({ id:"hInfarctLbl", x:0, y:0, fill:"#60a5fa", "font-size":8, "font-family":"JetBrains Mono, monospace", opacity:"0", style:"transition:opacity 0.4s ease" }, "infarct zone", svg);
+  svgEl("line", { id:"hInfarctArrow", x1:0, y1:0, x2:0, y2:0, "stroke-width":0.8, opacity:"0", style:"transition:opacity 0.4s ease" }, svg);
+
+  // Wavefront label + pointer
+  svgTxt({ id:"hWfLabel", x:4, y:28, fill:"#facc15", "font-size":9, "font-family":"JetBrains Mono, monospace", opacity:"0", style:"transition:opacity 0.5s ease, fill 0.5s ease" }, "wavefront", svg);
+  svgTxt({ id:"hWfSub",   x:4, y:41, fill:"#facc15", "font-size":8, "font-family":"JetBrains Mono, monospace", opacity:"0", style:"transition:opacity 0.5s ease, fill 0.5s ease" }, "endo→epi", svg);
+  svgEl("line",   { id:"hWfLine", x1:58, y1:26, x2:100, y2:60, stroke:"#facc15", "stroke-width":0.8, "stroke-dasharray":"2,2", opacity:"0", style:"transition:opacity 0.5s ease" }, svg);
+  svgEl("circle", { id:"hWfDot",  cx:100, cy:60, r:2.5, fill:"#facc15", opacity:"0", style:"transition:opacity 0.5s ease" }, svg);
+
+  // Right panel — static labels
+  const lx = 300;
+  svgTxt({ x:lx, y:30, fill:"#4b5563", "font-size":9, "font-family":"JetBrains Mono, monospace", "letter-spacing":2 }, "STAGE", svg);
+  svgTxt({ id:"hStageLabel", x:lx, y:52, fill:"#60a5fa", "font-size":18, "font-family":"JetBrains Mono, monospace", "font-weight":500, style:"transition:fill 0.4s ease" }, "0–4h", svg);
+
+  svgTxt({ x:lx, y:80, fill:"#4b5563", "font-size":8, "font-family":"JetBrains Mono, monospace", "letter-spacing":1 }, "GROSS", svg);
+  svgEl("rect", { id:"hSwatchBg", x:lx, y:88, width:170, height:14, rx:4, fill:"#1a1a2a", opacity:"0.15", style:"transition:fill 0.6s ease, opacity 0.6s ease" }, svg);
+  svgTxt({ id:"hSwatchTxt", x:lx+4, y:99, fill:"#ffffff", "font-size":8, "font-family":"JetBrains Mono, monospace" }, "normal", svg);
+
+  svgTxt({ x:lx, y:122, fill:"#4b5563", "font-size":8, "font-family":"JetBrains Mono, monospace", "letter-spacing":1 }, "WALL INTEGRITY", svg);
+  svgEl("rect", { x:lx, y:128, width:170, height:6, rx:3, fill:"#0d1220" }, svg);
+  svgEl("rect", { id:"hIntegrityFill", x:lx, y:128, width:170, height:6, rx:3, fill:"#4ade80", style:"transition:width 0.6s cubic-bezier(0.22,1,0.36,1), fill 0.5s ease" }, svg);
+  svgTxt({ id:"hIntegrityLbl", x:lx, y:146, fill:"#4ade80", "font-size":8, "font-family":"JetBrains Mono, monospace", style:"transition:fill 0.5s ease" }, "intact", svg);
+
+  // Cell bars
+  const cells = [
+    { id:"Neutrophils", label:"Neutrophils", color:"#60a5fa", by:162 },
+    { id:"Macrophages", label:"Macrophages", color:"#f97316", by:176 },
+    { id:"Fibroblasts", label:"Fibroblasts", color:"#4ade80", by:190 },
+  ];
+  cells.forEach(cell => {
+    svgTxt({ x:lx, y:cell.by+8, fill:"#4b5563", "font-size":7, "font-family":"JetBrains Mono, monospace" }, cell.label, svg);
+    svgEl("rect", { x:lx+82, y:cell.by, width:80, height:8, rx:3, fill:"#0d1220" }, svg);
+    svgEl("rect", { id:"hBar"+cell.id, x:lx+82, y:cell.by, width:0, height:8, rx:3, fill:cell.color, opacity:"0.8",
+      style:"transition:width 0.6s cubic-bezier(0.22,1,0.36,1)" }, svg);
+  });
+}
+
+function updateHeartSVG() {
+  const stage = STAGES[activeStage];
+  const { infarctColor, infarctOpacity, wallThinning: thin, color } = stage;
+
+  const cx = 130, cy = 100, outerRx = 85, outerRy = 78;
+  const innerRx = 48, innerRy = 44;
+  const thinOffset = thin * 5;
   const innerRxT = innerRx - thinOffset * 0.3;
   const innerRyT = innerRy - thinOffset * 0.3;
+
+  // Build infarct path
+  const startAngle = -150 * Math.PI / 180;
+  const endAngle   = -50  * Math.PI / 180;
+  const steps = 20;
+  const outerPts = [], innerPts = [];
+  for (let i = 0; i <= steps; i++) {
+    const a = startAngle + (endAngle - startAngle) * i / steps;
+    outerPts.push([cx + (outerRx-1)*Math.cos(a), cy + (outerRy-1)*Math.sin(a)]);
+  }
   for (let i = steps; i >= 0; i--) {
     const a = startAngle + (endAngle - startAngle) * i / steps;
-    innerPts.push([cx + (innerRxT + thinOffset) * Math.cos(a), cy + (innerRyT + thinOffset) * Math.sin(a)]);
+    innerPts.push([cx + (innerRxT+thinOffset)*Math.cos(a), cy + (innerRyT+thinOffset)*Math.sin(a)]);
   }
+  const pathD = [...outerPts, ...innerPts].map((p,i) => (i===0?'M':'L')+' '+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ') + ' Z';
 
-  const allPts = [...outerPts, ...innerPts];
-  const pathD = allPts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ') + ' Z';
+  // Infarct wedge
+  const inf = document.getElementById("hInfarct");
+  inf.setAttribute("d", pathD);
+  inf.setAttribute("fill", infarctColor);
+  inf.setAttribute("opacity", infarctOpacity);
 
-  svgEl("path", { d: pathD, fill: infarctColor, opacity: infarctOpacity, transition: "all 0.4s" }, svg);
+  // Infarct border
+  const infB = document.getElementById("hInfarctBorder");
+  infB.setAttribute("d", pathD);
+  infB.setAttribute("stroke", color);
+  infB.setAttribute("opacity", infarctOpacity > 0.1 ? 0.4 : 0);
 
-  // Infarct border glow when active
-  if (infarctOpacity > 0.1) {
-    svgEl("path", { d: pathD, fill: "none", stroke: stage.color, "stroke-width": 1.5, opacity: 0.4 }, svg);
-  }
+  // LV cavity morph
+  const cav = document.getElementById("hCavity");
+  cav.setAttribute("rx", innerRxT);
+  cav.setAttribute("ry", innerRyT);
 
-  // LV cavity
-  svgEl("ellipse", { cx, cy, rx: innerRxT, ry: innerRyT, fill: "#0a0510" }, svg);
-
-  // Wall labels
-  svgTxt({ x: cx, y: cy + 3, fill: "#94a3b8", "font-size": 11, "text-anchor": "middle", "font-family": "JetBrains Mono, monospace" }, "LV cavity", svg);
-
-  // Infarct label if visible
+  // Infarct label
+  const lbl = document.getElementById("hInfarctLbl");
+  const arr = document.getElementById("hInfarctArrow");
   if (infarctOpacity > 0.15) {
-    const labelX = cx + (outerRx + 12) * Math.cos(-100 * Math.PI / 180);
-    const labelY = cy + (outerRy + 12) * Math.sin(-100 * Math.PI / 180);
-    svgTxt({ x: labelX - 10, y: labelY, fill: stage.color, "font-size": 8, "font-family": "JetBrains Mono, monospace", opacity: 0.8 }, "infarct zone", svg);
-    // Arrow line
-    svgEl("line", {
-      x1: labelX + 28, y1: labelY - 3,
-      x2: cx + outerRx * 0.7 * Math.cos(-100 * Math.PI / 180),
-      y2: cy + outerRy * 0.7 * Math.sin(-100 * Math.PI / 180),
-      stroke: stage.color, "stroke-width": 0.8, opacity: 0.5
-    }, svg);
+    const labelX = cx + (outerRx+12)*Math.cos(-100*Math.PI/180);
+    const labelY = cy + (outerRy+12)*Math.sin(-100*Math.PI/180);
+    lbl.setAttribute("x", labelX-10); lbl.setAttribute("y", labelY);
+    lbl.setAttribute("fill", color); lbl.setAttribute("opacity", 0.8);
+    arr.setAttribute("x1", labelX+28); arr.setAttribute("y1", labelY-3);
+    arr.setAttribute("x2", cx+outerRx*0.7*Math.cos(-100*Math.PI/180));
+    arr.setAttribute("y2", cy+outerRy*0.7*Math.sin(-100*Math.PI/180));
+    arr.setAttribute("stroke", color); arr.setAttribute("opacity", 0.5);
+  } else {
+    lbl.setAttribute("opacity", 0); arr.setAttribute("opacity", 0);
   }
 
-  // Wavefront label — left side at infarct level with pointer
-  {
-    // Infarct midpoint angle is ~-100deg; label sits to the left at same y
-    const wfLabelX = 4;
-    const wfLabelY = 28; // top-left, roughly same height as infarct zone
-    const pointerEndX = 58; // tip of line pointing toward infarct
-    const pointerEndY = 34;
-    if (activeStage >= 1 && activeStage <= 3) {
-      svgTxt({ x: wfLabelX, y: wfLabelY, fill: "#facc15", "font-size": 9, "font-family": "JetBrains Mono, monospace", opacity: 0.9 }, "wavefront", svg);
-      svgTxt({ x: wfLabelX, y: wfLabelY + 13, fill: "#facc15bb", "font-size": 8, "font-family": "JetBrains Mono, monospace" }, "endo→epi", svg);
-      // Arrow from label rightward into the WALL (between endo and epi) — midwall at angle ~-120deg
-      // midwall x ~ 130 + 66*cos(-120deg) = 130 - 33 = 97, y ~ 100 + 60*sin(-120deg) = 100 - 52 = 48
-      svgEl("line", { x1: wfLabelX + 54, y1: wfLabelY - 2, x2: 100, y2: 60, stroke: "#facc15", "stroke-width": 0.8, opacity: 0.5, "stroke-dasharray": "2,2" }, svg);
-      svgEl("circle", { cx: 100, cy: 60, r: 2.5, fill: "#facc15", opacity: 0.6 }, svg);
-      // Small arrow showing direction endo to epi
-      
-    } else if (activeStage >= 4) {
-      svgTxt({ x: wfLabelX, y: wfLabelY, fill: "#64748b", "font-size": 9, "font-family": "JetBrains Mono, monospace", opacity: 1 }, "wavefront", svg);
-      svgTxt({ x: wfLabelX, y: wfLabelY + 13, fill: "#4b5563", "font-size": 8, "font-family": "JetBrains Mono, monospace" }, "complete", svg);
-    }
+  // Wavefront
+  const wfLabel = document.getElementById("hWfLabel");
+  const wfSub   = document.getElementById("hWfSub");
+  const wfLine  = document.getElementById("hWfLine");
+  const wfDot   = document.getElementById("hWfDot");
+  if (activeStage >= 1 && activeStage <= 3) {
+    wfLabel.setAttribute("fill","#facc15"); wfLabel.setAttribute("opacity",0.9);
+    wfSub.textContent = "endo→epi"; wfSub.setAttribute("fill","#facc15bb"); wfSub.setAttribute("opacity",1);
+    wfLine.setAttribute("opacity",0.5); wfDot.setAttribute("opacity",0.6);
+  } else if (activeStage >= 4) {
+    wfLabel.setAttribute("fill","#64748b"); wfLabel.setAttribute("opacity",1);
+    wfSub.textContent = "complete"; wfSub.setAttribute("fill","#4b5563"); wfSub.setAttribute("opacity",1);
+    wfLine.setAttribute("opacity",0); wfDot.setAttribute("opacity",0);
+  } else {
+    wfLabel.setAttribute("opacity",0); wfSub.setAttribute("opacity",0);
+    wfLine.setAttribute("opacity",0); wfDot.setAttribute("opacity",0);
   }
 
-  // ── Right side: legend / stage info ──
-  const lx = 300;
+  // Stage label
+  const stageLbl = document.getElementById("hStageLabel");
+  stageLbl.textContent = stage.label;
+  stageLbl.setAttribute("fill", color);
 
-  svgTxt({ x: lx, y: 30, fill: "#4b5563", "font-size": 9, "font-family": "JetBrains Mono, monospace", "letter-spacing": 2 }, "STAGE", svg);
-  svgTxt({ x: lx, y: 52, fill: stage.color, "font-size": 18, "font-family": "JetBrains Mono, monospace", "font-weight": 500 }, stage.label, svg);
-
-  // Appearance indicator
-  svgTxt({ x: lx, y: 80, fill: "#4b5563", "font-size": 8, "font-family": "JetBrains Mono, monospace", "letter-spacing": 1 }, "GROSS", svg);
-
-  // Colour swatch
-  svgEl("rect", { x: lx, y: 88, width: 170, height: 14, rx: 4, fill: infarctOpacity < 0.1 ? "#1a1a2a" : infarctColor, opacity: Math.max(infarctOpacity, 0.15) }, svg);
+  // Gross swatch
+  const swBg  = document.getElementById("hSwatchBg");
+  const swTxt = document.getElementById("hSwatchTxt");
+  swBg.setAttribute("fill", infarctOpacity < 0.1 ? "#1a1a2a" : infarctColor);
+  swBg.setAttribute("opacity", Math.max(infarctOpacity, 0.15));
   const swatchLabel = infarctOpacity < 0.1 ? "normal" :
-    activeStage === 1 ? "faint pallor" :
-    activeStage === 2 ? "pallor" :
-    activeStage === 3 ? "pale + hyperaemic border" :
-    activeStage === 4 ? "yellow-soft" :
-    activeStage === 5 ? "red border" :
-    activeStage === 6 ? "scar forming" : "white scar";
-  const swatchTextColor = infarctOpacity < 0.1 ? "#ffffff" : activeStage === 7 ? "#1a1a2a" : "#f1f5f9";
-  svgTxt({ x: lx + 4, y: 99, fill: swatchTextColor, "font-size": 8, "font-family": "JetBrains Mono, monospace" }, swatchLabel, svg);
+    activeStage===1?"faint pallor": activeStage===2?"pallor":
+    activeStage===3?"pale + hyperaemic border": activeStage===4?"yellow-soft":
+    activeStage===5?"red border": activeStage===6?"scar forming":"white scar";
+  const swatchColor = infarctOpacity < 0.1 ? "#ffffff" : activeStage===7 ? "#1a1a2a" : "#f1f5f9";
+  swTxt.textContent = swatchLabel; swTxt.setAttribute("fill", swatchColor);
 
-  // Wall integrity bar
-  svgTxt({ x: lx, y: 122, fill: "#4b5563", "font-size": 8, "font-family": "JetBrains Mono, monospace", "letter-spacing": 1 }, "WALL INTEGRITY", svg);
-  svgEl("rect", { x: lx, y: 128, width: 170, height: 6, rx: 3, fill: "#0d1220" }, svg);
-  const integrityW = Math.max(10, 170 - thin * 42);
-  const integrityColor = thin === 0 ? "#4ade80" : thin === 1 ? "#facc15" : thin === 2 ? "#f97316" : "#94a3b8";
-  svgEl("rect", { x: lx, y: 128, width: integrityW, height: 6, rx: 3, fill: integrityColor }, svg);
+  // Wall integrity
+  const intW  = Math.max(10, 170 - thin*42);
+  const intC  = thin===0?"#4ade80": thin===1?"#facc15": thin===2?"#f97316":"#94a3b8";
+  const intLblTxt = thin===0?"intact": thin===1?"weakening": thin===2?"weakest — rupture risk":"scarred";
+  document.getElementById("hIntegrityFill").setAttribute("width", intW);
+  document.getElementById("hIntegrityFill").setAttribute("fill", intC);
+  const intLbl = document.getElementById("hIntegrityLbl");
+  intLbl.textContent = intLblTxt; intLbl.setAttribute("fill", intC);
 
-  const integrityLabel = thin === 0 ? "intact" : thin === 1 ? "weakening" : thin === 2 ? "weakest — rupture risk" : "scarred";
-  svgTxt({ x: lx, y: 146, fill: integrityColor, "font-size": 8, "font-family": "JetBrains Mono, monospace" }, integrityLabel, svg);
-
-  // Neutrophil / macrophage / fibroblast activity bars
-  const cells = [
-    { label: "Neutrophils", vals: [0.1, 0.3, 0.9, 1.0, 0.4, 0.1, 0, 0], color: "#60a5fa" },
-    { label: "Macrophages", vals: [0, 0, 0.1, 0.4, 1.0, 0.8, 0.3, 0.1], color: "#f97316" },
-    { label: "Fibroblasts", vals: [0, 0, 0, 0, 0.2, 0.6, 1.0, 0.8], color: "#4ade80" },
-  ];
-  cells.forEach((cell, i) => {
-    const by = 162 + i * 14;
-    svgTxt({ x: lx, y: by + 8, fill: "#4b5563", "font-size": 7, "font-family": "JetBrains Mono, monospace" }, cell.label, svg);
-    svgEl("rect", { x: lx + 82, y: by, width: 80, height: 8, rx: 3, fill: "#0d1220" }, svg);
-    svgEl("rect", { x: lx + 82, y: by, width: 80 * cell.vals[activeStage], height: 8, rx: 3, fill: cell.color, opacity: 0.8 }, svg);
+  // Cell bars
+  const cellVals = {
+    Neutrophils: [0.1,0.3,0.9,1.0,0.4,0.1,0,0],
+    Macrophages: [0,0,0.1,0.4,1.0,0.8,0.3,0.1],
+    Fibroblasts: [0,0,0,0,0.2,0.6,1.0,0.8],
+  };
+  Object.entries(cellVals).forEach(([name, vals]) => {
+    const bar = document.getElementById("hBar"+name);
+    if (bar) bar.setAttribute("width", 80 * vals[activeStage]);
   });
-} // end _doRenderHeart
+}
+
+function renderHeart() {
+  updateHeartSVG();
+}
+
 
 // ─── RENDER FUNCTIONS ────────────────────────────────────────────────────────
 
-function renderTimeline() {
+function buildTimeline() {
   const bar = document.getElementById("timelineBar");
   bar.innerHTML = "";
   STAGES.forEach((s, i) => {
     const btn = document.createElement("button");
-    btn.className = "t-btn" + (i === activeStage ? " active" : "");
+    btn.className = "t-btn";
+    btn.id = "tbtn-" + i;
     btn.textContent = s.label;
-    if (i === activeStage) {
-      btn.style.borderColor = s.color;
-      btn.style.background = s.color + "22";
-      btn.style.color = s.color;
-    }
     btn.addEventListener("click", () => { activeStage = i; renderAll(); });
     bar.appendChild(btn);
   });
 }
 
-function renderCards() {
-  const stage = STAGES[activeStage];
-
-  // Gross
-  document.getElementById("grossCard").style.borderColor = "#60a5fa44";
-  document.getElementById("grossContent").textContent = stage.gross;
-
-  // Micro
-  document.getElementById("microCard").style.borderColor = "#a78bfa44";
-  const microEl = document.getElementById("microContent");
-  microEl.innerHTML = "<ul>" + stage.micro.map(m => `<li>${m}</li>`).join("") + "</ul>";
-
-  // Complications
-  document.getElementById("compCard").style.borderColor = "#f8717144";
-  const compEl = document.getElementById("compContent");
-  compEl.innerHTML = stage.complications.map(c => `<p style="margin-bottom:8px;">${c}</p>`).join("");
+function renderTimeline() {
+  STAGES.forEach((s, i) => {
+    const btn = document.getElementById("tbtn-" + i);
+    if (!btn) return;
+    if (i === activeStage) {
+      btn.classList.add("active");
+      btn.style.borderColor = s.color;
+      btn.style.background = s.color + "22";
+      btn.style.color = s.color;
+    } else {
+      btn.classList.remove("active");
+      btn.style.borderColor = "";
+      btn.style.background = "";
+      btn.style.color = "";
+    }
+  });
 }
 
-function renderGantt() {
+function renderCards() {
+  const stage = STAGES[activeStage];
+  function crossfade(contentEl, newHtml) {
+    contentEl.style.opacity = "0";
+    setTimeout(() => {
+      contentEl.innerHTML = newHtml;
+      contentEl.style.opacity = "1";
+    }, 180);
+  }
+  document.getElementById("grossCard").style.borderColor = "#60a5fa44";
+  crossfade(document.getElementById("grossContent"), "<p>" + stage.gross + "</p>");
+
+  document.getElementById("microCard").style.borderColor = "#a78bfa44";
+  crossfade(document.getElementById("microContent"),
+    "<ul>" + stage.micro.map(m => "<li>" + m + "</li>").join("") + "</ul>");
+
+  document.getElementById("compCard").style.borderColor = "#f8717144";
+  crossfade(document.getElementById("compContent"),
+    stage.complications.map(c => "<p style='margin-bottom:8px;'>" + c + "</p>").join(""));
+}
+
+function buildGantt() {
   const gantt = document.getElementById("compGantt");
   gantt.innerHTML = "";
   const n = STAGES.length;
-  // Use segment-based positioning: each stage occupies 1/(n-1) of the track
-  // But represent as n equal segments so single-stage events have proper width
   const segW = 100 / n;
 
   COMPLICATIONS.forEach(comp => {
@@ -616,6 +682,7 @@ function renderGantt() {
 
     const label = document.createElement("div");
     label.className = "comp-label";
+    label.id = "glabel-" + comp.id;
     label.textContent = comp.label;
 
     const track = document.createElement("div");
@@ -623,58 +690,75 @@ function renderGantt() {
 
     const fill = document.createElement("div");
     fill.className = "comp-fill";
-    const leftPct = comp.start * segW;
-    const widthPct = (comp.end - comp.start + 1) * segW;
-    fill.style.left = leftPct + "%";
-    fill.style.width = widthPct + "%";
+    fill.id = "gfill-" + comp.id;
+    fill.style.left = (comp.start * segW) + "%";
+    fill.style.width = ((comp.end - comp.start + 1) * segW) + "%";
     fill.style.background = comp.color;
+    fill.style.opacity = "0.18";
 
-    const isActive = STAGES[activeStage].compActive.includes(comp.id);
-    fill.style.opacity = isActive ? "1" : "0.18";
-    if (isActive) {
-      fill.classList.add("active-comp");
-      fill.style.color = comp.color;
-      label.style.color = comp.color;
-    }
-
-    // Current stage marker
-    const markerLeft = (activeStage + 0.5) * segW;
+    // Single shared marker per track — slides smoothly
     const marker = document.createElement("div");
-    marker.style.cssText = `position:absolute;top:-3px;left:${markerLeft}%;width:2px;height:14px;background:#60a5fa;border-radius:1px;opacity:0.7;transform:translateX(-50%);`;
-    track.appendChild(marker);
+    marker.className = "gantt-marker";
+    marker.id = "gmarker-" + comp.id;
+    marker.style.left = (0.5 * segW) + "%";
 
+    track.appendChild(marker);
     track.appendChild(fill);
     row.appendChild(label);
     row.appendChild(track);
     gantt.appendChild(row);
   });
 
-  // Time axis labels row at the bottom
+  // Time axis row
   const axisRow = document.createElement("div");
   axisRow.className = "comp-row";
   axisRow.style.marginTop = "6px";
-
-  const axisLabelSpacer = document.createElement("div");
-  axisLabelSpacer.className = "comp-label";
-
+  const spacer = document.createElement("div");
+  spacer.className = "comp-label";
   const axisTrack = document.createElement("div");
   axisTrack.style.cssText = "flex:1;position:relative;height:16px;";
-
-  // Time point labels at segment boundaries
-  const timePts = ['0', '4h', '12h', '24h', '3d', '7d', '14d', '2mo', ''];
+  const timePts = ["0","4h","12h","24h","3d","7d","14d","2mo",""];
   timePts.forEach((lbl, i) => {
     if (!lbl) return;
-    const tick = document.createElement('div');
-    const leftPct = i * segW;
-    const color = (i === activeStage) ? STAGES[activeStage].color : '#2d3f55';
-    tick.style.cssText = 'position:absolute;left:' + leftPct + '%;transform:translateX(-50%);font-family:JetBrains Mono,monospace;font-size:8px;color:' + color + ';white-space:nowrap;top:2px;';
+    const tick = document.createElement("div");
+    tick.className = "axis-tick";
+    tick.id = "atick-" + i;
+    tick.style.left = (i * segW) + "%";
+    tick.style.color = "#2d3f55";
     tick.textContent = lbl;
     axisTrack.appendChild(tick);
   });
-
-  axisRow.appendChild(axisLabelSpacer);
+  axisRow.appendChild(spacer);
   axisRow.appendChild(axisTrack);
   gantt.appendChild(axisRow);
+}
+
+function renderGantt() {
+  const n = STAGES.length;
+  const segW = 100 / n;
+  const markerLeft = (activeStage + 0.5) * segW;
+
+  COMPLICATIONS.forEach(comp => {
+    const fill  = document.getElementById("gfill-"   + comp.id);
+    const label = document.getElementById("glabel-"  + comp.id);
+    const marker = document.getElementById("gmarker-" + comp.id);
+    if (!fill || !label || !marker) return;
+
+    const isActive = STAGES[activeStage].compActive.includes(comp.id);
+    fill.style.opacity  = isActive ? "1" : "0.18";
+    label.style.color   = isActive ? comp.color : "";
+    if (isActive) fill.classList.add("active-comp");
+    else fill.classList.remove("active-comp");
+    marker.style.left = markerLeft + "%";
+  });
+
+  // Update axis tick colours
+  const timePts = ["0","4h","12h","24h","3d","7d","14d","2mo",""];
+  timePts.forEach((lbl, i) => {
+    const tick = document.getElementById("atick-" + i);
+    if (!tick) return;
+    tick.style.color = (i === activeStage) ? STAGES[activeStage].color : "#2d3f55";
+  });
 }
 
 function renderAll() {
@@ -682,16 +766,17 @@ function renderAll() {
   renderHeart();
   renderCards();
   renderGantt();
-  // Smooth fade-in like page load — add class, remove after paint
-  ['grossCard','microCard','compCard'].forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.animation = 'none';
-    el.offsetHeight; // force reflow
-    el.style.animation = 'fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) ' + (i * 0.07) + 's both';
-  });
 }
 
+// Build static structures once, then animate updates
+buildHeartSVG();
+buildTimeline();
+buildGantt();
+// Initial page load — fade up cards once
+['grossCard','microCard','compCard'].forEach((id, i) => {
+  const el = document.getElementById(id);
+  if (el) { el.style.animation = 'fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) ' + (0.3 + i*0.08) + 's both'; }
+});
 renderAll();
 </script>
 </body>
