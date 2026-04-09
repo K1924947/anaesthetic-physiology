@@ -448,8 +448,13 @@ function renderSVG() {
   txt("text",{x:W/2,y:H+26,fill:"#5a7a90","font-size":9,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"Volume (mL)",g);
   const yLbl = txt("text",{x:-(H/2),y:-18,fill:"#5a7a90","font-size":9,"text-anchor":"middle","transform":"rotate(-90)","font-family":"JetBrains Mono, monospace"},"Pressure (mmHg)",g);
 
-  // EDPVR
-  const edpvrPath = `M ${cx(30)} ${cy(1)} C ${cx(80)} ${cy(1)}, ${cx(140)} ${cy(5)}, ${cx(190)} ${cy(35)}`;
+  // EDPVR — dynamic: shifts right with EDV, steepens with higher EDP (e.g. heart failure)
+  // Curve starts at vol~20, pressure~1 and ends at (edv, edp)
+  // Steepness controlled by edp: higher edp = curve rises earlier
+  const edpvrStartVol = 20;
+  const edpvrMidVol   = params.edv * 0.55;  // inflection shifts with EDV
+  const edpvrMidP     = params.edp * 0.15;  // stays low until near EDV
+  const edpvrPath = `M ${cx(edpvrStartVol)} ${cy(1)} C ${cx(edpvrMidVol)} ${cy(edpvrMidP)}, ${cx(params.edv * 0.85)} ${cy(params.edp * 0.4)}, ${cx(params.edv + 20)} ${cy(params.edp + (params.edv > 140 ? 18 : 8))}`;
   el("path",{d:edpvrPath,fill:"none",stroke:"#1a3a2a","stroke-width":1.2,"stroke-dasharray":"4,3"},g);
 
   // ESPVR
@@ -480,7 +485,7 @@ function renderSVG() {
     {x:paths.x_esv, y:paths.y_base,  r:3.5, fill:"#4ade80", tx:6,  ty:-5, label:"MV opens",        anchor:"start"},
     {x:paths.x_edv, y:paths.y_edp,   r:3.5, fill:"#facc15", tx:6,  ty:-5, label:"MV closes",       anchor:"start"},
     {x:paths.x_edv, y:paths.y_aov,   r:3.5, fill:"#f87171", tx:6,  ty:-5, label:"AV opens",        anchor:"start"},
-    {x:paths.x_esv, y:paths.y_esp,   r:4,   fill:modInfo.color, tx:-7, ty:-7, label:"AV closes (ESP)", anchor:"end"},
+    {x:paths.x_esv, y:paths.y_esp,   r:4,   fill:modInfo.color, tx: paths.x_esv < 60 ? 8 : -7, ty:-1, label:"AV closes (ESP)", anchor: paths.x_esv < 60 ? "start" : "end"},
     {x:paths.x_peak,y:paths.y_peak + 7,    r:3.5, fill:"#f87171", tx:10, ty:-5, label:"Peak P",          anchor:"start",  opacity:1.0,  textOpacity:1.0},
   ].forEach(d => {
     el("circle",{cx:d.x,cy:d.y,r:d.r,fill:d.fill,opacity:d.opacity||1},g);
@@ -488,7 +493,7 @@ function renderSVG() {
     txt("text",{x:d.x+d.tx,y:d.y+d.ty,fill:d.fill,"font-size":lfs,"font-weight":d.label==="Peak P"?"500":"normal","text-anchor":d.anchor,"font-family":"JetBrains Mono, monospace",opacity:d.textOpacity||1},d.label,g);
   });
 
-  txt("text",{x:cx(170),y:cy(27),fill:"#3a8a5a","font-size":9,"font-weight":"500","font-style":"italic","font-family":"JetBrains Mono, monospace"},"EDPVR",g);
+  txt("text",{x:cx(params.edv + 22),y:cy(params.edp + (params.edv > 140 ? 18 : 8) + 6),fill:"#3a8a5a","font-size":9,"font-weight":"500","font-style":"italic","font-family":"JetBrains Mono, monospace"},"EDPVR",g);
   txt("text",{x:ex2+5,y:ey2,fill:"#4a6ab0","font-size":9,"font-weight":"500","font-style":"italic","font-family":"JetBrains Mono, monospace"},"ESPVR",g);
 
   // ESV / EDV x-axis labels
