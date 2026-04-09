@@ -10,57 +10,46 @@
     --bg:       #07090f;
     --surface:  #0a0d17;
     --surface2: #0d1121;
-    --border:   #141c2e;
-    --border2:  #1e2d45;
+    --border:   #1e293b;
     --text:     #e2e8f0;
-    --muted:    #4b5563;
-    --dim:      #1f2d40;
+    --muted:    #94a3b8;
+    --dim:      #475569;
     --accent:   #60a5fa;
-    --accent2:  #a78bfa;
-    --accent3:  #4ade80;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
 
   body {
-    background: var(--bg);
-    color: var(--text);
+    background: var(--bg); color: var(--text);
     font-family: 'EB Garamond', Georgia, serif;
-    min-height: 100vh;
-    overflow-x: hidden;
+    min-height: 100vh; overflow-x: hidden;
   }
 
-  /* ── Background grain + grid ── */
   body::before {
-    content: '';
-    position: fixed; inset: 0; z-index: 0;
+    content: ''; position: fixed; inset: 0; z-index: 0;
     background-image:
-      linear-gradient(rgba(96,165,250,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(96,165,250,0.015) 1px, transparent 1px);
-    background-size: 48px 48px;
-    pointer-events: none;
+      linear-gradient(rgba(96,165,250,0.012) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(96,165,250,0.012) 1px, transparent 1px);
+    background-size: 48px 48px; pointer-events: none;
   }
 
-  /* ── Ambient glow ── */
   .glow-1 {
-    position: fixed; top: -200px; left: -200px;
-    width: 600px; height: 600px; border-radius: 50%;
+    position: fixed; top: -200px; left: -200px; width: 600px; height: 600px;
+    border-radius: 50%;
     background: radial-gradient(circle, rgba(96,165,250,0.04) 0%, transparent 70%);
     pointer-events: none; z-index: 0;
   }
   .glow-2 {
-    position: fixed; bottom: -200px; right: -100px;
-    width: 500px; height: 500px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(167,139,250,0.04) 0%, transparent 70%);
+    position: fixed; bottom: -200px; right: -100px; width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(167,139,250,0.03) 0%, transparent 70%);
     pointer-events: none; z-index: 0;
   }
 
-  /* ── Layout ── */
   .page {
     position: relative; z-index: 1;
-    max-width: 860px; margin: 0 auto;
-    padding: 72px 24px 96px;
+    max-width: 860px; margin: 0 auto; padding: 72px 24px 96px;
   }
 
   /* ── Header ── */
@@ -68,172 +57,173 @@
     margin-bottom: 80px;
     animation: fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) both;
   }
-
   .header-eyebrow {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; letter-spacing: 5px; text-transform: uppercase;
-    color: var(--accent); opacity: 0.7;
-    margin-bottom: 18px;
-    display: flex; align-items: center; gap: 10px;
+    color: var(--accent); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
   }
   .header-eyebrow::before {
-    content: '';
-    display: inline-block; width: 24px; height: 1px;
-    background: var(--accent); opacity: 0.5;
+    content: ''; display: inline-block; width: 28px; height: 1px;
+    background: var(--accent); opacity: 0.6;
   }
-
   .header-title {
-    font-size: clamp(32px, 6vw, 52px);
-    font-weight: 400; letter-spacing: -0.5px;
-    color: #f1f5f9; line-height: 1.1;
-    margin-bottom: 20px;
+    font-size: clamp(36px, 6vw, 56px); font-weight: 400;
+    color: #f1f5f9; line-height: 1.08; margin-bottom: 6px;
+    letter-spacing: -0.5px;
   }
-  .header-title em {
-    font-style: italic; color: var(--accent);
+  .header-title-italic {
+    font-size: clamp(36px, 6vw, 56px); font-weight: 400;
+    color: var(--accent); font-style: italic; line-height: 1.08;
+    margin-bottom: 24px; letter-spacing: -0.5px;
   }
-
-  .header-desc {
-    font-size: 17px; color: #64748b;
-    line-height: 1.7; max-width: 520px;
-    font-style: italic;
-  }
-
   .header-rule {
     width: 48px; height: 1px;
-    background: linear-gradient(90deg, var(--accent), transparent);
-    margin: 28px 0;
+    background: linear-gradient(90deg, var(--accent), transparent); margin-bottom: 22px;
   }
-
+  .header-desc {
+    font-size: 16px; color: var(--muted);
+    line-height: 1.7; max-width: 520px; font-style: italic; margin-bottom: 24px;
+  }
   .header-meta {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-    color: var(--dim);
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim);
   }
 
-  /* ── Section label ── */
-  .section-label {
+  /* ── Dropdown system blocks ── */
+  .system-block { margin-bottom: 8px; }
+  .system-block:nth-child(1) { animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.15s both; }
+  .system-block:nth-child(2) { animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.25s both; }
+  .system-block:nth-child(3) { animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.35s both; }
+  .system-block:nth-child(4) { animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.45s both; }
+
+  .system-toggle {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: border-color 0.25s ease, background 0.25s ease;
+    font-family: inherit;
+  }
+  .system-toggle:hover { border-color: #2d4a6e; background: var(--surface2); }
+  .system-toggle.open { border-radius: 12px 12px 0 0; border-color: #2d4a6e; }
+
+  .system-toggle-left { display: flex; align-items: center; gap: 16px; }
+  .system-number {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
-    color: var(--dim); margin-bottom: 24px;
-    display: flex; align-items: center; gap: 12px;
-    animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.15s both;
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim);
   }
-  .section-label::after {
-    content: ''; flex: 1; height: 1px; background: var(--border);
+  .system-name {
+    font-size: 18px; font-weight: 400; color: #e2e8f0; letter-spacing: 0.3px;
   }
+  .system-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 1px; color: var(--dim);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 10px;
+  }
+  .system-toggle.open .system-count { color: var(--accent); border-color: rgba(96,165,250,0.3); }
 
-  /* ── Tool cards ── */
-  .tools-grid {
-    display: flex; flex-direction: column; gap: 16px;
-    margin-bottom: 72px;
+  .system-chevron {
+    font-size: 11px; color: var(--dim);
+    transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), color 0.2s;
+    font-family: 'JetBrains Mono', monospace;
   }
+  .system-toggle.open .system-chevron { transform: rotate(180deg); color: var(--accent); }
 
-  .tool-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 28px 32px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 20px;
-    align-items: center;
-    text-decoration: none;
-    color: inherit;
-    transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
-    position: relative;
+  .system-body {
+    background: var(--surface); border: 1px solid #2d4a6e;
+    border-top: none; border-radius: 0 0 12px 12px;
     overflow: hidden;
+    max-height: 0; transition: max-height 0.4s cubic-bezier(0.22,1,0.36,1), padding 0.3s ease;
+    padding: 0 20px;
   }
+  .system-body.open { max-height: 800px; padding: 16px 20px 20px; }
 
+  /* ── Subcategory ── */
+  .subcategory { margin-bottom: 14px; }
+  .subcategory:last-child { margin-bottom: 0; }
+  .subcategory-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 8px; padding-left: 2px;
+  }
+  .tools-row { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ── Tool card ── */
+  .tool-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 20px;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 14px; align-items: center;
+    text-decoration: none; color: inherit;
+    transition: border-color 0.25s ease, background 0.25s ease,
+                transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease;
+    position: relative; overflow: hidden;
+  }
   .tool-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent, var(--card-color, var(--accent)), transparent);
-    opacity: 0; transition: opacity 0.3s ease;
+    opacity: 0; transition: opacity 0.3s;
   }
-
   .tool-card:hover {
     border-color: var(--card-color, var(--accent));
-    background: var(--surface2);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 40px rgba(0,0,0,0.3), 0 0 0 1px var(--card-color, var(--accent)) inset;
+    background: #0f1628; transform: translateY(-1px);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
   }
   .tool-card:hover::before { opacity: 1; }
 
-  .tool-card:nth-child(1) { --card-color: #60a5fa; animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.2s both; }
-  .tool-card:nth-child(2) { --card-color: #f87171; animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
-  .tool-card:nth-child(3) { --card-color: #f97316; animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.4s both; }
-
-  .tool-left { min-width: 0; }
-
-  .tool-number {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-    color: var(--card-color, var(--accent)); opacity: 0.7;
-    margin-bottom: 8px;
-  }
-
   .tool-title {
-    font-size: 22px; font-weight: 500;
-    color: #f1f5f9; margin-bottom: 8px; letter-spacing: 0.2px;
+    font-size: 16px; font-weight: 500; color: #e2e8f0;
+    margin-bottom: 4px; transition: color 0.2s;
   }
+  .tool-card:hover .tool-title { color: var(--card-color, var(--accent)); }
 
   .tool-desc {
-    font-size: 14px; color: #4b5563;
-    line-height: 1.6; font-style: italic;
-    margin-bottom: 16px;
+    font-size: 13px; color: var(--muted);
+    line-height: 1.55; font-style: italic; margin-bottom: 9px;
   }
 
-  .tool-tags {
-    display: flex; flex-wrap: wrap; gap: 6px;
-  }
-
+  .tool-tags { display: flex; flex-wrap: wrap; gap: 4px; }
   .tag {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+    font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
     color: var(--card-color, var(--accent));
-    background: transparent;
     border: 1px solid var(--card-color, var(--accent));
-    border-opacity: 0.3;
-    padding: 3px 8px; border-radius: 4px;
-    opacity: 0.5;
+    padding: 2px 6px; border-radius: 3px; opacity: 0.3; transition: opacity 0.2s;
   }
-  .tool-card:hover .tag { opacity: 0.8; }
-
-  .tool-right {
-    display: flex; flex-direction: column;
-    align-items: flex-end; gap: 12px; flex-shrink: 0;
-  }
+  .tool-card:hover .tag { opacity: 0.6; }
 
   .open-btn {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--card-color, var(--accent));
-    background: transparent;
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--card-color, var(--accent)); background: transparent;
     border: 1px solid var(--card-color, var(--accent));
-    padding: 8px 18px; border-radius: 8px;
-    text-decoration: none;
-    transition: background 0.2s ease, color 0.2s ease;
-    white-space: nowrap;
-    opacity: 0.6;
+    padding: 6px 14px; border-radius: 6px; text-decoration: none;
+    transition: background 0.2s, color 0.2s, opacity 0.2s;
+    white-space: nowrap; opacity: 0.45; display: block;
   }
   .tool-card:hover .open-btn {
-    background: var(--card-color, var(--accent));
-    color: #07090f; opacity: 1;
+    background: var(--card-color, var(--accent)); color: #07090f; opacity: 1;
   }
 
-  .tool-arrow {
-    font-size: 18px; color: var(--card-color, var(--accent));
-    opacity: 0.2; transition: opacity 0.3s, transform 0.3s;
+  /* ── Coming soon ── */
+  .coming-soon {
+    background: transparent; border: 1px dashed #1e293b;
+    border-radius: 10px; padding: 12px 18px;
+    display: flex; align-items: center; gap: 12px;
   }
-  .tool-card:hover .tool-arrow { opacity: 0.7; transform: translateX(4px); }
+  .coming-soon-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--dim); border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 3px; flex-shrink: 0;
+  }
+  .coming-soon-text { font-size: 13px; color: var(--dim); font-style: italic; }
 
-  /* ── About section ── */
+  /* ── About ── */
   .about {
-    border-top: 1px solid var(--border);
-    padding-top: 48px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
+    border-top: 1px solid var(--border); padding-top: 48px; margin-top: 32px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
     animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.5s both;
   }
   @media (max-width: 560px) { .about { grid-template-columns: 1fr; } }
@@ -244,47 +234,37 @@
     color: var(--dim); margin-bottom: 12px;
   }
   .about-block-text {
-    font-size: 14px; color: #374151; line-height: 1.75;
-    font-style: italic;
+    font-size: 14px; color: var(--muted); line-height: 1.8; font-style: italic;
   }
-  .about-block-text strong { color: #4b5563; font-style: normal; }
+  .about-block-text strong { color: #94a3b8; font-style: normal; }
 
   /* ── Footer ── */
   footer {
-    margin-top: 72px;
-    border-top: 1px solid var(--border);
-    padding-top: 28px;
+    margin-top: 64px; border-top: 1px solid var(--border); padding-top: 24px;
     display: flex; flex-wrap: wrap; gap: 12px;
     justify-content: space-between; align-items: center;
     animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.6s both;
   }
-
   .footer-left {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--dim);
-    display: flex; gap: 10px; align-items: center;
+    color: var(--dim); display: flex; gap: 10px; align-items: center;
   }
   .footer-dot { color: #1a2535; }
-
   .footer-tag {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-    color: var(--accent); background: rgba(96,165,250,0.08);
-    border: 1px solid rgba(96,165,250,0.2);
-    padding: 3px 8px; border-radius: 20px;
+    color: var(--accent); background: rgba(96,165,250,0.07);
+    border: 1px solid rgba(96,165,250,0.2); padding: 3px 8px; border-radius: 20px;
   }
 
-  /* ── Animations ── */
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
+    from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* ── Mobile ── */
   @media (max-width: 560px) {
     .tool-card { grid-template-columns: 1fr; }
-    .tool-right { flex-direction: row; align-items: center; }
     .page { padding: 48px 16px 72px; }
     .header { margin-bottom: 56px; }
   }
@@ -300,75 +280,130 @@
   <!-- Header -->
   <header class="header">
     <div class="header-eyebrow">Anaesthetic Physiology</div>
-    <h1 class="header-title">Interactive<br><em>Teaching Tools</em></h1>
+    <div class="header-title">Interactive</div>
+    <div class="header-title-italic">Teaching Tools</div>
     <div class="header-rule"></div>
-    <p class="header-desc">Browser-based physiology visualisations for doctors, trainees, and medical students. No installation required.</p>
-    <div class="header-rule" style="margin-top:28px;margin-bottom:16px;"></div>
+    <p class="header-desc">Browser-based physiology visualisations for doctors and trainees. No installation required.</p>
     <div class="header-meta">Developed by Dr Ed Kim</div>
   </header>
 
-  <!-- Tools -->
-  <div class="section-label">Tools</div>
+  <!-- CARDIOVASCULAR -->
+  <div class="system-block">
+    <button class="system-toggle open" onclick="toggleSystem(this)">
+      <div class="system-toggle-left">
+        <span class="system-number">01</span>
+        <span class="system-name">Cardiovascular</span>
+        <span class="system-count">3 tools</span>
+      </div>
+      <span class="system-chevron">▾</span>
+    </button>
+    <div class="system-body open">
 
-  <div class="tools-grid">
+      <div class="subcategory">
+        <div class="subcategory-label">Physiology</div>
+        <div class="tools-row">
 
-    <a class="tool-card" href="PV_Loop.html">
-      <div class="tool-left">
-        <div class="tool-number">01 — Cardiovascular</div>
-        <div class="tool-title">Pressure–Volume Loop</div>
-        <div class="tool-desc">Explore how the cardiac cycle changes across physiological and pathological states. Clickable phases, live stats, ESPVR and EDPVR reference lines.</div>
-        <div class="tool-tags">
-          <span class="tag">Preload</span>
-          <span class="tag">Afterload</span>
-          <span class="tag">Contractility</span>
-          <span class="tag">Heart Failure</span>
-          <span class="tag">Frank-Starling</span>
+          <a class="tool-card" href="PV_Loop.html" style="--card-color:#60a5fa;">
+            <div class="tool-left">
+              <div class="tool-title">Pressure–Volume Loop</div>
+              <div class="tool-desc">How the cardiac cycle changes across physiological and pathological states. Clickable phases, live stats, ESPVR and EDPVR reference lines.</div>
+              <div class="tool-tags">
+                <span class="tag">Preload</span>
+                <span class="tag">Afterload</span>
+                <span class="tag">Contractility</span>
+                <span class="tag">Frank-Starling</span>
+                <span class="tag">Heart Failure</span>
+              </div>
+            </div>
+            <div class="tool-right"><span class="open-btn">Open</span></div>
+          </a>
+
+          <a class="tool-card" href="Arterial_Waveform.html" style="--card-color:#4ade80;">
+            <div class="tool-left">
+              <div class="tool-title">Arterial Pressure Waveform</div>
+              <div class="tool-desc">The PV loop unrolled into time. Annotated waveform features with live SBP, DBP, pulse pressure and MAP. Each state linked back to its PV loop equivalent.</div>
+              <div class="tool-tags">
+                <span class="tag">SVR</span>
+                <span class="tag">Cardiac Output</span>
+                <span class="tag">Dicrotic Notch</span>
+                <span class="tag">Windkessel</span>
+                <span class="tag">Arterial Line</span>
+              </div>
+            </div>
+            <div class="tool-right"><span class="open-btn">Open</span></div>
+          </a>
+
         </div>
       </div>
-      <div class="tool-right">
-        <span class="open-btn">Open</span>
-        <span class="tool-arrow">→</span>
-      </div>
-    </a>
 
-    <a class="tool-card" href="Arterial_Waveform.html">
-      <div class="tool-left">
-        <div class="tool-number">02 — Cardiovascular</div>
-        <div class="tool-title">Arterial Pressure Waveform</div>
-        <div class="tool-desc">The PV loop unrolled into time. Annotated waveform features with live SBP, DBP, pulse pressure and MAP readout. Each state linked back to its PV loop equivalent.</div>
-        <div class="tool-tags">
-          <span class="tag">SVR</span>
-          <span class="tag">Cardiac Output</span>
-          <span class="tag">Dicrotic Notch</span>
-          <span class="tag">Windkessel</span>
-          <span class="tag">Arterial Line</span>
+      <div class="subcategory">
+        <div class="subcategory-label">Pathophysiology</div>
+        <div class="tools-row">
+
+          <a class="tool-card" href="MI_Timeline.html" style="--card-color:#f97316;">
+            <div class="tool-left">
+              <div class="tool-title">Myocardial Infarction Timeline</div>
+              <div class="tool-desc">Step-through timeline from occlusion to mature scar. Gross appearance, microscopic findings, and complications at each stage with a full complication Gantt chart.</div>
+              <div class="tool-tags">
+                <span class="tag">Coagulative Necrosis</span>
+                <span class="tag">Wavefront</span>
+                <span class="tag">Complications</span>
+                <span class="tag">Dressler Syndrome</span>
+              </div>
+            </div>
+            <div class="tool-right"><span class="open-btn">Open</span></div>
+          </a>
+
         </div>
       </div>
-      <div class="tool-right">
-        <span class="open-btn">Open</span>
-        <span class="tool-arrow">→</span>
-      </div>
-    </a>
 
-    <a class="tool-card" href="MI_Timeline.html">
-      <div class="tool-left">
-        <div class="tool-number">03 — Pathophysiology</div>
-        <div class="tool-title">Myocardial Infarction Timeline</div>
-        <div class="tool-desc">Step-through timeline from occlusion to mature scar. Gross appearance, microscopic findings, and complications at each stage with a full complication Gantt chart.</div>
-        <div class="tool-tags">
-          <span class="tag">Coagulative Necrosis</span>
-          <span class="tag">Wavefront</span>
-          <span class="tag">Complications</span>
-          <span class="tag">Dressler Syndrome</span>
-          <span class="tag">Step 1</span>
+    </div>
+  </div>
+
+  <!-- RESPIRATORY -->
+  <div class="system-block">
+    <button class="system-toggle" onclick="toggleSystem(this)">
+      <div class="system-toggle-left">
+        <span class="system-number">02</span>
+        <span class="system-name">Respiratory</span>
+        <span class="system-count">Coming</span>
+      </div>
+      <span class="system-chevron">▾</span>
+    </button>
+    <div class="system-body">
+      <div class="subcategory">
+        <div class="subcategory-label">Physiology</div>
+        <div class="tools-row">
+          <div class="coming-soon">
+            <span class="coming-soon-label">Coming</span>
+            <span class="coming-soon-text">V/Q mismatch, dead space, compliance curves, hypoxic pulmonary vasoconstriction</span>
+          </div>
         </div>
       </div>
-      <div class="tool-right">
-        <span class="open-btn">Open</span>
-        <span class="tool-arrow">→</span>
-      </div>
-    </a>
+    </div>
+  </div>
 
+  <!-- RENAL -->
+  <div class="system-block">
+    <button class="system-toggle" onclick="toggleSystem(this)">
+      <div class="system-toggle-left">
+        <span class="system-number">03</span>
+        <span class="system-name">Renal</span>
+        <span class="system-count">Coming</span>
+      </div>
+      <span class="system-chevron">▾</span>
+    </button>
+    <div class="system-body">
+      <div class="subcategory">
+        <div class="subcategory-label">Physiology</div>
+        <div class="tools-row">
+          <div class="coming-soon">
+            <span class="coming-soon-label">Coming</span>
+            <span class="coming-soon-text">Fluid compartments, acid-base, electrolyte physiology</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- About -->
@@ -376,28 +411,36 @@
     <div>
       <div class="about-block-label">About</div>
       <div class="about-block-text">
-        Built as a personal project while preparing for anaesthetic training — the tools reflect topics I wanted to understand at a mechanistic level rather than just memorise. Each visualisation is designed to make the underlying physiology navigable rather than just presentable.
+        Built alongside preparation for anaesthetic training — each tool reflects a topic worth understanding at a mechanistic level rather than just memorising. The aim is to make the underlying physiology navigable, not just presentable.
       </div>
     </div>
     <div>
       <div class="about-block-label">For whom</div>
       <div class="about-block-text">
-        Written with <strong>medical students</strong> preparing for Step 1 and finals, <strong>foundation doctors</strong> consolidating preclinical knowledge, and <strong>anaesthetic trainees</strong> preparing for the FRCA in mind. All tools run entirely in the browser — no account, no download.
+        For anyone wanting to understand physiology properly — whether consolidating knowledge for clinical practice or preparing for postgraduate exams including the <strong>FRCA</strong> and <strong>USMLE Step 1</strong>. All tools run entirely in the browser — no account, no download.
       </div>
     </div>
   </div>
 
-  <!-- Footer -->
   <footer>
     <div class="footer-left">
       <span>Dr Ed Kim</span>
       <span class="footer-dot">·</span>
-      <span>Anaesthetic Physiology Series</span>
+      <span>Anaesthetic Physiology</span>
     </div>
     <span class="footer-tag">Built for teaching</span>
   </footer>
 
 </div>
+
+<script>
+function toggleSystem(btn) {
+  const body = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  btn.classList.toggle('open', !isOpen);
+  body.classList.toggle('open', !isOpen);
+}
+</script>
 
 </body>
 </html>
