@@ -23,11 +23,10 @@ An interactive cardiac PV loop with smooth animated transitions between physiolo
 An interactive arterial line waveform with animated transitions between haemodynamic states.
 
 **Features:**
-- Animated waveform morphing between states (Normal, ↑/↓ SVR, ↓ CO, Hypovolaemia, Stiff Aorta)
 - Clickable waveform features (Upstroke, Peak SBP, Downslope, Dicrotic Notch, Diastolic Runoff, Trough DBP)
 - Live stat readout: SBP, DBP, Pulse Pressure, MAP
 - Link to PV Loop, Key Relationships, and Clinical Relevance panels
-
+- Animated waveform morphing between states (Normal, ↑/↓ SVR, ↓ CO, Hypovolaemia, Stiff Aorta)
 ---
 
 ## Usage
