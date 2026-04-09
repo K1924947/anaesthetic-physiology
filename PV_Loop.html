@@ -253,7 +253,7 @@
 
     <!-- SVG -->
     <div class="svg-wrap">
-      <svg id="pvSvg" viewBox="0 0 362 318" xmlns="http://www.w3.org/2000/svg"></svg>
+      <svg id="pvSvg" viewBox="0 0 362 338" xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
 
     <!-- Phase buttons -->
@@ -347,7 +347,7 @@ function getParams(mod) {
   }
 }
 
-const W=330, H=280, volMin=20, volMax=210, presMin=0, presMax=175;
+const W=330, H=280, volMin=20, volMax=210, presMin=0, presMax=195;
 const cx = v => ((v-volMin)/(volMax-volMin))*W;
 const cy = p => H - ((p-presMin)/(presMax-presMin))*H;
 
@@ -422,7 +422,7 @@ function txt(tag, attrs, text, parent) {
 function renderSVG() {
   const svg = document.getElementById("pvSvg");
   svg.innerHTML = "";
-  const g = el("g", {transform:"translate(28,6)"}, svg);
+  const g = el("g", {transform:"translate(28,26)"}, svg);
 
   const params = animParams();
   const normalParams = getParams("normal");
@@ -435,7 +435,7 @@ function renderSVG() {
   const svMidX = paths.x_esv + (paths.x_edv - paths.x_esv) / 2;
 
   // Grid lines
-  [25,50,75,100,125,150].forEach(p => {
+  [25,50,75,100,125,150,175].forEach(p => {
     const y = cy(p);
     el("line",{x1:0,y1:y,x2:W,y2:y,stroke:"#0d1220","stroke-width":1},g);
     txt("text",{x:-5,y:y+3,fill:"#4a6878","font-size":8,"text-anchor":"end","font-family":"JetBrains Mono, monospace"},String(p),g);
@@ -481,7 +481,7 @@ function renderSVG() {
     {x:paths.x_edv, y:paths.y_edp,   r:3.5, fill:"#facc15", tx:6,  ty:-5, label:"MV closes",       anchor:"start"},
     {x:paths.x_edv, y:paths.y_aov,   r:3.5, fill:"#f87171", tx:6,  ty:-5, label:"AV opens",        anchor:"start"},
     {x:paths.x_esv, y:paths.y_esp,   r:4,   fill:modInfo.color, tx:-7, ty:-7, label:"AV closes (ESP)", anchor:"end"},
-    {x:paths.x_peak,y:paths.y_peak,  r:3.5, fill:"#f87171", tx:10, ty:-5, label:"Peak P",          anchor:"start",  opacity:1.0,  textOpacity:1.0},
+    {x:paths.x_peak,y:paths.y_peak + 7,    r:3.5, fill:"#f87171", tx:10, ty:-5, label:"Peak P",          anchor:"start",  opacity:1.0,  textOpacity:1.0},
   ].forEach(d => {
     el("circle",{cx:d.x,cy:d.y,r:d.r,fill:d.fill,opacity:d.opacity||1},g);
     const lfs = d.label==="Peak P" ? 9 : 7;
