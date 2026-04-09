@@ -17,7 +17,6 @@
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    zoom: 1.5;
     background: var(--bg);
     color: var(--text);
     font-family: 'EB Garamond', Georgia, serif;
@@ -31,7 +30,8 @@
   .eyebrow {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; letter-spacing: 4px;
-    color: var(--dim); text-transform: uppercase; margin-bottom: 6px;
+    color: #64748b; text-transform: uppercase;
+    margin-bottom: 6px; text-align: center;
   }
   header h1 {
     font-size: clamp(22px, 5vw, 30px);
@@ -133,15 +133,18 @@
     border: 1px solid #60a5fa33; padding: 3px 8px; border-radius: 20px;
   }
   .footer-dot { color: #1f2d40; font-size: 12px; }
-  .footer-title { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #a0b0c0; font-style: normal; }
-  .footer-series { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #6a7a8a; font-style: normal; }
+  .footer-title { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; font-style: normal; }
+  .footer-series { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #374151; font-style: normal; }
   .footer-author { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #60a5fa99; }
+  .footer-system { font-family: 'EB Garamond', Georgia, serif; font-size: 13px; font-style: italic; color: #94a3b8; letter-spacing: 0.3px; }
+  .footer-sub    { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #4b5563; }
+  .footer-tool   { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="eyebrow">Anaesthetic Physiology</div>
+  <div class="eyebrow">Cardiovascular · Physiology</div>
   <h1>Arterial Pressure Waveform</h1>
   <p class="subtitle">The PV loop unrolled into time · Tap features to explore</p>
 </header>
@@ -213,7 +216,11 @@
   <div class="footer-inner">
     <span class="footer-tag">Built for teaching</span>
     <span class="footer-dot">·</span>
-    <span class="footer-title">Anaesthetic Physiology — Interactive Arterial Waveform</span>
+    <span class="footer-system">Cardiovascular</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-sub">Physiology</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-tool">Interactive Arterial Waveform</span>
     <span class="footer-dot">·</span>
     <span class="footer-author">Developed by Dr Ed Kim</span>
   </div>
