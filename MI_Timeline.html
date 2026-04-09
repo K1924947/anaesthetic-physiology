@@ -27,8 +27,8 @@
   header { text-align: center; margin-bottom: 28px; }
   .eyebrow {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 4px; color: var(--dim);
-    text-transform: uppercase; margin-bottom: 6px;
+    font-size: 9px; letter-spacing: 4px; color: #64748b;
+    text-transform: uppercase; margin-bottom: 6px; text-align: center;
   }
   header h1 { font-size: clamp(22px, 5vw, 30px); font-weight: 400; letter-spacing: 1px; color: #f1f5f9; }
   .subtitle { font-size: 13px; color: var(--muted); margin-top: 6px; font-style: italic; }
@@ -182,14 +182,25 @@
     padding: 3px 8px; border-radius: 20px;
   }
   .footer-dot { color: #1f2d40; font-size: 12px; }
-  .footer-title { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; }
+  .footer-system {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 13px; font-style: italic; color: #94a3b8; letter-spacing: 0.3px;
+  }
+  .footer-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #4b5563;
+  }
+  .footer-tool {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8;
+  }
   .footer-author { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #60a5fa99; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="eyebrow">Cardiology Pathophysiology</div>
+  <div class="eyebrow">Cardiovascular · Pathophysiology</div>
   <h1>Myocardial Infarction Timeline</h1>
   <p class="subtitle">Tap a time stage to explore gross, microscopic, and complication findings</p>
 </header>
@@ -232,7 +243,11 @@
   <div class="footer-inner">
     <span class="footer-tag">Built for teaching</span>
     <span class="footer-dot">·</span>
-    <span class="footer-title">Anaesthetic Physiology — MI Timeline</span>
+    <span class="footer-system">Cardiovascular</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-sub">Pathophysiology</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-tool">MI Timeline</span>
     <span class="footer-dot">·</span>
     <span class="footer-author">Developed by Dr Ed Kim</span>
   </div>
