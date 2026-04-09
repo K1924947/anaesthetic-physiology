@@ -43,7 +43,7 @@ An interactive timeline of MI pathology from the moment of occlusion through to 
 
 ## Live Site
 
-[anaesthetic-physiology](https://k1924947.github.io/anaesthetic-physiology) — main page
+[Anaesthetic Physiology](https://k1924947.github.io/anaesthetic-physiology) — main page
 
 ---
 
