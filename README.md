@@ -41,10 +41,15 @@ An interactive timeline of MI pathology from the moment of occlusion through to 
 
 ---
 
-## Live Links
+## Live Site
+
+[anaesthetic-physiology](https://k1924947.github.io/anaesthetic-physiology) — main page
+
+---
+
+## Tools
 
 No login or download needed — open directly in any browser:
-
 - [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
 - [Arterial Waveform](https://k1924947.github.io/anaesthetic-physiology/Arterial_Waveform.html)
 - [MI Timeline](https://k1924947.github.io/anaesthetic-physiology/MI_Timeline.html)
