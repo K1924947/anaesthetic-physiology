@@ -17,9 +17,13 @@
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
   body {
     background: var(--bg);
-    color: var(--text);zoom:1.25;
+    color: var(--text);zoom:1.25;animation: fadeIn 0.4s ease both;
     font-family: 'EB Garamond', Georgia, serif;
     min-height: 100vh;
     display: flex;
