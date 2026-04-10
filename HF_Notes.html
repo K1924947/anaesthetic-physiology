@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heart Failure · Cardiovascular Pathophysiology</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#07090f;--surface:#0a0d17;--surface2:#0d1121;--border:#1e293b;
+    --text:#e2e8f0;--muted:#94a3b8;--dim:#475569;--accent:#60a5fa;
+    --green:#4ade80;--orange:#f97316;--red:#f87171;--purple:#a78bfa;--yellow:#facc15;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:'EB Garamond',Georgia,serif;min-height:100vh;overflow-x:hidden;font-size:16px;line-height:1.7}
+  body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(96,165,250,0.01) 1px,transparent 1px),linear-gradient(90deg,rgba(96,165,250,0.01) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+  .glow{position:fixed;top:-200px;left:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(96,165,250,0.03) 0%,transparent 70%);pointer-events:none;z-index:0}
+  .page{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:64px 24px 96px}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#64748b;margin-bottom:10px;text-align:center}
+  h1{font-size:clamp(28px,5vw,42px);font-weight:400;color:#f1f5f9;letter-spacing:-0.3px;margin-bottom:8px;text-align:center}
+  .subtitle{font-size:15px;color:var(--muted);font-style:italic;text-align:center;margin-bottom:48px}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:48px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both}
+  .toc-title{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+  .toc-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .toc-list a{font-size:14px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:10px;transition:color 0.2s}
+  .toc-list a:hover{color:var(--accent)}
+  .toc-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);width:20px}
+  .section{margin-bottom:56px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both}
+  .section:nth-child(1){animation-delay:0.15s}.section:nth-child(2){animation-delay:0.2s}.section:nth-child(3){animation-delay:0.25s}.section:nth-child(4){animation-delay:0.3s}.section:nth-child(5){animation-delay:0.35s}.section:nth-child(6){animation-delay:0.4s}.section:nth-child(7){animation-delay:0.45s}
+  .section-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .section-num{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+  h2{font-size:clamp(18px,3vw,24px);font-weight:400;color:#f1f5f9;letter-spacing:0.2px}
+  .section-rule{flex:1;height:1px;background:var(--border)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:12px;transition:border-color 0.2s}
+  .card:hover{border-color:#2d4a6e}
+  .card-title{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+  .card p{font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:8px}
+  .card p:last-child{margin-bottom:0}
+  .card ul{padding-left:18px}
+  .card li{font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:4px}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  @media(max-width:600px){.two-col{grid-template-columns:1fr}}
+  .compare-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px}
+  .compare-table th{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface)}
+  .compare-table td{padding:10px 12px;color:var(--muted);border-bottom:1px solid #0d1520;vertical-align:top}
+  .compare-table tr:last-child td{border-bottom:none}
+  .compare-table tr:hover td{background:var(--surface2)}
+  .compare-table .label{color:#94a3b8;font-weight:500}
+  .cascade{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:12px}
+  .cascade-title{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+  .cascade-chain{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  .cascade-step{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 10px;color:#94a3b8}
+  .cascade-arrow{color:var(--dim);font-size:11px}
+  .drug-row{display:grid;grid-template-columns:160px 1fr 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #0d1520;font-size:13px;align-items:start}
+  .drug-row:last-child{border-bottom:none}
+  .drug-name{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px}
+  .drug-mech{color:var(--muted)}
+  .drug-target{color:var(--dim);font-size:12px;font-style:italic}
+  @media(max-width:600px){.drug-row{grid-template-columns:1fr}}
+  .svg-wrap{background:#070a12;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;display:flex;justify-content:center}
+  .keypoint{border-left:2px solid var(--accent);padding:10px 16px;margin-bottom:12px;background:rgba(96,165,250,0.04);border-radius:0 8px 8px 0;font-size:14px;color:var(--muted);font-style:italic}
+  footer{margin-top:64px;border-top:1px solid var(--border);padding-top:24px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
+  .footer-left{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);display:flex;gap:10px;align-items:center}
+  .footer-dot{color:#1a2535}
+  .footer-system{font-family:'EB Garamond',serif;font-size:13px;font-style:italic;color:#94a3b8}
+  .footer-sub,.footer-tool{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4b5563}
+  .footer-tool{color:#94a3b8}
+  .footer-tag{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.18);padding:3px 8px;border-radius:20px}
+  .footer-inner{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
+  .footer-author{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#60a5fa99}
+  footer{margin-top:40px;width:100%;max-width:820px;border-top:1px solid var(--border);padding-top:20px;text-align:center}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="page">
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+  <a href="index.html" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#475569;text-decoration:none;border:1px solid #1e293b;padding:5px 14px;border-radius:20px;transition:all 0.2s;display:flex;align-items:center;gap:6px" onmouseover="this.style.borderColor='#60a5fa';this.style.color='#60a5fa'" onmouseout="this.style.borderColor='#1e293b';this.style.color='#475569'">← Home</a>
+  <div class="eyebrow" style="margin-bottom:0">Cardiovascular · Pathophysiology</div>
+  <div style="width:60px"></div>
+</div>
+<h1>Heart Failure</h1>
+<p class="subtitle">Mechanisms, classification, compensatory cascades, and pharmacology</p>
+
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <ul class="toc-list">
+    <li><a href="#s1"><span class="toc-num">01</span>Definition and classification</a></li>
+    <li><a href="#s2"><span class="toc-num">02</span>Systolic vs diastolic — HFrEF vs HFpEF</a></li>
+    <li><a href="#s3"><span class="toc-num">03</span>Left vs right heart failure</a></li>
+    <li><a href="#s4"><span class="toc-num">04</span>Compensatory mechanisms</a></li>
+    <li><a href="#s5"><span class="toc-num">05</span>Starling curve in heart failure</a></li>
+    <li><a href="#s6"><span class="toc-num">06</span>Drug rationale</a></li>
+    <li><a href="#s7"><span class="toc-num">07</span>BNP, cardiorenal syndrome, high output HF</a></li>
+  </ul>
+</div>
+
+<!-- 01 -->
+<div class="section" id="s1">
+  <div class="section-header"><span class="section-num">01</span><h2>Definition and Classification</h2><div class="section-rule"></div></div>
+  <div class="keypoint">Heart failure is a clinical syndrome — not a disease. It is the final common pathway when the heart cannot maintain adequate cardiac output to meet the body's metabolic demands, or can only do so at the cost of elevated filling pressures.</div>
+  <div class="card">
+    <div class="card-title" style="color:var(--accent)">The Central Equation</div>
+    <p>CO = HR × SV &nbsp;|&nbsp; SV is determined by preload, afterload, and contractility.</p>
+    <p>DO₂ = CO × CaO₂ — oxygen delivery to tissues is the ultimate goal. Heart failure threatens this.</p>
+  </div>
+</div>
+
+<!-- 02 -->
+<div class="section" id="s2">
+  <div class="section-header"><span class="section-num">02</span><h2>Systolic vs Diastolic — HFrEF vs HFpEF</h2><div class="section-rule"></div></div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title" style="color:var(--red)">HFrEF — Systolic Failure</div>
+      <ul>
+        <li>Reduced contractility — ventricle can't squeeze</li>
+        <li>EF &lt;40%</li>
+        <li>Ventricle dilates — eccentric hypertrophy</li>
+        <li>ESPVR flattens on PV loop</li>
+        <li>ESV rises, SV falls</li>
+      </ul>
+      <p style="margin-top:10px;font-size:13px;color:var(--dim)">Causes: MI, DCM, myocarditis, chronic volume overload</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--purple)">HFpEF — Diastolic Failure</div>
+      <ul>
+        <li>Impaired relaxation — ventricle can't fill</li>
+        <li>EF ≥50% (preserved)</li>
+        <li>Ventricle stiff, normal or small cavity</li>
+        <li>EDPVR steep on PV loop</li>
+        <li>High filling pressures → pulmonary oedema</li>
+      </ul>
+      <p style="margin-top:10px;font-size:13px;color:var(--dim)">Causes: Hypertension, HCM, RCM, diabetes, obesity, elderly</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--muted)">Two components of diastolic dysfunction</div>
+    <p><strong style="color:#94a3b8">Impaired active relaxation</strong> — calcium reuptake into SR is energy-dependent. Impaired in ischaemia and hypertrophy. Restricts early filling.</p>
+    <p><strong style="color:#94a3b8">Reduced passive compliance</strong> — physical stiffness from hypertrophy or fibrosis. EDPVR steepens. Small volume increase causes large pressure rise.</p>
+  </div>
+  <div class="keypoint">HFpEF is harder to treat — the pump itself is fine. No drug directly reverses myocardial stiffness. Manage symptoms with diuretics and rate control.</div>
+  <table class="compare-table">
+    <tr><th>Feature</th><th>HFrEF</th><th>HFpEF</th></tr>
+    <tr><td class="label">Problem</td><td>Can't squeeze</td><td>Can't fill</td></tr>
+    <tr><td class="label">EF</td><td>Low (&lt;40%)</td><td>Preserved (≥50%)</td></tr>
+    <tr><td class="label">Ventricle size</td><td>Dilated</td><td>Normal or small</td></tr>
+    <tr><td class="label">ESPVR</td><td>Flat — poor contractility</td><td>Normal</td></tr>
+    <tr><td class="label">EDPVR</td><td>May be affected</td><td>Steep — stiff</td></tr>
+    <tr><td class="label">Typical patient</td><td>Post-MI, DCM</td><td>Elderly, hypertensive, diabetic, obese</td></tr>
+  </table>
+</div>
+
+<!-- 03 -->
+<div class="section" id="s3">
+  <div class="section-header"><span class="section-num">03</span><h2>Left vs Right Heart Failure</h2><div class="section-rule"></div></div>
+  <div class="keypoint">Failure of one side backs up into whichever circuit feeds it. Left → pulmonary. Right → systemic.</div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title" style="color:var(--accent)">Left Heart Failure</div>
+      <p>Backs up into pulmonary circulation → pulmonary oedema</p>
+      <ul>
+        <li>Dyspnoea on exertion</li>
+        <li>Orthopnoea — worse lying flat</li>
+        <li>Paroxysmal nocturnal dyspnoea</li>
+        <li>Bilateral basal crackles</li>
+        <li>Pink frothy sputum (acute severe)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--orange)">Right Heart Failure</div>
+      <p>Backs up into systemic venous circulation</p>
+      <ul>
+        <li>Peripheral oedema (ankles, sacrum)</li>
+        <li>Raised JVP</li>
+        <li>Hepatomegaly — liver congestion</li>
+        <li>Ascites in severe cases</li>
+        <li>No pulmonary oedema</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cascade">
+    <div class="cascade-title" style="color:var(--muted)">LHF leads to RHF</div>
+    <div class="cascade-chain">
+      <span class="cascade-step">LHF</span><span class="cascade-arrow">→</span>
+      <span class="cascade-step">↑ pulmonary venous pressure</span><span class="cascade-arrow">→</span>
+      <span class="cascade-step">pulmonary hypertension</span><span class="cascade-arrow">→</span>
+      <span class="cascade-step">RV pressure overload</span><span class="cascade-arrow">→</span>
+      <span class="cascade-step">RV hypertrophy</span><span class="cascade-arrow">→</span>
+      <span class="cascade-step">RHF</span><span class="cascade-arrow">→</span>
+      <span class="cascade-step">Congestive HF</span>
+    </div>
+  </div>
+  <table class="compare-table">
+    <tr><th>Feature</th><th>Left HF</th><th>Right HF</th></tr>
+    <tr><td class="label">Backs up into</td><td>Pulmonary circulation</td><td>Systemic venous circulation</td></tr>
+    <tr><td class="label">Key symptom</td><td>Dyspnoea, orthopnoea</td><td>Peripheral oedema, raised JVP</td></tr>
+    <tr><td class="label">Key sign</td><td>Basal crackles</td><td>Hepatomegaly, ankle oedema</td></tr>
+    <tr><td class="label">Most common cause</td><td>MI, hypertension</td><td>Left heart failure</td></tr>
+  </table>
+</div>
+
+<!-- 04 -->
+<div class="section" id="s4">
+  <div class="section-header"><span class="section-num">04</span><h2>Compensatory Mechanisms</h2><div class="section-rule"></div></div>
+  <div class="keypoint">Initially helpful — ultimately harmful. The compensatory mechanisms that maintain perfusion in the short term accelerate myocardial damage in the long term.</div>
+  <div class="card">
+    <div class="card-title" style="color:var(--green)">1. Frank-Starling Mechanism</div>
+    <p>↓ CO → blood backs up → ↑ EDV → ventricle stretches → contracts harder → temporarily restores SV.</p>
+    <p>Fails when ventricle reaches the flat part of the Starling curve — more stretch gives no more force, just dilatation and higher filling pressures.</p>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--yellow)">2. Sympathetic Nervous System</div>
+    <p>↓ CO → baroreceptors sense ↓ BP → SNS activation: ↑ HR, ↑ contractility (β1), vasoconstriction (↑ SVR), venoconstriction (↑ preload).</p>
+    <p style="margin-top:8px"><strong style="color:#94a3b8">Long term harm:</strong> Tachycardia increases O₂ demand. Vasoconstriction increases afterload. Chronic noradrenaline is directly toxic to myocytes → apoptosis → worsens remodelling.</p>
+    <p style="margin-top:6px;font-size:13px;color:var(--dim)">Why beta blockers improve mortality — they protect from catecholamine toxicity despite being negative inotropes.</p>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--accent)">3. RAAS Activation</div>
+    <div class="cascade" style="margin-bottom:12px">
+      <div class="cascade-chain" style="font-size:12px">
+        <span class="cascade-step">↓ Renal perfusion</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">↑ Renin</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">Angiotensin I</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">ACE</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">Angiotensin II</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">Vasoconstriction + Aldosterone</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">Na⁺/water retention → ↑ preload</span>
+      </div>
+    </div>
+    <p><strong style="color:#94a3b8">Long term harm:</strong> Volume overload worsens dilatation. Angiotensin II and aldosterone directly promote cardiac fibrosis and remodelling.</p>
+    <p style="margin-top:6px;font-size:13px;color:var(--dim)">Why ACE-i, ARBs, and spironolactone improve mortality — blocking long-term RAAS harm on the myocardium.</p>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--red)">4. Ventricular Remodelling — Maladaptive End Result</div>
+    <ul>
+      <li>Dilatation — eccentric hypertrophy, sarcomeres added in series</li>
+      <li>Fibrosis — collagen replaces myocytes, reduces compliance and contractility</li>
+      <li>Altered gene expression — myocytes revert to foetal protein isoforms, less efficient</li>
+    </ul>
+    <p style="margin-top:8px">The ventricle becomes larger, weaker, stiffer, and less efficient. Heart failure is progressive because compensation accelerates the disease.</p>
+  </div>
+</div>
+
+<!-- 05 -->
+<div class="section" id="s5">
+  <div class="section-header"><span class="section-num">05</span><h2>Frank-Starling Mechanism and Heart Failure</h2><div class="section-rule"></div></div>
+
+  <div class="card">
+    <div class="card-title" style="color:var(--green)">The Frank-Starling Mechanism</div>
+    <p>The heart generates more force when stretched more — up to a point. More preload (EDV) → greater sarcomere stretch → greater actin-myosin overlap → more cross-bridges form → stronger contraction → higher stroke volume.</p>
+    <p>This is the heart's intrinsic ability to match output to venous return, without needing neural input.</p>
+    <p style="font-size:13px;color:var(--dim);margin-top:4px">Underlying mechanism — optimal sarcomere length maximises actin-myosin overlap and cross-bridge formation. Overstretched sarcomeres lose overlap and force falls — the descending limb.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="color:var(--red)">How It Fails in Heart Failure</div>
+    <p>In HF the Starling curve is depressed and flattened. At any given preload, the failing heart produces less SV than normal. The curve plateaus earlier and lower.</p>
+    <p style="margin-top:6px">The heart compensates by retaining fluid (via RAAS) — increasing preload to climb the Starling curve. Initially this helps. But eventually the ventricle is operating on the flat part of its curve — more preload gives no more SV, just higher filling pressures and pulmonary congestion.</p>
+  </div>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 620 280" width="620" height="280" xmlns="http://www.w3.org/2000/svg" style="max-width:100%">
+      <!-- Axes -->
+      <line x1="50" y1="240" x2="430" y2="240" stroke="#1e293b" stroke-width="1.5"/>
+      <line x1="50" y1="20" x2="50" y2="240" stroke="#1e293b" stroke-width="1.5"/>
+      <text x="240" y="268" fill="#475569" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace">Preload (EDV)</text>
+      <text x="18" y="135" fill="#475569" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace" transform="rotate(-90,18,135)">Stroke Volume</text>
+
+      <!-- Curves — end at x=420 -->
+      <!-- Increased contractility — green dashed -->
+      <path d="M 60 210 C 120 120,220 60,420 45" fill="none" stroke="#4ade80" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.7"/>
+      <text x="290" y="38" fill="#4ade80" font-size="10" font-family="JetBrains Mono, monospace" opacity="0.8">increased contractility</text>
+
+      <!-- Normal — blue -->
+      <path d="M 60 220 C 120 150,220 90,420 75" fill="none" stroke="#60a5fa" stroke-width="2"/>
+      <text x="360" y="70" fill="#60a5fa" font-size="10" font-family="JetBrains Mono, monospace">normal</text>
+
+      <!-- HF — red -->
+      <path d="M 60 230 C 120 200,220 165,420 150" fill="none" stroke="#f87171" stroke-width="2"/>
+      <text x="350" y="145" fill="#f87171" font-size="10" font-family="JetBrains Mono, monospace">heart failure</text>
+
+      <!-- RIGHT SIDE annotations — in the space x=430 to x=610 -->
+      <!-- Vasodilators: upward arrow between normal (y=75) and HF (y=150) curves -->
+      <!-- Connectors touch each curve, arrow sits in the gap between them -->
+      <line x1="420" y1="75" x2="461" y2="75" stroke="#a78bfa" stroke-width="0.8" opacity="0.5"/>
+      <line x1="420" y1="150" x2="461" y2="150" stroke="#a78bfa" stroke-width="0.8" opacity="0.5"/>
+      <line x1="441" y1="145" x2="441" y2="82" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <polygon points="441,74 437,84 445,84" fill="#a78bfa" opacity="0.9"/>
+      <text x="453" y="107" fill="#a78bfa" font-size="9" font-family="JetBrains Mono, monospace">vasodilators /</text>
+      <text x="453" y="118" fill="#a78bfa" font-size="9" font-family="JetBrains Mono, monospace">inotropes</text>
+      <text x="453" y="129" fill="#a78bfa" font-size="9" font-family="JetBrains Mono, monospace">shift curve up</text>
+
+      <!-- Fluids: label on right with arrow pointing left TO the HF curve -->
+      <text x="438" y="178" fill="#facc15" font-size="9" font-family="JetBrains Mono, monospace">fluids → move</text>
+      <text x="438" y="189" fill="#facc15" font-size="9" font-family="JetBrains Mono, monospace">along HF curve</text>
+      <text x="438" y="200" fill="#facc15" font-size="9" font-family="JetBrains Mono, monospace">minimal SV gain</text>
+      <line x1="436" y1="183" x2="421" y2="152" stroke="#facc15" stroke-width="1" stroke-dasharray="3,2" opacity="0.8"/>
+      <polygon points="421.0,152.0 420.4,162.3 429.4,157.9" fill="#facc15" opacity="0.9"/>
+    </svg>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="color:var(--purple)">Clinical Significance — Vasodilators vs Fluids</div>
+    <p><strong style="color:#94a3b8">Fluids</strong> move the patient rightward along the already flat HF curve. Minimal SV gain. Filling pressures rise. Risk of pulmonary oedema. Limited benefit in the failing heart.</p>
+    <p style="margin-top:6px"><strong style="color:#94a3b8">Vasodilators and inotropes</strong> shift the entire curve upward — the patient achieves better SV at the same preload. This is why ACE inhibitors, which reduce afterload (and thereby effectively lift the operating point up toward a better curve), improve outcomes in HFrEF more than fluid loading does.</p>
+  </div>
+</div>
+
+<!-- 06 -->
+<div class="section" id="s6">
+  <div class="section-header"><span class="section-num">06</span><h2>Drug Rationale</h2><div class="section-rule"></div></div>
+  <div class="card">
+    <div class="card-title" style="color:var(--muted)">Mechanism and cascade target</div>
+    <div style="margin-top:8px">
+      <div style="display:grid;grid-template-columns:160px 1fr 1fr;gap:10px;padding:8px 0;border-bottom:1px solid #0d1520;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:1px">
+        <span>Drug</span><span>Mechanism</span><span>Target</span>
+      </div>
+      <div class="drug-row"><span class="drug-name">ACE inhibitor</span><span class="drug-mech">↓ Ang II → less AT1 activation → ↓ vasoconstriction (↓ afterload) + ↓ aldosterone (↓ preload)</span><span class="drug-target">RAAS</span></div>
+      <div class="drug-row"><span class="drug-name">ARB</span><span class="drug-mech">Block AT1 receptor. Same effect as ACE-i, no bradykinin accumulation — no cough</span><span class="drug-target">RAAS</span></div>
+      <div class="drug-row"><span class="drug-name">Spironolactone</span><span class="drug-mech">Aldosterone antagonist → ↓ Na⁺ retention, ↓ myocardial fibrosis</span><span class="drug-target">RAAS / fibrosis</span></div>
+      <div class="drug-row"><span class="drug-name">Beta blocker</span><span class="drug-mech">Block catecholamine toxicity, ↓ HR (more filling time), ↓ remodelling</span><span class="drug-target">SNS</span></div>
+      <div class="drug-row"><span class="drug-name">Diuretics</span><span class="drug-mech">↓ volume overload → ↓ preload → ↓ pulmonary congestion. Symptom relief.</span><span class="drug-target">Frank-Starling</span></div>
+      <div class="drug-row"><span class="drug-name">Sacubitril/valsartan</span><span class="drug-mech">Neprilysin inhibitor → ↑ BNP → vasodilation + natriuresis. Combined with ARB</span><span class="drug-target">BNP + RAAS</span></div>
+      <div class="drug-row"><span class="drug-name">Digoxin</span><span class="drug-mech">↑ intracellular Ca²⁺ → ↑ contractility. Also ↓ HR via vagal tone</span><span class="drug-target">Direct inotropy</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 07 -->
+<div class="section" id="s7">
+  <div class="section-header"><span class="section-num">07</span><h2>BNP, Cardiorenal Syndrome, High Output HF</h2><div class="section-rule"></div></div>
+  <div class="card">
+    <div class="card-title" style="color:var(--green)">BNP / NT-proBNP</div>
+    <p>Released by ventricular myocytes in response to wall stress. Acts as the heart's own defence — vasodilation, natriuresis, diuresis.</p>
+    <p style="margin-top:6px">Used clinically to diagnose HF and monitor severity. High BNP = significant wall stress.</p>
+    <p style="margin-top:6px"><strong style="color:#94a3b8">Sacubitril</strong> blocks neprilysin (breaks down BNP) → BNP accumulates → enhanced vasodilation and natriuresis. Used as sacubitril/valsartan in HFrEF.</p>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--orange)">Cardiorenal Syndrome</div>
+    <p>↓ CO → ↓ renal perfusion → AKI. RAAS initially maintains GFR via efferent arteriole constriction, then fails. Diuretics worsen renal perfusion further.</p>
+    <p style="margin-top:6px;font-size:13px;color:var(--dim)">Step 1 tests the tension — treating HF with diuretics while monitoring renal function.</p>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--purple)">High Output Heart Failure</div>
+    <p>HF with elevated CO — demand chronically exceeds even a normal output. Heart eventually fails from high demand despite being initially structurally normal.</p>
+    <ul style="margin-top:8px">
+      <li>Anaemia — compensatory ↑ CO</li>
+      <li>Thyrotoxicosis — high metabolic demand</li>
+      <li>Beri beri (thiamine deficiency) — peripheral vasodilation</li>
+      <li>Paget's disease — increased vascularity</li>
+      <li>AV fistula — shunting increases venous return</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--accent)">Pulmonary Hypertension in HF</div>
+    <div class="cascade">
+      <div class="cascade-chain" style="font-size:12px">
+        <span class="cascade-step">Chronic LHF</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">↑ pulmonary venous pressure</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">reactive pulmonary arterial vasoconstriction</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">pulmonary HTN</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">RV pressure overload</span><span class="cascade-arrow">→</span>
+        <span class="cascade-step">RVF</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-tag">Built for teaching</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-system">Cardiovascular</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-sub">Pathophysiology</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-tool">Heart Failure</span>
+    <span class="footer-dot">·</span>
+    <span class="footer-author">Developed by Dr Ed Kim</span>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>
