@@ -192,6 +192,20 @@
     padding: 2px 6px; border-radius: 3px; opacity: 0.3; transition: opacity 0.2s;
   }
   .tool-card:hover .tag { opacity: 0.6; }
+  .type-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 10px; margin-bottom: 6px;
+    display: inline-block;
+  }
+  .type-pill.interactive {
+    color: #60a5fa; background: rgba(96,165,250,0.08);
+    border: 1px solid rgba(96,165,250,0.25);
+  }
+  .type-pill.notes {
+    color: #a78bfa; background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.25);
+  }
 
   .open-btn {
     font-family: 'JetBrains Mono', monospace;
@@ -294,7 +308,7 @@
       <div class="system-toggle-left">
         <span class="system-number">01</span>
         <span class="system-name">Cardiovascular</span>
-        <span class="system-count">3 tools</span>
+        <span class="system-count">4 tools</span>
       </div>
       <span class="system-chevron">▾</span>
     </button>
@@ -306,7 +320,7 @@
 
           <a class="tool-card" href="PV_Loop.html" style="--card-color:#60a5fa;">
             <div class="tool-left">
-              <div class="tool-title">Pressure–Volume Loop</div>
+              <div class="type-pill interactive">Interactive</div><div class="tool-title">Pressure–Volume Loop</div>
               <div class="tool-desc">How the cardiac cycle changes across physiological and pathological states. Clickable phases, live stats, ESPVR and EDPVR reference lines.</div>
               <div class="tool-tags">
                 <span class="tag">Preload</span>
@@ -321,7 +335,7 @@
 
           <a class="tool-card" href="Arterial_Waveform.html" style="--card-color:#4ade80;">
             <div class="tool-left">
-              <div class="tool-title">Arterial Pressure Waveform</div>
+              <div class="type-pill interactive">Interactive</div><div class="tool-title">Arterial Pressure Waveform</div>
               <div class="tool-desc">The PV loop unrolled into time. Annotated waveform features with live SBP, DBP, pulse pressure and MAP. Each state linked back to its PV loop equivalent.</div>
               <div class="tool-tags">
                 <span class="tag">SVR</span>
@@ -343,13 +357,28 @@
 
           <a class="tool-card" href="MI_Timeline.html" style="--card-color:#f97316;">
             <div class="tool-left">
-              <div class="tool-title">Myocardial Infarction Timeline</div>
+              <div class="type-pill interactive">Interactive</div><div class="tool-title">Myocardial Infarction Timeline</div>
               <div class="tool-desc">Step-through timeline from occlusion to mature scar. Gross appearance, microscopic findings, and complications at each stage with a full complication Gantt chart.</div>
               <div class="tool-tags">
                 <span class="tag">Coagulative Necrosis</span>
                 <span class="tag">Wavefront</span>
                 <span class="tag">Complications</span>
                 <span class="tag">Dressler Syndrome</span>
+              </div>
+            </div>
+            <div class="tool-right"><span class="open-btn">Open</span></div>
+          </a>
+
+          <a class="tool-card" href="HF_Notes.html" style="--card-color:#a78bfa;">
+            <div class="tool-left">
+              <div class="type-pill notes">Notes</div><div class="tool-title">Heart Failure</div>
+              <div class="tool-desc">Mechanisms, classification, compensatory cascades, Starling curve, and drug rationale. HFrEF vs HFpEF, left vs right, RAAS and SNS compensation.</div>
+              <div class="tool-tags">
+                <span class="tag">HFrEF</span>
+                <span class="tag">HFpEF</span>
+                <span class="tag">Frank-Starling</span>
+                <span class="tag">RAAS</span>
+                <span class="tag">Compensatory Mechanisms</span>
               </div>
             </div>
             <div class="tool-right"><span class="open-btn">Open</span></div>
