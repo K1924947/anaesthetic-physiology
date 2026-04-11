@@ -273,7 +273,7 @@
 
     <!-- Phase explanation -->
     <div class="card" id="phaseCard">
-      <div class="info-placeholder">Tap a phase above — or click a segment on the loop — to see what's happening at that point in the cardiac cycle.</div>
+      <div class="info-placeholder">Tap a phase above - or click a segment on the loop - to see what's happening at that point in the cardiac cycle.</div>
     </div>
 
   </div>
@@ -287,7 +287,7 @@
       <div class="key-row"><span class="key-label">↑ Afterload</span><span class="key-val">↑ ESV, taller loop</span></div>
       <div class="key-row"><span class="key-label">Contractility</span><span class="key-val">Slope of ESPVR</span></div>
       <div class="key-row"><span class="key-label">Compliance</span><span class="key-val">Slope of EDPVR</span></div>
-      <div class="key-row"><span class="key-label">Ejection shape</span><span class="key-val">Arch — peak mid-eject</span></div>
+      <div class="key-row"><span class="key-label">Ejection shape</span><span class="key-val">Arch - peak mid-eject</span></div>
       <div class="key-row"><span class="key-label">Loop area</span><span class="key-val">= Stroke work</span></div>
     </div>
 
@@ -296,7 +296,7 @@
       <div class="key-row"><span class="key-label" style="color:#4ade80">● MV opens</span><span class="key-val">Start of filling (ESV)</span></div>
       <div class="key-row"><span class="key-label" style="color:#facc15">● MV closes</span><span class="key-val">Start of ISO contraction</span></div>
       <div class="key-row"><span class="key-label" style="color:#f87171">● AV opens</span><span class="key-val">~80 mmHg aortic DBP</span></div>
-      <div class="key-row"><span class="key-label" style="color:#818cf8">● AV closes</span><span class="key-val">ESP — start of ISO relax</span></div>
+      <div class="key-row"><span class="key-label" style="color:#818cf8">● AV closes</span><span class="key-val">ESP - start of ISO relax</span></div>
     </div>
 
     <div class="card">
@@ -327,21 +327,21 @@
 
 <script>
 const PHASES = [
-  { id:"filling",       label:"① Filling (Diastole)",          color:"#4ade80", highlight:"EDPVR — exponential compliance curve", description:"Mitral valve opens. The ventricle is compliant early — large volume increase with little pressure rise (flat). As it fills, it stiffens — pressure rises more steeply toward EDV. This exponential curve is the EDPVR. EDV = PRELOAD." },
-  { id:"isocontraction",label:"② Isovolumetric Contraction",    color:"#facc15", highlight:"Vertical — no volume change",           description:"Mitral closes, aortic still closed. Both valves shut — ventricle contracts hard, pressure rises steeply. Volume cannot change. Ends when pressure exceeds aortic diastolic pressure (~80 mmHg) and the aortic valve opens." },
-  { id:"ejection",      label:"③ Ejection (Systole)",           color:"#f87171", highlight:"Arch shape — pressure peaks then falls",description:"Aortic valve opens. Blood ejects — volume falls. Pressure first rises to a PEAK (the dome/arch), then falls as the ventricle empties and weakens. This arch shape is key. Ends at ESV when aortic valve closes. SV = EDV − ESV." },
-  { id:"isorelaxation", label:"④ Isovolumetric Relaxation",     color:"#818cf8", highlight:"Vertical — no volume change",           description:"Aortic valve closes at ESP. Ventricle relaxes — pressure drops rapidly back to near zero. Volume stays fixed. Ends when pressure drops below left atrial pressure and mitral valve opens." }
+  { id:"filling",       label:"① Filling (Diastole)",          color:"#4ade80", highlight:"EDPVR - exponential compliance curve", description:"Mitral valve opens. The ventricle is compliant early - large volume increase with little pressure rise (flat). As it fills, it stiffens - pressure rises more steeply toward EDV. This exponential curve is the EDPVR. EDV = PRELOAD." },
+  { id:"isocontraction",label:"② Isovolumetric Contraction",    color:"#facc15", highlight:"Vertical - no volume change",           description:"Mitral closes, aortic still closed. Both valves shut - ventricle contracts hard, pressure rises steeply. Volume cannot change. Ends when pressure exceeds aortic diastolic pressure (~80 mmHg) and the aortic valve opens." },
+  { id:"ejection",      label:"③ Ejection (Systole)",           color:"#f87171", highlight:"Arch shape - pressure peaks then falls",description:"Aortic valve opens. Blood ejects - volume falls. Pressure first rises to a PEAK (the dome/arch), then falls as the ventricle empties and weakens. This arch shape is key. Ends at ESV when aortic valve closes. SV = EDV − ESV." },
+  { id:"isorelaxation", label:"④ Isovolumetric Relaxation",     color:"#818cf8", highlight:"Vertical - no volume change",           description:"Aortic valve closes at ESP. Ventricle relaxes - pressure drops rapidly back to near zero. Volume stays fixed. Ends when pressure drops below left atrial pressure and mitral valve opens." }
 ];
 
 const MODIFIERS = [
   { id:"normal",           label:"Normal",         color:"#60a5fa", highlight:"Baseline reference loop",                          description:"Normal healthy ventricle. EDV ~120 mL, ESV ~50 mL, stroke volume ~70 mL. The loop has a clear arch top, curved EDPVR filling, and vertical isovolumetric phases. All subsequent loops are compared to this." },
-  { id:"preload_up",       label:"↑ Preload",       color:"#4ade80", highlight:"Loop shifts RIGHT — more filling, more output",    description:"More venous return fills the ventricle to a higher EDV. By Frank-Starling, the stretched fibres contract more forcefully — ESV stays similar but SV increases. The loop widens rightward. Seen with: IV fluids, lying flat, exercise, pregnancy." },
-  { id:"preload_down",     label:"↓ Preload",       color:"#86efac", highlight:"Loop shifts LEFT — less filling, less output",     description:"Less venous return means lower EDV. The ventricle has less to eject — stroke volume falls and the loop narrows and shifts left. Seen with: haemorrhage, dehydration, vasodilation (e.g. spinal anaesthesia), diuretics, sitting upright." },
-  { id:"afterload_up",     label:"↑ Afterload",     color:"#f97316", highlight:"Loop becomes TALLER and NARROWER",                description:"Higher resistance means the aortic valve opens later (more pressure needed) and the ventricle can't empty as well — ESV rises. Stroke volume falls. The loop gets taller but narrower. Seen with: hypertension, aortic stenosis, vasoconstrictors, hypothermia." },
-  { id:"afterload_down",   label:"↓ Afterload",     color:"#fdba74", highlight:"Loop becomes SHORTER and WIDER",                  description:"Lower resistance means the aortic valve opens earlier and the ventricle empties more — ESV falls, SV increases. Loop shortens and widens. Seen with: vasodilators (e.g. propofol, GTN, ACE inhibitors), sepsis, spinal anaesthesia." },
-  { id:"contractility_up", label:"↑ Contractility", color:"#a78bfa", highlight:"ESPVR steepens — ventricle squeezes harder",      description:"Increased intrinsic squeeze — ESV falls significantly as the ventricle empties more completely. SV increases without any change in preload or afterload. The ESPVR slope steepens. Seen with: adrenaline, noradrenaline, digoxin, dobutamine, exercise (sympathetic drive)." },
-  { id:"contractility_down",label:"↓ Contractility",color:"#c4b5fd", highlight:"ESPVR flattens — ventricle squeezes weakly",      description:"Reduced intrinsic squeeze — ESV rises as the ventricle can't empty properly. SV falls. The ESPVR slope flattens. Seen with: volatile anaesthetic agents, propofol, beta-blockers, heart failure, myocardial infarction, acidosis, hypoxia." },
-  { id:"heart_failure",    label:"Heart Failure",   color:"#f87171", highlight:"Dilated, weak loop — high filling pressure, low output", description:"The failing ventricle dilates to compensate (high EDV) but can't eject effectively (high ESV). Stroke volume is small. Filling pressures are high (steep EDPVR) — this causes pulmonary oedema. The loop is small, shifted right, and the arch is flattened. Both contractility and compliance are impaired." },
+  { id:"preload_up",       label:"↑ Preload",       color:"#4ade80", highlight:"Loop shifts RIGHT - more filling, more output",    description:"More venous return fills the ventricle to a higher EDV. By Frank-Starling, the stretched fibres contract more forcefully - ESV stays similar but SV increases. The loop widens rightward. Seen with: IV fluids, lying flat, exercise, pregnancy." },
+  { id:"preload_down",     label:"↓ Preload",       color:"#86efac", highlight:"Loop shifts LEFT - less filling, less output",     description:"Less venous return means lower EDV. The ventricle has less to eject - stroke volume falls and the loop narrows and shifts left. Seen with: haemorrhage, dehydration, vasodilation (e.g. spinal anaesthesia), diuretics, sitting upright." },
+  { id:"afterload_up",     label:"↑ Afterload",     color:"#f97316", highlight:"Loop becomes TALLER and NARROWER",                description:"Higher resistance means the aortic valve opens later (more pressure needed) and the ventricle can't empty as well - ESV rises. Stroke volume falls. The loop gets taller but narrower. Seen with: hypertension, aortic stenosis, vasoconstrictors, hypothermia." },
+  { id:"afterload_down",   label:"↓ Afterload",     color:"#fdba74", highlight:"Loop becomes SHORTER and WIDER",                  description:"Lower resistance means the aortic valve opens earlier and the ventricle empties more - ESV falls, SV increases. Loop shortens and widens. Seen with: vasodilators (e.g. propofol, GTN, ACE inhibitors), sepsis, spinal anaesthesia." },
+  { id:"contractility_up", label:"↑ Contractility", color:"#a78bfa", highlight:"ESPVR steepens - ventricle squeezes harder",      description:"Increased intrinsic squeeze - ESV falls significantly as the ventricle empties more completely. SV increases without any change in preload or afterload. The ESPVR slope steepens. Seen with: adrenaline, noradrenaline, digoxin, dobutamine, exercise (sympathetic drive)." },
+  { id:"contractility_down",label:"↓ Contractility",color:"#c4b5fd", highlight:"ESPVR flattens - ventricle squeezes weakly",      description:"Reduced intrinsic squeeze - ESV rises as the ventricle can't empty properly. SV falls. The ESPVR slope flattens. Seen with: volatile anaesthetic agents, propofol, beta-blockers, heart failure, myocardial infarction, acidosis, hypoxia." },
+  { id:"heart_failure",    label:"Heart Failure",   color:"#f87171", highlight:"Dilated, weak loop - high filling pressure, low output", description:"The failing ventricle dilates to compensate (high EDV) but can't eject effectively (high ESV). Stroke volume is small. Filling pressures are high (steep EDPVR) - this causes pulmonary oedema. The loop is small, shifted right, and the arch is flattened. Both contractility and compliance are impaired." },
 ];
 
 const modifierGroups = [["normal"],["preload_up","preload_down"],["afterload_up","afterload_down"],["contractility_up","contractility_down"],["heart_failure"]];
@@ -460,7 +460,7 @@ function renderSVG() {
   txt("text",{x:W/2,y:H+26,fill:"#5a7a90","font-size":9,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"Volume (mL)",g);
   const yLbl = txt("text",{x:-(H/2),y:-18,fill:"#5a7a90","font-size":9,"text-anchor":"middle","transform":"rotate(-90)","font-family":"JetBrains Mono, monospace"},"Pressure (mmHg)",g);
 
-  // EDPVR — dynamic: shifts right with EDV, steepens with higher EDP (e.g. heart failure)
+  // EDPVR - dynamic: shifts right with EDV, steepens with higher EDP (e.g. heart failure)
   // Curve starts at vol~20, pressure~1 and ends at (edv, edp)
   // Steepness controlled by edp: higher edp = curve rises earlier
   const edpvrStartVol = 20;
@@ -549,7 +549,7 @@ function renderPhaseCard() {
     card.innerHTML = `<div class="info-highlight" style="color:${phase.color};">${phase.highlight}</div><div class="info-desc">${phase.description}</div>`;
   } else {
     card.style.borderColor = "#141c2e";
-    card.innerHTML = `<div class="info-placeholder">Tap a phase above — or click a segment on the loop — to see what's happening at that point in the cardiac cycle.</div>`;
+    card.innerHTML = `<div class="info-placeholder">Tap a phase above - or click a segment on the loop - to see what's happening at that point in the cardiac cycle.</div>`;
   }
 }
 
