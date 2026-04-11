@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cardiac Murmurs · Cardiovascular Pathophysiology</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#07090f;--surface:#0a0d17;--surface2:#0d1121;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--dim:#475569;--accent:#60a5fa}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  body{background:var(--bg);color:var(--text);font-family:'EB Garamond',Georgia,serif;min-height:100vh;overflow-x:hidden;font-size:16px;line-height:1.7;animation:fadeIn 0.4s ease both}
+  body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(96,165,250,0.01) 1px,transparent 1px),linear-gradient(90deg,rgba(96,165,250,0.01) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+  .page{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:56px 24px 80px}
+
+  .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both}
+  .home-btn{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#475569;text-decoration:none;border:1px solid #1e293b;padding:5px 14px;border-radius:20px;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+  .home-btn:hover{border-color:#60a5fa;color:#60a5fa}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#64748b}
+
+  header{text-align:center;margin-bottom:32px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.05s both}
+  h1{font-size:clamp(26px,5vw,38px);font-weight:400;color:#f1f5f9;letter-spacing:-0.3px;margin-bottom:8px}
+  .subtitle{font-size:15px;color:var(--muted);font-style:italic}
+
+  #btnRow{margin-bottom:16px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both}
+  .btn-group{margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .btn-group-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;width:72px;flex-shrink:0}
+  .mbtn{cursor:pointer;padding:7px 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);transition:all 0.2s}
+  .mbtn:hover{border-color:#2d4a6e;color:#94a3b8;transform:translateY(-1px)}
+
+  .svg-wrap{background:#070a12;border:1px solid var(--border);border-radius:14px;padding:20px 16px 12px;margin-bottom:16px;overflow-x:auto;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s both}
+  #murmurSvg{display:block;max-width:100%;height:auto}
+  #murmurSvg path{transition:opacity 0.3s ease}
+
+  .info-wrap{animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.2s both;min-height:80px}
+  .info-empty{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center;font-size:14px;color:var(--dim);font-style:italic}
+  .info-header{margin-bottom:14px}
+  .info-title{font-size:22px;font-weight:400;margin-bottom:2px}
+  .info-timing{font-family:'EB Garamond',serif;font-size:17px;font-style:italic;color:#94a3b8;margin-top:3px}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:580px){.info-grid{grid-template-columns:1fr}}
+  .icard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;transition:border-color 0.3s}
+  .icard-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;margin-bottom:8px}
+  .icard-body{font-size:14px;color:var(--muted);line-height:1.7}
+  .icard-body strong{color:#94a3b8}
+
+  footer{margin-top:56px;border-top:1px solid var(--border);padding-top:20px}
+  .footer-inner{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
+  .footer-tag{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.18);padding:3px 8px;border-radius:20px}
+  .footer-dot{color:#1a2535}
+  .footer-system{font-family:'EB Garamond',serif;font-size:13px;font-style:italic;color:#94a3b8}
+  .footer-sub,.footer-tool{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4b5563}
+  .footer-tool{color:#94a3b8}
+  .footer-author{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#60a5fa99}
+  .btn-groups{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both}
+  .btn-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .btn-group-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;width:72px;flex-shrink:0}
+  #murmurSvg path{transition:opacity 0.35s cubic-bezier(0.22,1,0.36,1)}
+  .info-wrap{transition:opacity 0.25s ease}
+  .info-wrap.fading{opacity:0}
+  @keyframes infoIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .icard{animation:infoIn 0.35s cubic-bezier(0.22,1,0.36,1) both}
+  .icard:nth-child(1){animation-delay:0s}
+  .icard:nth-child(2){animation-delay:0.05s}
+  .icard:nth-child(3){animation-delay:0.1s}
+  .icard:nth-child(4){animation-delay:0.15s}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="nav">
+    <a href="index.html" class="home-btn">&#8592; Home</a>
+    <div class="eyebrow">Cardiovascular · Pathophysiology</div>
+    <div style="width:70px"></div>
+  </div>
+
+  <header>
+    <h1>Cardiac Murmurs</h1>
+    <p class="subtitle">Select a murmur to see its waveform, haemodynamics, and clinical features</p>
+  </header>
+
+  <div id="btnRow"></div>
+
+  <div class="svg-wrap">
+    <svg id="murmurSvg" viewBox="0 0 700 165" width="700" height="165" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <div class="info-wrap" id="infoWrap"></div>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-tag">Built for teaching</span>
+      <span class="footer-dot">·</span>
+      <span class="footer-system">Cardiovascular</span>
+      <span class="footer-dot">·</span>
+      <span class="footer-sub">Pathophysiology</span>
+      <span class="footer-dot">·</span>
+      <span class="footer-tool">Cardiac Murmurs</span>
+      <span class="footer-dot">·</span>
+      <span class="footer-author">Developed by Dr Ed Kim</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+const MURMURS = [
+  {
+    id:"as", group:"systolic", label:"AS", color:"#60a5fa", shape:"diamond", height:0.88, start:0.08, end:0.45,
+    name:"Aortic Stenosis",
+    timing:"Ejection systolic — crescendo-decrescendo",
+    location:"Right upper sternal border, radiates to carotids",
+    character:"Harsh, rough quality. Slow-rising low-volume pulse — pulsus parvus et tardus.",
+    chamber:"LV pressure overload → concentric hypertrophy",
+    overload:"Pressure",
+    causes:"Calcific degeneration (elderly — most common), bicuspid aortic valve (younger patients), rheumatic fever",
+    manoeuvres:"Softer with handgrip (↑ afterload → less gradient). Louder with squatting (↑ preload → more flow). Softer with Valsalva."
+  },
+  {
+    id:"mr", group:"systolic", label:"MR", color:"#f87171", shape:"rect", height:0.72, start:0.02, end:0.48,
+    name:"Mitral Regurgitation",
+    timing:"Pansystolic — uniform from S1 to S2",
+    location:"Apex, radiates to axilla",
+    character:"Blowing, soft quality. S3 may be heard in severe MR.",
+    chamber:"LV + LA volume overload → eccentric hypertrophy. EF falsely elevated — surgery threshold EF 60%.",
+    overload:"Volume",
+    causes:"MVP (most common in developed world), papillary muscle rupture post-MI, infective endocarditis, rheumatic, functional (dilated annulus)",
+    manoeuvres:"Louder with handgrip (↑ afterload → more regurgitation). Softer with Valsalva/standing (↓ preload)."
+  },
+  {
+    id:"mvp", group:"systolic", label:"MVP", color:"#a78bfa", shape:"click_late", height:0.68, start:0.27, end:0.48,
+    name:"Mitral Valve Prolapse",
+    timing:"Mid-systolic click + late systolic murmur",
+    location:"Apex",
+    character:"Non-ejection click (high-pitched) — the defining feature. Followed by late systolic murmur if regurgitation present.",
+    chamber:"Usually no significant burden unless progresses to MR",
+    overload:"None unless complicated by significant MR",
+    causes:"Myxomatous degeneration of mitral leaflets. Associated with Marfan's syndrome, Ehlers-Danlos. Most common valve abnormality (~2% population, young women).",
+    manoeuvres:"Click moves EARLIER with Valsalva/standing (↓ preload → leaflet prolapses sooner, murmur longer). Click moves LATER with squatting (↑ preload → delays prolapse, murmur shorter)."
+  },
+  {
+    id:"ps", group:"systolic", label:"PS", color:"#facc15", shape:"diamond", height:0.60, start:0.08, end:0.44,
+    name:"Pulmonary Stenosis",
+    timing:"Ejection systolic — crescendo-decrescendo",
+    location:"Left upper sternal border, radiates to back",
+    character:"Louder on inspiration (Carvallo's sign — right-sided). Split S2 with delayed P2. Ejection click may precede murmur.",
+    chamber:"RV pressure overload → RV concentric hypertrophy",
+    overload:"Pressure",
+    causes:"Congenital (most common), Noonan syndrome, congenital rubella, tetralogy of Fallot, carcinoid syndrome",
+    manoeuvres:"Louder with inspiration — Carvallo's sign. Right-sided murmur increases with increased right heart filling."
+  },
+  {
+    id:"tr", group:"systolic", label:"TR", color:"#f97316", shape:"rect", height:0.50, start:0.02, end:0.48,
+    name:"Tricuspid Regurgitation",
+    timing:"Pansystolic",
+    location:"Left lower sternal border",
+    character:"Blowing. Increases with inspiration — Carvallo's sign. Pulsatile liver, giant v-wave in JVP.",
+    chamber:"RA + RV volume overload → systemic venous congestion",
+    overload:"Volume",
+    causes:"Functional (RV dilatation stretching annulus — most common), IV drug use (Staph aureus IE — right-sided), carcinoid syndrome",
+    manoeuvres:"Louder with inspiration — Carvallo's sign. This distinguishes it from left-sided pansystolic murmurs (MR)."
+  },
+  {
+    id:"ar", group:"diastolic", label:"AR", color:"#4ade80", shape:"decrescendo", height:0.85, start:0.51, end:0.74,
+    name:"Aortic Regurgitation",
+    timing:"Early diastolic — decrescendo, starts immediately after S2",
+    location:"Left sternal border. Patient leaning forward, breath held in expiration.",
+    character:"High-pitched, blowing. Wide pulse pressure → bounding peripheral signs (Corrigan's pulse, Quincke's sign, De Musset's sign). Austin Flint murmur may coexist.",
+    chamber:"LV volume overload → eccentric hypertrophy",
+    overload:"Volume",
+    causes:"Marfan syndrome (aortic root dilatation), ankylosing spondylitis, syphilis (aortitis), aortic dissection (acute AR), infective endocarditis, rheumatic",
+    manoeuvres:"Louder with handgrip (↑ afterload → more regurgitation). Leaning forward in expiration brings aortic root closer to chest wall — accentuates murmur."
+  },
+  {
+    id:"pr", group:"diastolic", label:"PR", color:"#facc15", shape:"decrescendo", height:0.50, start:0.51, end:0.72,
+    name:"Pulmonary Regurgitation",
+    timing:"Early diastolic — Graham Steell murmur",
+    location:"Left upper sternal border",
+    character:"High-pitched, blowing. Almost always secondary to pulmonary hypertension. Easily confused with AR — context distinguishes them.",
+    chamber:"RV volume overload",
+    overload:"Volume (secondary to pulmonary HTN)",
+    causes:"Pulmonary hypertension causing PA ring dilatation (most common — functional). Rarely primary valve disease.",
+    manoeuvres:"Louder with inspiration — Carvallo's sign (right-sided murmur)."
+  },
+  {
+    id:"ms", group:"diastolic", label:"MS", color:"#e879f9", shape:"rumble", height:0.70, start:0.60, end:0.93,
+    name:"Mitral Stenosis",
+    timing:"Mid-diastolic rumble. Preceded by opening snap. Earlier snap = more severe stenosis.",
+    location:"Apex. Bell of stethoscope, left lateral decubitus position.",
+    character:"Low-pitched rumble. Loud S1. Opening snap precedes the rumble. Severity correlates with duration of murmur and earliness of OS.",
+    chamber:"LA pressure overload → LA enlargement → AF → thrombus → stroke. LV is actually underfilled.",
+    overload:"Pressure (LA)",
+    causes:"Almost exclusively rheumatic fever. Group A Strep → molecular mimicry → immune attack on valve → fibrosis and leaflet fusion.",
+    manoeuvres:"Exercise or tachycardia worsens symptoms — less filling time increases the gradient across the stenosed valve."
+  },
+  {
+    id:"ts", group:"diastolic", label:"TS", color:"#818cf8", shape:"rumble", height:0.46, start:0.62, end:0.91,
+    name:"Tricuspid Stenosis",
+    timing:"Mid-diastolic rumble",
+    location:"Left lower sternal border",
+    character:"Low-pitched. Increases with inspiration — Carvallo's sign. Prominent a-wave in JVP.",
+    chamber:"RA pressure overload → systemic venous congestion",
+    overload:"Pressure (RA)",
+    causes:"Almost always rheumatic fever — never occurs in isolation, almost always with MS. Also carcinoid syndrome.",
+    manoeuvres:"Louder with inspiration — Carvallo's sign."
+  },
+];
+
+let active = null;
+const NS = "http://www.w3.org/2000/svg";
+
+function svgEl(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, v));
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svgTx(attrs, text, parent) {
+  const e = document.createElementNS(NS, "text");
+  Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, v));
+  e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function getPath(m, lx, tw, base, maxH) {
+  const x1 = lx + m.start * tw;
+  const x2 = lx + m.end * tw;
+  const w = x2 - x1;
+  const h = maxH * m.height;
+  const top = base - h;
+
+  switch (m.shape) {
+    case "diamond": {
+      const mx = x1 + w / 2;
+      return { type:"path", d:`M ${x1} ${base} C ${x1+w*0.2} ${base} ${x1+w*0.35} ${top+3} ${mx} ${top} C ${mx+w*0.05} ${top} ${x2-w*0.2} ${base} ${x2} ${base} Z` };
+    }
+    case "rect":
+      return { type:"path", d:`M ${x1} ${base} L ${x1} ${top+3} Q ${x1} ${top} ${x1+3} ${top} L ${x2-3} ${top} Q ${x2} ${top} ${x2} ${top+3} L ${x2} ${base} Z` };
+    case "decrescendo":
+      return { type:"path", d:`M ${x1} ${base} L ${x1} ${top} C ${x1+w*0.3} ${top} ${x2-6} ${base+2} ${x2} ${base} Z` };
+    case "rumble": {
+      const rt = base - h * 0.5;
+      return { type:"path", d:`M ${x1} ${base} L ${x1} ${rt+3} Q ${x1} ${rt} ${x1+3} ${rt} L ${x2-3} ${rt} Q ${x2} ${rt} ${x2} ${rt+3} L ${x2} ${base} Z` };
+    }
+    case "click_late": {
+      const lateX = x1 + w * 0.22;
+      const lh = h * 0.62;
+      const lt = base - lh;
+      return { type:"click_late",
+        spike: `M ${x1-2} ${base} L ${x1} ${base - h*0.88} L ${x1+2} ${base}`,
+        late:  `M ${lateX} ${base} L ${lateX} ${lt+3} Q ${lateX} ${lt} ${lateX+3} ${lt} L ${x2-3} ${lt} Q ${x2} ${lt} ${x2} ${lt+3} L ${x2} ${base} Z`
+      };
+    }
+    default:
+      return { type:"path", d:`M ${x1} ${base} L ${x1} ${top} L ${x2} ${top} L ${x2} ${base} Z` };
+  }
+}
+
+function buildSVG() {
+  const svg = document.getElementById("murmurSvg");
+  svg.innerHTML = "";
+  const W=700, H=165, lx=55, rx=W-35, tw=rx-lx, base=118, maxH=78;
+  const s1x=lx, s2x=lx+tw*0.5, endx=rx;
+
+  svgEl("rect",{x:s1x,y:30,width:s2x-s1x,height:base-30,fill:"rgba(255,255,255,0.007)",rx:4},svg);
+  svgEl("rect",{x:s2x,y:30,width:endx-s2x,height:base-30,fill:"rgba(96,165,250,0.007)",rx:4},svg);
+  svgEl("line",{x1:lx,y1:base,x2:rx,y2:base,stroke:"#1e293b","stroke-width":1.5},svg);
+  svgTx({x:s1x+(s2x-s1x)/2,y:22,fill:"#475569","font-size":10,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","letter-spacing":3},"SYSTOLE",svg);
+  svgTx({x:s2x+(endx-s2x)/2,y:22,fill:"#475569","font-size":10,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","letter-spacing":3},"DIASTOLE",svg);
+  [[s1x,"S1","#475569",true],[s2x,"S2","#475569",true],[endx,"S1","#1e293b",false]].forEach(([x,label,c,bold]) => {
+    svgEl("line",{x1:x,y1:28,x2:x,y2:base+10,stroke:c,"stroke-width":bold?1.5:1},svg);
+    svgTx({x,y:base+24,fill:bold?"#64748b":"#2d3f55","font-size":10,"font-weight":"600","text-anchor":"middle","font-family":"JetBrains Mono, monospace"},label,svg);
+  });
+
+  // Build all waveform paths once with IDs — opacity updated separately
+  MURMURS.forEach(m => {
+    const shape = getPath(m, lx, tw, base, maxH);
+    if (shape.type === "click_late") {
+      svgEl("path",{id:"spike-"+m.id,d:shape.spike,fill:"none",stroke:m.color,"stroke-width":3,"stroke-linecap":"round",opacity:0.72},svg);
+      svgEl("path",{id:"late-"+m.id,d:shape.late,fill:m.color,opacity:0.72*0.85},svg);
+    } else {
+      svgEl("path",{id:"path-"+m.id,d:shape.d,fill:m.color,opacity:0.72},svg);
+    }
+    // Label — hidden by default
+    const x1=lx+m.start*tw, x2=lx+m.end*tw, mx=(x1+x2)/2;
+    const h = maxH * m.height * (m.shape==="rumble" ? 0.5 : 1);
+    svgTx({id:"lbl-"+m.id,x:mx,y:base-h-10,fill:m.color,"font-size":9,"font-weight":"500","text-anchor":"middle","font-family":"JetBrains Mono, monospace",opacity:0},m.label,svg);
+  });
+}
+
+function renderSVG() {
+  // Only update opacities — no redraw, so CSS transition fires
+  MURMURS.forEach(m => {
+    const isActive = active === m.id;
+    const op = active === null ? 0.72 : isActive ? 1 : 0.1;
+    if (m.shape === "click_late") {
+      const spike = document.getElementById("spike-"+m.id);
+      const late  = document.getElementById("late-"+m.id);
+      if (spike) spike.setAttribute("opacity", op);
+      if (late)  late.setAttribute("opacity",  op * 0.85);
+    } else {
+      const p = document.getElementById("path-"+m.id);
+      if (p) p.setAttribute("opacity", op);
+    }
+    const lbl = document.getElementById("lbl-"+m.id);
+    if (lbl) lbl.setAttribute("opacity", isActive ? 1 : 0);
+  });
+}
+
+function renderButtons() {
+  const row = document.getElementById("btnRow");
+  row.innerHTML = "";
+  const groups = ["systolic","diastolic"];
+  const labels = {systolic:"Systolic", diastolic:"Diastolic"};
+  groups.forEach(g => {
+    const murmurs = MURMURS.filter(m => m.group === g);
+    const wrap = document.createElement("div");
+    wrap.className = "btn-group";
+    const lbl = document.createElement("span");
+    lbl.className = "btn-group-label";
+    lbl.textContent = labels[g];
+    wrap.appendChild(lbl);
+    murmurs.forEach(m => {
+      const btn = document.createElement("button");
+      btn.className = "mbtn";
+      btn.textContent = m.label;
+      btn.style.borderColor = active === m.id ? m.color : "";
+      btn.style.background  = active === m.id ? m.color + "22" : "";
+      btn.style.color       = active === m.id ? m.color : "";
+      btn.addEventListener("click", () => {
+        active = active === m.id ? null : m.id;
+        renderAll(false);
+      });
+      wrap.appendChild(btn);
+    });
+    row.appendChild(wrap);
+  });
+}
+
+function renderInfo() {
+  const wrap = document.getElementById("infoWrap");
+  if (!active) {
+    wrap.innerHTML = '<div class="info-empty">Select a murmur above to explore its timing, location, haemodynamics, causes, and manoeuvre effects.</div>';
+    return;
+  }
+  const m = MURMURS.find(x => x.id === active);
+  wrap.innerHTML = `
+    <div class="info-header">
+      <div class="info-title" style="color:${m.color}">${m.name}</div>
+      <div class="info-timing">${m.timing}</div>
+    </div>
+    <div class="info-grid">
+      <div class="icard" style="border-color:${m.color}33">
+        <div class="icard-label">Auscultation</div>
+        <div class="icard-body"><strong>Location:</strong> ${m.location}<br><strong>Character:</strong> ${m.character}</div>
+      </div>
+      <div class="icard" style="border-color:${m.color}33">
+        <div class="icard-label">Haemodynamics</div>
+        <div class="icard-body"><strong>Chamber burden:</strong> ${m.chamber}<br><strong>Overload type:</strong> ${m.overload}</div>
+      </div>
+      <div class="icard" style="border-color:${m.color}33">
+        <div class="icard-label">Causes</div>
+        <div class="icard-body">${m.causes}</div>
+      </div>
+      <div class="icard" style="border-color:${m.color}33">
+        <div class="icard-label">Manoeuvres</div>
+        <div class="icard-body">${m.manoeuvres}</div>
+      </div>
+    </div>`;
+}
+
+function renderAll(isFirst) {
+  renderButtons();
+  if (isFirst) buildSVG();
+  renderSVG();
+  const wrap = document.getElementById("infoWrap");
+  wrap.classList.add("fading");
+  setTimeout(() => {
+    renderInfo();
+    wrap.classList.remove("fading");
+  }, 200);
+}
+renderAll(true);
+</script>
+</body>
+</html>
