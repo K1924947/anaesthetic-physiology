@@ -31,7 +31,6 @@
 
   .svg-wrap{background:#070a12;border:1px solid var(--border);border-radius:14px;padding:20px 16px 12px;margin-bottom:16px;overflow-x:auto;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s both}
   #murmurSvg{display:block;max-width:100%;height:auto}
-  #murmurSvg path{transition:opacity 0.3s ease}
 
   .info-wrap{animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.2s both;min-height:80px}
   .info-empty{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center;font-size:14px;color:var(--dim);font-style:italic}
@@ -56,7 +55,7 @@
   .btn-groups{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both}
   .btn-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .btn-group-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;width:72px;flex-shrink:0}
-  #murmurSvg path{transition:opacity 0.35s cubic-bezier(0.22,1,0.36,1)}
+  #murmurSvg path{transition:opacity 0.8s cubic-bezier(0.22,1,0.36,1)}
   .info-wrap{transition:opacity 0.25s ease}
   .info-wrap.fading{opacity:0}
   @keyframes infoIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -109,21 +108,21 @@ const MURMURS = [
   {
     id:"as", group:"systolic", label:"AS", color:"#60a5fa", shape:"diamond", height:0.88, start:0.08, end:0.45,
     name:"Aortic Stenosis",
-    timing:"Ejection systolic — crescendo-decrescendo",
+    timing:"Ejection systolic - crescendo-decrescendo",
     location:"Right upper sternal border, radiates to carotids",
-    character:"Harsh, rough quality. Slow-rising low-volume pulse — pulsus parvus et tardus.",
+    character:"Harsh, rough quality. Slow-rising low-volume pulse - pulsus parvus et tardus.",
     chamber:"LV pressure overload → concentric hypertrophy",
     overload:"Pressure",
-    causes:"Calcific degeneration (elderly — most common), bicuspid aortic valve (younger patients), rheumatic fever",
+    causes:"Calcific degeneration (elderly - most common), bicuspid aortic valve (younger patients), rheumatic fever",
     manoeuvres:"Softer with handgrip (↑ afterload → less gradient). Louder with squatting (↑ preload → more flow). Softer with Valsalva."
   },
   {
     id:"mr", group:"systolic", label:"MR", color:"#f87171", shape:"rect", height:0.72, start:0.02, end:0.48,
     name:"Mitral Regurgitation",
-    timing:"Pansystolic — uniform from S1 to S2",
+    timing:"Pansystolic - uniform from S1 to S2",
     location:"Apex, radiates to axilla",
     character:"Blowing, soft quality. S3 may be heard in severe MR.",
-    chamber:"LV + LA volume overload → eccentric hypertrophy. EF falsely elevated — surgery threshold EF 60%.",
+    chamber:"LV + LA volume overload → eccentric hypertrophy. EF falsely elevated - surgery threshold EF 60%.",
     overload:"Volume",
     causes:"MVP (most common in developed world), papillary muscle rupture post-MI, infective endocarditis, rheumatic, functional (dilated annulus)",
     manoeuvres:"Louder with handgrip (↑ afterload → more regurgitation). Softer with Valsalva/standing (↓ preload)."
@@ -133,7 +132,7 @@ const MURMURS = [
     name:"Mitral Valve Prolapse",
     timing:"Mid-systolic click + late systolic murmur",
     location:"Apex",
-    character:"Non-ejection click (high-pitched) — the defining feature. Followed by late systolic murmur if regurgitation present.",
+    character:"Non-ejection click (high-pitched) - the defining feature. Followed by late systolic murmur if regurgitation present.",
     chamber:"Usually no significant burden unless progresses to MR",
     overload:"None unless complicated by significant MR",
     causes:"Myxomatous degeneration of mitral leaflets. Associated with Marfan's syndrome, Ehlers-Danlos. Most common valve abnormality (~2% population, young women).",
@@ -142,46 +141,46 @@ const MURMURS = [
   {
     id:"ps", group:"systolic", label:"PS", color:"#facc15", shape:"diamond", height:0.60, start:0.08, end:0.44,
     name:"Pulmonary Stenosis",
-    timing:"Ejection systolic — crescendo-decrescendo",
+    timing:"Ejection systolic - crescendo-decrescendo",
     location:"Left upper sternal border, radiates to back",
-    character:"Louder on inspiration (Carvallo's sign — right-sided). Split S2 with delayed P2. Ejection click may precede murmur.",
+    character:"Louder on inspiration (Carvallo's sign - right-sided). Split S2 with delayed P2. Ejection click may precede murmur.",
     chamber:"RV pressure overload → RV concentric hypertrophy",
     overload:"Pressure",
     causes:"Congenital (most common), Noonan syndrome, congenital rubella, tetralogy of Fallot, carcinoid syndrome",
-    manoeuvres:"Louder with inspiration — Carvallo's sign. Right-sided murmur increases with increased right heart filling."
+    manoeuvres:"Louder with inspiration - Carvallo's sign. Right-sided murmur increases with increased right heart filling."
   },
   {
     id:"tr", group:"systolic", label:"TR", color:"#f97316", shape:"rect", height:0.50, start:0.02, end:0.48,
     name:"Tricuspid Regurgitation",
     timing:"Pansystolic",
     location:"Left lower sternal border",
-    character:"Blowing. Increases with inspiration — Carvallo's sign. Pulsatile liver, giant v-wave in JVP.",
+    character:"Blowing. Increases with inspiration - Carvallo's sign. Pulsatile liver, giant v-wave in JVP.",
     chamber:"RA + RV volume overload → systemic venous congestion",
     overload:"Volume",
-    causes:"Functional (RV dilatation stretching annulus — most common), IV drug use (Staph aureus IE — right-sided), carcinoid syndrome",
-    manoeuvres:"Louder with inspiration — Carvallo's sign. This distinguishes it from left-sided pansystolic murmurs (MR)."
+    causes:"Functional (RV dilatation stretching annulus - most common), IV drug use (Staph aureus IE - right-sided), carcinoid syndrome",
+    manoeuvres:"Louder with inspiration - Carvallo's sign. This distinguishes it from left-sided pansystolic murmurs (MR)."
   },
   {
     id:"ar", group:"diastolic", label:"AR", color:"#4ade80", shape:"decrescendo", height:0.85, start:0.51, end:0.74,
     name:"Aortic Regurgitation",
-    timing:"Early diastolic — decrescendo, starts immediately after S2",
+    timing:"Early diastolic - decrescendo, starts immediately after S2",
     location:"Left sternal border. Patient leaning forward, breath held in expiration.",
     character:"High-pitched, blowing. Wide pulse pressure → bounding peripheral signs (Corrigan's pulse, Quincke's sign, De Musset's sign). Austin Flint murmur may coexist.",
     chamber:"LV volume overload → eccentric hypertrophy",
     overload:"Volume",
     causes:"Marfan syndrome (aortic root dilatation), ankylosing spondylitis, syphilis (aortitis), aortic dissection (acute AR), infective endocarditis, rheumatic",
-    manoeuvres:"Louder with handgrip (↑ afterload → more regurgitation). Leaning forward in expiration brings aortic root closer to chest wall — accentuates murmur."
+    manoeuvres:"Louder with handgrip (↑ afterload → more regurgitation). Leaning forward in expiration brings aortic root closer to chest wall - accentuates murmur."
   },
   {
     id:"pr", group:"diastolic", label:"PR", color:"#facc15", shape:"decrescendo", height:0.50, start:0.51, end:0.72,
     name:"Pulmonary Regurgitation",
-    timing:"Early diastolic — Graham Steell murmur",
+    timing:"Early diastolic - Graham Steell murmur",
     location:"Left upper sternal border",
-    character:"High-pitched, blowing. Almost always secondary to pulmonary hypertension. Easily confused with AR — context distinguishes them.",
+    character:"High-pitched, blowing. Almost always secondary to pulmonary hypertension. Easily confused with AR - context distinguishes them.",
     chamber:"RV volume overload",
     overload:"Volume (secondary to pulmonary HTN)",
-    causes:"Pulmonary hypertension causing PA ring dilatation (most common — functional). Rarely primary valve disease.",
-    manoeuvres:"Louder with inspiration — Carvallo's sign (right-sided murmur)."
+    causes:"Pulmonary hypertension causing PA ring dilatation (most common - functional). Rarely primary valve disease.",
+    manoeuvres:"Louder with inspiration - Carvallo's sign (right-sided murmur)."
   },
   {
     id:"ms", group:"diastolic", label:"MS", color:"#e879f9", shape:"rumble", height:0.70, start:0.60, end:0.93,
@@ -192,18 +191,18 @@ const MURMURS = [
     chamber:"LA pressure overload → LA enlargement → AF → thrombus → stroke. LV is actually underfilled.",
     overload:"Pressure (LA)",
     causes:"Almost exclusively rheumatic fever. Group A Strep → molecular mimicry → immune attack on valve → fibrosis and leaflet fusion.",
-    manoeuvres:"Exercise or tachycardia worsens symptoms — less filling time increases the gradient across the stenosed valve."
+    manoeuvres:"Exercise or tachycardia worsens symptoms - less filling time increases the gradient across the stenosed valve."
   },
   {
     id:"ts", group:"diastolic", label:"TS", color:"#818cf8", shape:"rumble", height:0.46, start:0.62, end:0.91,
     name:"Tricuspid Stenosis",
     timing:"Mid-diastolic rumble",
     location:"Left lower sternal border",
-    character:"Low-pitched. Increases with inspiration — Carvallo's sign. Prominent a-wave in JVP.",
+    character:"Low-pitched. Increases with inspiration - Carvallo's sign. Prominent a-wave in JVP.",
     chamber:"RA pressure overload → systemic venous congestion",
     overload:"Pressure (RA)",
-    causes:"Almost always rheumatic fever — never occurs in isolation, almost always with MS. Also carcinoid syndrome.",
-    manoeuvres:"Louder with inspiration — Carvallo's sign."
+    causes:"Almost always rheumatic fever - never occurs in isolation, almost always with MS. Also carcinoid syndrome.",
+    manoeuvres:"Louder with inspiration - Carvallo's sign."
   },
 ];
 
@@ -274,7 +273,7 @@ function buildSVG() {
     svgTx({x,y:base+24,fill:bold?"#64748b":"#2d3f55","font-size":10,"font-weight":"600","text-anchor":"middle","font-family":"JetBrains Mono, monospace"},label,svg);
   });
 
-  // Build all waveform paths once with IDs — opacity updated separately
+  // Build all waveform paths once with IDs - opacity updated separately
   MURMURS.forEach(m => {
     const shape = getPath(m, lx, tw, base, maxH);
     if (shape.type === "click_late") {
@@ -283,7 +282,7 @@ function buildSVG() {
     } else {
       svgEl("path",{id:"path-"+m.id,d:shape.d,fill:m.color,opacity:0.72},svg);
     }
-    // Label — hidden by default
+    // Label - hidden by default
     const x1=lx+m.start*tw, x2=lx+m.end*tw, mx=(x1+x2)/2;
     const h = maxH * m.height * (m.shape==="rumble" ? 0.5 : 1);
     svgTx({id:"lbl-"+m.id,x:mx,y:base-h-10,fill:m.color,"font-size":9,"font-weight":"500","text-anchor":"middle","font-family":"JetBrains Mono, monospace",opacity:0},m.label,svg);
@@ -291,7 +290,7 @@ function buildSVG() {
 }
 
 function renderSVG() {
-  // Only update opacities — no redraw, so CSS transition fires
+  // Only update opacities - no redraw, so CSS transition fires
   MURMURS.forEach(m => {
     const isActive = active === m.id;
     const op = active === null ? 0.72 : isActive ? 1 : 0.1;
