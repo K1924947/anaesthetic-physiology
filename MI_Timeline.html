@@ -236,7 +236,7 @@
 
   <!-- Complication Gantt bar -->
   <div class="comp-bar-wrap">
-    <div class="comp-bar-title">Complication Timeline — All Stages</div>
+    <div class="comp-bar-title">Complication Timeline - All Stages</div>
     <div class="comp-gantt" id="compGantt"></div>
   </div>
 
@@ -268,14 +268,14 @@ const STAGES = [
     infarctColor: "#8b1a1a",
     infarctOpacity: 0.0, // nothing visible
     wallThinning: 0,
-    gross: "Normal appearing myocardium. No visible changes — the infarct is invisible to the naked eye at this stage.",
+    gross: "Normal appearing myocardium. No visible changes - the infarct is invisible to the naked eye at this stage.",
     micro: [
-      "Wavy fibres at the border of the infarct — passive mechanical stretching by adjacent contracting muscle",
+      "Wavy fibres at the border of the infarct - passive mechanical stretching by adjacent contracting muscle",
       "Central zone: no changes visible on light microscopy",
-      "Cell swelling (hydropic change) — Na⁺/K⁺ ATPase failing, sodium flooding in",
+      "Cell swelling (hydropic change) - Na⁺/K⁺ ATPase failing, sodium flooding in",
     ],
     complications: [
-      "VF / Ventricular fibrillation — most common cause of early death",
+      "VF / Ventricular fibrillation - most common cause of early death",
       "K⁺ leaking from dying cells destabilises membrane potentials throughout the myocardium",
       "This is why immediate monitoring and defibrillator access is critical",
     ],
@@ -290,14 +290,14 @@ const STAGES = [
     wallThinning: 0,
     gross: "Normal to faint pallor in the infarct zone. Changes are subtle and may not be grossly apparent.",
     micro: [
-      "Coagulative necrosis establishing — ghost cells appear, loss of nuclei, loss of striations",
-      "Deeply eosinophilic (pink) cytoplasm — denatured proteins",
+      "Coagulative necrosis establishing - ghost cells appear, loss of nuclei, loss of striations",
+      "Deeply eosinophilic (pink) cytoplasm - denatured proteins",
       "Neutrophils beginning to arrive at the margins",
-      "Cell architecture preserved but lifeless — the hallmark of coagulative necrosis",
+      "Cell architecture preserved but lifeless - the hallmark of coagulative necrosis",
     ],
     complications: [
-      "VF / Arrhythmia — still the dominant risk",
-      "Cardiogenic shock may develop if the infarct is large (>40% LV mass) — acute loss of contractile tissue drops CO",
+      "VF / Arrhythmia - still the dominant risk",
+      "Cardiogenic shock may develop if the infarct is large (>40% LV mass) - acute loss of contractile tissue drops CO",
     ],
     compActive: ["arrhythmia", "cardiogenic"],
   },
@@ -308,14 +308,14 @@ const STAGES = [
     infarctColor: "#b0b0a0",
     infarctOpacity: 0.6,
     wallThinning: 0,
-    gross: "Pallor — loss of red-brown colour as myoglobin washes out of dead cells. First definitive gross change.",
+    gross: "Pallor - loss of red-brown colour as myoglobin washes out of dead cells. First definitive gross change.",
     micro: [
       "Coagulative necrosis well established",
-      "Peak early neutrophil infiltration — acute inflammatory response in full swing",
-      "Ghost cells prominent — tissue architecture preserved but nuclei absent",
+      "Peak early neutrophil infiltration - acute inflammatory response in full swing",
+      "Ghost cells prominent - tissue architecture preserved but nuclei absent",
     ],
     complications: [
-      "VF / Arrhythmia — still significant risk",
+      "VF / Arrhythmia - still significant risk",
       "Cardiogenic shock in large infarcts",
     ],
     compActive: ["arrhythmia", "cardiogenic"],
@@ -327,15 +327,15 @@ const STAGES = [
     infarctColor: "#d4c89a",
     infarctOpacity: 0.8,
     wallThinning: 1,
-    gross: "Pale centre with a hyperaemic (red/haemorrhagic) border — inflammatory response brings blood to the margins while the central zone remains pale.",
+    gross: "Pale centre with a hyperaemic (red/haemorrhagic) border - inflammatory response brings blood to the margins while the central zone remains pale.",
     micro: [
-      "Dense neutrophil infiltration — peak neutrophilic phase",
+      "Dense neutrophil infiltration - peak neutrophilic phase",
       "Metalloproteinases released by neutrophils digest the extracellular matrix",
-      "Wall is at maximum structural weakness — no scar yet, matrix being destroyed",
+      "Wall is at maximum structural weakness - no scar yet, matrix being destroyed",
     ],
     complications: [
-      "Free wall rupture → haemopericardium → cardiac tamponade — sudden cardiovascular collapse",
-      "Fibrinous pericarditis → friction rub, pleuritic chest pain — inflammation reaching epicardium",
+      "Free wall rupture → haemopericardium → cardiac tamponade - sudden cardiovascular collapse",
+      "Fibrinous pericarditis → friction rub, pleuritic chest pain - inflammation reaching epicardium",
     ],
     compActive: ["rupture", "pericarditis"],
   },
@@ -346,16 +346,16 @@ const STAGES = [
     infarctColor: "#c8a838",
     infarctOpacity: 0.9,
     wallThinning: 2,
-    gross: "Yellow and soft centre — maximum softening from macrophage digestion. Red-yellow appearance.",
+    gross: "Yellow and soft centre - maximum softening from macrophage digestion. Red-yellow appearance.",
     micro: [
-      "Neutrophils replaced by macrophages — chronic inflammatory phase",
+      "Neutrophils replaced by macrophages - chronic inflammatory phase",
       "Macrophages phagocytosing necrotic debris",
-      "Early granulation tissue at the edges — fibroblasts and new capillaries beginning",
+      "Early granulation tissue at the edges - fibroblasts and new capillaries beginning",
     ],
     complications: [
       "Ventricular septal rupture → new harsh pansystolic murmur, L→R shunt, ↑O₂ sat in RV",
       "Papillary muscle rupture → posteromedial most common (single RCA supply) → acute MR → pulmonary oedema",
-      "Fibrinous pericarditis — friction rub peaks here",
+      "Fibrinous pericarditis - friction rub peaks here",
     ],
     compActive: ["septal", "papillary", "pericarditis"],
   },
@@ -366,7 +366,7 @@ const STAGES = [
     infarctColor: "#c44a3a",
     infarctOpacity: 0.7,
     wallThinning: 2,
-    gross: "Red border emerging around yellow centre — granulation tissue is highly vascular giving the margins a red appearance.",
+    gross: "Red border emerging around yellow centre - granulation tissue is highly vascular giving the margins a red appearance.",
     micro: [
       "Granulation tissue replacing necrotic zone",
       "Fibroblasts laying down collagen",
@@ -374,7 +374,7 @@ const STAGES = [
       "Macrophages still clearing residual debris",
     ],
     complications: [
-      "Ventricular pseudoaneurysm — free wall rupture contained by pericardium, forms false aneurysm with narrow neck",
+      "Ventricular pseudoaneurysm - free wall rupture contained by pericardium, forms false aneurysm with narrow neck",
       "Distinguished from true aneurysm by narrow neck and absence of all three wall layers",
     ],
     compActive: ["pseudoaneurysm"],
@@ -386,14 +386,14 @@ const STAGES = [
     infarctColor: "#7a6a8a",
     infarctOpacity: 0.8,
     wallThinning: 2,
-    gross: "Scar tissue forming — area shrinks, becomes firmer. Colour transitions from red-yellow toward pale grey.",
+    gross: "Scar tissue forming - area shrinks, becomes firmer. Colour transitions from red-yellow toward pale grey.",
     micro: [
-      "Granulation tissue maturing — collagen becoming denser",
+      "Granulation tissue maturing - collagen becoming denser",
       "Vascularity reducing as scar matures",
-      "Fibrosis establishing — myocytes replaced by collagen permanently",
+      "Fibrosis establishing - myocytes replaced by collagen permanently",
     ],
     complications: [
-      "True ventricular aneurysm — contains all three wall layers, paradoxical outward bulge during systole. Persistent ST elevation on ECG.",
+      "True ventricular aneurysm - contains all three wall layers, paradoxical outward bulge during systole. Persistent ST elevation on ECG.",
       "Mural thrombus forming inside aneurysm → systemic emboli → stroke",
     ],
     compActive: ["aneurysm"],
@@ -405,22 +405,22 @@ const STAGES = [
     infarctColor: "#e0e0e0",
     infarctOpacity: 0.9,
     wallThinning: 3,
-    gross: "Dense white scar — tough, fibrous, shrunken. Clearly demarcated from surrounding viable myocardium.",
+    gross: "Dense white scar - tough, fibrous, shrunken. Clearly demarcated from surrounding viable myocardium.",
     micro: [
-      "Dense collagen fibrosis — type I collagen",
-      "No myocytes — permanently replaced",
-      "No vascularity — avascular scar",
+      "Dense collagen fibrosis - type I collagen",
+      "No myocytes - permanently replaced",
+      "No vascularity - avascular scar",
       "Non-contractile, non-conducting",
     ],
     complications: [
-      "Dressler syndrome — autoimmune fibrinous pericarditis weeks–months post MI. Antibodies against exposed cardiac antigens. Fever, chest pain, friction rub, ↑ESR. Treat with aspirin/NSAIDs",
-      "Chronic heart failure — ventricular remodelling, lost contractile mass, progressive dilatation",
+      "Dressler syndrome - autoimmune fibrinous pericarditis weeks–months post MI. Antibodies against exposed cardiac antigens. Fever, chest pain, friction rub, ↑ESR. Treat with aspirin/NSAIDs",
+      "Chronic heart failure - ventricular remodelling, lost contractile mass, progressive dilatation",
     ],
     compActive: ["dressler", "hf"],
   },
 ];
 
-// Complication spans for Gantt — [startStageIndex, endStageIndex]
+// Complication spans for Gantt - [startStageIndex, endStageIndex]
 const COMPLICATIONS = [
   { id: "arrhythmia",    label: "Arrhythmia / VF",           color: "#60a5fa", start: 0, end: 2 },
   { id: "cardiogenic",   label: "Cardiogenic shock",          color: "#f97316", start: 1, end: 2 },
@@ -453,14 +453,14 @@ function svgTxt(attrs, text, parent) {
   return e;
 }
 
-// ─── HEART SVG — persistent elements, animated via CSS transitions ───────────
+// ─── HEART SVG - persistent elements, animated via CSS transitions ───────────
 
 function buildHeartSVG() {
   const svg = document.getElementById("heartSvg");
   svg.innerHTML = "";
   const cx = 130, cy = 100, outerRx = 85, outerRy = 78;
 
-  // Static structure — drawn once
+  // Static structure - drawn once
   svgEl("rect", { id:"hBg", x:0, y:0, width:560, height:200, fill:"transparent" }, svg);
 
   // Outer wall
@@ -469,11 +469,11 @@ function buildHeartSVG() {
   // Myocardium
   svgEl("ellipse", { id:"hMyo", cx, cy, rx:outerRx-2, ry:outerRy-2, fill:"#6b1a1a" }, svg);
 
-  // Infarct wedge — built as a path, updated each stage
+  // Infarct wedge - built as a path, updated each stage
   svgEl("path", { id:"hInfarct", fill:"#8b1a1a", opacity:"0", style:"transition:fill 0.6s ease, opacity 0.6s ease, d 0.6s ease" }, svg);
   svgEl("path", { id:"hInfarctBorder", fill:"none", "stroke-width":1.5, opacity:"0", style:"transition:stroke 0.6s ease, opacity 0.4s ease, d 0.6s ease" }, svg);
 
-  // LV cavity — rx/ry animate
+  // LV cavity - rx/ry animate
   svgEl("ellipse", { id:"hCavity", cx, cy, rx:48, ry:44, fill:"#0a0510", style:"transition:rx 0.6s ease, ry 0.6s ease" }, svg);
   svgTxt({ id:"hCavityLbl", x:cx, y:cy+3, fill:"#94a3b8", "font-size":11, "text-anchor":"middle", "font-family":"JetBrains Mono, monospace" }, "LV cavity", svg);
 
@@ -487,7 +487,7 @@ function buildHeartSVG() {
   svgEl("line",   { id:"hWfLine", x1:58, y1:26, x2:100, y2:60, stroke:"#facc15", "stroke-width":0.8, "stroke-dasharray":"2,2", opacity:"0", style:"transition:opacity 0.5s ease" }, svg);
   svgEl("circle", { id:"hWfDot",  cx:100, cy:60, r:2.5, fill:"#facc15", opacity:"0", style:"transition:opacity 0.5s ease" }, svg);
 
-  // Right panel — static labels
+  // Right panel - static labels
   const lx = 300;
   svgTxt({ x:lx, y:30, fill:"#4b5563", "font-size":9, "font-family":"JetBrains Mono, monospace", "letter-spacing":2 }, "STAGE", svg);
   svgTxt({ id:"hStageLabel", x:lx, y:52, fill:"#60a5fa", "font-size":18, "font-family":"JetBrains Mono, monospace", "font-weight":500, style:"transition:fill 0.4s ease" }, "0–4h", svg);
@@ -611,7 +611,7 @@ function updateHeartSVG() {
   // Wall integrity
   const intW  = Math.max(10, 170 - thin*42);
   const intC  = thin===0?"#4ade80": thin===1?"#facc15": thin===2?"#f97316":"#94a3b8";
-  const intLblTxt = thin===0?"intact": thin===1?"weakening": thin===2?"weakest — rupture risk":"scarred";
+  const intLblTxt = thin===0?"intact": thin===1?"weakening": thin===2?"weakest - rupture risk":"scarred";
   document.getElementById("hIntegrityFill").setAttribute("width", intW);
   document.getElementById("hIntegrityFill").setAttribute("fill", intC);
   const intLbl = document.getElementById("hIntegrityLbl");
@@ -714,7 +714,7 @@ function buildGantt() {
     fill.style.background = comp.color;
     fill.style.opacity = "0.18";
 
-    // Single shared marker per track — slides smoothly
+    // Single shared marker per track - slides smoothly
     const marker = document.createElement("div");
     marker.className = "gantt-marker";
     marker.id = "gmarker-" + comp.id;
@@ -790,7 +790,7 @@ function renderAll() {
 buildHeartSVG();
 buildTimeline();
 buildGantt();
-// Initial page load — fade up cards once
+// Initial page load - fade up cards once
 ['grossCard','microCard','compCard'].forEach((id, i) => {
   const el = document.getElementById(id);
   if (el) { el.style.animation = 'fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) ' + (0.3 + i*0.08) + 's both'; }
