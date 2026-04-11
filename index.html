@@ -137,7 +137,7 @@
     max-height: 0; transition: max-height 0.4s cubic-bezier(0.22,1,0.36,1), padding 0.3s ease;
     padding: 0 20px;
   }
-  .system-body.open { max-height: 800px; padding: 16px 20px 20px; }
+  .system-body.open { max-height: 2000px; padding: 16px 20px 20px; }
 
   /* ── Subcategory ── */
   .subcategory { margin-bottom: 14px; }
@@ -158,7 +158,7 @@
     text-decoration: none; color: inherit;
     transition: border-color 0.25s ease, background 0.25s ease,
                 transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease;
-    position: relative; overflow: hidden;
+    position: relative; overflow: visible;
   }
   .tool-card::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
@@ -199,13 +199,15 @@
     display: inline-block;
   }
   .type-pill.interactive {
+    color: #4ade80; background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.25);
+  }
+  .type-pill.notes {
     color: #60a5fa; background: rgba(96,165,250,0.08);
     border: 1px solid rgba(96,165,250,0.25);
   }
-  .type-pill.notes {
-    color: #a78bfa; background: rgba(167,139,250,0.08);
-    border: 1px solid rgba(167,139,250,0.25);
-  }
+  .tool-card.interactive-card { --card-color: #4ade80; }
+  .tool-card.notes-card { --card-color: #60a5fa; }
 
   .open-btn {
     font-family: 'JetBrains Mono', monospace;
@@ -307,7 +309,7 @@
       <div class="system-toggle-left">
         <span class="system-number">01</span>
         <span class="system-name">Cardiovascular</span>
-        <span class="system-count">4 tools</span>
+        <span class="system-count">5 tools</span>
       </div>
       <span class="system-chevron">▾</span>
     </button>
@@ -317,7 +319,7 @@
         <div class="subcategory-label">Physiology</div>
         <div class="tools-row">
 
-          <a class="tool-card" href="PV_Loop.html" style="--card-color:#60a5fa;">
+          <a class="tool-card interactive-card" href="PV_Loop.html">
             <div class="tool-left">
               <div class="type-pill interactive">Interactive</div><div class="tool-title">Pressure–Volume Loop</div>
               <div class="tool-desc">How the cardiac cycle changes across physiological and pathological states. Clickable phases, live stats, ESPVR and EDPVR reference lines.</div>
@@ -332,7 +334,7 @@
             <div class="tool-right"><span class="open-btn">Open</span></div>
           </a>
 
-          <a class="tool-card" href="Arterial_Waveform.html" style="--card-color:#4ade80;">
+          <a class="tool-card interactive-card" href="Arterial_Waveform.html">
             <div class="tool-left">
               <div class="type-pill interactive">Interactive</div><div class="tool-title">Arterial Pressure Waveform</div>
               <div class="tool-desc">The PV loop unrolled into time. Annotated waveform features with live SBP, DBP, pulse pressure and MAP. Each state linked back to its PV loop equivalent.</div>
@@ -354,7 +356,7 @@
         <div class="subcategory-label">Pathophysiology</div>
         <div class="tools-row">
 
-          <a class="tool-card" href="MI_Timeline.html" style="--card-color:#f97316;">
+          <a class="tool-card interactive-card" href="MI_Timeline.html">
             <div class="tool-left">
               <div class="type-pill interactive">Interactive</div><div class="tool-title">Myocardial Infarction Timeline</div>
               <div class="tool-desc">Step-through timeline from occlusion to mature scar. Gross appearance, microscopic findings, and complications at each stage with a full complication Gantt chart.</div>
@@ -368,7 +370,7 @@
             <div class="tool-right"><span class="open-btn">Open</span></div>
           </a>
 
-          <a class="tool-card" href="HF_Notes.html" style="--card-color:#a78bfa;">
+          <a class="tool-card notes-card" href="HF_Notes.html">
             <div class="tool-left">
               <div class="type-pill notes">Notes</div><div class="tool-title">Heart Failure</div>
               <div class="tool-desc">Mechanisms, classification, compensatory cascades, Starling curve, and drug rationale. HFrEF vs HFpEF, left vs right, RAAS and SNS compensation.</div>
@@ -378,6 +380,20 @@
                 <span class="tag">Frank-Starling</span>
                 <span class="tag">RAAS</span>
                 <span class="tag">Compensatory Mechanisms</span>
+              </div>
+            </div>
+            <div class="tool-right"><span class="open-btn">Open</span></div>
+          </a>
+
+          <a class="tool-card interactive-card" href="Cardiac_Murmurs.html">
+            <div class="tool-left">
+              <div class="type-pill interactive">Interactive</div><div class="tool-title">Cardiac Murmurs</div>
+              <div class="tool-desc">Interactive murmur timeline across the cardiac cycle. Click any murmur to explore its waveform shape, auscultation features, chamber burden, overload type, causes, and manoeuvre effects.</div>
+              <div class="tool-tags">
+                <span class="tag">Auscultation</span>
+                <span class="tag">Murmurs</span>
+                <span class="tag">Valvular Disease</span>
+                <span class="tag">Manoeuvres</span>
               </div>
             </div>
             <div class="tool-right"><span class="open-btn">Open</span></div>
@@ -440,13 +456,13 @@
     <div>
       <div class="about-block-label">About</div>
       <div class="about-block-text">
-        Built by an FY1 doctor alongside preparation for anaesthetic training. Each topic here is one worth understanding from first principles — <strong>the kind of understanding that sticks, not the kind that gets you through an exam and disappears</strong>. These started as personal study tools. If they're useful to others, all the better.
+        Built by an FY1 doctor alongside preparation for anaesthetic training. Each topic here is one worth understanding from first principles - <strong>the kind of understanding that sticks, not the kind that gets you through an exam and disappears</strong>. These started as personal study tools. If they're useful to others, all the better.
       </div>
     </div>
     <div>
       <div class="about-block-label">For whom</div>
       <div class="about-block-text">
-        For anyone wanting to understand physiology properly — whether consolidating knowledge for clinical practice or preparing for postgraduate exams including the <strong>MSRA</strong>, <strong>FRCA</strong>, and <strong>USMLE</strong>. All tools run entirely in the browser — no account, no download.
+        For anyone wanting to understand physiology properly - whether consolidating knowledge for clinical practice or preparing for postgraduate exams including the <strong>MSRA</strong>, <strong>FRCA</strong>, and <strong>USMLE</strong>. All tools run entirely in the browser - no account, no download.
       </div>
     </div>
   </div>
