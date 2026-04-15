@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cardiac Action Potential · Cardiovascular Physiology</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#07090f;--surface:#0a0d17;--surface2:#0d1121;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--dim:#475569;--accent:#60a5fa}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes infoIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  body{background:var(--bg);color:var(--text);zoom:1.25;font-family:'EB Garamond',Georgia,serif;min-height:100vh;overflow-x:hidden;font-size:16px;line-height:1.7;animation:fadeIn 0.4s ease both}
+  body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(96,165,250,0.01) 1px,transparent 1px),linear-gradient(90deg,rgba(96,165,250,0.01) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+  .page{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:56px 24px 80px}
+
+  .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both}
+  .home-btn{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#64748b;text-decoration:none;border:1px solid #1e293b;padding:5px 14px;border-radius:20px;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+  .home-btn:hover{border-color:#60a5fa;color:#60a5fa}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#94a3b8}
+
+  header{text-align:center;margin-bottom:32px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.05s both}
+  h1{font-size:clamp(26px,5vw,38px);font-weight:400;color:#f1f5f9;letter-spacing:-0.3px;margin-bottom:8px}
+  .subtitle{font-size:15px;color:var(--muted);font-style:italic}
+
+  /* Button rows */
+  .btn-section{margin-bottom:20px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both}
+  .btn-section-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;text-align:center}
+  .btn-row{display:flex;flex-wrap:wrap;justify-content:center;gap:7px}
+  .pbtn,.cbtn{cursor:pointer;padding:7px 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);transition:all 0.25s}
+  .pbtn:hover,.cbtn:hover{border-color:#2d4a6e;color:#94a3b8;transform:translateY(-1px)}
+
+  .divider{height:1px;background:var(--border);margin:20px 0;opacity:0.5}
+
+  /* Main layout */
+  .main-layout{display:flex;flex-direction:column;gap:16px;animation:fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s both}
+
+  /* SVG panel */
+  .svg-panel{background:#070a12;border:1px solid var(--border);border-radius:14px;padding:24px 24px 16px;display:flex;flex-direction:column;gap:8px}
+  .svg-panel-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;text-align:center}
+  .ap-toggle{display:flex;justify-content:center;gap:8px;margin-bottom:10px}
+  .ap-tbtn{cursor:pointer;padding:5px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);transition:all 0.2s}
+  .ap-tbtn:hover{border-color:#2d4a6e;color:#94a3b8}
+  .ap-tbtn.active{border-color:#60a5fa;background:rgba(96,165,250,0.1);color:#60a5fa}
+  #apSvg rect,#apSvg path{transition:opacity 0.45s cubic-bezier(0.22,1,0.36,1)}
+  .svg-panel{transition:opacity 0.3s ease}
+  .svg-panel.fading{opacity:0}
+  .btn-section{transition:opacity 0.3s ease}
+  .info-panel{transition:border-color 0.4s ease, opacity 0.3s ease}
+  .info-panel.fading{opacity:0}
+
+  /* Info panel */
+  .info-panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:border-color 0.4s ease;display:flex;flex-direction:column;gap:10px;min-height:300px}
+  .info-placeholder{font-size:14px;color:var(--dim);font-style:italic;margin:auto 0;text-align:center}
+  .info-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px}
+  .info-title{font-size:21px;font-weight:400;color:#f1f5f9;margin-bottom:2px}
+  .info-timing{font-size:15px;font-style:italic;color:var(--muted)}
+  .icard{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 16px;animation:infoIn 0.35s cubic-bezier(0.22,1,0.36,1) both}
+  .icard:nth-child(1){animation-delay:0s}
+  .icard:nth-child(2){animation-delay:0.05s}
+  .icard:nth-child(3){animation-delay:0.1s}
+  .icard:nth-child(4){animation-delay:0.15s}
+  .icard:nth-child(5){animation-delay:0.2s}
+  .icard-label{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;margin-bottom:6px}
+  .icard-body{font-size:13px;color:var(--muted);line-height:1.7}
+  .icard-body strong{color:#94a3b8}
+  .icard-body ul{padding-left:16px}
+  .icard-body li{margin-bottom:3px}
+  .ecg-row{display:flex;gap:8px;flex-wrap:wrap}
+  .ecg-pill{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:6px;border:1px solid var(--border)}
+  .ecg-wide{color:#f97316;border-color:rgba(249,115,22,0.3);background:rgba(249,115,22,0.06)}
+  .ecg-long{color:#f87171;border-color:rgba(248,113,113,0.3);background:rgba(248,113,113,0.06)}
+  .ecg-normal{color:#4ade80;border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.06)}
+
+  /* Footer */
+  footer{margin-top:56px;border-top:1px solid var(--border);padding-top:20px;text-align:center}
+  .footer-inner{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
+  .footer-tag{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.18);padding:3px 8px;border-radius:20px}
+  .footer-dot{color:#1a2535}
+  .footer-system{font-family:'EB Garamond',serif;font-size:13px;font-style:italic;color:#94a3b8}
+  .footer-sub,.footer-tool{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4b5563}
+  .footer-tool{color:#94a3b8}
+  .footer-author{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#60a5fa99}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="nav">
+    <a href="index.html" class="home-btn">&#8592; Home</a>
+    <div class="eyebrow">Cardiovascular · Physiology & Pharmacology</div>
+    <div style="width:70px"></div>
+  </div>
+
+  <header>
+    <h1>Cardiac Action Potential</h1>
+    <p class="subtitle">Ionic mechanisms by phase - and how antiarrhythmics exploit them</p>
+  </header>
+
+  <!-- Phase buttons -->
+  <div class="btn-section">
+    <div class="btn-section-label">Phases - ionic physiology</div>
+    <div class="btn-row" id="phaseBtns"></div>
+  </div>
+
+  <div class="btn-section" style="margin-bottom:24px">
+    <div class="btn-section-label">Vaughan Williams - antiarrhythmic classes</div>
+    <div class="btn-row" id="classBtns"></div>
+  </div>
+
+  <!-- Main layout -->
+  <div class="main-layout">
+    <div class="svg-panel">
+      <div class="ap-toggle">
+        <button class="ap-tbtn active" id="tbtn-fast" onclick="setApType('fast')">Ventricular (fast response)</button>
+        <button class="ap-tbtn" id="tbtn-slow" onclick="setApType('slow')">Nodal (slow response)</button>
+      </div>
+      <div class="svg-panel-label" id="apLabel">Fast response - ventricular myocyte</div>
+      <svg id="apSvg" viewBox="0 0 700 280" width="700" height="280" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;display:block;margin:0 auto"></svg>
+    </div>
+    <div class="info-panel" id="infoPanel">
+      <p class="info-placeholder">Select a phase or drug class to explore the action potential.</p>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-tag">Built for teaching</span>
+      <span class="footer-dot">·</span>
+      <span class="footer-system">Cardiovascular</span>
+      <span class="footer-dot">·</span>
+      <span class="footer-sub">Physiology & Pharmacology</span>
+      <span class="footer-dot">·</span>
+      <span class="footer-tool">Cardiac Action Potential</span>
+      <span class="footer-dot">·</span>
+      <span class="footer-author">Developed by Dr Ed Kim</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+// ── PHASE DATA ────────────────────────────────────────────────────────────────
+const PHASES = [
+  {
+    id:"p4", label:"Phase 4", color:"#06b6d4", highlight:["hl-p4a","hl-p4b"],
+    title:"Phase 4 - Resting Membrane Potential",
+    subtitle:"Stable at -90mV - cell waiting to fire",
+    ions:"K+ leak channels are open. K+ flows slowly out of the cell (high intracellular K+ maintained by Na+/K+ ATPase). This outward K+ current leaves negative charge behind, holding the membrane at -90mV.",
+    channels:"K+ leak channels (IK1) open. Na+ and Ca2+ channels closed. Na+/K+ ATPase continuously pumps 3 Na+ out and 2 K+ in to maintain gradients.",
+    significance:"The stable negative resting potential is the prerequisite for a rapid phase 0 upstroke. Na+ channels exist in three states: rested (closed, available at negative voltages), open, and inactivated (closed, unavailable - needs time at negative voltage to recover). At -90mV virtually all Na+ channels are in the rested state and ready to open. If the resting potential is less negative (e.g. hyperkalaemia, ischaemia), some channels are already inactivated and unavailable - fewer open during phase 0, the upstroke is slower, conduction falls. This is why hyperkalaemia causes conduction problems, and why Class Ib drugs work selectively on ischaemic tissue."
+  },
+  {
+    id:"p0", label:"Phase 0", color:"#f59e0b", highlight:["hl-p0"],
+    title:"Phase 0 - Rapid Depolarisation",
+    subtitle:"Fast Na+ channels open - membrane shoots from -90mV to +30mV",
+    ions:"Voltage-gated fast Na+ channels open when membrane reaches threshold (~-70mV). Na+ floods in rapidly down its concentration and electrical gradient. Membrane potential overshoots 0mV to reach +30mV. Na+ channels then rapidly inactivate.",
+    channels:"Fast voltage-gated Na+ channels (Nav1.5) open then inactivate within milliseconds. Speed of phase 0 determines conduction velocity - faster upstroke = faster propagation.",
+    significance:"The rapid upstroke propagates the action potential to adjacent cells via gap junctions. This is why ventricular conduction is fast (0.5 m/s in muscle, 4 m/s in Purkinje fibres). Blocking Na+ channels (Class I drugs) slows phase 0 and widens the QRS."
+  },
+  {
+    id:"p1", label:"Phase 1", color:"#fb7185", highlight:["hl-p1"],
+    title:"Phase 1 - Early Repolarisation",
+    subtitle:"Transient K+ efflux - brief notch before plateau",
+    ions:"Fast Na+ channels inactivate. Transient outward K+ channels (Ito) open briefly. K+ leaves the cell, taking positive charge out. Membrane dips slightly before the plateau.",
+    channels:"Ito (transient outward K+ current) - voltage-gated, opens at the positive voltages reached at the peak of phase 0. Brief and subtle.",
+    significance:"Creates the small notch visible on the action potential trace before the plateau. More prominent in epicardial cells than endocardial cells - this transmural gradient is relevant in Brugada syndrome where Ito is exaggerated."
+  },
+  {
+    id:"p2", label:"Phase 2", color:"#10b981", highlight:["hl-p2"],
+    title:"Phase 2 - Plateau",
+    subtitle:"Unique to cardiac muscle - Ca2+ in balanced by K+ out",
+    ions:"L-type Ca2+ channels open slowly. Ca2+ enters the cell. This Ca2+ triggers calcium-induced calcium release (CICR) from the sarcoplasmic reticulum via RyR2 receptors - a much larger Ca2+ flood drives contraction. Electrically, Ca2+ in is balanced by K+ out, keeping the membrane flat near 0mV.",
+    channels:"L-type Ca2+ channels (Cav1.2) in sarcolemma - the trigger. RyR2 (ryanodine receptor) on SR membrane - the amplifier. K+ channels (IKr, IKs) slowly activating.",
+    significance:"The plateau serves two simultaneous purposes: electrically it creates the refractory period (cell cannot be re-excited), mechanically it is the trigger for contraction. Duration of plateau = duration of contraction. Class IV drugs block L-type channels here."
+  },
+  {
+    id:"p3", label:"Phase 3", color:"#e879f9", highlight:["hl-p3"],
+    title:"Phase 3 - Rapid Repolarisation",
+    subtitle:"K+ channels fully open - rapid return to -90mV",
+    ions:"L-type Ca2+ channels close. IKr and IKs K+ channels fully open. K+ floods out of the cell, taking positive charge with it. Membrane rapidly returns to -90mV.",
+    channels:"IKr (rapid delayed rectifier K+ current) and IKs (slow delayed rectifier K+ current). These are the channels blocked by Class III antiarrhythmics and responsible for QT prolongation.",
+    significance:"Speed of phase 3 determines the action potential duration and therefore the refractory period. Blocking K+ channels (Class III drugs) slows phase 3, prolongs the action potential, extends the refractory period, and lengthens the QT interval on ECG."
+  },
+];
+
+// ── CLASS DATA ────────────────────────────────────────────────────────────────
+const CLASSES = [
+  {
+    id:"1a", label:"Class Ia", color:"#60a5fa", target:["hl-p0","hl-p3"],
+    title:"Class Ia - Na+ and K+ blockers",
+    subtitle:"Intermediate Na+ channel binding + K+ channel block",
+    channel:"Blocks fast Na+ channels (phase 0) AND K+ channels (phase 3)",
+    drugs:"Quinidine, Procainamide, Disopyramide",
+    ecg:{qrs:"wide", qt:"long"},
+    mechanism:"Slow phase 0 (widens QRS) AND prolong phase 3 (lengthens QT). Both effects combined. Risk of torsades de pointes from QT prolongation.",
+    keypoints:["Block Na+ and K+ channels simultaneously","Widen QRS and prolong QT","Risk of torsades de pointes","Procainamide - drug-induced lupus","Quinidine - cinchonism (tinnitus, headache)"]
+  },
+  {
+    id:"1b", label:"Class Ib", color:"#818cf8", target:["hl-p0"],
+    title:"Class Ib - Fast-binding Na+ blockers",
+    subtitle:"Preferentially affect ischaemic and rapidly firing tissue",
+    channel:"Blocks fast Na+ channels (phase 0) - fast on/off kinetics",
+    drugs:"Lidocaine, Mexiletine",
+    ecg:{qrs:"normal", qt:"normal"},
+    mechanism:"Bind and unbind Na+ channels rapidly. Preferentially affect ischaemic tissue where channels cycle faster. Minimal effect on normal conduction.",
+    keypoints:["Used in ventricular arrhythmias post-MI","Lidocaine IV only - extensive first-pass if oral","Minimal QRS or QT change","Mexiletine is oral equivalent of lidocaine","Do not affect normal conduction significantly"]
+  },
+  {
+    id:"1c", label:"Class Ic", color:"#a78bfa", target:["hl-p0"],
+    title:"Class Ic - Slow-binding Na+ blockers",
+    subtitle:"Strongest Na+ channel blockade - markedly slow conduction",
+    channel:"Blocks fast Na+ channels (phase 0) - slow dissociation",
+    drugs:"Flecainide, Propafenone",
+    ecg:{qrs:"wide", qt:"normal"},
+    mechanism:"Slowest dissociation from Na+ channels. Strongest slowing of phase 0. Markedly widens QRS. No K+ channel effect so QT not prolonged.",
+    keypoints:["Used in AF in structurally normal hearts only","CONTRAINDICATED post-MI and structural heart disease","CAST trial - increased mortality in post-MI patients","Proarrhythmic in damaged myocardium","Widest QRS of all Class I"]
+  },
+  {
+    id:"2", label:"Class II", color:"#4ade80", target:["hl-p4a","hl-p4b"],
+    title:"Class II - Beta Blockers",
+    subtitle:"Slow phase 4 depolarisation via beta-1 blockade",
+    channel:"Block beta-1 receptors - reduce sympathetic drive to If and Ca2+ channels in nodal cells",
+    drugs:"Metoprolol, Atenolol, Propranolol, Esmolol (IV)",
+    ecg:{qrs:"normal", qt:"normal"},
+    mechanism:"Reduce sympathetic stimulation of SA node - slow phase 4 drift and heart rate. Slow AV node conduction - prolong PR interval. Reduce automaticity.",
+    keypoints:["Rate control in AF, post-MI arrhythmia prevention, SVT","Esmolol - ultra short acting IV, perioperative use","Contraindicated in asthma (less so with selective agents)","Do not stop abruptly - rebound tachycardia","Prolong PR interval on ECG"]
+  },
+  {
+    id:"3", label:"Class III", color:"#f97316", target:["hl-p3"],
+    title:"Class III - K+ Channel Blockers",
+    subtitle:"Prolong phase 3 - extend refractory period",
+    channel:"Block IKr/IKs K+ channels (phase 3) - prolong action potential duration",
+    drugs:"Amiodarone, Sotalol, Dofetilide, Ibutilide",
+    ecg:{qrs:"normal", qt:"long"},
+    mechanism:"Block K+ channels - K+ efflux slowed, phase 3 prolonged. Refractory period extended. QT prolonged - risk of torsades de pointes.",
+    keypoints:["Amiodarone - also blocks Na+, Ca2+, beta receptors - most effective","Amiodarone toxicity: pulmonary fibrosis, thyroid dysfunction, hepatotoxicity, corneal deposits, photosensitivity, peripheral neuropathy","Sotalol - also has beta blocking properties","All prolong QT - torsades de pointes risk","Dofetilide/ibutilide used in AF cardioversion"]
+  },
+  {
+    id:"4", label:"Class IV", color:"#f87171", target:["hl-p2"],
+    title:"Class IV - L-type Ca2+ Channel Blockers",
+    subtitle:"Block phase 2 L-type channels - slow nodal tissue",
+    channel:"Block L-type Ca2+ channels (phase 2 in ventricle, phase 0 equivalent in nodal cells)",
+    drugs:"Verapamil, Diltiazem (NOT dihydropyridines for arrhythmias)",
+    ecg:{qrs:"normal", qt:"normal"},
+    mechanism:"Block L-type Ca2+ channels. In nodal cells (SA and AV) which depend on Ca2+ - slows rate and conduction. Prolong PR interval. Negative inotropy.",
+    keypoints:["Verapamil and diltiazem - cardiac selective, SVT and AF rate control","Dihydropyridines (amlodipine) - vascular selective, hypertension not arrhythmias","NEVER combine with beta blockers - complete heart block risk","Negative inotropy - avoid in HFrEF","Prolong PR interval"]
+  },
+  {
+    id:"ado", label:"Adenosine", color:"#facc15", target:["hl-p4a","hl-p4b"],
+    title:"Adenosine",
+    subtitle:"Not Vaughan Williams - transient AV node block",
+    channel:"Activates K+ channels (GIRK) in AV node via A1 receptors - hyperpolarises and blocks conduction",
+    drugs:"Adenosine (IV only)",
+    ecg:{qrs:"normal", qt:"normal"},
+    mechanism:"Binds A1 receptors on AV node. Opens K+ channels - hyperpolarises, transiently blocks AV conduction. Half life 10 seconds. Terminates SVT by breaking the reentry circuit.",
+    keypoints:["Drug of choice for acute SVT termination","Half life 10 seconds - rapid IV bolus + flush","Side effects: flushing, chest tightness, transient complete heart block","Contraindicated in asthma - bronchospasm","Caffeine/theophylline block its receptor - reduce effect","Dipyridamole blocks its breakdown - potentiate effect"]
+  },
+];
+
+// ── SVG ───────────────────────────────────────────────────────────────────────
+const NS = "http://www.w3.org/2000/svg";
+const PHASE_SEGS = [
+  {id:"seg-p4a", color:"#06b6d4", d:"M 20 238 L 100 238"},
+  {id:"seg-p0",  color:"#f59e0b", d:"M 100 238 L 104 15"},
+  {id:"seg-p1",  color:"#fb7185", d:"M 104 15 C 115 15 132 42 178 56"},
+  {id:"seg-p2",  color:"#10b981", d:"M 178 56 C 248 58 355 65 440 71"},
+  {id:"seg-p3",  color:"#e879f9", d:"M 440 71 C 444 100 454 210 470 238"},
+  {id:"seg-p4b", color:"#06b6d4", d:"M 470 238 L 680 238"},
+];
+
+const PHASE_REGIONS = [
+  {id:"hl-p4a", x:20,  w:80,  color:"#06b6d4"},
+  {id:"hl-p0",  x:100, w:30,  color:"#f59e0b"},
+  {id:"hl-p1",  x:130, w:48,  color:"#fb7185"},
+  {id:"hl-p2",  x:178, w:262, color:"#10b981"},
+  {id:"hl-p3",  x:440, w:30,  color:"#e879f9"},
+  {id:"hl-p4b", x:470, w:210, color:"#06b6d4"},
+];
+
+function svgEl(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k,v));
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svgTx(attrs, text, parent) {
+  const e = document.createElementNS(NS, "text");
+  Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k,v));
+  e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+// Nodal AP segments — SA/AV node slow response
+// No phase 1 or 2. Spontaneously drifting phase 4. Slow Ca2+-dependent phase 0.
+// y coords same scale: peak(Ca2+ dependent, only ~0mV)=71, base=-90mV=238
+// Nodal peak is only about 0mV (not +30) since slow Ca2+ channels
+// Resting potential more like -60mV: y = 15 + (30+60)/120 * 223 = 15 + 167 = 182 -- wait
+// SA node rests at -60mV: y = 15 + (30-(-60))/120 * 223 = 15 + 90/120*223 = 15+167 = 167
+// Threshold ~-40mV: y = 15 + (30-(-40))/120*223 = 15 + 70/120*223 = 15+130 = 145
+// Peak ~0mV: y=71
+// Phase 4 drifts from -60 (y=167) up to threshold -40 (y=145)
+
+const NODAL_PHASES = [
+  {
+    id:"np4", label:"Phase 4", color:"#06b6d4", highlight:["nhl-p4a","nhl-p4b","nhl-p4c"],
+    title:"Phase 4 - Pacemaker Potential",
+    subtitle:"Spontaneous depolarisation - no stable resting potential",
+    ions:"Unlike ventricular cells, nodal cells have no stable resting potential. Three currents drive the spontaneous drift toward threshold: (1) If (funny current) - non-selective cation channels that open at negative voltages letting Na+ slowly in; (2) gradual decrease in K+ conductance; (3) T-type Ca2+ channels opening near threshold. The cell creeps upward from -60mV to threshold at -40mV without any external stimulus.",
+    channels:"If (HCN channels - hyperpolarisation-activated cyclic nucleotide-gated). T-type Ca2+ channels near threshold. IK1 K+ channels slowly closing.",
+    significance:"This spontaneous depolarisation is automaticity - the basis of the pacemaker function. SA node fires at 60-100 bpm, AV node at 40-60 bpm. The rate of phase 4 drift determines the heart rate. Beta blockers slow this drift (reduce rate). Sympathetic stimulation steepens it (increase rate)."
+  },
+  {
+    id:"np0", label:"Phase 0", color:"#f59e0b", highlight:["nhl-p0","nhl-p02","nhl-p03"],
+    title:"Phase 0 - Slow Upstroke",
+    subtitle:"Ca2+-dependent upstroke - no fast Na+ channels",
+    ions:"Unlike ventricular phase 0 which uses fast Na+ channels, nodal phase 0 is driven entirely by L-type Ca2+ channels. Ca2+ flows in slowly. Peak only reaches ~0mV (not +30mV). This slow upstroke is the reason nodal conduction velocity is so much slower than ventricular.",
+    channels:"L-type Ca2+ channels (Cav1.2). No fast Nav1.5 Na+ channels present in nodal tissue.",
+    significance:"The Ca2+-dependent slow upstroke makes nodal cells exquisitely sensitive to calcium channel blockers (Class IV - verapamil, diltiazem). These drugs slow AV node conduction (lengthen PR interval) and reduce SA node firing rate. This is why they are used for rate control in AF."
+  },
+  {
+    id:"np3", label:"Phase 3", color:"#e879f9", highlight:["nhl-p3","nhl-p32","nhl-p33"],
+    title:"Phase 3 - Repolarisation",
+    subtitle:"K+ efflux returns cell to -60mV",
+    ions:"K+ channels open. K+ flows out of the cell, taking positive charge with it. Membrane returns to -60mV. The cell is ready to begin the next spontaneous phase 4 drift.",
+    channels:"IKr and IKs delayed rectifier K+ channels.",
+    significance:"Repolarisation back to -60mV (not -90mV as in ventricular cells) means the nodal cell is closer to threshold and can fire again more readily. The cycle length - and therefore heart rate - is determined by how fast phase 4 drifts and how long phases 0 and 3 take."
+  },
+];
+
+const NODAL_PHASE_SEG_MAP = {
+  np4: ["nseg-p4a","nseg-p4b","nseg-p4c"],
+  np0: ["nseg-p0","nseg-p02","nseg-p03"],
+  np3: ["nseg-p3","nseg-p32","nseg-p33"],
+};
+
+const NODAL_REGIONS = [
+  {id:"nhl-p4a", x:20,  w:75,  color:"#06b6d4"},
+  {id:"nhl-p0",  x:95,  w:75,  color:"#f59e0b"},
+  {id:"nhl-p3",  x:128, w:42,  color:"#e879f9"},
+  {id:"nhl-p4b", x:170, w:140, color:"#06b6d4"},
+  {id:"nhl-p02", x:310, w:34,  color:"#f59e0b"},
+  {id:"nhl-p32", x:344, w:42,  color:"#e879f9"},
+  {id:"nhl-p4c", x:386, w:140, color:"#06b6d4"},
+  {id:"nhl-p03", x:526, w:34,  color:"#f59e0b"},
+  {id:"nhl-p33", x:560, w:120, color:"#e879f9"},
+];
+
+const NODAL_SEGS = [
+  {id:"nseg-p4a", color:"#06b6d4", d:"M 20 167 C 55 167 72 160 95 145"},
+  {id:"nseg-p0",  color:"#f59e0b", d:"M 95 145 C 104 118 114 80 128 71"},
+  {id:"nseg-p3",  color:"#e879f9", d:"M 128 71 C 136 92 148 148 170 167"},
+  {id:"nseg-p4b", color:"#06b6d4", d:"M 170 167 C 220 167 270 158 310 145"},
+  {id:"nseg-p02", color:"#f59e0b", d:"M 310 145 C 320 118 330 80 344 71"},
+  {id:"nseg-p32", color:"#e879f9", d:"M 344 71 C 352 92 364 148 386 167"},
+  {id:"nseg-p4c", color:"#06b6d4", d:"M 386 167 C 436 167 486 158 526 145"},
+  {id:"nseg-p03", color:"#f59e0b", d:"M 526 145 C 536 118 546 80 560 71"},
+  {id:"nseg-p33", color:"#e879f9", d:"M 560 71 C 568 92 580 148 602 167 L 680 167"},
+];
+
+let apType = "fast"; // "fast" or "slow"
+
+function setApType(type) {
+  if (apType === type) return;
+
+  const svgPanel = document.querySelector(".svg-panel");
+  const infoPanel = document.getElementById("infoPanel");
+
+  // Fade out
+  svgPanel.classList.add("fading");
+  infoPanel.classList.add("fading");
+
+  setTimeout(() => {
+    apType = type;
+    activePhase = null;
+    activeClass = null;
+
+    document.getElementById("tbtn-fast").classList.toggle("active", type === "fast");
+    document.getElementById("tbtn-slow").classList.toggle("active", type === "slow");
+    document.getElementById("apLabel").textContent = type === "fast"
+      ? "Fast response - ventricular myocyte"
+      : "Slow response - SA / AV node";
+
+    const classSec = document.getElementById("classBtns").parentElement;
+    classSec.style.display = type === "fast" ? "" : "none";
+
+    buildAP();
+    renderButtons();
+    renderInfo();
+
+    // Fade back in
+    svgPanel.classList.remove("fading");
+    infoPanel.classList.remove("fading");
+  }, 280);
+}
+
+function buildAP() {
+  const svg = document.getElementById("apSvg");
+  svg.innerHTML = "";
+
+  PHASE_REGIONS.forEach(r => {
+    svgEl("rect",{id:r.id,x:r.x,y:12,width:r.w,height:226,fill:r.color,opacity:0,rx:3},svg);
+  });
+
+  svgEl("line",{x1:20,y1:238,x2:680,y2:238,stroke:"#1e293b","stroke-width":1.5},svg);
+  svgEl("line",{x1:20,y1:12,x2:20,y2:250,stroke:"#1e293b","stroke-width":1.5},svg);
+  svgEl("line",{x1:20,y1:71,x2:680,y2:71,stroke:"#1e293b","stroke-width":0.7,"stroke-dasharray":"4,4"},svg);
+
+  svgTx({x:16,y:18,fill:"#64748b","font-size":9,"text-anchor":"end","font-family":"JetBrains Mono, monospace"},"+30",svg);
+  svgTx({x:16,y:74,fill:"#64748b","font-size":9,"text-anchor":"end","font-family":"JetBrains Mono, monospace"},"0",svg);
+  svgTx({x:16,y:241,fill:"#64748b","font-size":9,"text-anchor":"end","font-family":"JetBrains Mono, monospace"},"-90",svg);
+  svgTx({x:8,y:130,fill:"#64748b","font-size":9,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","transform":"rotate(-90,8,120)"},"mV",svg);
+
+  const segs = apType === "slow" ? NODAL_SEGS : PHASE_SEGS;
+  segs.forEach(s => {
+    svgEl("path",{id:s.id,d:s.d,fill:"none",stroke:s.color,"stroke-width":3,"stroke-linejoin":"round","stroke-linecap":"round",opacity:1},svg);
+  });
+
+  // If slow response, add labels for phases present
+  if (apType === "slow") {
+    // Highlight regions
+    NODAL_REGIONS.forEach(r => {
+      svgEl("rect",{id:r.id,x:r.x,y:12,width:r.w,height:226,fill:r.color,opacity:0,rx:3},svg);
+    });
+    // -60mV reference line
+    svgEl("line",{x1:20,y1:167,x2:680,y2:167,stroke:"#1e293b","stroke-width":0.7,"stroke-dasharray":"3,3"},svg);
+    svgTx({x:16,y:170,fill:"#475569","font-size":8,"text-anchor":"end","font-family":"JetBrains Mono, monospace"},"-60",svg);
+    // Phase labels — first cycle only
+    [{x:57,l:"4"},{x:112,l:"0"},{x:149,l:"3"},{x:240,l:"4"},{x:328,l:"0"},{x:365,l:"3"},{x:456,l:"4"},{x:543,l:"0"},{x:581,l:"3"}].forEach(p => {
+      svgTx({x:p.x,y:250,fill:"#94a3b8","font-size":10,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","font-weight":"500"},p.l,svg);
+    });
+    svgTx({x:62,y:156,fill:"#06b6d4","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","font-style":"italic"},"If",svg);
+  }
+
+  [{x:60,l:"4"},{x:115,l:"0"},{x:154,l:"1"},{x:309,l:"2"},{x:455,l:"3"},{x:575,l:"4"}].forEach(p => {
+    svgTx({x:p.x,y:250,fill:"#94a3b8","font-size":11,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","font-weight":"500"},p.l,svg);
+  });
+  svgTx({x:350,y:268,fill:"#64748b","font-size":9,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","letter-spacing":3},"PHASE",svg);
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let activePhase = null;
+let activeClass = null;
+
+// Map phase ids to segment ids
+const PHASE_SEG_MAP = {
+  p4: ["seg-p4a","seg-p4b"],
+  p0: ["seg-p0"],
+  p1: ["seg-p1"],
+  p2: ["seg-p2"],
+  p3: ["seg-p3"],
+};
+
+function setHighlights() {
+  // Reset background highlights
+  const regions = apType === "slow" ? NODAL_REGIONS : PHASE_REGIONS;
+  regions.forEach(r => {
+    document.getElementById(r.id)?.setAttribute("opacity", 0);
+  });
+
+  // Reset all segments to dim if anything is active
+  const anyActive = activePhase || activeClass;
+  const segs = apType === "slow" ? NODAL_SEGS : PHASE_SEGS;
+  segs.forEach(s => {
+    document.getElementById(s.id)?.setAttribute("opacity", anyActive ? 0.15 : 1);
+  });
+
+  // Determine which phase to highlight
+  let highlightPhase = activePhase;
+  if (activeClass) {
+    const c = CLASSES.find(x => x.id === activeClass);
+    if (c) highlightPhase = c.target[0].replace("hl-","").replace("p4a","p4").replace("p4b","p4");
+  }
+
+  if (highlightPhase) {
+    if (apType === "slow") {
+      const p = NODAL_PHASES.find(x => x.id === highlightPhase);
+      p?.highlight.forEach(id => document.getElementById(id)?.setAttribute("opacity", 0.15));
+      const segIds = NODAL_PHASE_SEG_MAP[highlightPhase] || [];
+      segIds.forEach(id => document.getElementById(id)?.setAttribute("opacity", 1));
+    } else {
+      const p = PHASES.find(x => x.id === highlightPhase);
+      p?.highlight.forEach(id => document.getElementById(id)?.setAttribute("opacity", 0.15));
+      const segIds = PHASE_SEG_MAP[highlightPhase] || [];
+      segIds.forEach(id => document.getElementById(id)?.setAttribute("opacity", 1));
+    }
+  }
+}
+
+function renderButtons() {
+  // Phase buttons — use nodal phases if slow mode
+  const pb = document.getElementById("phaseBtns");
+  pb.innerHTML = "";
+  const phaseList = apType === "slow" ? NODAL_PHASES : PHASES;
+  phaseList.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "pbtn";
+    btn.textContent = p.label;
+    btn.style.borderColor = activePhase === p.id ? p.color : "";
+    btn.style.background  = activePhase === p.id ? p.color+"22" : "";
+    btn.style.color       = activePhase === p.id ? p.color : "";
+    btn.addEventListener("click", () => {
+      activePhase = activePhase === p.id ? null : p.id;
+      if (activePhase) activeClass = null;
+      renderAll();
+    });
+    pb.appendChild(btn);
+  });
+
+  // Class buttons
+  const cb = document.getElementById("classBtns");
+  cb.innerHTML = "";
+  CLASSES.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "cbtn";
+    btn.textContent = c.label;
+    btn.style.borderColor = activeClass === c.id ? c.color : "";
+    btn.style.background  = activeClass === c.id ? c.color+"22" : "";
+    btn.style.color       = activeClass === c.id ? c.color : "";
+    btn.addEventListener("click", () => {
+      activeClass = activeClass === c.id ? null : c.id;
+      // Set corresponding phase button active
+      if (activeClass) {
+        const cls = CLASSES.find(x => x.id === activeClass);
+        if (cls) {
+          const phaseId = cls.target[0].replace("hl-","").replace("p4a","p4").replace("p4b","p4").replace("p0","p0").replace("p1","p1").replace("p2","p2").replace("p3","p3");
+          activePhase = phaseId;
+        }
+      } else {
+        activePhase = null;
+      }
+      renderAll();
+    });
+    cb.appendChild(btn);
+  });
+}
+
+function renderInfo() {
+  const panel = document.getElementById("infoPanel");
+
+  if (!activePhase && !activeClass) {
+    panel.style.borderColor = "var(--border)";
+    panel.innerHTML = '<p class="info-placeholder">Select a phase to explore ionic physiology, or a drug class to explore antiarrhythmic pharmacology.</p>';
+    return;
+  }
+
+  if (activePhase && !activeClass) {
+    const phaseList = apType === "slow" ? NODAL_PHASES : PHASES;
+    const p = phaseList.find(x => x.id === activePhase);
+    panel.style.borderColor = p.color+"55";
+    panel.innerHTML = `
+      <div>
+        <div class="info-label" style="color:${p.color}">${p.label}</div>
+        <div class="info-title">${p.title.replace(p.label+' - ','')}</div>
+        <div class="info-timing">${p.subtitle}</div>
+      </div>
+      <div class="icard">
+        <div class="icard-label">Ion movements</div>
+        <div class="icard-body">${p.ions}</div>
+      </div>
+      <div class="icard">
+        <div class="icard-label">Channels involved</div>
+        <div class="icard-body">${p.channels}</div>
+      </div>
+      <div class="icard">
+        <div class="icard-label">Clinical significance</div>
+        <div class="icard-body">${p.significance}</div>
+      </div>`;
+    return;
+  }
+
+  if (activeClass) {
+    const c = CLASSES.find(x => x.id === activeClass);
+    panel.style.borderColor = c.color+"55";
+    const ecgHTML = Object.entries({QRS: c.ecg.qrs, QT: c.ecg.qt}).map(([k,v]) => {
+      const cls = v==="wide"?"ecg-wide":v==="long"?"ecg-long":"ecg-normal";
+      return `<span class="ecg-pill ${cls}">${k} ${v==="wide"||v==="long"?"↑":"-"} ${v}</span>`;
+    }).join("");
+    const pts = c.keypoints.map(p => `<li>${p}</li>`).join("");
+
+    // Find the phase this class targets and prepend its physiology
+    const targetPhaseId = c.target[0].replace("hl-","").replace("p4a","p4").replace("p4b","p4");
+    const phaseKey = targetPhaseId === "p4" ? "p4" : targetPhaseId;
+    const p = PHASES.find(x => x.id === phaseKey);
+    const phaseHTML = p ? `
+      <div style="border-left:2px solid ${p.color};padding:10px 14px;background:rgba(0,0,0,0.2);border-radius:0 8px 8px 0;margin-bottom:0">
+        <div class="icard-label" style="color:${p.color};margin-bottom:4px">${p.label} physiology</div>
+        <div class="icard-body" style="font-size:13px">${p.ions}</div>
+      </div>` : "";
+
+    panel.innerHTML = `
+      <div>
+        <div class="info-label" style="color:${c.color}">${c.label}</div>
+        <div class="info-title">${c.title.replace(c.label+' - ','')}</div>
+        <div class="info-timing">${c.subtitle}</div>
+      </div>
+      ${phaseHTML}
+      <div class="icard">
+        <div class="icard-label">Channel target</div>
+        <div class="icard-body">${c.channel}</div>
+      </div>
+      <div class="icard">
+        <div class="icard-label">Drugs</div>
+        <div class="icard-body">${c.drugs}</div>
+      </div>
+      <div class="icard">
+        <div class="icard-label">ECG effects</div>
+        <div class="icard-body"><div class="ecg-row">${ecgHTML}</div></div>
+      </div>
+      <div class="icard">
+        <div class="icard-label">Mechanism</div>
+        <div class="icard-body">${c.mechanism}</div>
+      </div>
+      <div class="icard">
+        <div class="icard-label">Key Step 1 points</div>
+        <div class="icard-body"><ul>${pts}</ul></div>
+      </div>`;
+  }
+}
+
+function renderAll() {
+  renderButtons();
+  setHighlights();
+  renderInfo();
+}
+
+buildAP();
+renderAll();
+</script>
+</body>
+</html>
