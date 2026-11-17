@@ -481,6 +481,22 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 @media (max-width: 480px) {
   .scn-sources-btn { margin-left: 0; margin-top: 8px; display: inline-flex; }
 }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.scn-pending { margin: 0 0 12px; padding: 12px; border: 2px solid var(--text); border-radius: 12px; background: var(--surface); }
+.scn-pending[hidden] { display: none !important; }
+.scn-pending-title { font-family: var(--font-serif); font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+.scn-pending-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.scn-pending-list li { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
+.scn-pending-spin {
+  flex: none; width: 1.1em; height: 1.1em; box-sizing: border-box;
+  border: 2px solid var(--text); border-right-color: transparent; border-radius: 50%;
+  animation: scn-spin 0.8s linear infinite;
+}
+@keyframes scn-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .scn-pending-spin { animation: none; border-right-color: var(--text); }
+}
 </style>
 </head>
 <body>
@@ -610,7 +626,7 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
             </summary>
             <ol class="scn-guide-steps">
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random draws from a larger pool that includes extra cases not shown in the list. The title appears once the case starts.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Nothing you should have to request is shown up front.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. Nothing you should have to request is shown up front.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>CPR for 2 minutes performs two minutes of CPR and shows the rhythm on the monitor. Skip time only advances the clock and does not count as an action. Check rhythm and pulse is a separate step.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback states only what was done and the objective event. It will not interpret the monitor or tell you what to do next.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends. The debrief names the missed step and the correct action; the live nudges stay vague.</span></li>
@@ -687,11 +703,15 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
                   <h3 class="scn-sublist-title" id="scnAskTitle">Ask for / check</h3>
                   <button type="button" class="tool-btn" id="scnAskClose">Close</button>
                 </div>
-                <p class="scn-sublist-lead">Values appear only when you request them, and each request takes simulated time.</p>
+                <p class="scn-sublist-lead">Values appear only when you request them. Results, and Cycle NIBP now, take a few seconds of real time and do not advance the simulated clock, so requesting a test will not run the case out of time. You can keep treating while they are pending, and more than one request can be pending at once.</p>
                 <ul class="scn-sublist-list" id="scnAskButtons"></ul>
               </div>
             </div>
             <div class="scn-right">
+              <div class="scn-pending" id="scnPending" hidden>
+                <h2 class="scn-pending-title" id="scnPendingTitle">Pending results</h2>
+                <ul class="scn-pending-list" id="scnPendingList"></ul>
+              </div>
               <div class="card explain-panel" id="scnFeedback"></div>
               <div class="card explain-panel scn-log-card">
                 <h2 class="explain-title">Event log</h2>
@@ -4569,14 +4589,43 @@ var SCN_EXTRAS = {
   h10: { kind: "tachy", causes: ["ischaemia"], harm: ["aden"], mon: { hr: 180, spo2: 91, rr: 22, sys: 82, dia: 48, trend: -1 } }
 };
 
+var ECG12_TEXTS = {
+  s1: "A 12-lead is not completed during this shockable arrest. The monitor and pads show ventricular fibrillation, with no organised QRS complexes. Simulation simplification: this is a scripted description of the case rhythm.",
+  s2: "If a 12-lead is obtained during the rhythm check, it shows an organised narrow-complex rhythm at about 110 to 125 /min, without ST elevation diagnostic of STEMI in this simulation. There is no pulse (PEA). Simulation simplification: this is a scripted 12-lead description for this case.",
+  s3: "12-lead ECG: complete (third-degree) atrioventricular block. P waves and QRS complexes are dissociated. The escape rhythm is narrow-complex at about 40 /min. No ST elevation is reported in this simulation. Simulation simplification: this is a scripted 12-lead description of the case rhythm.",
+  s4: "12-lead ECG: regular narrow-complex tachycardia at about 180 /min. No P waves, no sawtooth flutter waves, and no delta wave are seen. The QRS remains narrow throughout. Simulation simplification: this is a scripted 12-lead description for this case.",
+  s5: "12-lead ECG: regular broad-complex tachycardia at about 190 /min, consistent with monomorphic ventricular tachycardia. The patient is unstable, so this is treated as VT. Q waves consistent with a previous myocardial infarction are described in this simulation. Simulation simplification: this is a scripted 12-lead description for this case.",
+  s6: "Between self-terminating runs, the 12-lead shows sinus rhythm with a prolonged QTc. During a run, a polymorphic broad-complex tachycardia that twists about the baseline is seen (torsades de pointes). No delta wave is present. Simulation simplification: this is a scripted 12-lead description for this case. The prolonged QTc is consistent with the history; the exact interval is not quoted from a guideline source.",
+  h1: "The 12-lead during this arrest shows asystole (no QRS complexes). A recording from earlier this morning is described as having a wide QRS and tall peaked T waves, consistent with severe hyperkalaemia. Simulation simplification: the earlier recording is scripted for this case. RCUK 2025 special circumstances mention ECG changes in severe hyperkalaemia but do not list peaked T waves or QRS broadening in the saved text.",
+  h2: "If a 12-lead is obtained during the rhythm check, it shows an organised narrow-complex rhythm at about 100 to 120 /min, without ST elevation diagnostic of STEMI in this simulation. There is no pulse (PEA). Simulation simplification: this is a scripted 12-lead description for this case.",
+  h3: "A 12-lead is not completed during this shockable arrest. The monitor and pads show ventricular fibrillation, with no organised QRS complexes. Simulation simplification: this is a scripted description of the case rhythm.",
+  h4: "A 12-lead is not completed during this shockable arrest. The monitor and pads show ventricular fibrillation, with no organised QRS complexes. Simulation simplification: this is a scripted description of the case rhythm.",
+  h5: "12-lead ECG: regular narrow-complex tachycardia at about 170 /min. No P waves, no sawtooth flutter waves, and no delta wave are seen. The QRS remains narrow throughout. Simulation simplification: this is a scripted 12-lead description for this case.",
+  h6: "12-lead ECG: irregularly irregular narrow-complex tachycardia without visible P waves, consistent with atrial fibrillation with a rapid ventricular response. No sawtooth flutter waves and no delta wave are seen. Simulation simplification: this is a scripted 12-lead description for this case.",
+  h7: "12-lead ECG: regular broad-complex tachycardia at about 150 /min, consistent with monomorphic ventricular tachycardia. The patient is stable. Q waves consistent with a previous myocardial infarction are described in this simulation. Simulation simplification: this is a scripted 12-lead description for this case.",
+  h8: "12-lead ECG: complete (third-degree) atrioventricular block with a slow, broad QRS escape at about 34 /min (a ventricular escape). This rhythm carries a risk of asystole. No ST elevation is reported in this simulation. Simulation simplification: this is a scripted 12-lead description of the case rhythm.",
+  h9: "The arrest rhythm is a polymorphic broad-complex tachycardia that twists about the baseline (torsades de pointes). A 12-lead from this morning is described as showing a prolonged QTc. Simulation simplification: this is a scripted 12-lead description for this case.",
+  h10: "12-lead ECG: regular broad-complex tachycardia, consistent with monomorphic ventricular tachycardia, immediately after ROSC. Simulation simplification: this is a scripted 12-lead description for this case."
+};
+
+(function applyEcg12() {
+  var texts = ECG12_TEXTS;
+  Object.keys(texts).forEach(function (id) {
+    if (!SCN_EXTRAS[id]) return;
+    SCN_EXTRAS[id].ask = SCN_EXTRAS[id].ask || {};
+    if (!SCN_EXTRAS[id].ask.ecg12) SCN_EXTRAS[id].ask.ecg12 = texts[id];
+  });
+})();
+
+var ASK_DELAY_MS = { bm: 3000, temp: 3000, airway: 3000, examine: 5000, history: 5000, ecg12: 7000, gas: 10000, nibp: 5000 };
 var ASK_ITEMS = [
-  { id: "bm", label: "Capillary glucose (BM)", time: 20 },
-  { id: "gas", label: "Blood gas (pH, PaCO2, PaO2, lactate, K+, Na+, ionised Ca, Hb)", time: 120 },
-  { id: "temp", label: "Temperature", time: 20 },
-  { id: "ecg12", label: "12-lead ECG description", time: 60 },
-  { id: "examine", label: "Examine (airway, chest, pulses, pupils)", time: 30 },
-  { id: "history", label: "Collateral history or drug chart", time: 30 },
-  { id: "airway", label: "Airway check", time: 20 }
+  { id: "bm", label: "Capillary glucose (BM)", delay: 3000 },
+  { id: "gas", label: "Blood gas (pH, PaCO2, PaO2, lactate, K+, Na+, ionised Ca, Hb)", delay: 10000 },
+  { id: "temp", label: "Temperature", delay: 3000 },
+  { id: "ecg12", label: "12-lead ECG description", delay: 7000 },
+  { id: "examine", label: "Examine (airway, chest, pulses, pupils)", delay: 5000 },
+  { id: "history", label: "Collateral history or drug chart", delay: 5000 },
+  { id: "airway", label: "Airway check", delay: 3000 }
 ];
 
 /* Reference ranges used in ask results. SpO2 94 to 98% is from the RCUK 2025 ALS algorithm (immediately after ROSC). Other numerical ranges are teaching defaults and are flagged. */
@@ -4730,7 +4779,10 @@ function renderMonitor() {
   var spo2 = !pulse ? "No trace" : (m.spo2 != null ? Math.round(m.spo2) + " %" : "No trace");
   var rr = !pulse ? "Not breathing" : (m.rr != null ? Math.round(m.rr) + " /min" : "Not yet counted");
   var nibp, nibpNote = "";
-  if (!pulse || (m.lastNIBP && m.lastNIBP.unrecordable)) {
+  if (typeof isAskPending === "function" && isAskPending("nibp")) {
+    nibp = "Cycling…";
+    nibpNote = "Pending NIBP cycle";
+  } else if (!pulse || (m.lastNIBP && m.lastNIBP.unrecordable)) {
     nibp = "Unrecordable";
     if (m.lastNIBP) nibpNote = "Last cycled " + mmss(m.lastNIBP.t);
   } else if (!m.lastNIBP) {
@@ -4748,6 +4800,7 @@ function renderMonitor() {
 if (typeof SRC === "object") {
   SRC.causesList = "RCUK 2025 Adult ALS algorithm, reversible causes: hypoxia; hypovolaemia; hyper-hypokalaemia, -calcaemia, -magnesaemia, hypoglycaemia (metabolic); hypo-hyperthermia; thrombosis (coronary/pulmonary); tension pneumothorax; toxins; tamponade (cardiac).";
   SRC.bradyCauses = "RCUK 2025 Adult bradyarrhythmia algorithm: identify and treat reversible causes, e.g. electrolyte abnormalities. RCUK 2025 Adult ALS guideline: consider glucagon if beta-blockers or calcium channel blockers are a potential cause of the bradycardia.";
+  SRC.ecg12Sim = "Simulation simplification: 12-lead descriptions are scripted to match each case. Delta waves and flutter waves are mentioned only when they belong in that case. Peaked T waves and QRS broadening in hyperkalaemia are common teaching; the saved RCUK 2025 special circumstances text mentions ECG changes but does not list those morphologies.";
   SRC.refRanges = REF_RANGE_NOTE;
   SRC.harmAden = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features (including shock and immediately post-ROSC) lead to synchronised shock, not adenosine. Adenosine is on the stable regular narrow (or selected regular monomorphic) pathway. Treating an unstable broad-complex tachycardia with adenosine instead of cardioversion was treated as a dangerous error in this simulation; see flagged items.";
   SRC.harmShockPulse = "RCUK 2025 Adult ALS guideline and tachyarrhythmia algorithm: unsynchronised defibrillation is for VF or pulseless VT. A tachyarrhythmia with a pulse is treated with synchronised cardioversion when unstable.";
@@ -4822,15 +4875,15 @@ function pickCause(cid) {
   finishPickedAction("causes", o, 30);
 }
 
-function doAsk(aid) {
-  if (!SIM || SIM.done) return;
-  closeScnMenu("scnAskList");
+function askItemById(aid) {
   var item = null;
   ASK_ITEMS.forEach(function (c) { if (c.id === aid) item = c; });
-  if (!item) return;
-  SIM.asked[aid] = 1;
+  return item;
+}
+function buildAskText(aid) {
+  var item = askItemById(aid);
   var x = extrasFor(SIM), custom = (x.ask || {})[aid];
-  var m = SIM.mon, labs = m.labs || {};
+  var m = SIM.mon, labs = (m && m.labs) || {};
   var text = custom;
   if (!text) {
     if (aid === "bm") text = "Capillary glucose " + labs.glu + " mmol/L.";
@@ -4841,32 +4894,211 @@ function doAsk(aid) {
     else if (aid === "history") text = "No additional background is available beyond the scene you were given.";
     else if (aid === "airway") text = "Airway patent. No obstruction is seen.";
   }
-  var keys = "ask_" + aid;
-  if (!TXT[keys]) {
-    TXT[keys] = Tfb(text, "Information requested", "refRanges", { event: text, outcome: text });
-  } else {
-    TXT[keys].full = text; TXT[keys].event = text; TXT[keys].outcome = text;
-  }
+  return { item: item, text: text };
+}
+function askIsRelevant(aid, text) {
   var relevant = false;
-  if (aid === "gas" || aid === "bm" || aid === "history" || aid === "examine") {
+  if (aid === "gas" || aid === "bm" || aid === "history" || aid === "examine" || aid === "ecg12") {
     (extrasFor(SIM).causes || []).forEach(function (c) {
-      if ((c === "hyperkalaemia" && /K\+ 7\.|K\+ 6/.test(text)) ||
+      if ((c === "hyperkalaemia" && (/K\+ 7\.|K\+ 6/.test(text) || /peaked T|wide QRS/.test(text))) ||
           (c === "hypokalaemia" && /K\+ 3\.|K\+ 2/.test(text)) ||
           (c === "hypovolaemia" && /Hb 78|blood loss|drains/.test(text)) ||
           (c === "tension" && /deviated|resonant|central line/.test(text)) ||
-          (c === "drugs" && /QT-prolonging/.test(text))) relevant = true;
+          (c === "drugs" && /QT-prolonging|prolonged QTc/.test(text))) relevant = true;
     });
   }
-  if (relevant) {
-    SIM.did.causes = 1;
-    SIM.cause = true;
-    SIM.found = SIM.found || {};
-    SIM.found.ask = 1;
+  return relevant;
+}
+
+function doAsk(aid) {
+  if (!SIM || SIM.done) return;
+  var built = buildAskText(aid);
+  if (!built.item) return;
+  queuePendingResult({
+    id: aid,
+    kind: "ask",
+    label: built.item.label,
+    delay: built.item.delay || ASK_DELAY_MS[aid] || 3000,
+    text: built.text,
+    relevant: askIsRelevant(aid, built.text)
+  });
+}
+
+function previewNIBP(st) {
+  var m = st.mon;
+  if (!st.pulse || (m && m.arrest)) {
+    return { unrecordable: true, event: "NIBP cycled: unrecordable.", keys: ["n_nibpFail"], t: st.clock };
   }
-  var o = O("info", keys, { event: text });
-  o.label = item.label;
-  o.askText = text;
-  finishPickedAction("ask:" + aid, o, item.time || 30);
+  var sys = m.sysBase, dia = m.diaBase;
+  if (sys == null) { sys = 118; dia = 72; }
+  var amtS = (typeof prefersReduced === "function" && prefersReduced()) ? 2 : 5;
+  var amtD = (typeof prefersReduced === "function" && prefersReduced()) ? 2 : 4;
+  var tr = m.trend || 0;
+  sys = Math.round(sys + (Math.random() * 2 - 1) * amtS + tr * 3);
+  dia = Math.round(dia + (Math.random() * 2 - 1) * amtD + tr * 2);
+  return { unrecordable: false, sys: sys, dia: dia, t: st.clock, event: "NIBP " + sys + "/" + dia + " mmHg at " + mmss(st.clock) + ".", keys: ["n_nibp"] };
+}
+
+function requestNIBPCycle() {
+  if (!SIM || SIM.done) return;
+  var reading = previewNIBP(SIM);
+  queuePendingResult({
+    id: "nibp",
+    kind: "nibp",
+    label: "Cycle NIBP now",
+    delay: ASK_DELAY_MS.nibp,
+    text: reading.event,
+    reading: reading
+  });
+}
+
+/* Real-time pending results. Sim clock is not advanced. Tests may use fake timers. */
+var askTimerMode = "real";
+var askFakeNow = 0;
+var askFakeSeq = 0;
+var askFakeQueue = [];
+var askRealTimeouts = [];
+var ASK_PENDING = [];
+var askTokenSeq = 0;
+
+function askNow() { return askTimerMode === "fake" ? askFakeNow : Date.now(); }
+function askSetTimeout(fn, ms) {
+  if (askTimerMode === "fake") {
+    var id = ++askFakeSeq;
+    askFakeQueue.push({ id: id, at: askFakeNow + ms, fn: fn });
+    return id;
+  }
+  var id = setTimeout(fn, ms);
+  askRealTimeouts.push(id);
+  return id;
+}
+function askClearTimeout(id) {
+  if (askTimerMode === "fake") {
+    askFakeQueue = askFakeQueue.filter(function (tm) { return tm.id !== id; });
+    return;
+  }
+  clearTimeout(id);
+  askRealTimeouts = askRealTimeouts.filter(function (tm) { return tm !== id; });
+}
+function useFakeAskTimers(on) {
+  askRealTimeouts.forEach(function (id) { clearTimeout(id); });
+  askRealTimeouts = [];
+  askFakeQueue = [];
+  ASK_PENDING.forEach(function (p) { if (p.timer != null) askClearTimeout(p.timer); });
+  ASK_PENDING = [];
+  askTimerMode = on ? "fake" : "real";
+  askFakeNow = 0;
+  renderPending();
+}
+function advanceAskTimers(ms) {
+  if (askTimerMode !== "fake") return;
+  askFakeNow += Number(ms) || 0;
+  var due = askFakeQueue.filter(function (tm) { return tm.at <= askFakeNow; }).sort(function (a, b) { return a.at - b.at; });
+  askFakeQueue = askFakeQueue.filter(function (tm) { return tm.at > askFakeNow; });
+  due.forEach(function (tm) { tm.fn(); });
+}
+function clearAskPending() {
+  ASK_PENDING.forEach(function (p) { if (p.timer != null) askClearTimeout(p.timer); });
+  ASK_PENDING = [];
+  renderPending();
+  if (typeof decoratePendingActions === "function") decoratePendingActions();
+}
+function isAskPending(id) {
+  return ASK_PENDING.some(function (p) { return p.id === id; });
+}
+function queuePendingResult(p) {
+  if (!SIM || SIM.done) return;
+  if (isAskPending(p.id)) return;
+  if (SIM.pendingToken == null) SIM.pendingToken = ++askTokenSeq;
+  p.token = SIM.pendingToken;
+  p.requestedAt = SIM.clock;
+  p.dueAt = askNow() + p.delay;
+  p.shortLabel = ({ bm: "Capillary glucose", gas: "Blood gas", temp: "Temperature", ecg12: "12-lead ECG", examine: "Examination", history: "History", airway: "Airway check", nibp: "Cycle NIBP now" })[p.id] || p.label;
+  if (p.kind === "ask") SIM.asked[p.id] = 1;
+  ASK_PENDING.push(p);
+  if (typeof logEvent === "function") {
+    logEvent({ v: "info", keys: [], notAction: true, event: p.label + " requested." }, p.label + " requested.", p.kind === "nibp" ? "nibp" : "ask:" + p.id);
+  }
+  renderPending();
+  if (typeof fillAskList === "function") fillAskList();
+  if (typeof decoratePendingActions === "function") decoratePendingActions();
+  if (p.kind === "nibp" && typeof renderMonitor === "function") renderMonitor();
+  p.timer = askSetTimeout(function () { deliverPending(p); }, p.delay);
+}
+function deliverPending(p) {
+  ASK_PENDING = ASK_PENDING.filter(function (x) { return x !== p; });
+  if (!SIM || SIM.done || SIM.pendingToken !== p.token) {
+    renderPending();
+    return;
+  }
+  if (p.kind === "nibp") {
+    applyNIBPReading(SIM, p.reading);
+    var no = O("info", (p.reading && p.reading.keys) || "n_nibp", { event: p.text, notAction: true });
+    no.label = "Cycle NIBP now";
+    if (typeof logEvent === "function") logEvent(no, p.text, "nibp");
+    if (typeof renderFeedback === "function") renderFeedback(no, false);
+    if (typeof renderMonitor === "function") renderMonitor();
+    if ($("scnLive")) $("scnLive").textContent = p.text;
+  } else {
+    var keys = "ask_" + p.id;
+    if (!TXT[keys]) {
+      TXT[keys] = Tfb(p.text, "Information requested", p.id === "ecg12" ? "ecg12Sim" : "refRanges", { event: p.text, outcome: p.text, flag: p.id === "ecg12" ? 1 : 0 });
+    } else {
+      TXT[keys].full = p.text; TXT[keys].event = p.text; TXT[keys].outcome = p.text;
+    }
+    if (p.relevant) {
+      SIM.did.causes = 1;
+      SIM.cause = true;
+      SIM.found = SIM.found || {};
+      SIM.found.ask = 1;
+    }
+    var o = O("info", keys, { event: p.text, notAction: true });
+    o.label = p.label;
+    o.askText = p.text;
+    if (typeof logEvent === "function") logEvent(o, p.label + ": " + p.text, "ask:" + p.id);
+    if (typeof renderFeedback === "function") renderFeedback(o, false);
+    if ($("scnLive")) $("scnLive").textContent = p.label + " result: " + p.text;
+  }
+  renderPending();
+  if (typeof fillAskList === "function") fillAskList();
+  if (typeof decoratePendingActions === "function") decoratePendingActions();
+}
+function applyNIBPReading(st, reading) {
+  if (!st || !st.mon || !reading) return;
+  if (reading.unrecordable) {
+    st.mon.lastNIBP = { t: reading.t, unrecordable: true };
+  } else {
+    st.mon.lastNIBP = { t: reading.t, sys: reading.sys, dia: reading.dia, unrecordable: false, auto: false };
+    st.mon.sys = reading.sys;
+    st.mon.dia = reading.dia;
+  }
+}
+function renderPending() {
+  var host = $("scnPending"), list = $("scnPendingList");
+  if (!host) return;
+  if (!ASK_PENDING.length) {
+    host.hidden = true;
+    if (list) list.innerHTML = "";
+    return;
+  }
+  host.hidden = false;
+  if (!list) return;
+  list.innerHTML = ASK_PENDING.map(function (p) {
+    return "<li><span class='scn-pending-spin' aria-hidden='true'></span><span>" + esc(p.shortLabel || p.label) + ": Pending\u2026</span></li>";
+  }).join("");
+}
+function decoratePendingActions() {
+  if (!SIM) return;
+  var nibpBtn = document.querySelector("[data-a='nibp']");
+  if (nibpBtn && isAskPending("nibp") && !SIM.done) {
+    nibpBtn.disabled = true;
+    if (nibpBtn.textContent.indexOf("pending") < 0) nibpBtn.textContent = nibpBtn.textContent + " (pending)";
+  }
+}
+function listAskPending() {
+  return ASK_PENDING.map(function (p) {
+    return { id: p.id, kind: p.kind, label: p.label, delay: p.delay, remaining: Math.max(0, p.dueAt - askNow()) };
+  });
 }
 
 /* Shared closer used once doAction / applyReview exist (defined in part-scn.js). */
@@ -4887,8 +5119,11 @@ function fillCauseList() {
 function fillAskList() {
   var host = $("scnAskButtons"); if (!host || !SIM) return;
   host.innerHTML = ASK_ITEMS.map(function (c) {
-    var got = SIM.asked && SIM.asked[c.id];
-    return "<li><button type='button' class='act-btn scn-sub-btn' data-ask='" + c.id + "'" + (SIM.done ? " disabled" : "") + ">" + esc(c.label) + (got ? " (already requested)" : "") + "</button></li>";
+    var pending = typeof isAskPending === "function" && isAskPending(c.id);
+    var got = SIM.asked && SIM.asked[c.id] && !pending;
+    var secs = Math.round((c.delay || ASK_DELAY_MS[c.id] || 0) / 1000);
+    var extra = pending ? " (pending)" : (got ? " (already requested)" : (secs ? " (about " + secs + " s)" : ""));
+    return "<li><button type='button' class='act-btn scn-sub-btn' data-ask='" + c.id + "'" + (SIM.done || pending ? " disabled" : "") + ">" + esc(c.label) + extra + "</button></li>";
   }).join("");
   host.querySelectorAll("[data-ask]").forEach(function (b) {
     b.addEventListener("click", function () { doAsk(b.getAttribute("data-ask")); });
@@ -4960,7 +5195,7 @@ var ACTIONS = [
   { id: "iso", label: "Isoprenaline infusion 5 mcg/min", g: "Drugs and fluids" }
 ];
 var ACT = {}; ACTIONS.forEach(function (a) { ACT[a.id] = a; });
-var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, nibp: 30, observe: 60, cpr: 5, skip: 0, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20, decompress: 30, amioInf: 30, adrInf: 30, iso: 30 };
+var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20, decompress: 30, amioInf: 30, adrInf: 30, iso: 30 };
 function adenLabel(n) { return n === 0 ? "Adenosine 6 mg rapid IV" : n === 1 ? "Adenosine 12 mg rapid IV" : "Adenosine 18 mg (RCUK) or 12 mg (BNF) rapid IV"; }
 
 function O(v, keys, x) { x = x || {}; x.v = v; x.keys = [].concat(keys); return x; }
@@ -5535,9 +5770,11 @@ function renderScnChooser() {
 }
 
 function startScenario(id, random) {
+  if (typeof clearAskPending === "function") clearAskPending();
   var s = SCN[id]; lastScn = id;
   SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false };
   if (typeof initScenarioExtras === "function") initScenarioExtras(SIM);
+  if (typeof renderPending === "function") renderPending();
   document.querySelectorAll("#scnGrid .scn-card").forEach(function (b) { b.setAttribute("aria-pressed", !random && b.dataset.id === id ? "true" : "false"); });
   $("scnChooserWrap").classList.add("hidden");
   $("scnStage").classList.remove("hidden");
@@ -5579,6 +5816,7 @@ function renderActions() {
   if (reg) reg.disabled = !!(SIM && SIM.done);
   var rs = $("scnRestart");
   if (rs) rs.disabled = !SIM;
+  if (typeof decoratePendingActions === "function") decoratePendingActions();
 }
 function renderVitals() {
   if (typeof renderMonitor === "function" && SIM && SIM.mon) { renderMonitor(); return; }
@@ -5629,9 +5867,7 @@ function doAction(a) {
     return;
   }
   if (a === "nibp") {
-    var no = (typeof cycleNIBP === "function" ? cycleNIBP(SIM, false) : O("info", "n_nibp"));
-    no.label = "Cycle NIBP now";
-    doActionFinish("nibp", no, 30);
+    if (typeof requestNIBPCycle === "function") requestNIBPCycle();
     return;
   }
   var harm = typeof detectHarm === "function" ? detectHarm(a, SIM) : null;
@@ -5841,6 +6077,7 @@ function enterScenarioMode() {
   $("scnWrap").scrollIntoView({ block: "start", behavior: prefersReduced() ? "auto" : "smooth" });
 }
 function exitScenarioMode(silent) {
+  if (typeof clearAskPending === "function") clearAskPending();
   if (monitor) monitor.stop();
   clearInterval(simTimer); SIM = null;
   document.body.classList.remove("mode-scn");
@@ -5876,6 +6113,6 @@ $("scnReg").addEventListener("click", callReg);
   });
 })();
 syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; } };
+window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; } };
 </script>
 </body></html>
