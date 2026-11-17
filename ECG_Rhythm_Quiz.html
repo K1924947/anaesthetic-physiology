@@ -190,14 +190,16 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .scn-disclaimer { margin: 0 0 12px; font-size: 15px; padding: 8px 12px; border: 2px solid var(--text); border-radius: 10px; background: var(--surface); }
 .scn-chooser { margin: 0; }
 #scnGrid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-.scn-group .scen-group-label { margin: 0 0 6px; }
+.scn-group { margin-top: 20px; }
+.scn-group:first-of-type { margin-top: 2px; }
+.scn-group .scen-group-label { margin: 0 0 8px; }
 .scn-row { display: grid; grid-template-columns: 1fr; gap: 8px; }
 @media (min-width: 700px) { .scn-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1100px) { .scn-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .scn-card { display: flex; gap: 10px; align-items: flex-start; text-align: left; min-height: 44px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; min-width: 0; }
 .scn-card:hover { border-color: var(--text); }
 .scn-card:focus-visible, .act-btn:focus-visible, .scn-log-scroll:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
-.scn-num { flex: none; width: 30px; height: 30px; border: 2px solid var(--text); border-radius: 50%; display: grid; place-items: center; font-family: var(--font-sans); font-weight: 700; font-size: 15px; }
+.scn-num { flex: none; box-sizing: border-box; width: 32px; height: 32px; border: 2px solid var(--text); border-radius: 50%; display: grid; place-items: center; font-family: var(--font-sans); font-weight: 700; font-size: 14px; line-height: 1; }
 .scn-card-text { min-width: 0; display: block; }
 .scn-card-title { display: block; font-family: var(--font-sans); font-weight: 700; font-size: 15px; line-height: 1.3; }
 .scn-card-blurb { display: block; font-size: 14px; line-height: 1.35; margin-top: 2px; }
@@ -674,7 +676,7 @@ body.scn-popup-open { overflow: hidden; }
               How scenarios work
             </summary>
             <ol class="scn-guide-steps">
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random draws from a larger pool that includes extra cases not shown in the list. The name of a random case is revealed in the debrief, not while you are playing.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random picks from all of the cases in the list. The name of a random case is revealed in the debrief, not while you are playing.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Each opens as a pop-up, so you do not have to scroll the actions list. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. Nothing you should have to request is shown up front.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>CPR for 2 minutes performs two minutes of CPR and shows the rhythm on the monitor. Skip time only advances the clock and does not count as an action. Check rhythm and pulse is a separate step.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback states only what was done and the objective event. It will not interpret the monitor or tell you what to do next.</span></li>
@@ -3888,7 +3890,7 @@ var TXT = {
   }
 };
 
-/* ===== Hidden random-pool scenarios (not listed in the picker) =====
+/* ===== Additional scenarios (listed in the picker; listTitle is the non-spoiler card title) =====
    Sourced to RCUK 2025 ALS / special circumstances, tachy and brady algorithms
    (tachy V3 March 2026), and BNF monographs. Scripted shortcuts are tagged
    as simulation simplifications. */
@@ -4013,7 +4015,8 @@ var HIDDEN_SCENARIOS = [];
 
 HIDDEN_SCENARIOS.push(
   { id: "h1", hidden: true, group: "Cardiac arrest", title: "Asystole from hyperkalaemia",
-    blurb: "Hidden random-pool case.",
+    listTitle: "Non-shockable arrest: asystole",
+    blurb: "A haemodialysis patient is unresponsive this morning.",
     scene: "A 61-year-old who usually has haemodialysis three times a week missed yesterday's session. The team was called to review them this morning. They are now unresponsive and not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for the first rhythm check.",
     start: { rhythm: { gen: "asystole" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
     req: [["cpr", "CPR 30:2 without delay", "als"], ["adr", "Adrenaline 1 mg as soon as possible", "adrNon"], ["causes", "Identify the reversible cause (hyperkalaemia)", "causes"], ["calcium", "Calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest", "hyperkArrest"]],
@@ -4067,7 +4070,8 @@ HIDDEN_SCENARIOS.push(
 
 HIDDEN_SCENARIOS.push(
   { id: "h2", hidden: true, group: "Cardiac arrest", title: "PEA from tension pneumothorax",
-    blurb: "Hidden random-pool case.",
+    listTitle: "Non-shockable arrest: PEA on the high-dependency unit",
+    blurb: "Unresponsive on the high-dependency unit shortly after a procedure.",
     scene: "A 58-year-old has just had a right internal jugular central line on the high-dependency unit. They suddenly become unresponsive and not breathing normally. The right chest is resonant, with no air entry, and the trachea is deviated to the left. CPR 30:2 is under way and pads are on. Compressions are paused for a rhythm check.",
     start: { rhythm: { gen: "pea", opts: { lo: 100, hi: 120 } }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
     req: [["cpr", "CPR 30:2 without delay", "als"], ["adr", "Adrenaline 1 mg as soon as possible", "adrNon"], ["causes", "Identify the reversible cause (tension pneumothorax)", "causes"], ["decompress", "Chest decompression for tension pneumothorax", "chestDecomp"]],
@@ -4121,7 +4125,8 @@ HIDDEN_SCENARIOS.push(
 
 HIDDEN_SCENARIOS.push(
   { id: "h3", hidden: true, group: "Cardiac arrest", title: "Refractory VF: amiodarone after the fifth shock",
-    blurb: "Hidden random-pool case.",
+    listTitle: "Shockable arrest: a longer VF arrest",
+    blurb: "Collapse in the emergency department waiting room. This arrest will not be brief.",
     scene: "A 72-year-old collapses in the emergency department waiting room. Unresponsive and not breathing normally. The resuscitation team is present, CPR 30:2 has been started and defibrillator pads are on. Compressions are paused for the first rhythm check. This arrest will not be brief.",
     start: { rhythm: { gen: "vf" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
     req: [["shock", "Shock VF without delay", "shock"], ["cpr", "Resume CPR immediately after each shock", "als"], ["adr", "Adrenaline 1 mg after the third shock", "adrShock"], ["amio300", "Amiodarone 300 mg after the third shock", "amio"], ["amio150", "Amiodarone 150 mg after a total of five shocks", "amio"]],
@@ -4204,7 +4209,8 @@ HIDDEN_SCENARIOS.push(
 
 HIDDEN_SCENARIOS.push(
   { id: "h4", hidden: true, group: "Cardiac arrest", title: "VF converting to asystole",
-    blurb: "Hidden random-pool case.",
+    listTitle: "Cardiac arrest: the first rhythm may not last",
+    blurb: "Found unresponsive in the hospital car park and brought in under CPR.",
     scene: "A 66-year-old is found unresponsive in the hospital car park and brought in under CPR. Pads are on. Compressions are paused for the first rhythm check. The first rhythm will not be the last.",
     start: { rhythm: { gen: "vf" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
     req: [["shock", "Shock VF without delay", "shock"], ["cpr", "Resume CPR immediately after the shock", "als"], ["adr", "Once the rhythm is asystole, adrenaline 1 mg as soon as possible", "adrNon"]],
@@ -4290,7 +4296,8 @@ HIDDEN_SCENARIOS.push(
 
 HIDDEN_SCENARIOS.push(
   { id: "h5", hidden: true, idleNudge: true, group: "Tachycardia", title: "Stable SVT needing a third adenosine dose",
-    blurb: "Hidden random-pool case.",
+    listTitle: "Stable SVT",
+    blurb: "Sudden palpitations in a young adult who looks well, with a similar episode before.",
     scene: "A 28-year-old attends with sudden palpitations for 40 minutes. Alert and talking, no chest pain, no breathlessness, blood pressure is normal. Monitoring and a large IV cannula are in place. A previous identical episode stopped only after a third dose of adenosine.",
     start: { rhythm: { gen: "svt" }, pulse: true, vit: { pulse: "Present, regular", bp: "122/78 mmHg", consc: "Alert, talking", threats: "None" } },
     req: [["vagal", "Vagal manoeuvres first", "narrow"], ["aden", "Adenosine 6 mg, then 12 mg, then 18 mg (RCUK)", "aden"]],
@@ -4324,7 +4331,7 @@ HIDDEN_SCENARIOS.push(
     } },
 
   { id: "h6", hidden: true, idleNudge: true, group: "Tachycardia", title: "Unstable atrial fibrillation",
-    blurb: "Hidden random-pool case.",
+    blurb: "Known atrial fibrillation, now breathless, clammy and very tachycardic.",
     scene: "A 74-year-old with known atrial fibrillation arrives with sudden breathlessness and chest tightness for 20 minutes. Conscious, pale and clammy. The ventricular rate is very rapid. Monitoring, oxygen and IV access are in place; defibrillator pads are on.",
     start: { rhythm: { gen: "af", opts: { lo: 150, hi: 175 } }, pulse: true, vit: { pulse: "Present, irregular, rapid", bp: "78/48 mmHg", consc: "Conscious, clammy, chest pain", threats: "Shock; myocardial ischaemia" } },
     req: [["expert", "Careful sedation or anaesthesia before cardioversion (conscious patient)", "sync"], ["sync", "Synchronised shock for unstable atrial fibrillation", "tachy"]],
@@ -4360,7 +4367,7 @@ HIDDEN_SCENARIOS.push(
     } },
 
   { id: "h7", hidden: true, idleNudge: true, group: "Tachycardia", title: "Stable broad-complex tachycardia",
-    blurb: "Hidden random-pool case.",
+    blurb: "Palpitations for two hours in a patient who looks well, with a previous myocardial infarction.",
     scene: "A 57-year-old with a previous myocardial infarction attends with palpitations for two hours. Alert, talking, no chest pain, no breathlessness, blood pressure is 118/74 mmHg. Monitoring and IV access are in place.",
     start: { rhythm: { gen: "vt" }, pulse: true, vit: { pulse: "Present, regular", bp: "118/74 mmHg", consc: "Alert, talking", threats: "None" } },
     req: [["amioInf", "Amiodarone 300 mg IV over 10 to 60 min, or synchronised cardioversion", "amioInf"]],
@@ -4400,7 +4407,8 @@ HIDDEN_SCENARIOS.push(
 
 HIDDEN_SCENARIOS.push(
   { id: "h8", hidden: true, idleNudge: true, group: "Bradycardia", title: "Broad-complex complete heart block, risk of asystole",
-    blurb: "Hidden random-pool case.",
+    listTitle: "Broad-complex bradycardia",
+    blurb: "A pause on telemetry, then a slow broad rhythm; awake and only a little light-headed.",
     scene: "A 81-year-old is found to have a ventricular pause of 4 seconds on telemetry, then a slow broad rhythm. They are awake, a little light-headed, but not shocked or confused. Blood pressure is 102/60 mmHg. Monitoring and IV access are in place.",
     start: { rhythm: { gen: "chb", opts: { broad: true, vr: 34 } }, pulse: true, vit: { pulse: "Present, regular, slow", bp: "102/60 mmHg", consc: "Awake, light-headed", threats: "None currently; recent ventricular pause greater than 3 s" } },
     req: [["expert", "Seek expert help; consider transvenous pacing", "bradyRisk"], ["pace", "Interim measure: transcutaneous pacing, or an adrenaline or isoprenaline infusion", "brady"]],
@@ -4442,7 +4450,7 @@ HIDDEN_SCENARIOS.push(
     } },
 
   { id: "h9", hidden: true, group: "Cardiac arrest", title: "Pulseless torsades de pointes",
-    blurb: "Hidden random-pool case.",
+    blurb: "An inpatient on several QT-prolonging drugs becomes unresponsive and pulseless.",
     scene: "A 69-year-old inpatient on several QT-prolonging drugs, with a potassium of 3.0 mmol/L this morning, becomes unresponsive and pulseless. CPR 30:2 has been started and pads are on. Compressions are paused for a rhythm check. The QT was already long on this morning's ECG.",
     start: { rhythm: { gen: "torsades", opts: {} }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
     req: [["shock", "Unsynchronised shock for pulseless polymorphic VT", "alsPriority"], ["cpr", "Resume CPR immediately after the shock", "als"], ["mg", "Magnesium 8 mmol (2 g) IV", "tdp"]],
@@ -4512,8 +4520,9 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h10", hidden: true, idleNudge: true, group: "Tachycardia", title: "Post-ROSC deterioration into unstable VT",
-    blurb: "Hidden random-pool case.",
+  { id: "h10", hidden: true, idleNudge: true, group: "Peri-arrest", title: "Post-ROSC deterioration into unstable VT",
+    listTitle: "Deterioration immediately after ROSC",
+    blurb: "Immediately after ROSC, the monitor changes and the blood pressure falls.",
     scene: "A 64-year-old has just had return of spontaneous circulation after a shockable arrest on the ward. ABCDE is under way. They open their eyes to voice. A minute later the monitor changes and the blood pressure falls. Defibrillator pads are still on.",
     start: { rhythm: { gen: "vt" }, pulse: true, vit: { pulse: "Present, weak, regular", bp: "82/50 mmHg", consc: "Eyes open to voice, drowsy", threats: "Immediately post-ROSC; shock" } },
     req: [["expert", "Careful sedation or anaesthesia before cardioversion if needed", "sync"], ["sync", "Synchronised shock for unstable VT immediately after ROSC", "tachy"]],
@@ -5567,6 +5576,14 @@ var SCENARIOS = [
 var HIDDEN_SCENARIOS = HIDDEN_SCENARIOS || [];
 var ALL_SCENARIOS = SCENARIOS.concat(HIDDEN_SCENARIOS);
 var SCN = {}; ALL_SCENARIOS.forEach(function (s) { SCN[s.id] = s; });
+var LIST_GROUP_ORDER = ["Cardiac arrest", "Bradycardia", "Tachycardia", "Peri-arrest"];
+var LIST_ORDER = ["s1", "h3", "h4", "h9", "s2", "h1", "h2", "s3", "h8", "s4", "h5", "s5", "h7", "h6", "s6", "h10"];
+function listTitle(s) { return (s && (s.listTitle || s.title)) || ""; }
+function listGroup(s) { return (s && (s.listGroup || s.group)) || ""; }
+function listedScenarios() {
+  return LIST_ORDER.map(function (id) { return SCN[id]; }).filter(Boolean);
+}
+function listIndex(s) { return listedScenarios().indexOf(s); }
 
 /* Generic outcomes when a scenario script does not handle an action */
 function genericOutcome(a, st) {
@@ -5986,18 +6003,19 @@ function randomScenario() {
 function renderScnChooser() {
   var host = $("scnGrid"); if (host.childElementCount) return;
   var rb = document.createElement("div"); rb.className = "scn-random-wrap";
-  rb.innerHTML = "<button type='button' class='scn-random' id='scnRandom'><svg class='dice' viewBox='0 0 24 24' width='26' height='26' aria-hidden='true'><rect x='2.5' y='2.5' width='19' height='19' rx='4' fill='none' stroke='currentColor' stroke-width='2'/><circle cx='8' cy='8' r='1.8' fill='currentColor'/><circle cx='16' cy='8' r='1.8' fill='currentColor'/><circle cx='12' cy='12' r='1.8' fill='currentColor'/><circle cx='8' cy='16' r='1.8' fill='currentColor'/><circle cx='16' cy='16' r='1.8' fill='currentColor'/></svg><span><span class='scn-random-title'>Random scenario</span><span class='scn-random-sub'>A case picked for you from a larger pool, including cases not listed here. The case name is revealed in the debrief, not while you are playing.</span></span></button>";
+  rb.innerHTML = "<button type='button' class='scn-random' id='scnRandom'><svg class='dice' viewBox='0 0 24 24' width='26' height='26' aria-hidden='true'><rect x='2.5' y='2.5' width='19' height='19' rx='4' fill='none' stroke='currentColor' stroke-width='2'/><circle cx='8' cy='8' r='1.8' fill='currentColor'/><circle cx='16' cy='8' r='1.8' fill='currentColor'/><circle cx='12' cy='12' r='1.8' fill='currentColor'/><circle cx='8' cy='16' r='1.8' fill='currentColor'/><circle cx='16' cy='16' r='1.8' fill='currentColor'/></svg><span><span class='scn-random-title'>Random scenario</span><span class='scn-random-sub'>A case picked for you from all of the cases in the list. The case name is revealed in the debrief, not while you are playing.</span></span></button>";
   host.appendChild(rb);
   rb.querySelector("button").addEventListener("click", randomScenario);
-  var groups = {};
-  SCENARIOS.forEach(function (s) { (groups[s.group] = groups[s.group] || []).push(s); });
-  Object.keys(groups).forEach(function (g, gi) {
+  var list = listedScenarios();
+  LIST_GROUP_ORDER.forEach(function (g, gi) {
+    var items = list.filter(function (s) { return listGroup(s) === g; });
+    if (!items.length) return;
     var wrap = document.createElement("div"); wrap.className = "scn-group";
     wrap.innerHTML = "<h3 class='scen-group-label' id='scn-g" + gi + "'>" + esc(g) + "</h3>";
     var row = document.createElement("div"); row.className = "scn-row"; row.setAttribute("role", "group"); row.setAttribute("aria-labelledby", "scn-g" + gi);
-    groups[g].forEach(function (s, i) {
+    items.forEach(function (s) {
       var b = document.createElement("button"); b.type = "button"; b.className = "scn-card"; b.dataset.id = s.id;
-      b.innerHTML = "<span class='scn-num' aria-hidden='true'>" + (SCENARIOS.indexOf(s) + 1) + "</span><span class='scn-card-text'><span class='scn-card-title'>" + esc(s.title) + "</span><span class='scn-card-blurb'>" + esc(s.blurb) + "</span></span>";
+      b.innerHTML = "<span class='scn-num' aria-hidden='true'>" + (listIndex(s) + 1) + "</span><span class='scn-card-text'><span class='scn-card-title'>" + esc(listTitle(s)) + "</span><span class='scn-card-blurb'>" + esc(s.blurb) + "</span></span>";
       b.addEventListener("click", function () { startScenario(s.id); });
       row.appendChild(b);
     });
@@ -6015,8 +6033,8 @@ function startScenario(id, random) {
   $("scnChooserWrap").classList.add("hidden");
   $("scnStage").classList.remove("hidden");
   $("scnDebrief").classList.add("hidden"); $("scnPanels").classList.remove("hidden");
-  var baseN = SCENARIOS.indexOf(s);
-  $("scnTitle").textContent = random ? "Random case" : baseN >= 0 ? "Scenario " + (baseN + 1) + ": " + s.title : s.title;
+  var listN = listIndex(s);
+  $("scnTitle").textContent = random ? "Random case" : listN >= 0 ? "Scenario " + (listN + 1) + ": " + listTitle(s) : listTitle(s);
   $("scnScene").innerHTML = "<strong>Scene</strong>" + esc(s.scene);
   $("scnLog").innerHTML = "";
   monitor = new Monitor($("scnMonitor"));
@@ -6330,7 +6348,7 @@ function syncScnBanner() {
   t.querySelector(".test-cta-label").textContent = on ? "Exit" : "Start";
   t.setAttribute("aria-label", on ? "Exit Scenarios" : "Start Scenarios");
   if (on && SIM) {
-    var n = SCENARIOS.indexOf(SIM.scn);
+    var n = listIndex(SIM.scn);
     st.hidden = false;
     st.textContent = SIM.done ? "Scenario finished" : SIM.random ? "Random case running" : n >= 0 ? "Scenario " + (n + 1) + " running" : "Case running";
   }
@@ -6386,6 +6404,6 @@ $("scnReg").addEventListener("click", callReg);
   });
 })();
 syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; } };
+window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; } };
 </script>
 </body></html>
