@@ -227,7 +227,47 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .act-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .act-ff { grid-column: 1 / -1; border-style: dashed; }
 .verdict-glyph { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 2px solid currentColor; border-radius: 50%; font-size: 13px; font-weight: 700; margin-right: 6px; vertical-align: -4px; }
+.scn-hints {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.scn-hints:hover { border-color: var(--text); }
+.scn-hints:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.scn-hints-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border: 2px solid var(--text);
+  background: var(--surface);
+  border-radius: 999px;
+  flex: none;
+}
+.scn-hints-knob {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 3px;
+  left: 3px;
+  background: var(--text);
+  border-radius: 50%;
+}
+.scn-hints.is-on .scn-hints-track { background: var(--text); }
+.scn-hints.is-on .scn-hints-knob { left: 19px; background: var(--surface); }
+.scn-hints-state { font-variant-numeric: tabular-nums; min-width: 1.6em; }
 .scn-fb { margin: 6px 0; }
+
 .scn-change { margin: 8px 0; padding: 8px 10px 8px 12px; border-left: 3px solid var(--text); background: var(--surface-2, var(--bg)); font-family: var(--font-sans); font-size: 15px; }
 .scn-src { font-size: 13px; margin: 8px 0 0; padding-left: 8px; border-left: 2px solid var(--border); overflow-wrap: anywhere; }
 .scn-log-scroll { max-height: 260px; overflow-y: auto; }
@@ -382,6 +422,11 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
             <div class="strip-head">
               <h2 class="strip-title" id="scnTitle" tabindex="-1">Scenario</h2>
               <div class="strip-tools">
+                <button type="button" class="scn-hints" id="scnHints" role="switch" aria-checked="false" aria-labelledby="scnHintsLabel scnHintsState">
+                  <span id="scnHintsLabel" class="scn-hints-name">Hints</span>
+                  <span class="scn-hints-track" aria-hidden="true"><span class="scn-hints-knob"></span></span>
+                  <span class="scn-hints-state" id="scnHintsState">Off</span>
+                </button>
                 <button type="button" class="tool-btn" id="scnEnd">End scenario</button>
                 <button type="button" class="tool-btn" id="scnBack">All scenarios</button>
               </div>
@@ -2369,138 +2414,1074 @@ var PHYS = {
   tdpArrest: "Sustained polymorphic VT at this rate gives too little filling time for any useful output: functionally a cardiac arrest, treated like VF."
 };
 
-/* Feedback texts: [text, guideline step, source key, flag] */
+
+/* Shorter physiology for live feedback when a full PHYS line would name the next action. The debrief always uses PHYS. */
+var PHYS_LIVE = {
+  vfPersists: "VF persists: the wavelets were not all extinguished.",
+  syncFail: "The circuit survived the first shock.",
+  peaToAsys: "Myocardial ischaemia has deepened and pacemaker cells have stopped firing. In this simulation the rhythm has degenerated to asystole.",
+  tdpArrest: "Sustained polymorphic VT at this rate gives too little filling time for any useful output: functionally a cardiac arrest."
+};
+
+
+/* Feedback texts. full is shown with Hints on and in the debrief.
+   Live feedback with Hints off uses outcome (what happened) and, for not-quite
+   or partly-right actions, whyWrong (why this action was wrong now, without
+   naming the correct next action). nextStep, guideline and sources stay hidden
+   until Hints are on, or in the debrief. */
 var TXT = {
   /* generic: cardiac arrest */
-  a_atro: ["Atropine is not part of the cardiac arrest algorithm.", "ALS algorithm: drugs in arrest are adrenaline and, for VF/pVT, amiodarone", "noAtroArrest", 1],
-  a_aden: ["Adenosine is for a tachycardia with a pulse (regular narrow, or suspected SVT with aberrancy in a stable patient), not cardiac arrest.", "Tachyarrhythmia algorithm, not ALS", "narrow", 1],
-  a_vagal: ["Vagal manoeuvres are for a stable regular narrow complex tachycardia with a pulse, not cardiac arrest.", "Tachyarrhythmia algorithm, not ALS", "narrow", 1],
-  a_sync: ["There is no pulse, so there is nothing to synchronise to. Synchronised cardioversion is for a tachyarrhythmia with a pulse. VF or pulseless VT is a shockable cardiac arrest: give an unsynchronised shock.", "ALS: shockable rhythm, unsynchronised shock", "sync", 1],
-  a_pace: ["Pacing is not a step in the cardiac arrest algorithm; the bradyarrhythmia algorithm uses it for bradycardia with a pulse. RCUK notes that asystole with P waves is more likely to respond to pacing than true asystole.", "Bradyarrhythmia algorithm, not ALS", "pacing", 1],
-  a_mg: ["Magnesium is not a drug in the cardiac arrest algorithm. The tachyarrhythmia algorithm uses it for polymorphic VT with QT prolongation.", "Tachyarrhythmia algorithm, not ALS", "tdp", 1],
-  a_bicarb: ["Do not routinely give sodium bicarbonate in cardiac arrest.", "ALS: other drugs", "noRoutine", 1],
-  a_calcium: ["Do not routinely give calcium in cardiac arrest.", "ALS: other drugs", "noRoutine", 1],
-  a_fluid: ["Give fluids during CPR only if the arrest is caused by hypovolaemia. Nothing in this scene suggests that.", "ALS: fluids", "fluid", 1],
-  a_observe: ["This is cardiac arrest: the algorithm is CPR 30:2, attach the defibrillator and assess the rhythm. Observation is not a step.", "ALS: CPR 30:2", "alsPriority", 1],
-  a_expert: ["Calling for help is the right reflex. The resuscitation team is already here.", "ALS: call resuscitation team", "als", 1],
-  a_causes: ["Right to consider the 4 Hs and 4 Ts throughout. Nothing in this scene points to a specific cause yet.", "ALS: identify and treat reversible causes early", "causes", 1],
-  a_amio150: ["Amiodarone 150 mg is given after a total of five shocks, after the first 300 mg dose, and only for VF/pVT.", "ALS: antiarrhythmic drugs", "amio", 1],
-  a_amio300: ["Amiodarone 300 mg is for VF/pVT after a total of three shocks. It has no role in PEA or asystole.", "ALS: antiarrhythmic drugs", "amio", 1],
-  a_interrupt: ["Minimise interruptions: complete the 2 minutes of CPR, then pause briefly for the rhythm check. Stop early only if there are clinical and physiological signs of ROSC.", "ALS: minimise interruptions; CPR for 2 min", "alsPriority", 1],
-  a_shockMid: ["Do not defibrillate during manual chest compressions. Complete the 2-minute cycle, pause briefly to assess the rhythm, then shock if it is shockable.", "ALS: shock, then CPR for 2 min", "shock", 1],
-  a_shockTwice: ["After a shock, immediately resume CPR for 2 minutes. Do not stack shocks unless the arrest was witnessed and monitored with the defibrillator already attached.", "ALS: shock, then immediately resume CPR", "shock", 1],
-  a_resumeFirst: ["After a shock, resume compressions immediately; other tasks happen during the 2-minute cycle.", "ALS: immediately resume CPR for 2 min", "als", 1],
-  a_adrSoon: ["Too soon. Repeat adrenaline 1 mg every 3 to 5 minutes, which is roughly every other 2-minute cycle.", "ALS: adrenaline every 3 to 5 min", "adrShock", 1],
-  a_assessAgain: ["Already assessed. Act on what you found.", "ALS: assess rhythm", "als", 0],
-  a_cprRunning: ["CPR is already in progress.", "ALS: CPR", "als", 0],
-  a_ffNoCPR: ["CPR is not running, so there is no 2-minute cycle to fast-forward.", "ALS: CPR for 2 min", "als", 0],
+  a_atro: {
+    full: "Atropine is not part of the cardiac arrest algorithm.",
+    guideline: "ALS algorithm: drugs in arrest are adrenaline and, for VF/pVT, amiodarone",
+    src: "noAtroArrest",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Atropine is not part of the cardiac arrest algorithm.",
+    nextStep: ""
+  },
+  a_aden: {
+    full: "Adenosine is for a tachycardia with a pulse (regular narrow, or suspected SVT with aberrancy in a stable patient), not cardiac arrest.",
+    guideline: "Tachyarrhythmia algorithm, not ALS",
+    src: "narrow",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Adenosine is for a tachycardia with a pulse (regular narrow, or suspected SVT with aberrancy in a stable patient), not cardiac arrest.",
+    nextStep: ""
+  },
+  a_vagal: {
+    full: "Vagal manoeuvres are for a stable regular narrow complex tachycardia with a pulse, not cardiac arrest.",
+    guideline: "Tachyarrhythmia algorithm, not ALS",
+    src: "narrow",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Vagal manoeuvres are for a stable regular narrow complex tachycardia with a pulse, not cardiac arrest.",
+    nextStep: ""
+  },
+  a_sync: {
+    full: "There is no pulse, so there is nothing to synchronise to. Synchronised cardioversion is for a tachyarrhythmia with a pulse. VF or pulseless VT is a shockable cardiac arrest: give an unsynchronised shock.",
+    guideline: "ALS: shockable rhythm, unsynchronised shock",
+    src: "sync",
+    flag: 1,
+    outcome: "",
+    whyWrong: "There is no pulse, so there is nothing to synchronise to. Synchronised cardioversion is for a tachyarrhythmia with a pulse.",
+    nextStep: "VF or pulseless VT is a shockable cardiac arrest: give an unsynchronised shock."
+  },
+  a_pace: {
+    full: "Pacing is not a step in the cardiac arrest algorithm; the bradyarrhythmia algorithm uses it for bradycardia with a pulse. RCUK notes that asystole with P waves is more likely to respond to pacing than true asystole.",
+    guideline: "Bradyarrhythmia algorithm, not ALS",
+    src: "pacing",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Pacing is not a step in the cardiac arrest algorithm; the bradyarrhythmia algorithm uses it for bradycardia with a pulse.",
+    nextStep: ""
+  },
+  a_mg: {
+    full: "Magnesium is not a drug in the cardiac arrest algorithm. The tachyarrhythmia algorithm uses it for polymorphic VT with QT prolongation.",
+    guideline: "Tachyarrhythmia algorithm, not ALS",
+    src: "tdp",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Magnesium is not a drug in the cardiac arrest algorithm.",
+    nextStep: ""
+  },
+  a_bicarb: {
+    full: "Do not routinely give sodium bicarbonate in cardiac arrest.",
+    guideline: "ALS: other drugs",
+    src: "noRoutine",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Do not routinely give sodium bicarbonate in cardiac arrest.",
+    nextStep: ""
+  },
+  a_calcium: {
+    full: "Do not routinely give calcium in cardiac arrest.",
+    guideline: "ALS: other drugs",
+    src: "noRoutine",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Do not routinely give calcium in cardiac arrest.",
+    nextStep: ""
+  },
+  a_fluid: {
+    full: "Give fluids during CPR only if the arrest is caused by hypovolaemia. Nothing in this scene suggests that.",
+    guideline: "ALS: fluids",
+    src: "fluid",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Fluids during CPR are only indicated if the arrest is caused by hypovolaemia. Nothing in this scene suggests that.",
+    nextStep: ""
+  },
+  a_observe: {
+    full: "This is cardiac arrest: the algorithm is CPR 30:2, attach the defibrillator and assess the rhythm. Observation is not a step.",
+    guideline: "ALS: CPR 30:2",
+    src: "alsPriority",
+    flag: 1,
+    outcome: "",
+    whyWrong: "This is cardiac arrest. Observation is not a step.",
+    nextStep: "The algorithm is CPR 30:2, attach the defibrillator and assess the rhythm."
+  },
+  a_expert: {
+    full: "Calling for help is the right reflex. The resuscitation team is already here.",
+    guideline: "ALS: call resuscitation team",
+    src: "als",
+    flag: 1,
+    outcome: "Calling for help is the right reflex. The resuscitation team is already here.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  a_causes: {
+    full: "Right to consider the 4 Hs and 4 Ts throughout. Nothing in this scene points to a specific cause yet.",
+    guideline: "ALS: identify and treat reversible causes early",
+    src: "causes",
+    flag: 1,
+    outcome: "Right to consider the 4 Hs and 4 Ts throughout. Nothing in this scene points to a specific cause yet.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  a_amio150: {
+    full: "Amiodarone 150 mg is given after a total of five shocks, after the first 300 mg dose, and only for VF/pVT.",
+    guideline: "ALS: antiarrhythmic drugs",
+    src: "amio",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Amiodarone 150 mg is not due now: it is only used in VF or pulseless VT, after the 300 mg dose, and only after a total of five shocks.",
+    nextStep: ""
+  },
+  a_amio300: {
+    full: "Amiodarone 300 mg is for VF/pVT after a total of three shocks. It has no role in PEA or asystole.",
+    guideline: "ALS: antiarrhythmic drugs",
+    src: "amio",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Amiodarone 300 mg is not indicated for this rhythm, and even in VF or pulseless VT it is not given until a total of three shocks have been delivered.",
+    nextStep: ""
+  },
+  a_interrupt: {
+    full: "Minimise interruptions: complete the 2 minutes of CPR, then pause briefly for the rhythm check. Stop early only if there are clinical and physiological signs of ROSC.",
+    guideline: "ALS: minimise interruptions; CPR for 2 min",
+    src: "alsPriority",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Minimise interruptions to compressions. Stop the cycle early only if there are clinical and physiological signs of ROSC.",
+    nextStep: "Complete the 2 minutes of CPR, then pause briefly for the rhythm check."
+  },
+  a_shockMid: {
+    full: "Do not defibrillate during manual chest compressions. Complete the 2-minute cycle, pause briefly to assess the rhythm, then shock if it is shockable.",
+    guideline: "ALS: shock, then CPR for 2 min",
+    src: "shock",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Do not defibrillate during manual chest compressions.",
+    nextStep: "Complete the 2-minute cycle, pause briefly to assess the rhythm, then shock if it is shockable."
+  },
+  a_shockTwice: {
+    full: "After a shock, immediately resume CPR for 2 minutes. Do not stack shocks unless the arrest was witnessed and monitored with the defibrillator already attached.",
+    guideline: "ALS: shock, then immediately resume CPR",
+    src: "shock",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Do not stack shocks unless the arrest was witnessed and monitored with the defibrillator already attached.",
+    nextStep: "After a shock, immediately resume CPR for 2 minutes."
+  },
+  a_resumeFirst: {
+    full: "After a shock, resume compressions immediately; other tasks happen during the 2-minute cycle.",
+    guideline: "ALS: immediately resume CPR for 2 min",
+    src: "als",
+    flag: 1,
+    outcome: "",
+    whyWrong: "This task should wait until compressions have been restarted after the shock.",
+    nextStep: "After a shock, resume compressions immediately; other tasks happen during the 2-minute cycle."
+  },
+  a_adrSoon: {
+    full: "Too soon. Repeat adrenaline 1 mg every 3 to 5 minutes, which is roughly every other 2-minute cycle.",
+    guideline: "ALS: adrenaline every 3 to 5 min",
+    src: "adrShock",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Too soon to give another dose of adrenaline.",
+    nextStep: "Repeat adrenaline 1 mg every 3 to 5 minutes, which is roughly every other 2-minute cycle."
+  },
+  a_assessAgain: {
+    full: "Already assessed. Act on what you found.",
+    guideline: "ALS: assess rhythm",
+    src: "als",
+    flag: 0,
+    outcome: "Already assessed.",
+    whyWrong: "",
+    nextStep: "Act on what you found."
+  },
+  a_cprRunning: {
+    full: "CPR is already in progress.",
+    guideline: "ALS: CPR",
+    src: "als",
+    flag: 0,
+    outcome: "CPR is already in progress.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  a_ffNoCPR: {
+    full: "CPR is not running, so there is no 2-minute cycle to fast-forward.",
+    guideline: "ALS: CPR for 2 min",
+    src: "als",
+    flag: 0,
+    outcome: "CPR is not running, so there is no 2-minute cycle to fast-forward.",
+    whyWrong: "",
+    nextStep: ""
+  },
   /* generic: pulse present */
-  p_cpr: ["The patient has a pulse. CPR is for cardiac arrest.", "Peri-arrest assessment: ABCDE", "als", 1],
-  p_shock: ["When cardioverting a tachyarrhythmia, the shock must be synchronised to the R wave. Do not give an unsynchronised shock to a patient with a pulse.", "Tachyarrhythmia algorithm: synchronised shock", "sync", 1],
-  p_adr: ["Adrenaline 1 mg IV bolus is the cardiac arrest dose. Outside arrest, the bradycardia algorithm lists adrenaline only as an infusion (2 to 10 mcg/min) after atropine fails.", "Bradyarrhythmia algorithm: interim measures", "brady", 1],
-  p_amio: ["Amiodarone is not the step for this rhythm and presentation.", "Peri-arrest algorithms", "tachy", 1],
-  p_atro: ["Atropine is for bradycardia with life-threatening features. It has no role in a tachyarrhythmia.", "Bradyarrhythmia algorithm", "brady", 1],
-  p_aden: ["Adenosine is for a stable regular narrow complex tachycardia (or suspected SVT with aberrancy in a stable patient). It is not the step here.", "Tachyarrhythmia algorithm: narrow regular", "narrow", 1],
-  p_vagal: ["Vagal manoeuvres are for a stable regular narrow complex tachycardia. They are not the step here.", "Tachyarrhythmia algorithm: narrow regular", "narrow", 1],
-  p_sync: ["Synchronised cardioversion is for an unstable tachyarrhythmia, or after drug treatment fails. It is not the step here.", "Tachyarrhythmia algorithm", "tachy", 1],
-  p_pace: ["Pacing is for bradycardia with life-threatening features that does not respond to drugs. It is not the step here.", "Bradyarrhythmia algorithm", "brady", 1],
-  p_mg: ["Magnesium 8 mmol is the algorithm step for polymorphic VT with QT prolongation, not this rhythm.", "Tachyarrhythmia algorithm: polymorphic VT", "tdp", 1],
-  p_fluid: ["An IV fluid bolus is not a step in the peri-arrest arrhythmia algorithms.", "Peri-arrest algorithms", "tachy", 1],
-  p_bicarb: ["Sodium bicarbonate is not a step in the peri-arrest arrhythmia algorithms.", "Peri-arrest algorithms", "tachy", 1],
-  p_calcium: ["Calcium is not a step in the peri-arrest arrhythmia algorithms.", "Peri-arrest algorithms", "tachy", 1],
-  p_observe: ["This patient needs treatment on the algorithm now. Observation alone is not the step for this presentation.", "Peri-arrest algorithms", "tachy", 1],
-  p_expert: ["Seeking expert help is appropriate whenever the arrhythmia or life-threatening features persist.", "Peri-arrest: seek expert help", "expert", 1],
-  p_causes: ["Right to look for and treat reversible causes (for example electrolytes and drugs) alongside rhythm treatment.", "Peri-arrest: identify and treat reversible causes", "tachy", 1],
-  p_amio150: ["Amiodarone 150 mg is a cardiac arrest dose (after five shocks in VF/pVT). It is not used here.", "ALS: antiarrhythmic drugs", "amio", 1],
-
+  p_cpr: {
+    full: "The patient has a pulse. CPR is for cardiac arrest.",
+    guideline: "Peri-arrest assessment: ABCDE",
+    src: "als",
+    flag: 1,
+    outcome: "",
+    whyWrong: "The patient has a pulse. CPR is for cardiac arrest.",
+    nextStep: ""
+  },
+  p_shock: {
+    full: "When cardioverting a tachyarrhythmia, the shock must be synchronised to the R wave. Do not give an unsynchronised shock to a patient with a pulse.",
+    guideline: "Tachyarrhythmia algorithm: synchronised shock",
+    src: "sync",
+    flag: 1,
+    outcome: "",
+    whyWrong: "The patient has a pulse, so an unsynchronised shock is not appropriate.",
+    nextStep: "When cardioverting a tachyarrhythmia, the shock must be synchronised to the R wave."
+  },
+  p_adr: {
+    full: "Adrenaline 1 mg IV bolus is the cardiac arrest dose. Outside arrest, the bradycardia algorithm lists adrenaline only as an infusion (2 to 10 mcg/min) after atropine fails.",
+    guideline: "Bradyarrhythmia algorithm: interim measures",
+    src: "brady",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Adrenaline 1 mg IV bolus is the cardiac arrest dose, not a peri-arrest bolus.",
+    nextStep: "Outside arrest, the bradycardia algorithm lists adrenaline only as an infusion (2 to 10 mcg/min) after atropine fails."
+  },
+  p_amio: {
+    full: "Amiodarone is not the step for this rhythm and presentation.",
+    guideline: "Peri-arrest algorithms",
+    src: "tachy",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Amiodarone is not the step for this rhythm and presentation.",
+    nextStep: ""
+  },
+  p_atro: {
+    full: "Atropine is for bradycardia with life-threatening features. It has no role in a tachyarrhythmia.",
+    guideline: "Bradyarrhythmia algorithm",
+    src: "brady",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Atropine is for bradycardia with life-threatening features. It has no role in a tachyarrhythmia.",
+    nextStep: ""
+  },
+  p_aden: {
+    full: "Adenosine is for a stable regular narrow complex tachycardia (or suspected SVT with aberrancy in a stable patient). It is not the step here.",
+    guideline: "Tachyarrhythmia algorithm: narrow regular",
+    src: "narrow",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Adenosine is not the step for this rhythm and presentation.",
+    nextStep: ""
+  },
+  p_vagal: {
+    full: "Vagal manoeuvres are for a stable regular narrow complex tachycardia. They are not the step here.",
+    guideline: "Tachyarrhythmia algorithm: narrow regular",
+    src: "narrow",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Vagal manoeuvres are not the step for this rhythm and presentation.",
+    nextStep: ""
+  },
+  p_sync: {
+    full: "Synchronised cardioversion is for an unstable tachyarrhythmia, or after drug treatment fails. It is not the step here.",
+    guideline: "Tachyarrhythmia algorithm",
+    src: "tachy",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Synchronised cardioversion is not the step for this presentation.",
+    nextStep: "It is used for an unstable tachyarrhythmia, or after drug treatment fails."
+  },
+  p_pace: {
+    full: "Pacing is for bradycardia with life-threatening features that does not respond to drugs. It is not the step here.",
+    guideline: "Bradyarrhythmia algorithm",
+    src: "brady",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Pacing is not the step for this presentation.",
+    nextStep: "Pacing is for bradycardia with life-threatening features that does not respond to drugs."
+  },
+  p_mg: {
+    full: "Magnesium 8 mmol is the algorithm step for polymorphic VT with QT prolongation, not this rhythm.",
+    guideline: "Tachyarrhythmia algorithm: polymorphic VT",
+    src: "tdp",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Magnesium is not the step for this rhythm.",
+    nextStep: "Magnesium 8 mmol is the algorithm step for polymorphic VT with QT prolongation."
+  },
+  p_fluid: {
+    full: "An IV fluid bolus is not a step in the peri-arrest arrhythmia algorithms.",
+    guideline: "Peri-arrest algorithms",
+    src: "tachy",
+    flag: 1,
+    outcome: "",
+    whyWrong: "An IV fluid bolus is not a step in the peri-arrest arrhythmia algorithms.",
+    nextStep: ""
+  },
+  p_bicarb: {
+    full: "Sodium bicarbonate is not a step in the peri-arrest arrhythmia algorithms.",
+    guideline: "Peri-arrest algorithms",
+    src: "tachy",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Sodium bicarbonate is not a step in the peri-arrest arrhythmia algorithms.",
+    nextStep: ""
+  },
+  p_calcium: {
+    full: "Calcium is not a step in the peri-arrest arrhythmia algorithms.",
+    guideline: "Peri-arrest algorithms",
+    src: "tachy",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Calcium is not a step in the peri-arrest arrhythmia algorithms.",
+    nextStep: ""
+  },
+  p_observe: {
+    full: "This patient needs treatment on the algorithm now. Observation alone is not the step for this presentation.",
+    guideline: "Peri-arrest algorithms",
+    src: "tachy",
+    flag: 1,
+    outcome: "",
+    whyWrong: "This patient needs treatment on the algorithm now. Observation alone is not the step for this presentation.",
+    nextStep: ""
+  },
+  p_expert: {
+    full: "Seeking expert help is appropriate whenever the arrhythmia or life-threatening features persist.",
+    guideline: "Peri-arrest: seek expert help",
+    src: "expert",
+    flag: 1,
+    outcome: "Seeking expert help is appropriate whenever the arrhythmia or life-threatening features persist.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  p_causes: {
+    full: "Right to look for and treat reversible causes (for example electrolytes and drugs) alongside rhythm treatment.",
+    guideline: "Peri-arrest: identify and treat reversible causes",
+    src: "tachy",
+    flag: 1,
+    outcome: "Right to look for and treat reversible causes (for example electrolytes and drugs) alongside rhythm treatment.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  p_amio150: {
+    full: "Amiodarone 150 mg is a cardiac arrest dose (after five shocks in VF/pVT). It is not used here.",
+    guideline: "ALS: antiarrhythmic drugs",
+    src: "amio",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Amiodarone 150 mg is a cardiac arrest dose (after five shocks in VF or pulseless VT). It is not used here.",
+    nextStep: ""
+  },
   /* Scenario 1: VF to ROSC */
-  s1_assess: ["VF on the monitor in an unresponsive patient who is not breathing normally: shockable cardiac arrest. Charge and shock without delay.", "ALS: assess rhythm, shockable", "als", 1],
-  s1_cprFirst: ["CPR is right, but this is VF: give a shock as early as possible, then immediately resume CPR for 2 minutes.", "ALS: shockable, shock first", "alsPriority", 1],
-  s1_shock1: ["Shock 1 delivered (biphasic, at least 150 J). Now immediately resume CPR for 2 minutes without a pulse check.", "ALS: shock, immediately resume CPR for 2 min", "shock", 1],
-  s1_shockN: ["Shock delivered (consider a higher energy if the defibrillator allows). Immediately resume CPR for 2 minutes.", "ALS: shock, immediately resume CPR for 2 min", "shock", 1],
-  s1_shock3: ["Third shock delivered. Resume CPR now. Adrenaline 1 mg and amiodarone 300 mg are both due after three shocks; prepare antero-posterior pads for the next rhythm check.", "ALS: after 3 shocks give adrenaline and amiodarone", "pads", 1],
-  s1_cpr: ["CPR restarted immediately after the shock. High-quality compressions with minimal interruption.", "ALS: immediately resume CPR for 2 min", "als", 1],
-  s1_check: ["Rhythm check at the end of the cycle: still VF, so shockable. Shock again.", "ALS: assess rhythm, shockable", "als", 1],
-  s1_checkNoDrugs: ["Still VF after three shocks. Adrenaline 1 mg and amiodarone 300 mg were due after the third shock. Shock again and give them during the next cycle.", "ALS: after 3 shocks give adrenaline and amiodarone", "amio", 1],
-  s1_checkOrganised: ["Rhythm check: an organised rhythm has appeared. Check for a pulse and signs of life before restarting compressions.", "ALS: organised rhythm, check pulse", "als", 1],
-  s1_adrEarly: ["Too early. In a shockable arrest the first adrenaline 1 mg is given after the third shock.", "ALS: adrenaline after 3 shocks", "adrShock", 1],
-  s1_adr: ["Adrenaline 1 mg IV given after the third shock, during CPR. Repeat every 3 to 5 minutes while ALS continues.", "ALS: adrenaline after 3 shocks, then every 3 to 5 min", "adrShock", 1],
-  s1_adrRepeat: ["Repeat adrenaline 1 mg, at least 3 minutes after the previous dose.", "ALS: adrenaline every 3 to 5 min", "adrShock", 1],
-  s1_amioEarly: ["Too early. Amiodarone 300 mg is given after a total of three shocks.", "ALS: amiodarone after 3 shocks", "amio", 1],
-  s1_amio: ["Amiodarone 300 mg IV given after the third shock. A further 150 mg is given after five shocks if VF/pVT continues.", "ALS: amiodarone after 3 shocks", "amio", 1],
-  s1_amioTwice: ["Amiodarone 300 mg has already been given. The next dose is 150 mg, after a total of five shocks.", "ALS: antiarrhythmic drugs", "amio", 1],
-  s1_amio150: ["Amiodarone 150 mg IV given after a total of five shocks.", "ALS: amiodarone 150 mg after 5 shocks", "amio", 1],
-  s1_rosc: ["Pulse present with an organised rhythm: ROSC. Move to post-ROSC care: ABCDE, SpO2 94 to 98%, normal PaCO2, SBP over 100 mmHg, 12-lead ECG, treat the cause.", "ALS: ROSC, immediate post-ROSC care", "rosc", 1],
-  s1_roscCPR: ["Check for a pulse first: an organised rhythm after shocks and drugs may mean ROSC.", "ALS: organised rhythm, check pulse", "als", 1],
-  s1_roscShock: ["Only VF and pulseless VT are shockable; an organised rhythm is not. Check for a pulse: this may be ROSC.", "ALS: organised rhythm, check pulse", "als", 1],
-
+  s1_assess: {
+    full: "VF on the monitor in an unresponsive patient who is not breathing normally: shockable cardiac arrest. Charge and shock without delay.",
+    guideline: "ALS: assess rhythm, shockable",
+    src: "als",
+    flag: 1,
+    outcome: "VF on the monitor in an unresponsive patient who is not breathing normally: shockable cardiac arrest.",
+    whyWrong: "",
+    nextStep: "Charge and shock without delay."
+  },
+  s1_cprFirst: {
+    full: "CPR is right, but this is VF: give a shock as early as possible, then immediately resume CPR for 2 minutes.",
+    guideline: "ALS: shockable, shock first",
+    src: "alsPriority",
+    flag: 1,
+    outcome: "CPR has been started.",
+    whyWrong: "Compressions were not the first priority with this rhythm on a monitored patient with the pads already on.",
+    nextStep: "Give a shock as early as possible, then immediately resume CPR for 2 minutes."
+  },
+  s1_shock1: {
+    full: "Shock 1 delivered (biphasic, at least 150 J). Now immediately resume CPR for 2 minutes without a pulse check.",
+    guideline: "ALS: shock, immediately resume CPR for 2 min",
+    src: "shock",
+    flag: 1,
+    outcome: "Shock 1 delivered (biphasic, at least 150 J).",
+    whyWrong: "",
+    nextStep: "Now immediately resume CPR for 2 minutes without a pulse check."
+  },
+  s1_shockN: {
+    full: "Shock delivered (consider a higher energy if the defibrillator allows). Immediately resume CPR for 2 minutes.",
+    guideline: "ALS: shock, immediately resume CPR for 2 min",
+    src: "shock",
+    flag: 1,
+    outcome: "Shock delivered (consider a higher energy if the defibrillator allows).",
+    whyWrong: "",
+    nextStep: "Immediately resume CPR for 2 minutes."
+  },
+  s1_shock3: {
+    full: "Third shock delivered. Resume CPR now. Adrenaline 1 mg and amiodarone 300 mg are both due after three shocks; prepare antero-posterior pads for the next rhythm check.",
+    guideline: "ALS: after 3 shocks give adrenaline and amiodarone",
+    src: "pads",
+    flag: 1,
+    outcome: "Third shock delivered.",
+    whyWrong: "",
+    nextStep: "Resume CPR now. Adrenaline 1 mg and amiodarone 300 mg are both due after three shocks; prepare antero-posterior pads for the next rhythm check."
+  },
+  s1_cpr: {
+    full: "CPR restarted immediately after the shock. High-quality compressions with minimal interruption.",
+    guideline: "ALS: immediately resume CPR for 2 min",
+    src: "als",
+    flag: 1,
+    outcome: "CPR restarted immediately after the shock. High-quality compressions with minimal interruption.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s1_check: {
+    full: "Rhythm check at the end of the cycle: still VF, so shockable. Shock again.",
+    guideline: "ALS: assess rhythm, shockable",
+    src: "als",
+    flag: 1,
+    outcome: "Rhythm check at the end of the cycle: still VF, so shockable.",
+    whyWrong: "",
+    nextStep: "Shock again."
+  },
+  s1_checkNoDrugs: {
+    full: "Still VF after three shocks. Adrenaline 1 mg and amiodarone 300 mg were due after the third shock. Shock again and give them during the next cycle.",
+    guideline: "ALS: after 3 shocks give adrenaline and amiodarone",
+    src: "amio",
+    flag: 1,
+    outcome: "Still VF after three shocks.",
+    whyWrong: "",
+    nextStep: "Adrenaline 1 mg and amiodarone 300 mg were due after the third shock. Shock again and give them during the next cycle."
+  },
+  s1_checkOrganised: {
+    full: "Rhythm check: an organised rhythm has appeared. Check for a pulse and signs of life before restarting compressions.",
+    guideline: "ALS: organised rhythm, check pulse",
+    src: "als",
+    flag: 1,
+    outcome: "Rhythm check: an organised rhythm has appeared.",
+    whyWrong: "",
+    nextStep: "Check for a pulse and signs of life before restarting compressions."
+  },
+  s1_adrEarly: {
+    full: "Too early. In a shockable arrest the first adrenaline 1 mg is given after the third shock.",
+    guideline: "ALS: adrenaline after 3 shocks",
+    src: "adrShock",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Too early for adrenaline in a shockable arrest: the first 1 mg dose is not due until after a total of three shocks.",
+    nextStep: ""
+  },
+  s1_adr: {
+    full: "Adrenaline 1 mg IV given after the third shock, during CPR. Repeat every 3 to 5 minutes while ALS continues.",
+    guideline: "ALS: adrenaline after 3 shocks, then every 3 to 5 min",
+    src: "adrShock",
+    flag: 1,
+    outcome: "Adrenaline 1 mg IV given after the third shock, during CPR.",
+    whyWrong: "",
+    nextStep: "Repeat every 3 to 5 minutes while ALS continues."
+  },
+  s1_adrRepeat: {
+    full: "Repeat adrenaline 1 mg, at least 3 minutes after the previous dose.",
+    guideline: "ALS: adrenaline every 3 to 5 min",
+    src: "adrShock",
+    flag: 1,
+    outcome: "Repeat adrenaline 1 mg given, at least 3 minutes after the previous dose.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s1_amioEarly: {
+    full: "Too early. Amiodarone 300 mg is given after a total of three shocks.",
+    guideline: "ALS: amiodarone after 3 shocks",
+    src: "amio",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Too early for amiodarone: the 300 mg dose is not due until after a total of three shocks.",
+    nextStep: ""
+  },
+  s1_amio: {
+    full: "Amiodarone 300 mg IV given after the third shock. A further 150 mg is given after five shocks if VF/pVT continues.",
+    guideline: "ALS: amiodarone after 3 shocks",
+    src: "amio",
+    flag: 1,
+    outcome: "Amiodarone 300 mg IV given after the third shock.",
+    whyWrong: "",
+    nextStep: "A further 150 mg is given after five shocks if VF or pulseless VT continues."
+  },
+  s1_amioTwice: {
+    full: "Amiodarone 300 mg has already been given. The next dose is 150 mg, after a total of five shocks.",
+    guideline: "ALS: antiarrhythmic drugs",
+    src: "amio",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Amiodarone 300 mg has already been given, so that dose should not be repeated.",
+    nextStep: "The next dose is 150 mg, after a total of five shocks."
+  },
+  s1_amio150: {
+    full: "Amiodarone 150 mg IV given after a total of five shocks.",
+    guideline: "ALS: amiodarone 150 mg after 5 shocks",
+    src: "amio",
+    flag: 1,
+    outcome: "Amiodarone 150 mg IV given after a total of five shocks.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s1_rosc: {
+    full: "Pulse present with an organised rhythm: ROSC. Move to post-ROSC care: ABCDE, SpO2 94 to 98%, normal PaCO2, SBP over 100 mmHg, 12-lead ECG, treat the cause.",
+    guideline: "ALS: ROSC, immediate post-ROSC care",
+    src: "rosc",
+    flag: 1,
+    outcome: "Pulse present with an organised rhythm: ROSC.",
+    whyWrong: "",
+    nextStep: "Move to post-ROSC care: ABCDE, SpO2 94 to 98%, normal PaCO2, SBP over 100 mmHg, 12-lead ECG, treat the cause."
+  },
+  s1_roscCPR: {
+    full: "Check for a pulse first: an organised rhythm after shocks and drugs may mean ROSC.",
+    guideline: "ALS: organised rhythm, check pulse",
+    src: "als",
+    flag: 1,
+    outcome: "",
+    whyWrong: "An organised rhythm after shocks and drugs may mean ROSC, so restarting CPR was not the next assessment.",
+    nextStep: "Check for a pulse first."
+  },
+  s1_roscShock: {
+    full: "Only VF and pulseless VT are shockable; an organised rhythm is not. Check for a pulse: this may be ROSC.",
+    guideline: "ALS: organised rhythm, check pulse",
+    src: "als",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Only VF and pulseless VT are shockable; an organised rhythm is not.",
+    nextStep: "Check for a pulse: this may be ROSC."
+  },
   /* Scenario 2: PEA from hypovolaemia */
-  s2_assess: ["Organised electrical activity but no palpable central pulse: PEA, a non-shockable arrest. Restart CPR, give adrenaline as soon as possible and hunt for the cause.", "ALS: assess rhythm, non-shockable", "als", 1],
-  s2_cpr: ["CPR 30:2 continues: the right first step in a non-shockable arrest.", "ALS: CPR 30:2, immediately resume CPR for 2 min", "als", 1],
-  s2_shock: ["PEA and asystole are non-shockable rhythms: no shock. Continue CPR and give adrenaline.", "ALS: non-shockable pathway", "als", 1],
-  s2_adr: ["Adrenaline 1 mg IV given as soon as possible, as the algorithm advises for a non-shockable rhythm. Repeat every 3 to 5 minutes.", "ALS: non-shockable, adrenaline as soon as possible", "adrNon", 1],
-  s2_adrRepeat: ["Repeat adrenaline 1 mg, at least 3 minutes after the previous dose.", "ALS: adrenaline every 3 to 5 min", "adrNon", 1],
-  s2_adrSoon: ["Too soon. Repeat adrenaline every 3 to 5 minutes.", "ALS: adrenaline every 3 to 5 min", "adrNon", 1],
-  s2_causes: ["Reversible cause identified: hypovolaemia, one of the 4 Hs. The drain has filled with fresh blood after surgery, so give IV fluid.", "ALS: identify and treat reversible causes (hypovolaemia)", "causes", 1],
-  s2_fluid: ["IV fluid given during CPR because hypovolaemia is the likely cause: isotonic saline or a balanced crystalloid.", "ALS: fluids only if arrest caused by hypovolaemia", "fluid", 1],
-  s2_fluidEarly: ["Fluid is right here, but name the cause first: working through the 4 Hs and 4 Ts is how you justify it.", "ALS: identify and treat reversible causes", "fluid", 1],
-  s2_expert: ["Right: in this scene the bleeding also needs surgical control, so call the surgical team.", "ALS: identify and treat cause", "causes", 1],
-  s2_check: ["Rhythm check: still PEA, no pulse. Resume CPR and keep treating the cause.", "ALS: non-shockable, resume CPR for 2 min", "als", 1],
-  s2_checkAsys: ["Rhythm check: now asystole. Still non-shockable. Resume CPR, continue adrenaline every 3 to 5 minutes and treat the cause.", "ALS: non-shockable, resume CPR for 2 min", "als", 1],
-  s2_checkOrganised: ["Rhythm check: organised rhythm, faster and stronger-looking. Check for a pulse.", "ALS: organised rhythm, check pulse", "als", 1],
-  s2_rosc: ["Pulse present: ROSC. Post-ROSC ABCDE care, keep restoring volume and get the bleeding controlled.", "ALS: ROSC, immediate post-ROSC care", "rosc", 1],
-
+  s2_assess: {
+    full: "Organised electrical activity but no palpable central pulse: PEA, a non-shockable arrest. Restart CPR, give adrenaline as soon as possible and hunt for the cause.",
+    guideline: "ALS: assess rhythm, non-shockable",
+    src: "als",
+    flag: 1,
+    outcome: "Organised electrical activity but no palpable central pulse: PEA, a non-shockable arrest.",
+    whyWrong: "",
+    nextStep: "Restart CPR, give adrenaline as soon as possible and hunt for the cause."
+  },
+  s2_cpr: {
+    full: "CPR 30:2 continues: the right first step in a non-shockable arrest.",
+    guideline: "ALS: CPR 30:2, immediately resume CPR for 2 min",
+    src: "als",
+    flag: 1,
+    outcome: "CPR 30:2 continues: the right first step in a non-shockable arrest.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s2_shock: {
+    full: "PEA and asystole are non-shockable rhythms: no shock. Continue CPR and give adrenaline.",
+    guideline: "ALS: non-shockable pathway",
+    src: "als",
+    flag: 1,
+    outcome: "",
+    whyWrong: "PEA and asystole are non-shockable rhythms, so a shock is not indicated.",
+    nextStep: "Continue CPR and give adrenaline."
+  },
+  s2_adr: {
+    full: "Adrenaline 1 mg IV given as soon as possible, as the algorithm advises for a non-shockable rhythm. Repeat every 3 to 5 minutes.",
+    guideline: "ALS: non-shockable, adrenaline as soon as possible",
+    src: "adrNon",
+    flag: 1,
+    outcome: "Adrenaline 1 mg IV given as soon as possible, as the algorithm advises for a non-shockable rhythm.",
+    whyWrong: "",
+    nextStep: "Repeat every 3 to 5 minutes."
+  },
+  s2_adrRepeat: {
+    full: "Repeat adrenaline 1 mg, at least 3 minutes after the previous dose.",
+    guideline: "ALS: adrenaline every 3 to 5 min",
+    src: "adrNon",
+    flag: 1,
+    outcome: "Repeat adrenaline 1 mg given, at least 3 minutes after the previous dose.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s2_adrSoon: {
+    full: "Too soon. Repeat adrenaline every 3 to 5 minutes.",
+    guideline: "ALS: adrenaline every 3 to 5 min",
+    src: "adrNon",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Too soon to give another dose of adrenaline.",
+    nextStep: "Repeat adrenaline every 3 to 5 minutes."
+  },
+  s2_causes: {
+    full: "Reversible cause identified: hypovolaemia, one of the 4 Hs. The drain has filled with fresh blood after surgery, so give IV fluid.",
+    guideline: "ALS: identify and treat reversible causes (hypovolaemia)",
+    src: "causes",
+    flag: 1,
+    outcome: "Reversible cause identified: hypovolaemia, one of the 4 Hs. The drain has filled with fresh blood after surgery.",
+    whyWrong: "",
+    nextStep: "Give IV fluid."
+  },
+  s2_fluid: {
+    full: "IV fluid given during CPR because hypovolaemia is the likely cause: isotonic saline or a balanced crystalloid.",
+    guideline: "ALS: fluids only if arrest caused by hypovolaemia",
+    src: "fluid",
+    flag: 1,
+    outcome: "IV fluid given during CPR because hypovolaemia is the likely cause: isotonic saline or a balanced crystalloid.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s2_fluidEarly: {
+    full: "Fluid is right here, but name the cause first: working through the 4 Hs and 4 Ts is how you justify it.",
+    guideline: "ALS: identify and treat reversible causes",
+    src: "fluid",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Fluid may be right here, but the reversible cause had not been named first. Working through the 4 Hs and 4 Ts is how you justify it.",
+    nextStep: ""
+  },
+  s2_expert: {
+    full: "Right: in this scene the bleeding also needs surgical control, so call the surgical team.",
+    guideline: "ALS: identify and treat cause",
+    src: "causes",
+    flag: 1,
+    outcome: "Right: in this scene the bleeding also needs surgical control, so the surgical team is called.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s2_check: {
+    full: "Rhythm check: still PEA, no pulse. Resume CPR and keep treating the cause.",
+    guideline: "ALS: non-shockable, resume CPR for 2 min",
+    src: "als",
+    flag: 1,
+    outcome: "Rhythm check: still PEA, no pulse.",
+    whyWrong: "",
+    nextStep: "Resume CPR and keep treating the cause."
+  },
+  s2_checkAsys: {
+    full: "Rhythm check: now asystole. Still non-shockable. Resume CPR, continue adrenaline every 3 to 5 minutes and treat the cause.",
+    guideline: "ALS: non-shockable, resume CPR for 2 min",
+    src: "als",
+    flag: 1,
+    outcome: "Rhythm check: now asystole. Still non-shockable.",
+    whyWrong: "",
+    nextStep: "Resume CPR, continue adrenaline every 3 to 5 minutes and treat the cause."
+  },
+  s2_checkOrganised: {
+    full: "Rhythm check: organised rhythm, faster and stronger-looking. Check for a pulse.",
+    guideline: "ALS: organised rhythm, check pulse",
+    src: "als",
+    flag: 1,
+    outcome: "Rhythm check: organised rhythm, faster and stronger-looking.",
+    whyWrong: "",
+    nextStep: "Check for a pulse."
+  },
+  s2_rosc: {
+    full: "Pulse present: ROSC. Post-ROSC ABCDE care, keep restoring volume and get the bleeding controlled.",
+    guideline: "ALS: ROSC, immediate post-ROSC care",
+    src: "rosc",
+    flag: 1,
+    outcome: "Pulse present: ROSC.",
+    whyWrong: "",
+    nextStep: "Post-ROSC ABCDE care, keep restoring volume and get the bleeding controlled."
+  },
   /* Scenario 3: complete heart block, narrow escape */
-  s3_assess: ["Complete heart block with a narrow escape rhythm, and life-threatening features (shock and syncope). Treat now: atropine 500 mcg IV first.", "Bradyarrhythmia: life-threatening features, give atropine", "brady", 1],
-  s3_atro1: ["Atropine 500 mcg IV given. Assess the response: the ventricular rate has barely changed and BP is still low, so the response is unsatisfactory.", "Bradyarrhythmia: atropine 500 mcg, assess response", "brady", 1],
-  s3_atroRepeat: ["Atropine 500 mcg can be repeated (every 3 to 5 min, to a total of 3 mg), but with no response at all, move on to other interim measures such as pacing, and seek expert help.", "Bradyarrhythmia: interim measures", "brady", 1],
-  s3_atroMax: ["The maximum total atropine dose is 3 mg. Move on to pacing and expert help.", "Bradyarrhythmia: atropine to a maximum of 3 mg", "brady", 1],
-  s3_atroPaced: ["Pacing has achieved capture. Seek expert help and consider transvenous pacing.", "Bradyarrhythmia: interim measures", "brady", 1],
-  s3_paceFirst: ["Pacing works, but the algorithm gives atropine 500 mcg first and uses pacing as an interim measure if the response is unsatisfactory.", "Bradyarrhythmia: atropine first", "brady", 1],
-  s3_pace: ["Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. Use it as a bridge to transvenous pacing.", "Bradyarrhythmia: interim measures, transcutaneous pacing", "pacing", 1],
-  s3_paceAgain: ["Pacing is already running with capture.", "Bradyarrhythmia: interim measures", "pacing", 0],
-  s3_expert: ["Expert help sought: monitor, treat the underlying cause and consider transvenous pacing.", "Bradyarrhythmia: seek expert help, consider transvenous pacing", "brady", 1],
-  s3_causes: ["Right to identify and treat reversible causes, for example electrolyte abnormalities, or beta-blockers or calcium channel blockers as a cause.", "Bradyarrhythmia: identify and treat reversible causes", "brady", 1],
-  s3_adr: ["A 1 mg bolus is the cardiac arrest dose. In bradycardia, adrenaline is an infusion of 2 to 10 mcg/min, an interim measure after atropine fails.", "Bradyarrhythmia: interim measures", "brady", 1],
-  s3_aden: ["Adenosine is contraindicated in second- or third-degree AV block (BNF).", "Bradyarrhythmia algorithm", "brady", 1],
-  s3_observe: ["Shock and syncope are life-threatening features. Observation is only for patients without them and without a risk of asystole.", "Bradyarrhythmia: life-threatening features", "brady", 1],
-  s3_widePoint: ["Teaching point: if the escape QRS had been broad, atropine would have been the wrong drug. RCUK: do not give atropine in high-degree AV block with wide QRS; it is ineffective and may worsen the block. Complete heart block with broad QRS is also a risk of asystole.", "Bradyarrhythmia: complete heart block with broad QRS", "bradyWide", 1],
-
+  s3_assess: {
+    full: "Complete heart block with a narrow escape rhythm, and life-threatening features (shock and syncope). Treat now: atropine 500 mcg IV first.",
+    guideline: "Bradyarrhythmia: life-threatening features, give atropine",
+    src: "brady",
+    flag: 1,
+    outcome: "Complete heart block with a narrow escape rhythm, and life-threatening features (shock and syncope).",
+    whyWrong: "",
+    nextStep: "Treat now: atropine 500 mcg IV first."
+  },
+  s3_atro1: {
+    full: "Atropine 500 mcg IV given. Assess the response: the ventricular rate has barely changed and BP is still low, so the response is unsatisfactory.",
+    guideline: "Bradyarrhythmia: atropine 500 mcg, assess response",
+    src: "brady",
+    flag: 1,
+    outcome: "Atropine 500 mcg IV given. The ventricular rate has barely changed and BP is still low, so the response is unsatisfactory.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s3_atroRepeat: {
+    full: "Atropine 500 mcg can be repeated (every 3 to 5 min, to a total of 3 mg), but with no response at all, move on to other interim measures such as pacing, and seek expert help.",
+    guideline: "Bradyarrhythmia: interim measures",
+    src: "brady",
+    flag: 1,
+    outcome: "Further atropine 500 mcg given (it can be repeated every 3 to 5 min, to a total of 3 mg). There is still no response.",
+    whyWrong: "",
+    nextStep: "With no response at all, move on to other interim measures such as pacing, and seek expert help."
+  },
+  s3_atroMax: {
+    full: "The maximum total atropine dose is 3 mg. Move on to pacing and expert help.",
+    guideline: "Bradyarrhythmia: atropine to a maximum of 3 mg",
+    src: "brady",
+    flag: 1,
+    outcome: "",
+    whyWrong: "The maximum total atropine dose is 3 mg, so no further atropine should be given.",
+    nextStep: "Move on to pacing and expert help."
+  },
+  s3_atroPaced: {
+    full: "Pacing has achieved capture. Seek expert help and consider transvenous pacing.",
+    guideline: "Bradyarrhythmia: interim measures",
+    src: "brady",
+    flag: 1,
+    outcome: "Pacing has already achieved capture, so further atropine is not needed.",
+    whyWrong: "",
+    nextStep: "Seek expert help and consider transvenous pacing."
+  },
+  s3_paceFirst: {
+    full: "Pacing works, but the algorithm gives atropine 500 mcg first and uses pacing as an interim measure if the response is unsatisfactory.",
+    guideline: "Bradyarrhythmia: atropine first",
+    src: "brady",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Pacing can work here, but it is not the first treatment on the algorithm for this presentation.",
+    nextStep: "The algorithm gives atropine 500 mcg first and uses pacing as an interim measure if the response is unsatisfactory."
+  },
+  s3_pace: {
+    full: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. Use it as a bridge to transvenous pacing.",
+    guideline: "Bradyarrhythmia: interim measures, transcutaneous pacing",
+    src: "pacing",
+    flag: 1,
+    outcome: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves.",
+    whyWrong: "",
+    nextStep: "Use it as a bridge to transvenous pacing."
+  },
+  s3_paceAgain: {
+    full: "Pacing is already running with capture.",
+    guideline: "Bradyarrhythmia: interim measures",
+    src: "pacing",
+    flag: 0,
+    outcome: "Pacing is already running with capture.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s3_expert: {
+    full: "Expert help sought: monitor, treat the underlying cause and consider transvenous pacing.",
+    guideline: "Bradyarrhythmia: seek expert help, consider transvenous pacing",
+    src: "brady",
+    flag: 1,
+    outcome: "Expert help sought.",
+    whyWrong: "",
+    nextStep: "Monitor, treat the underlying cause and consider transvenous pacing."
+  },
+  s3_causes: {
+    full: "Right to identify and treat reversible causes, for example electrolyte abnormalities, or beta-blockers or calcium channel blockers as a cause.",
+    guideline: "Bradyarrhythmia: identify and treat reversible causes",
+    src: "brady",
+    flag: 1,
+    outcome: "Right to identify and treat reversible causes, for example electrolyte abnormalities, or beta-blockers or calcium channel blockers as a cause.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s3_adr: {
+    full: "A 1 mg bolus is the cardiac arrest dose. In bradycardia, adrenaline is an infusion of 2 to 10 mcg/min, an interim measure after atropine fails.",
+    guideline: "Bradyarrhythmia: interim measures",
+    src: "brady",
+    flag: 1,
+    outcome: "",
+    whyWrong: "A 1 mg bolus is the cardiac arrest dose, not the peri-arrest dose for bradycardia.",
+    nextStep: "In bradycardia, adrenaline is an infusion of 2 to 10 mcg/min, an interim measure after atropine fails."
+  },
+  s3_aden: {
+    full: "Adenosine is contraindicated in second- or third-degree AV block (BNF).",
+    guideline: "Bradyarrhythmia algorithm",
+    src: "brady",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Adenosine is contraindicated in second- or third-degree AV block (BNF).",
+    nextStep: ""
+  },
+  s3_observe: {
+    full: "Shock and syncope are life-threatening features. Observation is only for patients without them and without a risk of asystole.",
+    guideline: "Bradyarrhythmia: life-threatening features",
+    src: "brady",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Shock and syncope are life-threatening features, so observation alone is not appropriate.",
+    nextStep: "Observation is only for patients without life-threatening features and without a risk of asystole."
+  },
+  s3_widePoint: {
+    full: "Teaching point: if the escape QRS had been broad, atropine would have been the wrong drug. RCUK: do not give atropine in high-degree AV block with wide QRS; it is ineffective and may worsen the block. Complete heart block with broad QRS is also a risk of asystole.",
+    guideline: "Bradyarrhythmia: complete heart block with broad QRS",
+    src: "bradyWide",
+    flag: 1,
+    outcome: "",
+    whyWrong: "",
+    nextStep: ""
+  },
   /* Scenario 4: stable regular narrow complex tachycardia */
-  s4_assess: ["Regular narrow complex tachycardia with no life-threatening features: stable. Start with vagal manoeuvres.", "Tachyarrhythmia: stable, narrow, regular", "narrow", 1],
-  s4_vagal: ["Vagal manoeuvre done with ECG monitoring. No change this time, so move on to adenosine.", "Tachyarrhythmia: vagal manoeuvres", "narrow", 1],
-  s4_vagalAgain: ["Vagal manoeuvres have already failed; the next step is adenosine.", "Tachyarrhythmia: if ineffective, adenosine", "narrow", 1],
-  s4_adenEarly: ["Adenosine works here, but the algorithm starts with vagal manoeuvres.", "Tachyarrhythmia: vagal manoeuvres first", "narrow", 1],
-  s4_aden6: ["Adenosine 6 mg rapid IV bolus into a large vein over 2 seconds, with ECG monitoring. Brief slowing, then the tachycardia resumes. Next dose: 12 mg.", "Tachyarrhythmia: adenosine 6 mg", "aden", 1],
-  s4_aden12: ["Adenosine 12 mg rapid IV bolus: brief AV block, then sinus rhythm. Record a 12-lead ECG.", "Tachyarrhythmia: adenosine 12 mg", "aden", 1],
-  s4_sync: ["The patient is stable. Synchronised cardioversion is for life-threatening features, or after vagal manoeuvres, adenosine and verapamil or a beta-blocker have failed.", "Tachyarrhythmia: stable, narrow, regular", "narrow", 1],
-  s4_amio: ["Amiodarone is not a step for a stable regular narrow complex tachycardia; the sequence is vagal manoeuvres, adenosine, then verapamil or a beta-blocker.", "Tachyarrhythmia: stable, narrow, regular", "narrow", 1],
-  s4_observe: ["Even when stable, the algorithm treats this rhythm: vagal manoeuvres first.", "Tachyarrhythmia: stable, narrow, regular", "narrow", 1],
-
+  s4_assess: {
+    full: "Regular narrow complex tachycardia with no life-threatening features: stable. Start with vagal manoeuvres.",
+    guideline: "Tachyarrhythmia: stable, narrow, regular",
+    src: "narrow",
+    flag: 1,
+    outcome: "Regular narrow complex tachycardia with no life-threatening features: stable.",
+    whyWrong: "",
+    nextStep: "Start with vagal manoeuvres."
+  },
+  s4_vagal: {
+    full: "Vagal manoeuvre done with ECG monitoring. No change this time, so move on to adenosine.",
+    guideline: "Tachyarrhythmia: vagal manoeuvres",
+    src: "narrow",
+    flag: 1,
+    outcome: "Vagal manoeuvre done with ECG monitoring. No change this time.",
+    whyWrong: "",
+    nextStep: "Move on to adenosine."
+  },
+  s4_vagalAgain: {
+    full: "Vagal manoeuvres have already failed; the next step is adenosine.",
+    guideline: "Tachyarrhythmia: if ineffective, adenosine",
+    src: "narrow",
+    flag: 1,
+    outcome: "Vagal manoeuvres have already failed.",
+    whyWrong: "",
+    nextStep: "The next step is adenosine."
+  },
+  s4_adenEarly: {
+    full: "Adenosine works here, but the algorithm starts with vagal manoeuvres.",
+    guideline: "Tachyarrhythmia: vagal manoeuvres first",
+    src: "narrow",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Adenosine can work here, but it is not the first step on the algorithm.",
+    nextStep: "The algorithm starts with vagal manoeuvres."
+  },
+  s4_aden6: {
+    full: "Adenosine 6 mg rapid IV bolus into a large vein over 2 seconds, with ECG monitoring. Brief slowing, then the tachycardia resumes. Next dose: 12 mg.",
+    guideline: "Tachyarrhythmia: adenosine 6 mg",
+    src: "aden",
+    flag: 1,
+    outcome: "Adenosine 6 mg rapid IV bolus into a large vein over 2 seconds, with ECG monitoring. Brief slowing, then the tachycardia resumes.",
+    whyWrong: "",
+    nextStep: "Next dose: 12 mg."
+  },
+  s4_aden12: {
+    full: "Adenosine 12 mg rapid IV bolus: brief AV block, then sinus rhythm. Record a 12-lead ECG.",
+    guideline: "Tachyarrhythmia: adenosine 12 mg",
+    src: "aden",
+    flag: 1,
+    outcome: "Adenosine 12 mg rapid IV bolus: brief AV block, then sinus rhythm.",
+    whyWrong: "",
+    nextStep: "Record a 12-lead ECG."
+  },
+  s4_sync: {
+    full: "The patient is stable. Synchronised cardioversion is for life-threatening features, or after vagal manoeuvres, adenosine and verapamil or a beta-blocker have failed.",
+    guideline: "Tachyarrhythmia: stable, narrow, regular",
+    src: "narrow",
+    flag: 1,
+    outcome: "",
+    whyWrong: "The patient is stable, so synchronised cardioversion is not the step now.",
+    nextStep: "Synchronised cardioversion is for life-threatening features, or after vagal manoeuvres, adenosine and verapamil or a beta-blocker have failed."
+  },
+  s4_amio: {
+    full: "Amiodarone is not a step for a stable regular narrow complex tachycardia; the sequence is vagal manoeuvres, adenosine, then verapamil or a beta-blocker.",
+    guideline: "Tachyarrhythmia: stable, narrow, regular",
+    src: "narrow",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Amiodarone is not a step for a stable regular narrow complex tachycardia.",
+    nextStep: "The sequence is vagal manoeuvres, adenosine, then verapamil or a beta-blocker."
+  },
+  s4_observe: {
+    full: "Even when stable, the algorithm treats this rhythm: vagal manoeuvres first.",
+    guideline: "Tachyarrhythmia: stable, narrow, regular",
+    src: "narrow",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Even when stable, this rhythm is treated on the algorithm rather than observed alone.",
+    nextStep: "Vagal manoeuvres first."
+  },
   /* Scenario 5: unstable broad complex tachycardia */
-  s5_assess: ["Regular broad complex tachycardia with life-threatening features (shock and myocardial ischaemia): treat as unstable VT. Synchronised shock, with sedation or anaesthesia as the patient is conscious.", "Tachyarrhythmia: unstable, synchronised shock", "tachy", 1],
-  s5_expert: ["Help called to give careful sedation or anaesthesia before cardioversion, because the patient is conscious.", "Tachyarrhythmia: synchronised shock, consider sedation or anaesthesia", "sync", 1],
-  s5_noSed: ["Right treatment, but this patient is conscious: RCUK says conscious patients need careful anaesthesia or sedation before synchronised cardioversion.", "Tachyarrhythmia: consider sedation or anaesthesia if conscious", "sync", 1],
-  s5_sync1: ["Synchronised shock 1 (120 to 150 J): VT persists. Repeat the synchronised shock, considering a stepwise increase in energy (up to 3 attempts).", "Tachyarrhythmia: synchronised shock, up to 3 attempts", "sync", 1],
-  s5_sync2: ["Synchronised shock 2: sinus rhythm with a better BP. Continue the ABCDE assessment and record a 12-lead ECG; seek expert help if the tachyarrhythmia or life-threatening features persist.", "Tachyarrhythmia: synchronised shock, up to 3 attempts", "sync", 1],
-  s5_unsync: ["The patient had a pulse, so a synchronised shock was needed. An unsynchronised shock can land on the T wave and has caused VF. There is now no pulse: this is a shockable cardiac arrest, so the next shock should be unsynchronised.", "Tachyarrhythmia: shock must be synchronised", "sync", 1],
-  s5_arrestShock: ["There is now no pulse, so unsynchronised defibrillation is correct. Shock delivered. Sinus rhythm with a pulse has returned.", "ALS: shockable, unsynchronised shock", "shock", 1],
-  s5_arrestCPR: ["Starting CPR is right in an arrest, but with VF just triggered on a monitored patient and pads already on, defibrillate first.", "ALS: early defibrillation", "alsPriority", 1],
-  s5_amio: ["With life-threatening features, electrical cardioversion comes first. Amiodarone 300 mg over 10 to 20 min is for when up to 3 synchronised shocks fail.", "Tachyarrhythmia: unstable, synchronised shock first", "tachy", 1],
-  s5_aden: ["Regular broad complex tachycardia is treated as VT. Adenosine is considered only for suspected SVT with aberrancy in a stable patient; this patient is unstable.", "Tachyarrhythmia: broad regular, treat as VT", "broad", 1],
-  s5_mg: ["This is monomorphic VT. Magnesium is the step for polymorphic VT with QT prolongation.", "Tachyarrhythmia: polymorphic VT", "tdp", 1],
-
+  s5_assess: {
+    full: "Regular broad complex tachycardia with life-threatening features (shock and myocardial ischaemia): treat as unstable VT. Synchronised shock, with sedation or anaesthesia as the patient is conscious.",
+    guideline: "Tachyarrhythmia: unstable, synchronised shock",
+    src: "tachy",
+    flag: 1,
+    outcome: "Regular broad complex tachycardia with life-threatening features (shock and myocardial ischaemia): treat as unstable VT.",
+    whyWrong: "",
+    nextStep: "Synchronised shock, with sedation or anaesthesia as the patient is conscious."
+  },
+  s5_expert: {
+    full: "Help called to give careful sedation or anaesthesia before cardioversion, because the patient is conscious.",
+    guideline: "Tachyarrhythmia: synchronised shock, consider sedation or anaesthesia",
+    src: "sync",
+    flag: 1,
+    outcome: "Help called to give careful sedation or anaesthesia before cardioversion, because the patient is conscious.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s5_noSed: {
+    full: "Right treatment, but this patient is conscious: RCUK says conscious patients need careful anaesthesia or sedation before synchronised cardioversion.",
+    guideline: "Tachyarrhythmia: consider sedation or anaesthesia if conscious",
+    src: "sync",
+    flag: 1,
+    outcome: "",
+    whyWrong: "The electrical treatment is right, but this patient is conscious and had not had careful anaesthesia or sedation first.",
+    nextStep: "RCUK says conscious patients need careful anaesthesia or sedation before synchronised cardioversion."
+  },
+  s5_sync1: {
+    full: "Synchronised shock 1 (120 to 150 J): VT persists. Repeat the synchronised shock, considering a stepwise increase in energy (up to 3 attempts).",
+    guideline: "Tachyarrhythmia: synchronised shock, up to 3 attempts",
+    src: "sync",
+    flag: 1,
+    outcome: "Synchronised shock 1 (120 to 150 J): VT persists.",
+    whyWrong: "",
+    nextStep: "Repeat the synchronised shock, considering a stepwise increase in energy (up to 3 attempts)."
+  },
+  s5_sync2: {
+    full: "Synchronised shock 2: sinus rhythm with a better BP. Continue the ABCDE assessment and record a 12-lead ECG; seek expert help if the tachyarrhythmia or life-threatening features persist.",
+    guideline: "Tachyarrhythmia: synchronised shock, up to 3 attempts",
+    src: "sync",
+    flag: 1,
+    outcome: "Synchronised shock 2: sinus rhythm with a better BP.",
+    whyWrong: "",
+    nextStep: "Continue the ABCDE assessment and record a 12-lead ECG; seek expert help if the tachyarrhythmia or life-threatening features persist."
+  },
+  s5_unsync: {
+    full: "The patient had a pulse, so a synchronised shock was needed. An unsynchronised shock can land on the T wave and has caused VF. There is now no pulse: this is a shockable cardiac arrest, so the next shock should be unsynchronised.",
+    guideline: "Tachyarrhythmia: shock must be synchronised",
+    src: "sync",
+    flag: 1,
+    outcome: "",
+    whyWrong: "The patient had a pulse, so a synchronised shock was needed. An unsynchronised shock can land on the T wave and has caused VF.",
+    nextStep: "There is now no pulse: this is a shockable cardiac arrest, so the next shock should be unsynchronised."
+  },
+  s5_arrestShock: {
+    full: "There is now no pulse, so unsynchronised defibrillation is correct. Shock delivered. Sinus rhythm with a pulse has returned.",
+    guideline: "ALS: shockable, unsynchronised shock",
+    src: "shock",
+    flag: 1,
+    outcome: "There is now no pulse, so unsynchronised defibrillation is correct. Shock delivered. Sinus rhythm with a pulse has returned.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s5_arrestCPR: {
+    full: "Starting CPR is right in an arrest, but with VF just triggered on a monitored patient and pads already on, defibrillate first.",
+    guideline: "ALS: early defibrillation",
+    src: "alsPriority",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Starting CPR is right in an arrest, but this VF was just triggered on a monitored patient with the pads already on, so compressions were not the first action needed.",
+    nextStep: "Defibrillate first."
+  },
+  s5_amio: {
+    full: "With life-threatening features, electrical cardioversion comes first. Amiodarone 300 mg over 10 to 20 min is for when up to 3 synchronised shocks fail.",
+    guideline: "Tachyarrhythmia: unstable, synchronised shock first",
+    src: "tachy",
+    flag: 1,
+    outcome: "",
+    whyWrong: "With life-threatening features, amiodarone is not the first treatment.",
+    nextStep: "Electrical cardioversion comes first. Amiodarone 300 mg over 10 to 20 min is for when up to 3 synchronised shocks fail."
+  },
+  s5_aden: {
+    full: "Regular broad complex tachycardia is treated as VT. Adenosine is considered only for suspected SVT with aberrancy in a stable patient; this patient is unstable.",
+    guideline: "Tachyarrhythmia: broad regular, treat as VT",
+    src: "broad",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Regular broad complex tachycardia is treated as VT. This patient is also unstable, so adenosine is not appropriate.",
+    nextStep: ""
+  },
+  s5_mg: {
+    full: "This is monomorphic VT. Magnesium is the step for polymorphic VT with QT prolongation.",
+    guideline: "Tachyarrhythmia: polymorphic VT",
+    src: "tdp",
+    flag: 1,
+    outcome: "",
+    whyWrong: "This is monomorphic VT, so magnesium is not the step for this rhythm.",
+    nextStep: "Magnesium is the step for polymorphic VT with QT prolongation."
+  },
   /* Scenario 6: torsades de pointes */
-  s6_assess: ["Recurrent self-terminating polymorphic VT with a long QT between runs: torsades de pointes. Give magnesium and treat the cause.", "Tachyarrhythmia: polymorphic VT with QT prolongation", "tdp", 1],
-  s6_mg: ["Magnesium 8 mmol IV over 10 min given (RCUK). BNF: magnesium sulfate 2 g over 10 to 15 min (about 8 mmol Mg2+), may be repeated once. The runs stop.", "Tachyarrhythmia: Mg2+ 8 mmol IV over 10 min", "tdp", 1],
-  s6_mgAgain: ["Magnesium already given. The BNF allows one repeat if needed; the runs have stopped, so it is not needed now.", "Tachyarrhythmia: Mg2+ 8 mmol IV over 10 min", "tdp", 1],
-  s6_causes: ["Right: identify and treat reversible causes, here the low potassium and the QT-prolonging drugs.", "Tachyarrhythmia: identify and treat reversible causes", "tdpCauses", 1],
-  s6_amio: ["Avoid amiodarone in polymorphic VT with QT prolongation (RCUK). In this simulation the runs become sustained and the patient loses their pulse.", "Tachyarrhythmia: polymorphic VT, avoid amiodarone", "tdp", 1],
-  s6_paceFirst: ["The algorithm lists magnesium first, then consider isoprenaline or temporary pacing to increase heart rate.", "Tachyarrhythmia: Mg2+, then consider isoprenaline or pacing", "tdp", 1],
-  s6_pace: ["Temporary pacing to increase heart rate is a recognised option in torsades, alongside magnesium.", "Tachyarrhythmia: consider isoprenaline or temporary pacing", "tdp", 1],
-  s6_sync: ["The runs are brief and self-terminating with a pulse between them. The algorithm step for polymorphic VT with long QT is magnesium, not cardioversion.", "Tachyarrhythmia: polymorphic VT with QT prolongation", "tdp", 1],
-  s6_arrestShock: ["Pulseless sustained torsades treated as VF: unsynchronised shock delivered. Sinus rhythm with a pulse returns, but the QT is still long: give magnesium.", "ALS: shockable, shock", "shock", 1],
-  s6_arrestCPR: ["CPR is right in arrest, but pulseless polymorphic VT on a monitored patient needs a shock first.", "ALS: early defibrillation", "alsPriority", 1]
+  s6_assess: {
+    full: "Recurrent self-terminating polymorphic VT with a long QT between runs: torsades de pointes. Give magnesium and treat the cause.",
+    guideline: "Tachyarrhythmia: polymorphic VT with QT prolongation",
+    src: "tdp",
+    flag: 1,
+    outcome: "Recurrent self-terminating polymorphic VT with a long QT between runs: torsades de pointes.",
+    whyWrong: "",
+    nextStep: "Give magnesium and treat the cause."
+  },
+  s6_mg: {
+    full: "Magnesium 8 mmol IV over 10 min given (RCUK). BNF: magnesium sulfate 2 g over 10 to 15 min (about 8 mmol Mg2+), may be repeated once. The runs stop.",
+    guideline: "Tachyarrhythmia: Mg2+ 8 mmol IV over 10 min",
+    src: "tdp",
+    flag: 1,
+    outcome: "Magnesium 8 mmol IV over 10 min given (RCUK). BNF: magnesium sulfate 2 g over 10 to 15 min (about 8 mmol Mg2+). The runs stop.",
+    whyWrong: "",
+    nextStep: "The BNF allows the dose to be repeated once if needed."
+  },
+  s6_mgAgain: {
+    full: "Magnesium already given. The BNF allows one repeat if needed; the runs have stopped, so it is not needed now.",
+    guideline: "Tachyarrhythmia: Mg2+ 8 mmol IV over 10 min",
+    src: "tdp",
+    flag: 1,
+    outcome: "Magnesium already given. The runs have stopped, so a further dose is not needed now.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s6_causes: {
+    full: "Right: identify and treat reversible causes, here the low potassium and the QT-prolonging drugs.",
+    guideline: "Tachyarrhythmia: identify and treat reversible causes",
+    src: "tdpCauses",
+    flag: 1,
+    outcome: "Right: identify and treat reversible causes, here the low potassium and the QT-prolonging drugs.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s6_amio: {
+    full: "Avoid amiodarone in polymorphic VT with QT prolongation (RCUK). In this simulation the runs become sustained and the patient loses their pulse.",
+    guideline: "Tachyarrhythmia: polymorphic VT, avoid amiodarone",
+    src: "tdp",
+    flag: 1,
+    outcome: "In this simulation the runs become sustained and the patient loses their pulse.",
+    whyWrong: "Avoid amiodarone in polymorphic VT with QT prolongation (RCUK).",
+    nextStep: ""
+  },
+  s6_paceFirst: {
+    full: "The algorithm lists magnesium first, then consider isoprenaline or temporary pacing to increase heart rate.",
+    guideline: "Tachyarrhythmia: Mg2+, then consider isoprenaline or pacing",
+    src: "tdp",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Temporary pacing can be used in torsades, but it is not the first algorithm step.",
+    nextStep: "The algorithm lists magnesium first, then consider isoprenaline or temporary pacing to increase heart rate."
+  },
+  s6_pace: {
+    full: "Temporary pacing to increase heart rate is a recognised option in torsades, alongside magnesium.",
+    guideline: "Tachyarrhythmia: consider isoprenaline or temporary pacing",
+    src: "tdp",
+    flag: 1,
+    outcome: "Temporary pacing started to increase the heart rate, a recognised option in torsades.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s6_sync: {
+    full: "The runs are brief and self-terminating with a pulse between them. The algorithm step for polymorphic VT with long QT is magnesium, not cardioversion.",
+    guideline: "Tachyarrhythmia: polymorphic VT with QT prolongation",
+    src: "tdp",
+    flag: 1,
+    outcome: "",
+    whyWrong: "The runs are brief and self-terminating with a pulse between them, so cardioversion is not the step for this rhythm now.",
+    nextStep: "The algorithm step for polymorphic VT with long QT is magnesium, not cardioversion."
+  },
+  s6_arrestShock: {
+    full: "Pulseless sustained torsades treated as VF: unsynchronised shock delivered. Sinus rhythm with a pulse returns, but the QT is still long: give magnesium.",
+    guideline: "ALS: shockable, shock",
+    src: "shock",
+    flag: 1,
+    outcome: "Pulseless sustained torsades treated as VF: unsynchronised shock delivered. Sinus rhythm with a pulse has returned.",
+    whyWrong: "",
+    nextStep: "The QT is still long: give magnesium."
+  },
+  s6_arrestCPR: {
+    full: "CPR is right in arrest, but pulseless polymorphic VT on a monitored patient needs a shock first.",
+    guideline: "ALS: early defibrillation",
+    src: "alsPriority",
+    flag: 1,
+    outcome: "",
+    whyWrong: "CPR is right in arrest, but this pulseless polymorphic VT occurred on a monitored patient, so compressions were not the first action needed.",
+    nextStep: "A shock is needed first."
+  }
 };
 /* ===== Scenarios: actions, scripted branches, monitor and debrief ===== */
 var ACTIONS = [
@@ -2743,9 +3724,9 @@ function genericOutcome(a, st) {
 (function () {
   var nS = 0, sid = function () { nS++; return "S" + String(nS).padStart(2, "0"); };
   Object.keys(TXT).forEach(function (k) {
-    if (!TXT[k][3]) return;
+    if (!TXT[k].flag) return;
     var w = /^s\d_/.test(k) ? SCN[k.slice(0, 2)].title : "Scenarios (shared)";
-    FLAGS.push({ id: sid(), where: w + " · " + TXT[k][1], text: TXT[k][0], key: k });
+    FLAGS.push({ id: sid(), where: w + " · " + TXT[k].guideline, text: TXT[k].full, key: k });
   });
   SCENARIOS.forEach(function (sc) {
     sc.req.forEach(function (r, i) { FLAGS.push({ id: sid(), where: sc.title + " · debrief key step", text: r[1] + ".", key: "req:" + sc.id + ":" + i }); });
@@ -2827,9 +3808,54 @@ Monitor.prototype.stop = function () { this.running = false; cancelAnimationFram
 var SIM = null, simTimer = null, monitor = null;
 var VERD = { ok: ["\u2713", "Correct"], bad: ["\u2717", "Not quite"], part: ["\u25D0", "Partly right"], info: ["i", "Noted"] };
 function mmss(sec) { sec = Math.max(0, Math.round(sec)); return String(Math.floor(sec / 60)).padStart(2, "0") + ":" + String(sec % 60).padStart(2, "0"); }
-function srcOf(k) { return SRC[TXT[k][2]]; }
+function srcOf(k) { return SRC[TXT[k].src]; }
 function srcHTML(k) { return VER[k] ? verQuotes(k) : esc(srcOf(k)); }
-function txtHTML(k) { return esc(TXT[k][0]) + verTag(k); }
+function txtHTML(k) { return esc(TXT[k].full) + verTag(k); }
+
+var HINTS_KEY = "anaesthetic-physiology-scn-hints";
+function hintsOn() { try { return localStorage.getItem(HINTS_KEY) === "on"; } catch (e) { return false; } }
+function setHints(on) {
+  try { localStorage.setItem(HINTS_KEY, on ? "on" : "off"); } catch (e) {}
+  syncHintsToggle();
+  if (SIM && SIM.lastFb) {
+    renderFeedback(SIM.lastFb.o, SIM.lastFb.changed);
+    announceFeedback(SIM.lastFb.o);
+  }
+}
+function syncHintsToggle() {
+  var b = $("scnHints"); if (!b) return;
+  var on = hintsOn();
+  b.setAttribute("aria-checked", on ? "true" : "false");
+  b.classList.toggle("is-on", on);
+  var st = $("scnHintsState"); if (st) st.textContent = on ? "On" : "Off";
+}
+function physForLive(key) {
+  if (!key) return "";
+  if (hintsOn()) return PHYS[key] || "";
+  if (Object.prototype.hasOwnProperty.call(PHYS_LIVE, key)) return PHYS_LIVE[key] || "";
+  return PHYS[key] || "";
+}
+function liveFbParts(o) {
+  var parts = [];
+  if (o.changeAnnounce) parts.push(o.changeAnnounce);
+  o.keys.forEach(function (k) {
+    var t = TXT[k];
+    if (t.outcome) parts.push(t.outcome);
+    if ((o.v === "bad" || o.v === "part") && t.whyWrong) parts.push(t.whyWrong);
+  });
+  return parts;
+}
+function announceFeedback(o) {
+  var bits = [o.label + ": " + VERD[o.v][1] + "."];
+  if (hintsOn()) {
+    if (o.changeAnnounce) bits.push(o.changeAnnounce + ".");
+    bits.push(TXT[o.keys[o.keys.length - 1]].full);
+  } else {
+    bits = bits.concat(liveFbParts(o));
+  }
+  $("scnLive").textContent = bits.filter(Boolean).join(" ");
+}
+
 
 var lastScn = null;
 function randomScenario() {
@@ -2860,7 +3886,7 @@ function renderScnChooser() {
 
 function startScenario(id, random) {
   var s = SCN[id]; lastScn = id;
-  SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false };
+  SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null };
   document.querySelectorAll("#scnGrid .scn-card").forEach(function (b) { b.setAttribute("aria-pressed", !random && b.dataset.id === id ? "true" : "false"); });
   $("scnChooserWrap").classList.add("hidden");
   $("scnStage").classList.remove("hidden");
@@ -2942,7 +3968,7 @@ function doAction(a) {
   }
   renderVitals(); renderClock(); renderFeedback(o, changed);
   if (a === "aden" && o.v !== "info") renderActions();
-  $("scnLive").textContent = (o.changeAnnounce ? o.changeAnnounce + ". " : "") + label + ": " + VERD[o.v][1] + ". " + TXT[o.keys[o.keys.length - 1]][0];
+  announceFeedback(o);
   if (o.end) finishScenario(true);
   if (window.innerWidth < 900) $("scnFeedback").scrollIntoView({ block: "start", behavior: prefersReduced() ? "auto" : "smooth" });
 }
@@ -2954,13 +3980,25 @@ function rhythmAnnounce(o) {
   return "Rhythm change: " + name;
 }
 function renderFeedback(o, changed) {
+  if (SIM) SIM.lastFb = { o: o, changed: changed };
   var ic = o.v === "ok" ? ICON_OK : o.v === "bad" ? ICON_NO : "<span class='verdict-glyph' aria-hidden='true'>" + VERD[o.v][0] + "</span>";
   var html = "<p class='explain-kicker'>Feedback</p><p class='verdict-line'>" + ic + VERD[o.v][1] + ": " + esc(o.label) + "</p>";
   if (o.changeAnnounce) html += "<p class='scn-change'><strong>" + esc(o.changeAnnounce) + "</strong></p>";
-  html += o.keys.map(function (k) { return "<p class='scn-fb'>" + txtHTML(k) + "</p>"; }).join("");
-  if (o.phys) html += "<div class='panel-block'><h3>" + (changed ? "Why the rhythm changed" : "Physiology") + "</h3><p>" + esc(PHYS[o.phys]) + "</p></div>";
-  var k = o.keys[o.keys.length - 1];
-  html += "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[k][1]) + "</p><p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(k) + "</p>";
+  var on = hintsOn();
+  o.keys.forEach(function (k) {
+    var t = TXT[k];
+    if (on) html += "<p class='scn-fb'>" + txtHTML(k) + "</p>";
+    else {
+      if (t.outcome) html += "<p class='scn-fb'>" + esc(t.outcome) + "</p>";
+      if ((o.v === "bad" || o.v === "part") && t.whyWrong) html += "<p class='scn-fb'>" + esc(t.whyWrong) + "</p>";
+    }
+  });
+  var phys = physForLive(o.phys);
+  if (phys) html += "<div class='panel-block'><h3>" + (changed ? "Why the rhythm changed" : "Physiology") + "</h3><p>" + esc(phys) + "</p></div>";
+  if (on) {
+    var k = o.keys[o.keys.length - 1];
+    html += "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[k].guideline) + "</p><p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(k) + "</p>";
+  }
   $("scnFeedback").innerHTML = html;
 }
 function finishScenario(completed) {
@@ -2987,7 +4025,7 @@ function showDebrief() {
     return "<li class='db-item db-" + l.o.v + "'><p class='db-head'><span class='predict-mark' aria-hidden='true'>" + VERD[l.o.v][0] + "</span><span><strong>" + VERD[l.o.v][1] + "</strong> · " + mmss(l.t) + " · " + esc(l.text) + "</span></p>" +
       k.map(function (kk) { return "<p>" + txtHTML(kk) + "</p>"; }).join("") +
       (l.o.phys ? "<p class='db-phys'><strong>Physiology:</strong> " + esc(PHYS[l.o.phys]) + "</p>" : "") +
-      "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[k[k.length - 1]][1]) + "</p><p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(k[k.length - 1]) + "</p></li>";
+      "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[k[k.length - 1]].guideline) + "</p><p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(k[k.length - 1]) + "</p></li>";
   }).join("") + "</ol>";
   if (missed.length) html += "<h3 class='viva-group'>Missed steps</h3><ul class='debrief-list'>" + missed.map(function (r) { var rk = "req:" + s.id + ":" + s.req.indexOf(r); return "<li class='db-item db-bad'><p class='db-head'><span class='predict-mark' aria-hidden='true'>\u2717</span><span><strong>Missed:</strong> " + esc(r[1]) + verTag(rk) + "</span></p><p class='scn-src scn-quotes'><strong>Source lines:</strong> " + verQuotes(rk) + "</p></li>"; }).join("") + "</ul>";
   if (s.extra) html += "<div class='panel-block trap'><h3>Teaching point</h3><p>" + txtHTML(s.extra) + "</p><p class='scn-src'><strong>Source:</strong> " + esc(srcOf(s.extra)) + "</p></div>";
@@ -3034,6 +4072,8 @@ function exitScenarioMode(silent) {
 $("scnToggle").addEventListener("click", function () { if (mode === "scenario") exitScenarioMode(); else enterScenarioMode(); });
 $("scnEnd").addEventListener("click", function () { if (SIM && !SIM.done) finishScenario(false); });
 $("scnBack").addEventListener("click", showChooser);
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, get sim() { return SIM; } };
+$("scnHints").addEventListener("click", function () { setHints(!hintsOn()); });
+syncHintsToggle();
+window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, get sim() { return SIM; } };
 </script>
 </body></html>
