@@ -266,7 +266,42 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .scn-hints.is-on .scn-hints-track { background: var(--text); }
 .scn-hints.is-on .scn-hints-knob { left: 19px; background: var(--surface); }
 .scn-hints-state { font-variant-numeric: tabular-nums; min-width: 1.6em; }
-.scn-reg { grid-column: 1 / -1; margin-top: 8px; border-style: dashed; min-height: 44px; }
+.scn-actions-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+.scn-actions-heading { min-width: 0; flex: 1 1 12rem; }
+.scn-actions-heading .explain-kicker { margin-bottom: 4px; }
+.scn-actions-heading .explain-title { margin: 0; }
+.scn-reg {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin: 0 0 0 auto;
+  min-height: 44px;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--text);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.scn-reg:hover:not(:disabled) { background: var(--surface-2, var(--bg)); }
+.scn-reg:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.scn-reg:disabled { opacity: 0.55; cursor: not-allowed; }
+.scn-reg-icon { display: block; flex: none; }
 .scn-nudge { margin: 8px 0; padding: 8px 10px 8px 12px; border-left: 3px solid var(--text); background: var(--surface-2, var(--bg)); font-family: var(--font-sans); font-size: 15px; }
 .scn-fb { margin: 6px 0; }
 
@@ -441,8 +476,18 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
           </div>
           <div class="scn-panels" id="scnPanels">
             <div class="card explain-panel scn-actions-card">
-              <p class="explain-kicker">Actions</p>
-              <h2 class="explain-title">What do you do next?</h2>
+              <div class="scn-actions-head">
+                <div class="scn-actions-heading">
+                  <p class="explain-kicker">Actions</p>
+                  <h2 class="explain-title">What do you do next?</h2>
+                </div>
+                <button type="button" class="scn-reg" id="scnReg" aria-label="Call the reg, ask for a registrar hint">
+                  <svg class="scn-reg-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  <span class="scn-reg-label">Call the reg</span>
+                </button>
+              </div>
               <div id="scnActions"></div>
             </div>
             <div class="scn-right">
@@ -4845,8 +4890,9 @@ function renderActions() {
         return "<button type='button' class='act-btn" + (a.id === "ff" ? " act-ff" : "") + "' data-a='" + a.id + "'" + aria + (SIM.done ? " disabled" : "") + ">" + esc(lab) + "</button>";
       }).join("") + "</div></div>";
   }).join("");
-  host.insertAdjacentHTML("beforeend", "<button type='button' class='act-btn scn-reg' id='scnReg'" + (SIM.done ? " disabled" : "") + " aria-label='Call the reg, ask for a registrar hint'>Call the reg</button>");
-  host.querySelectorAll(".act-btn").forEach(function (b) { b.addEventListener("click", function () { if (b.id === "scnReg") callReg(); else doAction(b.dataset.a); }); });
+  host.querySelectorAll(".act-btn").forEach(function (b) { b.addEventListener("click", function () { doAction(b.dataset.a); }); });
+  var reg = $("scnReg");
+  if (reg) reg.disabled = !!(SIM && SIM.done);
 }
 function renderVitals() {
   var v = SIM.vit, rate = "";
@@ -5039,6 +5085,7 @@ $("scnToggle").addEventListener("click", function () { if (mode === "scenario") 
 $("scnEnd").addEventListener("click", function () { if (SIM && !SIM.done) finishScenario(false); });
 $("scnBack").addEventListener("click", showChooser);
 $("scnHints").addEventListener("click", function () { setHints(!hintsOn()); });
+$("scnReg").addEventListener("click", callReg);
 syncHintsToggle();
 window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, due: function () { return outstandingSteps(SIM); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; } };
 </script>
