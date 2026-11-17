@@ -60,7 +60,6 @@ html[data-theme="colour-blind"] {
   .rp-sub { grid-template-columns: 104px minmax(0, 1fr); align-items: center; gap: 6px; margin-bottom: 6px; }
   .rp-sub .scen-group-label { margin: 0; font-size: 14px; line-height: 1.2; }
   .rp-row .scen-btn { min-height: 38px; }
-  .ecg-controls .scen-panel { padding-bottom: 8px; }
 }
 @media (max-width: 899px) {
   .rp-sub { grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 6px; margin-bottom: 6px; }
@@ -329,13 +328,98 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 @media (prefers-reduced-motion: reduce) { .mon-head { display: none; } }
 
 /* Random scenario */
-.scn-random-wrap { margin: 0 0 4px; }
-.scn-random { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; min-height: 56px; padding: 10px 14px; border: 2px solid var(--text); border-radius: 12px; background: var(--text); color: var(--surface); cursor: pointer; font: inherit; }
+.scn-random-wrap { margin: 0 0 14px; }
+.scn-random { display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left; min-height: 64px; padding: 14px 16px; border: 2px solid var(--text); border-radius: 14px; background: var(--text); color: var(--surface); cursor: pointer; font: inherit; }
 .scn-random:hover { box-shadow: var(--shadow); }
 .scn-random:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
-.scn-random .dice { flex: none; }
-.scn-random-title { display: block; font-family: var(--font-sans); font-weight: 700; font-size: 16px; }
-.scn-random-sub { display: block; font-size: 14px; }
+.scn-random .dice { flex: none; margin-top: 2px; }
+.scn-random-title { display: block; font-family: var(--font-sans); font-weight: 700; font-size: 16px; line-height: 1.3; }
+.scn-random-sub { display: block; font-size: 14px; line-height: 1.4; margin-top: 4px; }
+
+/* How scenarios work: card title (the summary) sits fully inside the padded card. */
+.scn-guide {
+  margin: 0 0 20px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  min-width: 0;
+  max-width: 100%;
+}
+.scn-guide > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text);
+}
+.scn-guide > summary::-webkit-details-marker,
+.scn-guide > summary::marker { display: none; content: none; }
+.scn-guide-chevron {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--text);
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+}
+.scn-guide-chevron::before { content: "+"; }
+.scn-guide[open] > summary .scn-guide-chevron::before { content: "\2212"; }
+.scn-guide-steps {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.scn-guide-steps li {
+  display: grid;
+  grid-template-columns: 28px 1.4em minmax(0, 1fr);
+  gap: 8px 10px;
+  align-items: start;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.scn-guide-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--text);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.scn-guide-icon svg { display: block; }
+.scn-guide-n {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  padding-top: 4px;
+}
+@media (max-width: 480px) {
+  .scn-guide-steps li { padding: 10px; gap: 6px 8px; }
+}
 /* Source labels (shape and text, not colour) */
 .vtag { display: inline-block; max-width: 100%; box-sizing: border-box; vertical-align: baseline; font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--text); background: var(--surface-2); border: 1.5px solid var(--text); border-radius: 6px; padding: 0 5px; margin-left: 4px; line-height: 1.6; overflow-wrap: anywhere; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .vtag a { color: var(--primary); }
@@ -416,10 +500,12 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 
       <div id="learnWrap">
       <div class="tool-controls ecg-controls">
-        <fieldset class="scen-panel" id="rhythmPanel">
-          <legend>Rhythms</legend>
-          <div class="rhythm-picker" id="rhythmPicker"></div>
-        </fieldset>
+        <div class="tool-block">
+          <h2 class="tool-section-title" id="rhythmHeading">Rhythms</h2>
+          <div class="scen-panel" id="rhythmPanel" role="group" aria-labelledby="rhythmHeading">
+            <div class="rhythm-picker" id="rhythmPicker"></div>
+          </div>
+        </div>
       </div>
 
       <div class="ecg-stage">
@@ -449,10 +535,38 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
       <div id="scnWrap" class="hidden">
         <p class="scn-disclaimer"><strong>Teaching simulation based on Resus Council UK 2025 adult ALS algorithms and the BNF. Not clinical guidance; follow local protocols and current guidelines.</strong> Sources: <a href="https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-advanced-life-support-guidelines" target="_blank" rel="noopener">RCUK 2025 Adult ALS guideline</a>, <a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf" target="_blank" rel="noopener">ALS algorithm</a>, <a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20bradyarrhythmia%202025.pdf" target="_blank" rel="noopener">bradyarrhythmia algorithm</a>, <a href="https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf" target="_blank" rel="noopener">tachyarrhythmia algorithm (March 2026)</a>, <a href="https://bnf.nice.org.uk/" target="_blank" rel="noopener">BNF</a>. Scenarios are scripted and simplified; each statement is labelled <span class="vtag tag-src"><span class="vtag-k">Source</span></span>, <span class="vtag tag-phys"><span class="vtag-k">Physiology</span></span> or <span class="vtag tag-sim"><span class="vtag-k">Simulation simplification</span></span>.</p>
         <div id="scnChooserWrap">
-          <fieldset class="scen-panel scn-chooser">
-            <legend>Choose a scenario</legend>
-            <div id="scnGrid"></div>
-          </fieldset>
+          <details class="scn-guide" id="scnGuide" open>
+            <summary>
+              <span class="scn-guide-chevron" aria-hidden="true"></span>
+              How scenarios work
+            </summary>
+            <ol class="scn-guide-steps">
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random draws from a larger pool that includes extra cases not shown in the list. The title appears once the case starts.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>Skip 2 min continues CPR for two minutes and shows the rhythm on the monitor. Check rhythm and pulse is a separate step.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>Feedback judges only the action you just took, and will not tell you what to do next.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><span class="scn-guide-n" aria-hidden="true">6</span><span>Call the reg gives a hint. Each call deducts 0.5 from the decision score, with a minimum of 0.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 8 h10 a4 4 0 0 1 0 8 H7 a4 4 0 0 1 0-8 z M17 12 a2 2 0 1 1 0 0.01"/></svg></span><span class="scn-guide-n" aria-hidden="true">7</span><span>The Hints switch is off by default. Turn it on if you want more guidance.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 4 h8 l2 3 v13 H6 V7 z M8 4 V7 h8 V4"/></svg></span><span class="scn-guide-n" aria-hidden="true">8</span><span>The debrief shows your score, what you missed, and the guideline for each decision.</span></li>
+            </ol>
+          </details>
+          <script>
+          (function () {
+            try {
+              if (localStorage.getItem("anaesthetic-physiology-scn-guide") === "closed") {
+                var g = document.getElementById("scnGuide");
+                if (g) g.open = false;
+              }
+            } catch (e) {}
+          })();
+          </script>
+          <div class="tool-block">
+            <h2 class="tool-section-title" id="scnChooserTitle">Choose a scenario</h2>
+            <div class="scen-panel scn-chooser" role="group" aria-labelledby="scnChooserTitle">
+              <div id="scnGrid"></div>
+            </div>
+          </div>
         </div>
         <div id="scnStage" class="hidden">
           <div class="graph-card scn-card-main">
@@ -5086,6 +5200,15 @@ $("scnEnd").addEventListener("click", function () { if (SIM && !SIM.done) finish
 $("scnBack").addEventListener("click", showChooser);
 $("scnHints").addEventListener("click", function () { setHints(!hintsOn()); });
 $("scnReg").addEventListener("click", callReg);
+(function initScnGuide() {
+  var KEY = "anaesthetic-physiology-scn-guide";
+  var g = $("scnGuide");
+  if (!g) return;
+  try { if (localStorage.getItem(KEY) === "closed") g.open = false; } catch (e) {}
+  g.addEventListener("toggle", function () {
+    try { localStorage.setItem(KEY, g.open ? "open" : "closed"); } catch (e) {}
+  });
+})();
 syncHintsToggle();
 window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, due: function () { return outstandingSteps(SIM); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; } };
 </script>

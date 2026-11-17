@@ -31,6 +31,31 @@
   margin: 8px 0 12px;
 }
 
+/* Section headings sit outside, above their card, with a consistent gap.
+   Card titles (guide-heading, test-banner-title, revise-title) stay inside, within the card padding. */
+.tool-section-title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: var(--text);
+  margin: 0 0 10px;
+  line-height: 1.25;
+  padding: 0;
+}
+.tool-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+.tool-block .scen-panel,
+.tool-block .guide-panel {
+  flex: 1 1 auto;
+}
+
 .scen-panel,
 .guide-panel {
   margin: 0;
@@ -38,7 +63,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
-  padding: 8px 12px 10px;
+  padding: 16px;
   box-shadow: var(--shadow);
 }
 .scen-panel legend,
@@ -52,10 +77,16 @@
   text-transform: none;
   color: var(--text);
   padding: 0;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   line-height: 1.25;
 }
-.scen-panel legend { float: none; width: 100%; }
+/* If a legend is still used, keep it fully inside the card, never on the border. */
+.scen-panel legend:not(.visually-hidden) {
+  display: table;
+  float: none;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 .scen-groups {
   display: flex;
@@ -238,7 +269,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow);
-  padding: 6px 8px 8px;
+  padding: 12px 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -429,7 +460,7 @@
 
 .revise-section {
   margin: 28px 0 16px;
-  padding: 16px 18px 18px;
+  padding: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);

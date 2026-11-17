@@ -49,19 +49,23 @@
       </div>
 
       <div class="tool-controls">
-        <fieldset class="scen-panel">
-          <legend>Scenarios</legend>
-          <div class="scen-groups" id="scenarioGroups"></div>
-        </fieldset>
-        <div class="guide-panel">
-          <div class="try-this" role="group" aria-labelledby="try-heading">
-            <h2 id="try-heading" class="guide-heading">Try this</h2>
-            <ol class="try-list">
+        <div class="tool-block">
+          <h2 class="tool-section-title" id="pvScenHeading">Scenarios</h2>
+          <div class="scen-panel" role="group" aria-labelledby="pvScenHeading">
+            <div class="scen-groups" id="scenarioGroups"></div>
+          </div>
+        </div>
+        <div class="tool-block">
+          <h2 class="tool-section-title" id="try-heading">Try this</h2>
+          <div class="guide-panel">
+            <div class="try-this" role="group" aria-labelledby="try-heading">
+              <ol class="try-list">
               <li><button type="button" class="try-btn" data-try="afterload_up">Increase afterload: watch ESV rise and SV fall</button></li>
               <li><button type="button" class="try-btn" data-try="preload_up">Increase preload: watch the loop widen and SV rise</button></li>
               <li><button type="button" class="try-btn" data-try="contractility_up">Increase contractility: watch ESV fall and SV rise</button></li>
               <li><button type="button" class="try-btn" data-try="mr">Mitral regurgitation: watch the left limb slant</button></li>
             </ol>
+            </div>
           </div>
         </div>
       </div>
