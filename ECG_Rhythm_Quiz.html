@@ -619,7 +619,7 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
           </div>
         </div>
         <div id="scnChooserWrap">
-          <details class="scn-guide" id="scnGuide" open>
+          <details class="scn-guide" id="scnGuide">
             <summary>
               <span class="scn-guide-chevron" aria-hidden="true"></span>
               How scenarios work
@@ -640,9 +640,9 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
           <script>
           (function () {
             try {
-              if (localStorage.getItem("anaesthetic-physiology-scn-guide") === "closed") {
+              if (localStorage.getItem("anaesthetic-physiology-scn-guide") === "open") {
                 var g = document.getElementById("scnGuide");
-                if (g) g.open = false;
+                if (g) g.open = true;
               }
             } catch (e) {}
           })();
@@ -6107,7 +6107,7 @@ $("scnReg").addEventListener("click", callReg);
   var KEY = "anaesthetic-physiology-scn-guide";
   var g = $("scnGuide");
   if (!g) return;
-  try { if (localStorage.getItem(KEY) === "closed") g.open = false; } catch (e) {}
+  try { if (localStorage.getItem(KEY) === "open") g.open = true; } catch (e) {}
   g.addEventListener("toggle", function () {
     try { localStorage.setItem(KEY, g.open ? "open" : "closed"); } catch (e) {}
   });
