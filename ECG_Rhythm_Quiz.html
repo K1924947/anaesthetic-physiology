@@ -532,6 +532,17 @@ body.scn-popup-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .scn-pending-spin { animation: none; border-right-color: var(--text); }
 }
+
+.scn-ack {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: 16px 0 0;
+  max-width: 42rem;
+}
+.scn-ack strong { font-weight: 700; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -688,6 +699,7 @@ body.scn-popup-open { overflow: hidden; }
               <div id="scnGrid"></div>
             </div>
           </div>
+          <p class="scn-ack"><strong>Acknowledgements:</strong> Scenario design informed by testing and feedback from Jason Cho (Medical Student, GKT School of Medicine).</p>
         </div>
         <div id="scnStage" class="hidden">
           <div class="graph-card scn-card-main">
