@@ -31,12 +31,24 @@ An interactive lead II rhythm tool with synthetic strips, callipers, conduction 
 
 ---
 
+### Cardiac Action Potential
+
+An interactive action potential tool with a linked schematic ECG strip.
+
+- Ventricular myocyte and SA node on the same axes, with Purkinje fibre and atrial myocyte as extras
+- Clickable phases 0 to 4 with the main ion channels for each
+- Scenarios: hyper/hypokalaemia (graded), hyper/hypocalcaemia, sympathetic and vagal tone, ischaemia, Vaughan Williams classes, adenosine and digoxin, each redrawn against a dashed normal
+- Live readout: resting potential, threshold, phase 0 slope, APD90, SA phase 4 slope and rate
+- Test yourself: predict, then reveal; revision summary, viva questions, key numbers and a Vaughan Williams table
+- Every statement tagged Source, Physiology or Simulation; teaching simulation, not clinical guidance
+
+---
+
 ### Tools under construction
 
 These tools keep their usual addresses but the old pages are offline while they are rebuilt and rechecked:
 
 - Arterial Pressure Waveform
-- Cardiac Action Potential
 - Cardiac Murmurs
 - Heart Failure notes
 - Myocardial Infarction Timeline
@@ -51,8 +63,9 @@ No login or download needed. Open the live tools directly in any browser:
 
 - [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
 - [ECG Rhythm Quiz](https://k1924947.github.io/anaesthetic-physiology/ECG_Rhythm_Quiz.html)
+- [Cardiac Action Potential](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Action_Potential.html)
 
-Five further cardiac tools are under construction and are not available yet.
+Four further cardiac tools are under construction and are not available yet.
 
 ---
 
