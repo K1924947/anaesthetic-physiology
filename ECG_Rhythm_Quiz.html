@@ -464,15 +464,50 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .scn-skip:hover:not(:disabled) { background: var(--surface-2, var(--bg)); }
 .scn-skip:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
 .scn-skip:disabled { opacity: 0.55; cursor: not-allowed; }
-.scn-sublist {
-  margin: 10px 0 0; padding: 12px; border: 2px solid var(--text); border-radius: 12px; background: var(--surface-2, var(--bg));
-}
-.scn-sublist[hidden] { display: none !important; }
-.scn-sublist-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.scn-sublist-title { font-family: var(--font-serif); font-size: 17px; font-weight: 600; margin: 0; }
-.scn-sublist-lead { margin: 6px 0 8px; font-size: 14px; }
-.scn-sublist-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .scn-sub-btn { width: 100%; text-align: left; }
+.scn-popup { position: fixed; inset: 0; z-index: 70; }
+.scn-popup[hidden] { display: none !important; }
+.scn-popup-backdrop { position: absolute; inset: 0; background: rgba(17, 17, 17, 0.45); }
+.scn-popup-panel {
+  position: absolute; z-index: 1; box-sizing: border-box;
+  padding: 16px; background: var(--surface); color: var(--text);
+  border: 2px solid var(--text); box-shadow: var(--shadow);
+  overflow: auto;
+}
+.scn-popup-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+.scn-popup-title { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 700; margin: 0; line-height: 1.25; }
+.scn-popup-lead { margin: 0 0 10px; font-size: 15px; }
+.scn-popup-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.scn-popup-close {
+  flex: none; box-sizing: border-box; width: 44px; height: 44px; padding: 0;
+  border: 2px solid var(--text); border-radius: 999px;
+  background: var(--surface); color: var(--text); cursor: pointer;
+  font-size: 28px; line-height: 1; font-weight: 700;
+}
+.scn-popup-close:hover { background: var(--surface-2, var(--bg)); }
+.scn-popup-close:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+/* Desktop: floating panel, position set in JS near the actions button. */
+@media (min-width: 700px) {
+  .scn-popup-panel {
+    width: min(28rem, calc(100vw - 32px));
+    max-height: min(70vh, 36rem);
+    border-radius: 16px;
+  }
+}
+/* Mobile: bottom sheet. */
+@media (max-width: 699px) {
+  .scn-popup-panel {
+    left: 0; right: 0; bottom: 0; top: auto; width: 100%;
+    max-height: 70vh;
+    border-radius: 16px 16px 0 0;
+    border-left: 0; border-right: 0; border-bottom: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scn-popup-panel { transition: none; }
+}
+.graph-card.scn-card-main .scn-pending { margin: 12px 0 0; }
+body.scn-popup-open { overflow: hidden; }
 .scn-alg-link { margin: 10px 0 0; }
 .scn-alg-link a { color: var(--text); font-weight: 700; font-size: 16px; text-decoration: underline; text-underline-offset: 3px; }
 .scn-alg-link a:hover { text-decoration-thickness: 2px; }
@@ -626,7 +661,7 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
             </summary>
             <ol class="scn-guide-steps">
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random draws from a larger pool that includes extra cases not shown in the list. The title appears once the case starts.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. Nothing you should have to request is shown up front.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Each opens as a pop-up, so you do not have to scroll the actions list. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. Nothing you should have to request is shown up front.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>CPR for 2 minutes performs two minutes of CPR and shows the rhythm on the monitor. Skip time only advances the clock and does not count as an action. Check rhythm and pulse is a separate step.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback states only what was done and the objective event. It will not interpret the monitor or tell you what to do next.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends. The debrief names the missed step and the correct action; the live nudges stay vague.</span></li>
@@ -674,6 +709,10 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
             <div class="scn-monitor" id="scnMonitor"></div>
             <p class="strip-meta">Monitor lead II, sweeping in real time; 1 s per large block of 5. The rhythm is not named until you assess it.</p>
             <div class="live-readout scn-vitals" id="scnVitals" aria-label="Monitor values: heart rate, SpO2, respiratory rate and NIBP"></div>
+              <div class="scn-pending" id="scnPending" hidden>
+                <h2 class="scn-pending-title" id="scnPendingTitle">Pending results</h2>
+                <ul class="scn-pending-list" id="scnPendingList"></ul>
+              </div>
           </div>
           <div class="scn-panels" id="scnPanels">
             <div class="card explain-panel scn-actions-card">
@@ -690,28 +729,8 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
                 </button>
               </div>
               <div id="scnActions"></div>
-              <div class="scn-sublist" id="scnCauseList" hidden aria-hidden="true" role="region" aria-labelledby="scnCauseTitle">
-                <div class="scn-sublist-head">
-                  <h3 class="scn-sublist-title" id="scnCauseTitle">Identify and treat reversible causes</h3>
-                  <button type="button" class="tool-btn" id="scnCauseClose">Close</button>
-                </div>
-                <p class="scn-sublist-lead">Pick the cause that fits this case. Wrong picks are marked Not quite.</p>
-                <ul class="scn-sublist-list" id="scnCauseButtons"></ul>
-              </div>
-              <div class="scn-sublist" id="scnAskList" hidden aria-hidden="true" role="region" aria-labelledby="scnAskTitle">
-                <div class="scn-sublist-head">
-                  <h3 class="scn-sublist-title" id="scnAskTitle">Ask for / check</h3>
-                  <button type="button" class="tool-btn" id="scnAskClose">Close</button>
-                </div>
-                <p class="scn-sublist-lead">Values appear only when you request them. Results, and Cycle NIBP now, take a few seconds of real time and do not advance the simulated clock, so requesting a test will not run the case out of time. You can keep treating while they are pending, and more than one request can be pending at once.</p>
-                <ul class="scn-sublist-list" id="scnAskButtons"></ul>
-              </div>
             </div>
             <div class="scn-right">
-              <div class="scn-pending" id="scnPending" hidden>
-                <h2 class="scn-pending-title" id="scnPendingTitle">Pending results</h2>
-                <ul class="scn-pending-list" id="scnPendingList"></ul>
-              </div>
               <div class="card explain-panel" id="scnFeedback"></div>
               <div class="card explain-panel scn-log-card">
                 <h2 class="explain-title">Event log</h2>
@@ -719,6 +738,34 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
               </div>
             </div>
           </div>
+
+        <div class="scn-popup" id="scnCausePopup" hidden>
+          <div class="scn-popup-backdrop" id="scnCauseBackdrop" tabindex="-1"></div>
+          <div class="scn-popup-panel" id="scnCauseList" role="dialog" aria-modal="true" aria-labelledby="scnCauseTitle">
+            <div class="scn-popup-head">
+              <h2 class="scn-popup-title" id="scnCauseTitle">Identify and treat reversible causes</h2>
+              <button type="button" class="scn-popup-close" id="scnCauseClose" aria-label="Close Identify and treat reversible causes">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <p class="scn-popup-lead">Pick the cause that fits this case. Wrong picks are marked Not quite.</p>
+            <ul class="scn-popup-list" id="scnCauseButtons"></ul>
+          </div>
+        </div>
+        <div class="scn-popup" id="scnAskPopup" hidden>
+          <div class="scn-popup-backdrop" id="scnAskBackdrop" tabindex="-1"></div>
+          <div class="scn-popup-panel" id="scnAskList" role="dialog" aria-modal="true" aria-labelledby="scnAskTitle">
+            <div class="scn-popup-head">
+              <h2 class="scn-popup-title" id="scnAskTitle">Ask for / check</h2>
+              <button type="button" class="scn-popup-close" id="scnAskClose" aria-label="Close Ask for / check">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <p class="scn-popup-lead">Values appear only when you request them. Results, and Cycle NIBP now, take a few seconds of real time and do not advance the simulated clock, so requesting a test will not run the case out of time. You can keep treating while they are pending, and more than one request can be pending at once.</p>
+            <ul class="scn-popup-list" id="scnAskButtons"></ul>
+          </div>
+        </div>
+
           <div class="card explain-panel scn-debrief hidden" id="scnDebrief"></div>
         </div>
         <div class="visually-hidden" aria-live="polite" id="scnLive"></div>
@@ -4824,19 +4871,95 @@ if (typeof TXT === "object") {
   TXT.n_skipTime = Tfb("Simulated time advanced by 1 minute. Skip time is not an algorithm action and does not count as performing CPR.", "Simulation clock", "alsPriority", { event: "Simulated time advanced by 1 minute." });
 }
 
+function popupForMenu(id) {
+  if (id === "scnAskList") return $("scnAskPopup");
+  if (id === "scnCauseList") return $("scnCausePopup");
+  return $(id);
+}
+function openerForMenu(id) {
+  return document.querySelector(id === "scnAskList" ? "[data-a='ask']" : (id === "scnCauseList" ? "[data-a='causes']" : null));
+}
+function isScnMenuOpen(id) {
+  var pop = popupForMenu(id);
+  return !!(pop && !pop.hidden);
+}
+function setMenuExpanded(id, open) {
+  var btn = openerForMenu(id);
+  if (btn) {
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    btn.setAttribute("aria-haspopup", "dialog");
+  }
+}
+function positionScnPopup(panel, opener) {
+  if (!panel) return;
+  if (window.matchMedia("(max-width: 699px)").matches) {
+    panel.style.top = "";
+    panel.style.left = "";
+    panel.style.right = "";
+    panel.style.width = "";
+    return;
+  }
+  var r = (opener && opener.getBoundingClientRect) ? opener.getBoundingClientRect() : null;
+  var card = document.querySelector(".scn-actions-card");
+  var cr = card && card.getBoundingClientRect();
+  var anchor = r || cr;
+  if (!anchor) return;
+  var gap = 8, margin = 16;
+  var width = Math.min(28 * 16, window.innerWidth - margin * 2);
+  var left = (cr ? cr.right + gap : anchor.right + gap);
+  if (left + width > window.innerWidth - margin) {
+    left = Math.max(margin, (cr ? cr.left : anchor.left));
+    if (left + width > window.innerWidth - margin) left = Math.max(margin, window.innerWidth - width - margin);
+  }
+  var top = anchor.top;
+  var maxH = Math.min(window.innerHeight * 0.7, 36 * 16);
+  if (top + Math.min(panel.offsetHeight || 280, maxH) > window.innerHeight - margin) {
+    top = Math.max(margin, window.innerHeight - maxH - margin);
+  }
+  panel.style.top = Math.round(top) + "px";
+  panel.style.left = Math.round(left) + "px";
+  panel.style.width = Math.round(width) + "px";
+}
+function scnPopupKey(e) {
+  var openId = isScnMenuOpen("scnAskList") ? "scnAskList" : (isScnMenuOpen("scnCauseList") ? "scnCauseList" : null);
+  if (!openId) return;
+  if (e.key === "Escape") { e.preventDefault(); closeScnMenu(openId); return; }
+  if (e.key !== "Tab") return;
+  var panel = $(openId);
+  var list = typeof getFocusable === "function" ? getFocusable(panel) : [];
+  if (!list.length) return;
+  var first = list[0], last = list[list.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
 function closeScnMenu(id) {
-  var el = $(id); if (!el) return;
-  el.hidden = true;
-  el.setAttribute("aria-hidden", "true");
+  var pop = popupForMenu(id), panel = $(id);
+  if (!pop || pop.hidden) {
+    if (panel) { panel.setAttribute("aria-hidden", "true"); }
+    return;
+  }
+  pop.hidden = true;
+  if (panel) panel.setAttribute("aria-hidden", "true");
+  setMenuExpanded(id, false);
+  document.removeEventListener("keydown", scnPopupKey, true);
+  document.body.classList.remove("scn-popup-open");
+  var opener = (panel && panel._opener) || openerForMenu(id);
+  if (opener && opener.focus && document.contains(opener)) opener.focus();
 }
 function openScnMenu(id, opener) {
   ["scnCauseList", "scnAskList"].forEach(function (other) { if (other !== id) closeScnMenu(other); });
-  var el = $(id); if (!el) return;
-  el.hidden = false;
-  el.setAttribute("aria-hidden", "false");
-  var first = el.querySelector("button, [href], input");
+  var pop = popupForMenu(id), panel = $(id);
+  if (!pop || !panel) return;
+  opener = opener || openerForMenu(id);
+  panel._opener = opener;
+  pop.hidden = false;
+  panel.setAttribute("aria-hidden", "false");
+  setMenuExpanded(id, true);
+  document.body.classList.add("scn-popup-open");
+  positionScnPopup(panel, opener);
+  document.addEventListener("keydown", scnPopupKey, true);
+  var first = panel.querySelector(".scn-popup-list button:not([disabled])") || panel.querySelector("button");
   if (first) first.focus();
-  el._opener = opener;
 }
 
 function pickCause(cid) {
@@ -4914,6 +5037,7 @@ function doAsk(aid) {
   if (!SIM || SIM.done) return;
   var built = buildAskText(aid);
   if (!built.item) return;
+  closeScnMenu("scnAskList");
   queuePendingResult({
     id: aid,
     kind: "ask",
@@ -5802,7 +5926,10 @@ function renderActions() {
     return "<div class='act-group'><h3 class='scen-group-label' id='act-g" + gi + "'>" + esc(g) + "</h3><div class='act-row' role='group' aria-labelledby='act-g" + gi + "'>" +
       ACTIONS.filter(function (a) { return a.g === g; }).map(function (a) {
         var lab = a.id === "aden" ? adenLabel(SIM.aden) : a.label;
-        var aria = a.id === "ff" ? " aria-label='CPR for 2 minutes'" : (a.id === "causes" ? " aria-haspopup='true' aria-controls='scnCauseList'" : (a.id === "ask" ? " aria-haspopup='true' aria-controls='scnAskList'" : ""));
+        var aria = "";
+        if (a.id === "ff") aria = " aria-label='CPR for 2 minutes'";
+        else if (a.id === "causes") aria = " aria-haspopup='dialog' aria-controls='scnCauseList' aria-expanded='" + (typeof isScnMenuOpen === "function" && isScnMenuOpen("scnCauseList") ? "true" : "false") + "'";
+        else if (a.id === "ask") aria = " aria-haspopup='dialog' aria-controls='scnAskList' aria-expanded='" + (typeof isScnMenuOpen === "function" && isScnMenuOpen("scnAskList") ? "true" : "false") + "'";
         return "<button type='button' class='act-btn" + (a.id === "ff" ? " act-ff" : "") + "' data-a='" + a.id + "'" + aria + (SIM.done ? " disabled" : "") + ">" + esc(lab) + "</button>";
       }).join("") + "</div></div>";
   }).join("");
@@ -6095,10 +6222,14 @@ if (srcBg) srcBg.addEventListener("click", closeSourcesModal);
 var causeClose = $("scnCauseClose"), askClose = $("scnAskClose");
 if (causeClose) causeClose.addEventListener("click", function () { closeScnMenu("scnCauseList"); });
 if (askClose) askClose.addEventListener("click", function () { closeScnMenu("scnAskList"); });
-document.addEventListener("keydown", function (e) {
-  if (e.key !== "Escape") return;
-  if ($("scnSourcesModal") && !$("scnSourcesModal").hidden) return;
-  closeScnMenu("scnCauseList"); closeScnMenu("scnAskList");
+var causeBg = $("scnCauseBackdrop"), askBg = $("scnAskBackdrop");
+if (causeBg) causeBg.addEventListener("click", function () { closeScnMenu("scnCauseList"); });
+if (askBg) askBg.addEventListener("click", function () { closeScnMenu("scnAskList"); });
+window.addEventListener("resize", function () {
+  if (typeof isScnMenuOpen === "function" && typeof positionScnPopup === "function") {
+    if (isScnMenuOpen("scnAskList")) positionScnPopup($("scnAskList"), openerForMenu("scnAskList"));
+    if (isScnMenuOpen("scnCauseList")) positionScnPopup($("scnCauseList"), openerForMenu("scnCauseList"));
+  }
 });
 
 $("scnHints").addEventListener("click", function () { setHints(!hintsOn()); });
