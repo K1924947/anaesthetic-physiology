@@ -207,6 +207,19 @@ const W = 420, H = 355, volMin = 10, volMax = 210, presMin = 0, presMax = 220;
 const cx = v => ((v - volMin) / (volMax - volMin)) * W;
 const cy = p => H - ((p - presMin) / (presMax - presMin)) * H;
 
+const EJ_SAMPLES = 96;
+const r2 = v => Math.round(v * 100) / 100;
+// Points along a cubic Bezier at evenly spaced t, rounded to the precision written into the path.
+function sampleCubic(p0, p1, p2, p3, n) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, u = 1 - t;
+    const a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+    pts.push([r2(a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0]), r2(a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1])]);
+  }
+  return pts;
+}
+
 function buildPaths(p) {
   const { esv, edv, esp, peakP, edp, avOpen, isoConLeak, isoRelGain } = p;
   const fillStart = esv + isoRelGain;
@@ -215,16 +228,28 @@ function buildPaths(p) {
   const x_fill = cx(fillStart), x_ej = cx(ejStart);
   const y_esp = cy(esp), y_edp = cy(edp);
   const y_aov = cy(avOpen), y_base = cy(Math.max(3, Math.min(edp, 6)));
-  const y_peak = cy(peakP);
-  const x_peak = cx(esv + (edv - esv) * 0.37);
+  // Ejection arc: one cubic Bezier, sampled once. The same sampled points draw the arc
+  // and locate the Peak P marker, so the marker always sits on the drawn curve.
+  const y_ctrl = cy(peakP);
+  const ejPts = sampleCubic(
+    [x_ej, y_aov],
+    [cx(ejStart - (ejStart - esv) * 0.15), y_ctrl],
+    [cx(esv + (ejStart - esv) * 0.25), y_ctrl],
+    [x_esv, y_esp],
+    EJ_SAMPLES
+  );
+  let peakPt = ejPts[0];
+  ejPts.forEach(pt => { if (pt[1] < peakPt[1]) peakPt = pt; });
+  const x_peak = peakPt[0], y_peak = peakPt[1];
+  const ejLine = ejPts.slice(1).map(pt => "L " + r2(pt[0]) + " " + r2(pt[1])).join(" ");
   const fillPath = `M ${x_fill} ${y_base} C ${cx(fillStart + (edv - fillStart) * 0.65)} ${y_base}, ${x_edv} ${cy(edp * 0.3)}, ${x_edv} ${y_edp}`;
   const isoConPath = `M ${x_edv} ${y_edp} L ${x_ej} ${y_aov}`;
-  const ejPath = `M ${x_ej} ${y_aov} C ${cx(ejStart - (ejStart - esv) * 0.15)} ${y_peak}, ${cx(esv + (ejStart - esv) * 0.25)} ${y_peak}, ${x_esv} ${y_esp}`;
+  const ejPath = `M ${x_ej} ${y_aov} ${ejLine}`;
   const isoRelPath = `M ${x_esv} ${y_esp} L ${x_fill} ${y_base}`;
-  const fullPath = `${fillPath} L ${x_ej} ${y_aov} C ${cx(ejStart - (ejStart - esv) * 0.15)} ${y_peak}, ${cx(esv + (ejStart - esv) * 0.25)} ${y_peak}, ${x_esv} ${y_esp} L ${x_fill} ${y_base}`;
+  const fullPath = `${fillPath} L ${x_ej} ${y_aov} ${ejLine} L ${x_fill} ${y_base}`;
   return {
     fillPath, isoConPath, ejPath, isoRelPath, fullPath,
-    x_esv, x_edv, x_fill, x_ej, y_esp, y_edp, y_aov, y_base, y_peak, x_peak
+    x_esv, x_edv, x_fill, x_ej, y_esp, y_edp, y_aov, y_base, y_peak, x_peak, ejPts
   };
 }
 
@@ -558,7 +583,7 @@ function around(px, py, w, h, names, gap) {
     return { cx: s[0], cy: s[1], slot: n, i: i };
   });
 }
-function pickPlacement(w, h, candidates, occupied, view) {
+function pickPlacement(w, h, candidates, occupied, view, extraScore) {
   const pad = 6;
   let best = null, bestScore = Infinity;
   candidates.forEach((c, i) => {
@@ -566,6 +591,7 @@ function pickPlacement(w, h, candidates, occupied, view) {
     const clipped = !inView(r, view);
     let score = (clipped ? 8000 : 0) + i * 0.5;
     occupied.forEach(o => { score += overlapArea(r, o, pad) * 4; });
+    if (extraScore) score += extraScore(r);
     if (score < bestScore) {
       bestScore = score;
       best = { cx: r.cx, cy: r.cy, box: r, slot: c.slot, score: score };
@@ -586,20 +612,54 @@ function attachOnBox(box, px, py) {
   }
   return { x: x, y: y };
 }
+// Shortest distance from point (px, py) to segment a-b.
+function segDist(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+  const t = L ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L)) : 0;
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+// Leader line from a dot to a label box, starting just outside the dot.
+function leaderFor(box, anchor) {
+  const att = attachOnBox(box, anchor.x, anchor.y);
+  const dx = att.x - anchor.x, dy = att.y - anchor.y, dist = Math.hypot(dx, dy);
+  if (dist <= 10) return null;
+  return { x1: anchor.x + dx / dist * 5, y1: anchor.y + dy / dist * 5, x2: att.x, y2: att.y };
+}
+// Closest approach of a leader line to a set of polylines (sampled along the leader).
+function leaderClearance(ln, polylines) {
+  let m = Infinity;
+  for (let i = 0; i <= 24; i++) {
+    const t = i / 24, x = ln.x1 + (ln.x2 - ln.x1) * t, y = ln.y1 + (ln.y2 - ln.y1) * t;
+    polylines.forEach(pl => { for (let k = 1; k < pl.length; k++) m = Math.min(m, segDist(x, y, pl[k - 1][0], pl[k - 1][1], pl[k][0], pl[k][1])); });
+  }
+  return m;
+}
+const LEADER_CLEAR = 3; // user units: clears the 2.6 curve stroke and the 1 px leader
+
 function placeAndDraw(g, occupied, view, spec) {
-  const chosen = pickPlacement(spec.w, spec.h, spec.cands, occupied, view);
+  // spec.avoid: polylines the leader line must not touch (candidates that would are heavily penalised)
+  const extra = (spec.anchor && spec.avoid) ? (r => { const ln = leaderFor(r, spec.anchor); return ln && leaderClearance(ln, spec.avoid) < LEADER_CLEAR ? 20000 : 0; }) : null;
+  const chosen = pickPlacement(spec.w, spec.h, spec.cands, occupied, view, extra);
   if (!chosen) return null;
   occupied.push(chosen.box);
   if (spec.anchor) {
-    const att = attachOnBox(chosen.box, spec.anchor.x, spec.anchor.y);
-    const dx = att.x - spec.anchor.x, dy = att.y - spec.anchor.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 10) {
-      const r = 5;
-      const ux = dx / dist, uy = dy / dist;
+    let ln = leaderFor(chosen.box, spec.anchor);
+    // In a cramped loop no slot may give a clear leader: trim its start until it clears the curve,
+    // and drop it if what is left is too short to read.
+    if (ln && spec.avoid && leaderClearance(ln, spec.avoid) < LEADER_CLEAR) {
+      let t0 = 1;
+      for (let i = 23; i >= 0; i--) {
+        const t = i / 24, x = ln.x1 + (ln.x2 - ln.x1) * t, y = ln.y1 + (ln.y2 - ln.y1) * t;
+        if (leaderClearance({ x1: x, y1: y, x2: ln.x2, y2: ln.y2 }, spec.avoid) < LEADER_CLEAR) break;
+        t0 = t;
+      }
+      const nx = ln.x1 + (ln.x2 - ln.x1) * t0, ny = ln.y1 + (ln.y2 - ln.y1) * t0;
+      ln = Math.hypot(ln.x2 - nx, ln.y2 - ny) >= 4 ? { x1: nx, y1: ny, x2: ln.x2, y2: ln.y2 } : null;
+    }
+    if (ln) {
       el("line", {
-        x1: spec.anchor.x + ux * r, y1: spec.anchor.y + uy * r,
-        x2: att.x, y2: att.y,
+        x1: ln.x1, y1: ln.y1,
+        x2: ln.x2, y2: ln.y2,
         stroke: spec.fill, "stroke-width": 1, "stroke-linecap": "round",
         opacity: "0.9", "pointer-events": "none"
       }, g);
@@ -743,7 +803,7 @@ function renderSVG() {
         ? ["left", "above-left", "above", "above-right", "far-left", "above-left-far", "right"]
         : ["left", "above-left", "below-left", "above", "far-left", "above-left-far", "below-left-far"] },
     { key: "peakP", x: paths.x_peak, y: paths.y_peak, r: 3.5, fill: CHROME.ejection, text: "Peak P",
-      slots: ["above", "above-right", "right", "above-right-far", "far-above", "above-left", "far-right"] }
+      slots: ["above", "far-above", "above-right", "above-left", "above-right-far", "above-left-far", "right", "left"] }
   ];
   valveDots.forEach(d => {
     const hit = el("circle", { cx: d.x, cy: d.y, r: 12, fill: "transparent", style: "cursor:pointer" }, g);
@@ -769,9 +829,11 @@ function renderSVG() {
   occupied.push(boxAt(edvX, markerY, edvM.w, edvM.h));
   occupied.push({ x: 0, y: H + 6, w: W, h: view.y + view.h - (H + 6) });
 
+  const loopLines = [paths.ejPts, [[paths.x_edv, paths.y_edp], [paths.x_ej, paths.y_aov]], [[paths.x_esv, paths.y_esp], [paths.x_fill, paths.y_base]]];
   valveDots.forEach(d => {
     const m = measureLabel(svg, d.text, fsLabel, "700", false);
     placeAndDraw(g, occupied, view, {
+      avoid: d.key === "peakP" ? loopLines : null,
       w: m.w, h: m.h, fs: fsLabel, fill: d.fill, text: d.text, weight: "700",
       cands: around(d.x, d.y, m.w, m.h, d.slots, 12),
       anchor: { x: d.x, y: d.y },
