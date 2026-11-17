@@ -1989,7 +1989,17 @@ var VER = {
   "req:s3:0": ["V", ["bLTF"]], "req:s3:1": ["V", ["bInterim"]], "req:s3:2": ["V", ["bInterim", "gTV"]],
   "req:s4:0": ["V", ["tNarrow"]], "req:s4:1": ["V", ["tNarrow", "nAden"]],
   "req:s5:0": ["V", ["gSed"]], "req:s5:1": ["V", ["tUnstable"]],
-  "req:s6:0": ["V", ["tPoly", "nMg"]], "req:s6:1": ["V", ["tABCDE", "aCauses"]]
+  "req:s6:0": ["V", ["tPoly", "nMg"]], "req:s6:1": ["V", ["tABCDE", "aCauses"]],
+  "req:h1:0": ["V", ["aStart"]], "req:h1:1": ["V", ["gAdrNon"]], "req:h1:2": ["V", ["aCauses"]], "req:h1:3": ["V", ["aCauses"]],
+  "req:h2:0": ["V", ["aStart"]], "req:h2:1": ["V", ["gAdrNon"]], "req:h2:2": ["V", ["aCauses"]], "req:h2:3": ["V", ["aCauses"]],
+  "req:h3:0": ["V", ["gAsap"]], "req:h3:1": ["V", ["gResume"]], "req:h3:2": ["V", ["gAdrSh"]], "req:h3:3": ["V", ["gAmio300"]], "req:h3:4": ["V", ["gAmio150", "nAmio"]],
+  "req:h4:0": ["V", ["gAsap"]], "req:h4:1": ["V", ["gResume"]], "req:h4:2": ["V", ["gAdrNon"]],
+  "req:h5:0": ["V", ["tNarrow"]], "req:h5:1": ["V", ["tNarrow", "nAden"]],
+  "req:h6:0": ["V", ["gSed"]], "req:h6:1": ["V", ["tUnstable", "gCardiov"]],
+  "req:h7:0": ["V", ["tBroad", "tUnstable"]],
+  "req:h8:0": ["V", ["bRisk", "gTV"]], "req:h8:1": ["V", ["bInterim", "gTC"]],
+  "req:h9:0": ["V", ["gAsap", "aShock"]], "req:h9:1": ["V", ["gResume"]], "req:h9:2": ["V", ["tPoly", "nMg"]],
+  "req:h10:0": ["V", ["gSed"]], "req:h10:1": ["V", ["gCardiov", "gVTJ", "tUnstable"]]
 };
 var CAT_LABEL = { V: "Source", T: "Physiology", S: "Simulation simplification" };
 function srcIds(key) { var v = VER[key], seen = []; if (!v) return seen; v[1].forEach(function (q) { var s = VQ[q][0]; if (seen.indexOf(s) < 0) seen.push(s); }); return seen; }
@@ -5667,6 +5677,18 @@ var VERD = { ok: ["\u2713", "Correct"], bad: ["\u2717", "Not quite"], part: ["\u
 function mmss(sec) { sec = Math.max(0, Math.round(sec)); return String(Math.floor(sec / 60)).padStart(2, "0") + ":" + String(sec % 60).padStart(2, "0"); }
 function srcOf(k) { return SRC[TXT[k].src]; }
 function srcHTML(k) { return VER[k] ? verQuotes(k) : esc(srcOf(k)); }
+function sourceLinesBlock(inner) {
+  var text = String(inner || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return "<p class='scn-src scn-quotes'><strong>Source lines:</strong> " + inner + "</p>";
+}
+function normLine(s) {
+  return String(s || "").replace(/<[^>]+>/g, " ").replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").replace(/[.:;]+$/g, "").trim().toLowerCase();
+}
+function sameLine(a, b) {
+  a = normLine(a); b = normLine(b);
+  return !!(a && b && (a === b || a.indexOf(b) === 0 || b.indexOf(a) === 0));
+}
 function txtHTML(k) { return esc(TXT[k].full) + verTag(k); }
 
 var HINTS_KEY = "anaesthetic-physiology-scn-hints";
@@ -5714,6 +5736,77 @@ function announceFeedback(o) {
 }
 /* ===== Overdue key steps, escalating nudges, and Call the reg ===== */
 var MAX_REVIEWS = 8, MAX_ACTIONS = 24, REG_PENALTY = 0.5;
+/* After the last required step is due or done, the usual 8-review / 24-action cap applies from that point.
+   Until then the cap is a safety ceiling of (minimum path length + the same allowance), so a late step such as
+   amiodarone 150 mg after five shocks can still be reached. */
+function reqIds(scn) { return ((scn && scn.req) || []).map(function (r) { return r[0]; }); }
+function hasReq(scn, id) { return reqIds(scn).indexOf(id) >= 0; }
+function minPathReviews(scn) {
+  if (scn && scn.reviewCap) return scn.reviewCap;
+  if (hasReq(scn, "amio150")) return 5;
+  if (hasReq(scn, "amio300") || (hasReq(scn, "shock") && hasReq(scn, "adr"))) return 3;
+  if (hasReq(scn, "shock") || hasReq(scn, "cpr") || hasReq(scn, "adr")) return 2;
+  return 1;
+}
+function minPathActions(scn) {
+  if (scn && scn.actionCap) return scn.actionCap;
+  if (hasReq(scn, "amio150")) return 20;
+  if (hasReq(scn, "amio300")) return 12;
+  if (hasReq(scn, "shock") || hasReq(scn, "cpr")) return 10;
+  return 6;
+}
+function reviewSafetyCap(st) { return Math.max(MAX_REVIEWS, minPathReviews(st.scn) + MAX_REVIEWS); }
+function actionSafetyCap(st) { return Math.max(MAX_ACTIONS, minPathActions(st.scn) + MAX_ACTIONS); }
+function noteDueSteps(st) {
+  if (!st) return;
+  st.wasDue = st.wasDue || {};
+  (outstandingSteps(st) || []).forEach(function (d) { if (d && d.id) st.wasDue[d.id] = 1; });
+  if (allRequiredAvailable(st) && st.reviewsWhenReady == null) st.reviewsWhenReady = st.reviews || 0;
+  if (allRequiredAvailable(st) && st.actionsWhenReady == null) st.actionsWhenReady = st.actionN || 0;
+}
+function stepWasAvailable(st, id) {
+  if (!st || !id) return false;
+  if (st.did && st.did[id]) return true;
+  if (st.wasDue && st.wasDue[id]) return true;
+  if ((st.endedDue || []).some(function (d) { return d.id === id; })) return true;
+  return (outstandingSteps(st) || []).some(function (d) { return d.id === id; });
+}
+function allRequiredAvailable(st) {
+  var req = (st && st.scn && st.scn.req) || [];
+  if (!req.length) return true;
+  return req.every(function (r) { return stepWasAvailable(st, r[0]); });
+}
+function shouldCapReviews(st) {
+  if ((st.reviews || 0) >= reviewSafetyCap(st)) return true;
+  if (allRequiredAvailable(st) && st.reviewsWhenReady != null) {
+    return (st.reviews || 0) >= st.reviewsWhenReady + MAX_REVIEWS;
+  }
+  return false;
+}
+function shouldCapActions(st) {
+  if ((st.actionN || 0) >= actionSafetyCap(st)) return true;
+  if (allRequiredAvailable(st) && st.actionsWhenReady != null) {
+    return (st.actionN || 0) >= st.actionsWhenReady + MAX_ACTIONS;
+  }
+  return false;
+}
+function classifyReqSteps(st) {
+  var missed = [], notReached = [], seen = {};
+  noteDueSteps(st);
+  ((st.scn && st.scn.req) || []).forEach(function (r) {
+    if (st.did && st.did[r[0]]) return;
+    seen[r[0]] = 1;
+    if (stepWasAvailable(st, r[0])) missed.push(r);
+    else notReached.push(r);
+  });
+  (st.endedDue || []).forEach(function (d) {
+    if (!d || !d.id || seen[d.id] || (st.did && st.did[d.id])) return;
+    seen[d.id] = 1;
+    missed.push([d.id, d.name, d.src, d.guideline]);
+  });
+  return { missed: missed, notReached: notReached };
+}
+
 var CYCLE_CHECK = { s1_check: 1, s1_checkNoDrugs: 1, s1_checkOrganised: 1, s2_check: 1, s2_checkAsys: 1, s2_checkOrganised: 1 };
 
 function dueItem(id, name, category, reg, src, guideline) {
@@ -5805,6 +5898,7 @@ function applyReview(a, o) {
   else if (o.forceReview) { /* skip time can trigger an overdue review without counting as an action */ }
   else return o;
   var due = outstandingSteps(SIM);
+  noteDueSteps(SIM);
   var review = isCycleCheck(o) || !!o.forceReview || (a === "assess" && o.keys && o.keys[0] === "a_assessAgain");
   if (!review && due.length && SIM.scn.idleNudge) {
     SIM.idleSinceDue = (SIM.idleSinceDue || 0) + 1;
@@ -5841,7 +5935,9 @@ function applyReview(a, o) {
         return o;
       }
     }
-    if (!o.end && SIM.reviews >= MAX_REVIEWS) {
+    noteDueSteps(SIM);
+    due = outstandingSteps(SIM);
+    if (!o.end && shouldCapReviews(SIM)) {
       o.keys = o.keys.concat("n_capEnd");
       o.nudge = "cap";
       o.nudgeText = "Scenario ended: too many cycles without a resolution.";
@@ -5852,7 +5948,8 @@ function applyReview(a, o) {
       if (due.length) SIM.endedDue = due;
     }
   }
-  if (!o.end && SIM.actionN >= MAX_ACTIONS) {
+  noteDueSteps(SIM);
+  if (!o.end && shouldCapActions(SIM)) {
     o.keys = o.keys.concat("n_capEnd");
     o.nudge = "cap";
     o.nudgeText = "Scenario ended: too many cycles without a resolution.";
@@ -5860,6 +5957,7 @@ function applyReview(a, o) {
     o.v = "bad";
     o.end = true;
     o.endReason = "cap";
+    due = outstandingSteps(SIM);
     if (due.length) SIM.endedDue = due;
   }
   return o;
@@ -5908,7 +6006,7 @@ function renderScnChooser() {
 function startScenario(id, random) {
   if (typeof clearAskPending === "function") clearAskPending();
   var s = SCN[id]; lastScn = id;
-  SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false };
+  SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false, wasDue: {}, reviewsWhenReady: null, actionsWhenReady: null };
   if (typeof initScenarioExtras === "function") initScenarioExtras(SIM);
   if (typeof renderPending === "function") renderPending();
   document.querySelectorAll("#scnGrid .scn-card").forEach(function (b) { b.setAttribute("aria-pressed", !random && b.dataset.id === id ? "true" : "false"); });
@@ -5995,6 +6093,7 @@ function doAction(a) {
     var so = O("info", "n_skipTime", { event: "Simulated time advanced by 1 minute.", notAction: true });
     so.label = "Skip time";
     SIM.clock += 60;
+    noteDueSteps(SIM);
     if (outstandingSteps(SIM).length) {
       SIM.idleSinceDue = (SIM.idleSinceDue || 0) + 1;
       if (SIM.idleSinceDue >= 3) {
@@ -6141,42 +6240,71 @@ function finishScenario(completed, reason) {
   }
   syncScnBanner();
 }
+function debriefReqItem(s, r, kind) {
+  var label = kind === "missed" ? "Missed" : "Not reached";
+  var reqI = -1;
+  (s.req || []).forEach(function (x, i) { if (x[0] === r[0]) reqI = i; });
+  var g = r[3] || "", sk = r[2], src = (sk && SRC[sk]) ? SRC[sk] : "";
+  var quotes = "", tag = "";
+  if (reqI >= 0) {
+    var rk = "req:" + s.id + ":" + reqI;
+    tag = verTag(rk);
+    quotes = verQuotes(rk);
+  }
+  if (!quotes && src) quotes = esc(src);
+  var extra = kind === "notReached" ? "<p>This step was not yet due when the case ended, so it is not marked as missed.</p>" : "";
+  return "<li class='db-item db-bad'><p class='db-head'><span class='predict-mark' aria-hidden='true'>✗</span><span><strong>" + label + ":</strong> " + esc(r[1]) + tag + "</span></p>" + extra + (g ? "<p class='scn-src'><strong>Guideline step:</strong> " + esc(g) + "</p>" : "") + sourceLinesBlock(quotes) + "</li>";
+}
+function debriefEntryBody(l) {
+  var k = l.o.keys || [];
+  var parts = [], seen = {}, verdict = l.o.verdictText || "";
+  function add(html) {
+    if (!html) return;
+    var n = normLine(html);
+    if (!n || seen[n] || sameLine(n, verdict)) return;
+    seen[n] = 1;
+    parts.push(html);
+  }
+  if (l.o.isReg) {
+    add("<p>" + esc(l.o.regLine || "") + "</p>");
+    return parts.join("");
+  }
+  k.forEach(function (kk) {
+    if (kk === "n_capEnd" || kk === "n_dueEnd" || kk === "n_due1" || kk === "n_due2") return;
+    if (TXT[kk]) add("<p>" + txtHTML(kk) + "</p>");
+  });
+  if (l.o.nudgeText && l.o.nudge) add("<p>" + esc(l.o.nudgeText) + "</p>");
+  return parts.join("");
+}
 function showDebrief() {
   var s = SIM.scn, acts = SIM.log.filter(function (l) { return l.o; });
   var counted = acts.filter(function (l) { return l.o.v !== "info"; });
   var raw = counted.reduce(function (n, l) { return n + (l.o.v === "ok" ? 1 : l.o.v === "part" ? 0.5 : 0); }, 0);
   var regN = SIM.regCalls || 0;
   var pts = Math.max(0, raw - REG_PENALTY * regN);
-  var missed = s.req.filter(function (r) { return !SIM.did[r[0]]; });
-  var seenMiss = {};
-  missed.forEach(function (r) { seenMiss[r[0]] = 1; });
-  (SIM.endedDue || []).forEach(function (d) {
-    if (!seenMiss[d.id] && !SIM.did[d.id]) { missed.push([d.id, d.name, d.src, d.guideline]); seenMiss[d.id] = 1; }
-  });
+  var classified = classifyReqSteps(SIM);
+  var missed = classified.missed, notReached = classified.notReached;
   var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
   var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
-  html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct scores 1, partly right 0.5, not quite 0; noted actions are not scored. Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed at the end." : "") + "</p>";
+  html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct scores 1, partly right 0.5, not quite 0; noted actions are not scored. Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed at the end." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
   html += "<ol class='debrief-list'>" + acts.map(function (l) {
     var k = l.o.keys || [];
-    var body = l.o.isReg ? ("<p>" + esc(l.o.regLine || "") + "</p>") : (k.map(function (kk) { return TXT[kk] ? "<p>" + txtHTML(kk) + "</p>" : ""; }).join("") + (l.o.nudgeText && l.o.nudge ? "<p>" + esc(l.o.nudgeText) + "</p>" : ""));
+    var body = debriefEntryBody(l);
     var gk = k.length ? k[k.length - 1] : "", i;
     for (i = k.length - 1; i >= 0; i--) if (TXT[k[i]] && TXT[k[i]].guideline) { gk = k[i]; break; }
-    var srcBlock = (!l.o.isReg && gk && TXT[gk] && TXT[gk].guideline) ? ("<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[gk].guideline) + "</p><p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(gk) + "</p>") : "";
+    var srcBlock = "";
+    if (!l.o.isReg && gk && TXT[gk] && TXT[gk].guideline) {
+      srcBlock = "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[gk].guideline) + "</p>" + sourceLinesBlock(srcHTML(gk));
+    } else if (!l.o.isReg && gk) {
+      srcBlock = sourceLinesBlock(srcHTML(gk));
+    }
     return "<li class='db-item db-" + l.o.v + "'><p class='db-head'><span class='predict-mark' aria-hidden='true'>" + VERD[l.o.v][0] + "</span><span><strong>" + (l.o.verdictText || VERD[l.o.v][1]) + "</strong> · " + mmss(l.t) + " · " + esc(l.text) + "</span></p>" +
       body +
       (l.o.phys ? "<p class='db-phys'><strong>Physiology:</strong> " + esc(PHYS[l.o.phys]) + "</p>" : "") +
       srcBlock + "</li>";
   }).join("") + "</ol>";
-  if (missed.length) html += "<h3 class='viva-group'>Missed steps</h3><ul class='debrief-list'>" + missed.map(function (r) {
-    var reqI = -1;
-    s.req.forEach(function (x, i) { if (x[0] === r[0]) reqI = i; });
-    if (reqI >= 0) {
-      var rk = "req:" + s.id + ":" + reqI;
-      return "<li class='db-item db-bad'><p class='db-head'><span class='predict-mark' aria-hidden='true'>✗</span><span><strong>Missed:</strong> " + esc(r[1]) + verTag(rk) + "</span></p><p class='scn-src scn-quotes'><strong>Source lines:</strong> " + verQuotes(rk) + "</p></li>";
-    }
-    var g = r[3] || "", sk = r[2], src = (sk && SRC[sk]) ? SRC[sk] : "";
-    return "<li class='db-item db-bad'><p class='db-head'><span class='predict-mark' aria-hidden='true'>✗</span><span><strong>Missed:</strong> " + esc(r[1]) + "</span></p>" + (g ? "<p class='scn-src'><strong>Guideline step:</strong> " + esc(g) + "</p>" : "") + (src ? "<p class='scn-src scn-quotes'><strong>Source lines:</strong> " + esc(src) + "</p>" : "") + "</li>";
-  }).join("") + "</ul>";
+  if (missed.length) html += "<h3 class='viva-group'>Missed steps</h3><ul class='debrief-list'>" + missed.map(function (r) { return debriefReqItem(s, r, "missed"); }).join("") + "</ul>";
+  if (notReached.length) html += "<h3 class='viva-group'>Not reached</h3><ul class='debrief-list'>" + notReached.map(function (r) { return debriefReqItem(s, r, "notReached"); }).join("") + "</ul>";
   if (s.extra) html += "<div class='panel-block trap'><h3>Teaching point</h3><p>" + txtHTML(s.extra) + "</p><p class='scn-src'><strong>Source:</strong> " + esc(srcOf(s.extra)) + "</p></div>";
   html += "<div class='predict-actions'>" + (SIM.random ? "<button type='button' id='scnAnother'>Another random scenario</button>" : "") + "<button type='button' id='scnRetry'" + (SIM.random ? " class='secondary'" : "") + ">Try this scenario again</button><button type='button' class='secondary' id='scnOther'>Choose another scenario</button></div>";
   $("scnDebrief").innerHTML = html;
@@ -6256,6 +6384,6 @@ $("scnReg").addEventListener("click", callReg);
   });
 })();
 syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; } };
+window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; } };
 </script>
 </body></html>
