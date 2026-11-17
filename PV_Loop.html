@@ -1,607 +1,239 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pressure–Volume Loop · Anaesthetic Physiology</title>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg:        #07090f;
-    --surface:   #0a0d17;
-    --border:    #141c2e;
-    --text:      #e2e8f0;
-    --muted:     #8a9db5;
-    --dim:       #4a6070;
-    --accent:    #60a5fa;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);zoom:1.25;
-    font-family: 'EB Garamond', Georgia, serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 32px 16px 48px;
-  }
-
-  /* ── Header ── */
-  header {
-    text-align: center;
-    margin-bottom: 28px;
-  }
-  .eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 4px;
-    color: #64748b; text-transform: uppercase;
-    margin-bottom: 6px; text-align: center;
-  }
-  header h1 {
-    font-size: clamp(24px, 5vw, 32px);
-    font-weight: 400;
-    letter-spacing: 1px;
-    color: #f1f5f9;
-    line-height: 1.2;
-  }
-  .subtitle {
-    font-size: 13px;
-    color: var(--muted);
-    margin-top: 6px;
-    font-style: italic;
-  }
-
-  /* ── Layout wrapper ── */
-  .layout {
-    width: 100%;
-    max-width: 900px;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  @media (min-width: 700px) {
-    .layout {
-      grid-template-columns: 1fr 320px;
-    }
-  }
-
-  /* ── Card ── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px;
-    transition: border-color 0.3s;
-  }
-  .card-title {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--dim);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-
-  /* ── Modifier buttons ── */
-  .mod-groups {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  .mod-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .mod-btn {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-family: 'EB Garamond', serif;
-    font-size: 12px;
-    min-width: 120px;
-    text-align: center;
-    cursor: pointer;
-    background: transparent;
-    border: 1.5px solid #1a2030;
-    color: var(--muted);
-    transition: all 0.2s;
-  }
-  .mod-btn:hover { border-color: #2a3a5a; color: #94a3b8; }
-  .mod-btn.active { /* set inline */ }
-
-  /* ── SVG wrap ── */
-  .svg-wrap {
-    background: #070a12;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px 10px 10px;
-    overflow: hidden;
-  }
-  #pvSvg { display: block; width: 100%; height: auto; }
-
-  /* ── Info card ── */
-  .info-highlight {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-  }
-  .info-desc {
-    font-size: 13px;
-    color: #b0bfcc;
-    line-height: 1.7;
-  }
-  .info-placeholder { font-size: 13px; color: var(--dim); line-height: 1.7; font-style: italic; }
-
-  /* ── Phase buttons ── */
-  .phase-btns {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    justify-content: center;
-    margin-bottom: 14px;
-  }
-  .phase-btn {
-    padding: 5px 12px;
-    border-radius: 8px;
-    font-family: 'EB Garamond', serif;
-    font-size: 12px;
-    cursor: pointer;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    color: var(--muted);
-    transition: all 0.2s;
-  }
-  .phase-btn:hover { color: #94a3b8; }
-
-  /* ── Key facts ── */
-  .key-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 5px 0;
-    border-bottom: 1px solid #0d1220;
-    font-size: 12px;
-    gap: 12px;
-  }
-  .key-row:last-child { border-bottom: none; }
-  .key-label { color: #8a9db5; flex-shrink: 0; }
-  .key-val { color: #5a7a9a; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-align: right; }
-
-  /* ── Stats strip ── */
-  .stats {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 16px;
-  }
-  .stat {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 14px;
-    text-align: center;
-    min-width: 80px;
-  }
-  .stat-val {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 16px;
-    color: var(--accent);
-  }
-  .stat-label {
-    font-size: 10px;
-    color: var(--dim);
-    margin-top: 2px;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  /* ── Footer ── */
-  footer {
-    margin-top: 40px; width: 100%; max-width: 900px;
-    border-top: 1px solid #141c2e; padding-top: 20px; text-align: center;
-  }
-  .footer-inner {
-    display: flex; flex-wrap: wrap; gap: 8px;
-    justify-content: center; align-items: center;
-  }
-  .footer-tag {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-    color: #60a5fa; background: #60a5fa14;
-    border: 1px solid #60a5fa33; padding: 3px 8px; border-radius: 20px;
-  }
-  .footer-dot { color: #1f2d40; font-size: 12px; }
-  .footer-title { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; font-style: normal; }
-  .footer-series { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #374151; font-style: normal; }
-  .footer-author { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #60a5fa99; }
-  .footer-system { font-family: 'EB Garamond', Georgia, serif; font-size: 13px; font-style: italic; color: #94a3b8; letter-spacing: 0.3px; }
-  .footer-sub    { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #4b5563; }
-  .footer-tool   { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; }
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-  header { animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) both; }
-  .mod-groups { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both; }
-  .stats { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s both; }
-  .layout { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) 0.2s both; }
-</style>
+<title>Pressure-Volume Loop · Physio Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/layout.css">
+<link rel="stylesheet" href="assets/pv-core.css">
+<link rel="stylesheet" href="assets/pv-tool.css">
+<script src="assets/theme.js"></script>
 </head>
 <body>
-
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;width:100%;max-width:900px;margin-left:auto;margin-right:auto;padding:0 16px">
-  <a href="index.html" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#475569;text-decoration:none;border:1px solid #1e293b;padding:5px 14px;border-radius:20px;transition:all 0.2s;display:flex;align-items:center;gap:6px" onmouseover="this.style.borderColor='#60a5fa';this.style.color='#60a5fa'" onmouseout="this.style.borderColor='#1e293b';this.style.color='#475569'">&#8592; Home</a>
-</div>
-<header>
-  <div class="eyebrow">Cardiovascular · Physiology</div>
-  <h1>Pressure–Volume Loop</h1>
-  <p class="subtitle">Tap modifiers and phases &middot; Compare to normal (dashed)</p>
-</header>
-
-<!-- Modifier buttons -->
-<div class="mod-groups" id="modGroups"></div>
-
-<!-- Stats strip -->
-<div class="stats" id="statsStrip"></div>
-
-<div class="layout">
-  <!-- Left: SVG + phase buttons + modifier info -->
-  <div style="display:flex;flex-direction:column;gap:14px;">
-
-    <!-- Modifier explanation -->
-    <div class="card" id="modCard">
-      <div class="info-highlight" id="modHighlight"></div>
-      <div class="info-desc" id="modDesc"></div>
+<a class="skip-link" href="#tool">Skip to the loop</a>
+<div class="page page-wide page-tool">
+  <header class="site-header tool-view-header">
+    <div class="site-header-top">
+      <nav class="crumb" aria-label="Breadcrumb">
+        <a href="index.html">Home</a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <a href="cardiac.html">Cardiac</a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">Pressure-Volume Loop</span>
+      </nav>
+      <button type="button" id="colour-blind-toggle" class="cb-toggle" aria-pressed="false">
+        <span class="cb-switch" aria-hidden="true"></span>
+        <span class="cb-toggle-text">Colour-blind mode</span>
+      </button>
     </div>
+    <h1>Pressure–Volume Loop</h1>
+    <p class="subtitle">Width is stroke volume; area is external stroke work.</p>
+  </header>
 
-    <!-- SVG -->
-    <div class="svg-wrap">
-      <svg id="pvSvg" viewBox="0 0 362 338" xmlns="http://www.w3.org/2000/svg"></svg>
+  <main>
+    <section id="tool" aria-label="Interactive pressure-volume loop">
+      <div class="test-banner" id="testBanner">
+        <span class="test-banner-icon" aria-hidden="true">?</span>
+        <div class="test-banner-copy">
+          <h2 class="test-banner-title" id="predict-label">Test yourself!</h2>
+          <p class="test-banner-tag">Guess how the loop changes, then reveal.</p>
+        </div>
+        <p class="test-banner-score" id="testBannerScore" hidden></p>
+        <button type="button" class="test-banner-cta" id="predictToggle" role="switch" aria-checked="false" aria-pressed="false" aria-label="Start Test yourself">
+          <span class="test-cta-label">Start</span>
+        </button>
+      </div>
+
+      <div class="tool-controls">
+        <fieldset class="scen-panel">
+          <legend>Scenarios</legend>
+          <div class="scen-groups" id="scenarioGroups"></div>
+        </fieldset>
+        <div class="guide-panel">
+          <div class="try-this" role="group" aria-labelledby="try-heading">
+            <h2 id="try-heading" class="guide-heading">Try this</h2>
+            <ol class="try-list">
+              <li><button type="button" class="try-btn" data-try="afterload_up">Increase afterload: watch ESV rise and SV fall</button></li>
+              <li><button type="button" class="try-btn" data-try="preload_up">Increase preload: watch the loop widen and SV rise</button></li>
+              <li><button type="button" class="try-btn" data-try="contractility_up">Increase contractility: watch ESV fall and SV rise</button></li>
+              <li><button type="button" class="try-btn" data-try="mr">Mitral regurgitation: watch the left limb slant</button></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-hero">
+        <div class="tool-stage">
+          <div class="svg-wrap svg-wrap-lg graph-card">
+            <svg id="pvSvg" viewBox="0 0 528 476" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pv-title pv-desc"></svg>
+            <p id="pv-title" class="visually-hidden">Pressure-volume loop</p>
+            <p id="pv-desc" class="visually-hidden">Interactive left-ventricular pressure-volume loop. Click a phase, valve event, ESPVR or EDPVR line, or a scenario for a short explanation. A dashed normal loop is shown for comparison. Colour is never the only cue.</p>
+            <div class="graph-chrome">
+              <p class="loop-status" id="loopStatus" hidden></p>
+              <div class="live-readout" id="statsStrip" aria-label="Live loop values"></div>
+              <div class="phase-btns" id="phaseBtns" role="group" aria-label="Loop phases"></div>
+            </div>
+          </div>
+          <p class="disclaimer">Click a phase, a valve label, or the ESPVR or EDPVR line. Scenario values show the direction of change for teaching; they are not measured traces. The dashed loop is the schematic normal.</p>
+        </div>
+        <aside class="tool-side">
+          <div class="card explain-panel" id="scenarioPanel" aria-live="polite"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="revise-section" aria-labelledby="revise-heading">
+      <h2 id="revise-heading" class="revise-title">Revise this topic</h2>
+      <div class="revise-tabs" role="tablist" aria-label="Revision sections">
+        <button type="button" role="tab" id="tab-summary" aria-selected="true" aria-controls="panel-summary" tabindex="0">One-screen summary</button>
+        <button type="button" role="tab" id="tab-viva" aria-selected="false" aria-controls="panel-viva" tabindex="-1">Viva questions</button>
+        <button type="button" role="tab" id="tab-numbers" aria-selected="false" aria-controls="panel-numbers" tabindex="-1">Key numbers</button>
+      </div>
+      <div class="revise-panels">
+        <div id="panel-summary" class="revise-panel" role="tabpanel" aria-labelledby="tab-summary">
+          <div class="summary-grid">
+              <article class="card summary-card">
+                <div class="card-title">Normal LV (Guyton, Ch. 9)</div>
+                <ul>
+                  <li><strong>EDV</strong> about 110 to 120 mL · <strong>ESV</strong> about 40 to 50 mL · <strong>SV</strong> about 70 mL · <strong>EF</strong> usually about 60%</li>
+                  <li>AV opens at a little over <strong>80 mmHg</strong> · arterial systolic about <strong>120 mmHg</strong></li>
+                  <li>Loop <strong>width = SV</strong> · loop <strong>area = external stroke work</strong></li>
+                </ul>
+              </article>
+              <article class="card summary-card">
+                <div class="card-title">Three loop determinants</div>
+                <ul>
+                  <li><strong>Preload:</strong> rightward, usually wider (Frank-Starling: stretch improves actin-myosin overlap)</li>
+                  <li><strong>Afterload:</strong> taller and narrower; ESV rises along the same ESPVR; SV falls</li>
+                  <li><strong>Contractility:</strong> ESPVR steepens or flattens (Ees); sympathetic stimulation can as much as double force</li>
+                </ul>
+              </article>
+              <article class="card summary-card">
+                <div class="card-title">Energy and coupling</div>
+                <ul>
+                  <li><strong>PVA</strong> (loop area + potential energy) relates to oxygen use per beat</li>
+                  <li>Tension rises with <strong>pressure × chamber diameter</strong>, so a dilated ventricle is energetically costly</li>
+                  <li><strong>Ea = Pes / SV</strong> · coupling is Ea/Ees (often about 0.6 in humans; isolated-heart optimum often quoted as 1)</li>
+                </ul>
+              </article>
+              <article class="card summary-card">
+                <div class="card-title">Valve and failure patterns</div>
+                <ul>
+                  <li><strong>AS:</strong> tall, narrow, high LV pressure</li>
+                  <li><strong>MR:</strong> no vertical iso-contraction; large total SV</li>
+                  <li><strong>AR:</strong> no vertical iso-relaxation; low AV-opening pressure</li>
+                  <li><strong>MS:</strong> normal shape, small EDV and SV (filling limited)</li>
+                  <li><strong>Systolic failure:</strong> flat ESPVR, dilated, low EF</li>
+                  <li><strong>Diastolic dysfunction:</strong> steep EDPVR, high EDP, preserved EF</li>
+                </ul>
+              </article>
+            </div>
+        </div>
+        <div id="panel-viva" class="revise-panel" role="tabpanel" aria-labelledby="tab-viva" hidden>
+          <details class="hy-details">
+              <summary><span class="viva-q">1. What does the width of the LV pressure-volume loop represent, and what does the enclosed area represent?</span></summary>
+              <div class="details-body viva-a">Width is <strong>stroke volume</strong> (EDV − ESV). The enclosed area is <strong>external stroke work</strong> (volume-pressure work). Guyton and Hall, 12th ed., Ch. 9; Power and Kam, 4th ed., Ch. 26.</div>
+            </details>
+            <details class="hy-details">
+              <summary><span class="viva-q">2. How is contractility represented on the pressure-volume diagram, and is that relationship load-independent?</span></summary>
+              <div class="details-body viva-a">Contractility is represented by the <strong>slope of ESPVR (Ees)</strong>. Increased inotropy steepens ESPVR and usually shifts it up and left; reduced inotropy flattens it. Ees is a <strong>relatively</strong> load-independent measure of chamber contractility, not an absolute one, and ESPVR can lose linearity at extremes. Bastos et al., 2020.</div>
+            </details>
+            <details class="hy-details">
+              <summary><span class="viva-q">3. Define Ea and Ees, and state how they are coupled in the normal heart.</span></summary>
+              <div class="details-body viva-a"><strong>Ees</strong> is the slope of ESPVR (mmHg/mL). <strong>Ea</strong> is Pes / SV, a lumped afterload term. Their ratio, Ea/Ees, indexes ventricular-arterial coupling. Isolated-heart studies often find maximal stroke work near Ea = Ees. In humans, Ea/Ees commonly sits around 0.6 when work and efficiency are near optimal; values clearly above 1 imply mismatch. Bastos et al., 2020.</div>
+            </details>
+            <details class="hy-details">
+              <summary><span class="viva-q">4. Why are the isovolumetric phases drawn as vertical lines, and when would that be wrong?</span></summary>
+              <div class="details-body viva-a">They are vertical because <strong>both the mitral and aortic valves are closed</strong>, so LV volume is fixed while pressure rises or falls (Guyton’s periods of isovolumic contraction and relaxation). The left-hand limb is not vertical in <strong>mitral regurgitation</strong>. The right-hand limb is not vertical in <strong>aortic regurgitation</strong>.</div>
+            </details>
+            <details class="hy-details">
+              <summary><span class="viva-q">5. How does an isolated increase in preload change the loop, and what is the mechanism?</span></summary>
+              <div class="details-body viva-a">The loop shifts <strong>right and usually widens</strong>: EDV rises, and SV rises by the <strong>Frank-Starling</strong> mechanism if the ventricle is within physiological limits. Guyton’s explanation is that stretch brings actin and myosin to a more nearly optimal overlap, so force rises. End-systolic points still lie on the same ESPVR if contractility is unchanged.</div>
+            </details>
+            <details class="hy-details">
+              <summary><span class="viva-q">6. How is the pressure-volume area related to myocardial oxygen consumption?</span></summary>
+              <div class="details-body viva-a">Guyton states that oxygen consumption is directly related to the total shaded area in the volume-pressure diagram: <strong>external work plus a potential-energy term</strong> (the extra work that could be done if the ventricle emptied completely). Later work calls this the <strong>pressure-volume area (PVA)</strong> and finds a linear PVA–MVO2 relation at a given contractile state (Suga; Bastos et al., 2020). This is larger than the loop area alone.</div>
+            </details>
+        </div>
+        <div id="panel-numbers" class="revise-panel" role="tabpanel" aria-labelledby="tab-numbers" hidden>
+          <p class="hy-lead" style="margin-top:0;">Textbook teaching values for a typical adult, not echo reference ranges and not a substitute for measured values in a named person.</p>
+          <div class="nums-table-wrap">
+              <table class="nums-table">
+                <caption class="visually-hidden">Normal left-ventricular teaching values with sources</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Parameter</th>
+                    <th scope="col">Typical teaching value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                    <tr>
+                    <th scope="row">LV end-diastolic volume (EDV)</th>
+                    <td><div class="val">About 110 to 120 mL</div><div class="src">Guyton and Hall, 12th ed., Ch. 9</div></td>
+                  </tr>
+                                    <tr>
+                    <th scope="row">LV EDV and posture</th>
+                    <td><div class="val">About 120 mL standing; about 150 mL supine</div><div class="src">Levick, 6th ed. (Herring and Paterson)</div></td>
+                  </tr>
+                                    <tr>
+                    <th scope="row">LV end-systolic volume (ESV)</th>
+                    <td><div class="val">About 40 to 50 mL</div><div class="src">Guyton and Hall, 12th ed., Ch. 9</div></td>
+                  </tr>
+                                    <tr>
+                    <th scope="row">Stroke volume (SV = EDV − ESV)</th>
+                    <td><div class="val">About 70 mL</div><div class="src">Guyton and Hall, 12th ed., Ch. 9</div></td>
+                  </tr>
+                                    <tr>
+                    <th scope="row">Ejection fraction (EF = SV / EDV)</th>
+                    <td><div class="val">Usually about 60%</div><div class="src">Guyton and Hall, 12th ed., Ch. 9</div></td>
+                  </tr>
+                                    <tr>
+                    <th scope="row">LV end-diastolic pressure (LVEDP)</th>
+                    <td><div class="val">“Just a few mmHg”</div><div class="src">Levick, 6th ed., stated alongside the EDV figures above</div></td>
+                  </tr>
+                                    <tr>
+                    <th scope="row">LV / aortic systolic pressure</th>
+                    <td><div class="val">About 120 mmHg</div><div class="src">Guyton and Hall, 12th ed., Ch. 9 (arterial pressure rises to about 120 mmHg)</div></td>
+                  </tr>
+                                    <tr>
+                    <th scope="row">Aortic diastolic pressure (AV opening)</th>
+                    <td><div class="val">About 80 mmHg</div><div class="src">Guyton and Hall, 12th ed., Ch. 9: the aortic valve opens when LV pressure rises slightly above 80 mmHg; aortic diastolic pressure is usually about 80 mmHg</div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="nums-note">The loop uses a schematic normal of <strong>EDV 120 mL, ESV 50 mL, SV 70 mL (EF 58%)</strong>, which sits inside Guyton’s ranges (EF 70/120 is about 58%, and Guyton says EF is usually about 60%).</p>
+        </div>
+      </div>
+      <details class="revise-sources">
+        <summary>Sources</summary>
+        <div class="details-body">
+          <ul class="source-list">
+              <li>Guyton AC, Hall JE. <cite>Guyton and Hall Textbook of Medical Physiology</cite>. 12th ed. Chapter 9.</li>
+              <li>Herring N, Paterson DJ. <cite>Levick’s Introduction to Cardiovascular Physiology</cite>. 6th ed.</li>
+              <li>Kam P, Power I. <cite>Principles of Physiology for the Anaesthetist</cite>. 4th ed. Chapter 26 (qualitative points only).</li>
+              <li>Bastos MB, Burkhoff D, Maly J, et al. <cite>Eur Heart J</cite> 2020;41:1286-1297.</li>
+              <li>NICE NG106 (updated 3 September 2025), used only for the clinical labels HFrEF and HFpEF.</li>
+            </ul>
+            <p class="caveat">The same source limits apply as on the core physiology page: Ganong, Boron, Pinnock, and a Power and Kam numerical example were not used for figures. Scenario coordinates are teaching schematics.</p>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-left">
+      <span>Dr Ed Kim</span>
+      <span class="footer-dot">·</span>
+      <span>Physio Lab</span>
     </div>
-
-    <!-- Phase buttons -->
-    <div class="phase-btns" id="phaseBtns"></div>
-
-    <!-- Phase explanation -->
-    <div class="card" id="phaseCard">
-      <div class="info-placeholder">Tap a phase above - or click a segment on the loop - to see what's happening at that point in the cardiac cycle.</div>
-    </div>
-
-  </div>
-
-  <!-- Right: Key relationships -->
-  <div style="display:flex;flex-direction:column;gap:14px;">
-    <div class="card">
-      <div class="card-title">Key Relationships</div>
-      <div class="key-row"><span class="key-label">Stroke Volume</span><span class="key-val">EDV − ESV</span></div>
-      <div class="key-row"><span class="key-label">Preload</span><span class="key-val">= EDV</span></div>
-      <div class="key-row"><span class="key-label">↑ Afterload</span><span class="key-val">↑ ESV, taller loop</span></div>
-      <div class="key-row"><span class="key-label">Contractility</span><span class="key-val">Slope of ESPVR</span></div>
-      <div class="key-row"><span class="key-label">Compliance</span><span class="key-val">Slope of EDPVR</span></div>
-      <div class="key-row"><span class="key-label">Ejection shape</span><span class="key-val">Arch - peak mid-eject</span></div>
-      <div class="key-row"><span class="key-label">Loop area</span><span class="key-val">= Stroke work</span></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Valve Events</div>
-      <div class="key-row"><span class="key-label" style="color:#4ade80">● MV opens</span><span class="key-val">Start of filling (ESV)</span></div>
-      <div class="key-row"><span class="key-label" style="color:#facc15">● MV closes</span><span class="key-val">Start of ISO contraction</span></div>
-      <div class="key-row"><span class="key-label" style="color:#f87171">● AV opens</span><span class="key-val">~80 mmHg aortic DBP</span></div>
-      <div class="key-row"><span class="key-label" style="color:#818cf8">● AV closes</span><span class="key-val">ESP - start of ISO relax</span></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Clinical Correlation</div>
-      <div class="key-row"><span class="key-label">↑ Preload</span><span class="key-val">Fluids, pregnancy</span></div>
-      <div class="key-row"><span class="key-label">↓ Preload</span><span class="key-val">Haemorrhage, diuretics</span></div>
-      <div class="key-row"><span class="key-label">↑ Afterload</span><span class="key-val">HTN, aortic stenosis</span></div>
-      <div class="key-row"><span class="key-label">↓ Afterload</span><span class="key-val">Propofol, GTN, sepsis</span></div>
-      <div class="key-row"><span class="key-label">↑ Inotropy</span><span class="key-val">Adrenaline, dobutamine</span></div>
-      <div class="key-row"><span class="key-label">↓ Inotropy</span><span class="key-val">Volatiles, β-blockers</span></div>
-    </div>
-  </div>
-</div>
-
-<footer>
-  <div class="footer-inner">
     <span class="footer-tag">Built for teaching</span>
-    <span class="footer-dot">·</span>
-    <span class="footer-system">Cardiovascular</span>
-    <span class="footer-dot">·</span>
-    <span class="footer-sub">Physiology</span>
-    <span class="footer-dot">·</span>
-    <span class="footer-tool">Interactive PV Loop</span>
-    <span class="footer-dot">·</span>
-    <span class="footer-author">Developed by Dr Ed Kim</span>
-  </div>
-</footer>
-
-<script>
-const PHASES = [
-  { id:"filling",       label:"① Filling (Diastole)",          color:"#4ade80", highlight:"EDPVR - exponential compliance curve", description:"Mitral valve opens. The ventricle is compliant early - large volume increase with little pressure rise (flat). As it fills, it stiffens - pressure rises more steeply toward EDV. This exponential curve is the EDPVR. EDV = PRELOAD." },
-  { id:"isocontraction",label:"② Isovolumetric Contraction",    color:"#facc15", highlight:"Vertical - no volume change",           description:"Mitral closes, aortic still closed. Both valves shut - ventricle contracts hard, pressure rises steeply. Volume cannot change. Ends when pressure exceeds aortic diastolic pressure (~80 mmHg) and the aortic valve opens." },
-  { id:"ejection",      label:"③ Ejection (Systole)",           color:"#f87171", highlight:"Arch shape - pressure peaks then falls",description:"Aortic valve opens. Blood ejects - volume falls. Pressure first rises to a PEAK (the dome/arch), then falls as the ventricle empties and weakens. This arch shape is key. Ends at ESV when aortic valve closes. SV = EDV − ESV." },
-  { id:"isorelaxation", label:"④ Isovolumetric Relaxation",     color:"#818cf8", highlight:"Vertical - no volume change",           description:"Aortic valve closes at ESP. Ventricle relaxes - pressure drops rapidly back to near zero. Volume stays fixed. Ends when pressure drops below left atrial pressure and mitral valve opens." }
-];
-
-const MODIFIERS = [
-  { id:"normal",           label:"Normal",         color:"#60a5fa", highlight:"Baseline reference loop",                          description:"Normal healthy ventricle. EDV ~120 mL, ESV ~50 mL, stroke volume ~70 mL. The loop has a clear arch top, curved EDPVR filling, and vertical isovolumetric phases. All subsequent loops are compared to this." },
-  { id:"preload_up",       label:"↑ Preload",       color:"#4ade80", highlight:"Loop shifts RIGHT - more filling, more output",    description:"More venous return fills the ventricle to a higher EDV. By Frank-Starling, the stretched fibres contract more forcefully - ESV stays similar but SV increases. The loop widens rightward. Seen with: IV fluids, lying flat, exercise, pregnancy." },
-  { id:"preload_down",     label:"↓ Preload",       color:"#86efac", highlight:"Loop shifts LEFT - less filling, less output",     description:"Less venous return means lower EDV. The ventricle has less to eject - stroke volume falls and the loop narrows and shifts left. Seen with: haemorrhage, dehydration, vasodilation (e.g. spinal anaesthesia), diuretics, sitting upright." },
-  { id:"afterload_up",     label:"↑ Afterload",     color:"#f97316", highlight:"Loop becomes TALLER and NARROWER",                description:"Higher resistance means the aortic valve opens later (more pressure needed) and the ventricle can't empty as well - ESV rises. Stroke volume falls. The loop gets taller but narrower. Seen with: hypertension, aortic stenosis, vasoconstrictors, hypothermia." },
-  { id:"afterload_down",   label:"↓ Afterload",     color:"#fdba74", highlight:"Loop becomes SHORTER and WIDER",                  description:"Lower resistance means the aortic valve opens earlier and the ventricle empties more - ESV falls, SV increases. Loop shortens and widens. Seen with: vasodilators (e.g. propofol, GTN, ACE inhibitors), sepsis, spinal anaesthesia." },
-  { id:"contractility_up", label:"↑ Contractility", color:"#a78bfa", highlight:"ESPVR steepens - ventricle squeezes harder",      description:"Increased intrinsic squeeze - ESV falls significantly as the ventricle empties more completely. SV increases without any change in preload or afterload. The ESPVR slope steepens. Seen with: adrenaline, noradrenaline, digoxin, dobutamine, exercise (sympathetic drive)." },
-  { id:"contractility_down",label:"↓ Contractility",color:"#c4b5fd", highlight:"ESPVR flattens - ventricle squeezes weakly",      description:"Reduced intrinsic squeeze - ESV rises as the ventricle can't empty properly. SV falls. The ESPVR slope flattens. Seen with: volatile anaesthetic agents, propofol, beta-blockers, heart failure, myocardial infarction, acidosis, hypoxia." },
-  { id:"heart_failure",    label:"Heart Failure",   color:"#f87171", highlight:"Dilated, weak loop - high filling pressure, low output", description:"The failing ventricle dilates to compensate (high EDV) but can't eject effectively (high ESV). Stroke volume is small. Filling pressures are high (steep EDPVR) - this causes pulmonary oedema. The loop is small, shifted right, and the arch is flattened. Both contractility and compliance are impaired." },
-];
-
-const modifierGroups = [["normal"],["preload_up","preload_down"],["afterload_up","afterload_down"],["contractility_up","contractility_down"],["heart_failure"]];
-
-function getParams(mod) {
-  switch(mod) {
-    case "preload_up":         return { esv:52,  edv:155, esp:115, peakP:130, edp:12 };
-    case "preload_down":       return { esv:42,  edv:85,  esp:110, peakP:122, edp:5  };
-    case "afterload_up":       return { esv:80,  edv:120, esp:148, peakP:158, edp:8  };
-    case "afterload_down":     return { esv:35,  edv:120, esp:95,  peakP:108, edp:8  };
-    case "contractility_up":   return { esv:28,  edv:120, esp:132, peakP:148, edp:8  };
-    case "contractility_down": return { esv:75,  edv:125, esp:95,  peakP:108, edp:10 };
-    case "heart_failure":      return { esv:100, edv:170, esp:80,  peakP:90,  edp:24 };
-    default:                   return { esv:50,  edv:120, esp:118, peakP:132, edp:8  };
-  }
-}
-
-const W=330, H=280, volMin=20, volMax=210, presMin=0, presMax=195;
-const cx = v => ((v-volMin)/(volMax-volMin))*W;
-const cy = p => H - ((p-presMin)/(presMax-presMin))*H;
-
-function buildPaths(p) {
-  const {esv,edv,esp,peakP,edp} = p;
-  const x_esv=cx(esv), x_edv=cx(edv);
-  const y_esp=cy(esp), y_edp=cy(edp);
-  const y_aov=cy(80), y_base=cy(3), y_peak=cy(peakP);
-  const x_peak=cx(esv+(edv-esv)*0.37);
-  return {
-    fillPath:    `M ${x_esv} ${y_base} C ${cx(esv+(edv-esv)*0.65)} ${y_base}, ${x_edv} ${cy(edp*0.3)}, ${x_edv} ${y_edp}`,
-    isoConPath:  `M ${x_edv} ${y_edp} L ${x_edv} ${y_aov}`,
-    ejPath:      `M ${x_edv} ${y_aov} C ${cx(edv-(edv-esv)*0.15)} ${y_peak}, ${cx(esv+(edv-esv)*0.25)} ${y_peak}, ${x_esv} ${y_esp}`,
-    isoRelPath:  `M ${x_esv} ${y_esp} L ${x_esv} ${y_base}`,
-    fullPath:    `M ${x_esv} ${y_base} C ${cx(esv+(edv-esv)*0.65)} ${y_base}, ${x_edv} ${cy(edp*0.3)}, ${x_edv} ${y_edp} L ${x_edv} ${y_aov} C ${cx(edv-(edv-esv)*0.15)} ${y_peak}, ${cx(esv+(edv-esv)*0.25)} ${y_peak}, ${x_esv} ${y_esp} Z`,
-    x_esv, x_edv, y_esp, y_edp, y_aov, y_base, y_peak, x_peak
-  };
-}
-
-let activePhase = null;
-let modifier = "normal";
-
-const ANIM_KEYS = ["esv","edv","esp","peakP","edp"];
-let animFrom  = Object.assign({}, getParams("normal"));
-let animTo    = Object.assign({}, getParams("normal"));
-let animT     = 1.0;
-let animRAF   = null;
-let animStart = null;
-const ANIM_MS = 500;
-
-function easeInOut(t) { return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
-
-function animParams() {
-  if (animT >= 1.0) return Object.assign({}, animTo);
-  const e = easeInOut(animT);
-  const out = {};
-  // Round to integers so stats never show decimals
-  ANIM_KEYS.forEach(k => out[k] = Math.round(animFrom[k] + (animTo[k] - animFrom[k]) * e));
-  return out;
-}
-
-function triggerAnim(newModifier) {
-  animFrom  = animParams();
-  modifier  = newModifier;
-  animTo    = getParams(newModifier);
-  animT     = 0;
-  animStart = null;
-  if (animRAF) cancelAnimationFrame(animRAF);
-  function tick(ts) {
-    if (!animStart) animStart = ts;
-    animT = Math.min((ts - animStart) / ANIM_MS, 1.0);
-    renderSVG();
-    if (animT < 1.0) animRAF = requestAnimationFrame(tick);
-    else animT = 1.0;
-  }
-  animRAF = requestAnimationFrame(tick);
-}
-
-const NS = "http://www.w3.org/2000/svg";
-function el(tag, attrs, parent) {
-  const e = document.createElementNS(NS, tag);
-  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
-  if(parent) parent.appendChild(e);
-  return e;
-}
-function txt(tag, attrs, text, parent) {
-  const e = el(tag, attrs, parent);
-  e.textContent = text;
-  return e;
-}
-
-function renderSVG() {
-  const svg = document.getElementById("pvSvg");
-  svg.innerHTML = "";
-  const g = el("g", {transform:"translate(28,26)"}, svg);
-
-  const params = animParams();
-  const normalParams = getParams("normal");
-  const paths = buildPaths(params);
-  const normalPaths = buildPaths(normalParams);
-  const showGhost = modifier !== "normal";
-  const modInfo = MODIFIERS.find(m => m.id === modifier);
-  const sv = params.edv - params.esv;
-  const ef = Math.round((sv / params.edv) * 100);
-  const svMidX = paths.x_esv + (paths.x_edv - paths.x_esv) / 2;
-
-  // Grid lines
-  [25,50,75,100,125,150,175].forEach(p => {
-    const y = cy(p);
-    el("line",{x1:0,y1:y,x2:W,y2:y,stroke:"#0d1220","stroke-width":1},g);
-    txt("text",{x:-5,y:y+3,fill:"#4a6878","font-size":8,"text-anchor":"end","font-family":"JetBrains Mono, monospace"},String(p),g);
-  });
-  [40,60,80,100,120,140,160,180].forEach(v => {
-    const x = cx(v);
-    el("line",{x1:x,y1:0,x2:x,y2:H,stroke:"#0d1220","stroke-width":1},g);
-    txt("text",{x:x,y:H+13,fill:"#4a6878","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},String(v),g);
-  });
-  txt("text",{x:W/2,y:H+26,fill:"#5a7a90","font-size":9,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"Volume (mL)",g);
-  const yLbl = txt("text",{x:-(H/2),y:-18,fill:"#5a7a90","font-size":9,"text-anchor":"middle","transform":"rotate(-90)","font-family":"JetBrains Mono, monospace"},"Pressure (mmHg)",g);
-
-  // EDPVR - dynamic: shifts right with EDV, steepens with higher EDP (e.g. heart failure)
-  // Curve starts at vol~20, pressure~1 and ends at (edv, edp)
-  // Steepness controlled by edp: higher edp = curve rises earlier
-  const edpvrStartVol = 20;
-  const edpvrMidVol   = params.edv * 0.55;  // inflection shifts with EDV
-  const edpvrMidP     = params.edp * 0.15;  // stays low until near EDV
-  const edpvrPath = `M ${cx(edpvrStartVol)} ${cy(1)} C ${cx(edpvrMidVol)} ${cy(edpvrMidP)}, ${cx(params.edv * 0.85)} ${cy(params.edp * 0.4)}, ${cx(params.edv + 20)} ${cy(params.edp + (params.edv > 140 ? 18 : 8))}`;
-  el("path",{d:edpvrPath,fill:"none",stroke:"#1a3a2a","stroke-width":1.2,"stroke-dasharray":"4,3"},g);
-
-  // ESPVR
-  const espvrSlope = modifier==="heart_failure"?0.9:modifier==="contractility_up"?3.0:modifier==="contractility_down"?1.1:2.0;
-  const ex1=cx(params.esv-18), ey1=cy(params.esp-espvrSlope*18);
-  const ex2=cx(params.esv+22), ey2=cy(params.esp+espvrSlope*22);
-  el("line",{x1:ex1,y1:ey1,x2:ex2,y2:ey2,stroke:"#1a2a4a","stroke-width":1.2,"stroke-dasharray":"4,3"},g);
-
-  // Ghost loop
-  if (showGhost) el("path",{d:normalPaths.fullPath,fill:"none",stroke:"#1e3050","stroke-width":1.5,"stroke-dasharray":"5,3",opacity:0.6},g);
-
-  // Phase paths
-  const phaseColors  = {filling:"#4ade80",isocontraction:"#facc15",ejection:"#f87171",isorelaxation:"#818cf8"};
-  const phasePaths   = {filling:paths.fillPath,isocontraction:paths.isoConPath,ejection:paths.ejPath,isorelaxation:paths.isoRelPath};
-  PHASES.forEach(phase => {
-    const isActive = activePhase === phase.id;
-    const pathEl = el("path",{
-      d: phasePaths[phase.id], fill:"none", stroke: phaseColors[phase.id],
-      "stroke-width": isActive ? 4 : 2.4, "stroke-linecap":"round",
-      opacity: isActive ? 1 : (activePhase ? 0.15 : 0.88),
-      style: "cursor:pointer"
-    },g);
-    pathEl.addEventListener("click", () => { activePhase = activePhase===phase.id?null:phase.id; renderAll(); });
-  });
-
-  // Valve dots + labels
-  [
-    {x:paths.x_esv, y:paths.y_base,  r:3.5, fill:"#4ade80", tx:6,  ty:-5, label:"MV opens",        anchor:"start"},
-    {x:paths.x_edv, y:paths.y_edp,   r:3.5, fill:"#facc15", tx:6,  ty:-5, label:"MV closes",       anchor:"start"},
-    {x:paths.x_edv, y:paths.y_aov,   r:3.5, fill:"#f87171", tx:6,  ty:-5, label:"AV opens",        anchor:"start"},
-    {x:paths.x_esv, y:paths.y_esp,   r:4,   fill:modInfo.color, tx: paths.x_esv < 60 ? 8 : -7, ty:-1, label:"AV closes (ESP)", anchor: paths.x_esv < 60 ? "start" : "end"},
-    {x:paths.x_peak,y:paths.y_peak + 7,    r:3.5, fill:"#f87171", tx:10, ty:-5, label:"Peak P",          anchor:"start",  opacity:1.0,  textOpacity:1.0},
-  ].forEach(d => {
-    el("circle",{cx:d.x,cy:d.y,r:d.r,fill:d.fill,opacity:d.opacity||1},g);
-    const lfs = d.label==="Peak P" ? 9 : 7;
-    txt("text",{x:d.x+d.tx,y:d.y+d.ty,fill:d.fill,"font-size":lfs,"font-weight":d.label==="Peak P"?"500":"normal","text-anchor":d.anchor,"font-family":"JetBrains Mono, monospace",opacity:d.textOpacity||1},d.label,g);
-  });
-
-  txt("text",{x:cx(params.edv + 22),y:cy(params.edp + (params.edv > 140 ? 18 : 8) + 6),fill:"#3a8a5a","font-size":9,"font-weight":"500","font-style":"italic","font-family":"JetBrains Mono, monospace"},"EDPVR",g);
-  txt("text",{x:ex2+5,y:ey2,fill:"#4a6ab0","font-size":9,"font-weight":"500","font-style":"italic","font-family":"JetBrains Mono, monospace"},"ESPVR",g);
-
-  // ESV / EDV x-axis labels
-  txt("text",{x:paths.x_esv,y:H+13,fill:"#5a7a90","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"ESV",g);
-  txt("text",{x:paths.x_edv,y:H+13,fill:"#5a7a90","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},"EDV",g);
-
-  // SV bracket
-  if (!activePhase) {
-    el("line",{x1:paths.x_esv,y1:H-9,x2:paths.x_edv,y2:H-9,stroke:"#60a5fa","stroke-width":1},g);
-    el("line",{x1:paths.x_esv,y1:H-14,x2:paths.x_esv,y2:H-4,stroke:"#60a5fa","stroke-width":1},g);
-    el("line",{x1:paths.x_edv,y1:H-14,x2:paths.x_edv,y2:H-4,stroke:"#60a5fa","stroke-width":1},g);
-    txt("text",{x:svMidX,y:H-12,fill:"#60a5fa","font-size":8,"text-anchor":"middle","font-family":"JetBrains Mono, monospace"},`SV = ${sv} mL`,g);
-  }
-
-  // Stats strip
-  const stats = document.getElementById("statsStrip");
-  stats.innerHTML = "";
-  [{label:"EDV",val:params.edv+" mL"},{label:"ESV",val:params.esv+" mL"},{label:"SV",val:sv+" mL"},{label:"EF",val:ef+"%"},{label:"Peak P",val:params.peakP+" mmHg"},{label:"ESP",val:params.esp+" mmHg"}]
-  .forEach(s => {
-    const d = document.createElement("div");
-    d.className = "stat";
-    d.innerHTML = `<div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div>`;
-    stats.appendChild(d);
-  });
-}
-
-function renderModCard() {
-  const modInfo = MODIFIERS.find(m => m.id === modifier);
-  const card = document.getElementById("modCard");
-  card.style.borderColor = modInfo.color + "44";
-  document.getElementById("modHighlight").style.color = modInfo.color;
-  document.getElementById("modHighlight").textContent = modInfo.highlight;
-  document.getElementById("modDesc").textContent = modInfo.description;
-}
-
-function renderPhaseCard() {
-  const phase = PHASES.find(p => p.id === activePhase);
-  const card = document.getElementById("phaseCard");
-  if (phase) {
-    card.style.borderColor = phase.color + "44";
-    card.innerHTML = `<div class="info-highlight" style="color:${phase.color};">${phase.highlight}</div><div class="info-desc">${phase.description}</div>`;
-  } else {
-    card.style.borderColor = "#141c2e";
-    card.innerHTML = `<div class="info-placeholder">Tap a phase above - or click a segment on the loop - to see what's happening at that point in the cardiac cycle.</div>`;
-  }
-}
-
-function renderModButtons() {
-  const container = document.getElementById("modGroups");
-  container.innerHTML = "";
-  modifierGroups.forEach(group => {
-    const row = document.createElement("div");
-    row.className = "mod-row";
-    group.forEach(id => {
-      const m = MODIFIERS.find(x => x.id === id);
-      const btn = document.createElement("button");
-      btn.className = "mod-btn" + (modifier===id?" active":"");
-      btn.textContent = m.label;
-      if (modifier===id) {
-        btn.style.borderColor = m.color;
-        btn.style.background = m.color+"22";
-        btn.style.color = m.color;
-      }
-      btn.addEventListener("click", () => { if(modifier===id) return; activePhase=null; triggerAnim(id); renderModButtons(); renderModCard(); renderPhaseButtons(); renderPhaseCard(); });
-      row.appendChild(btn);
-    });
-    container.appendChild(row);
-  });
-}
-
-function renderPhaseButtons() {
-  const container = document.getElementById("phaseBtns");
-  container.innerHTML = "";
-  PHASES.forEach(p => {
-    const btn = document.createElement("button");
-    btn.className = "phase-btn";
-    btn.textContent = p.label;
-    if (activePhase===p.id) {
-      btn.style.borderColor = p.color;
-      btn.style.background = p.color+"18";
-      btn.style.color = p.color;
-    }
-    btn.addEventListener("click", () => { activePhase=activePhase===p.id?null:p.id; renderAll(); });
-    container.appendChild(btn);
-  });
-}
-
-function renderAll() {
-  renderModButtons();
-  renderModCard();
-  renderSVG();
-  renderPhaseButtons();
-  renderPhaseCard();
-}
-
-renderAll();
-</script>
+  </footer>
+</div>
+<script src="assets/pv-tool.js"></script>
 </body>
 </html>

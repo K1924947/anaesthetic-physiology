@@ -1,10 +1,8 @@
-# Anaesthetic Physiology — Interactive Teaching Tools
+# Physio Lab
 
-A collection of browser-based physiology visualisations built for doctors, trainees, and medical students. 
+Interactive physiology teaching tools built by Dr Ed Kim. No installation required: open any page in a browser.
 
-No installation required — open any file directly in a browser.
-
-**Site:** [Anaesthetic Physiology](https://k1924947.github.io/anaesthetic-physiology)
+**Site:** [Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
 
 ---
 
@@ -14,10 +12,11 @@ No installation required — open any file directly in a browser.
 
 An interactive cardiac PV loop exploring how the loop changes across physiological and pathological states.
 
-- Morphing between states: Normal, ↑/↓ Preload, ↑/↓ Afterload, ↑/↓ Contractility, Heart Failure
+- Morphing between states: Normal, increased/reduced preload, increased afterload, increased contractility, exercise, valve lesions, and ventricular failure
 - Clickable phase segments: Filling, Isovolumetric Contraction, Ejection, Isovolumetric Relaxation
-- Live readout: EDV, ESV, SV, EF, Peak P, ESP
-- EDPVR and ESPVR reference lines with ghost normal loop for comparison
+- Live readout: EDV, ESV, SV, EF, EDP
+- EDPVR and ESPVR reference lines with a ghost normal loop for comparison
+- Test yourself: guess how the loop changes, then reveal
 
 ---
 
@@ -27,14 +26,14 @@ An interactive arterial line trace showing how the waveform morphs across haemod
 
 - Clickable features: Upstroke, Peak SBP, Downslope, Dicrotic Notch, Diastolic Runoff, Trough DBP
 - Live readout: SBP, DBP, Pulse Pressure, MAP
-- States: Normal, ↑/↓ SVR, ↓ CO, Hypovolaemia, Stiff Aorta
+- States: Normal, increased/reduced SVR, reduced CO, Hypovolaemia, Stiff Aorta
 - PV Loop link panel, Key Relationships, and Clinical Pearl for each state
 
 ---
 
 ### Myocardial Infarction Timeline
 
-An interactive timeline of MI pathology from the moment of occlusion through to mature scar, designed around the Step 1 and anaesthetic exam syllabus.
+An interactive timeline of MI pathology from the moment of occlusion through to mature scar.
 
 - Eight time stages: 0–4h, 4–12h, 12–24h, 1–3d, 3–7d, 7–14d, 2wk–2mo, 2mo+
 - Cross-sectional LV diagram with infarct zone morphing through each stage
@@ -47,18 +46,18 @@ An interactive timeline of MI pathology from the moment of occlusion through to 
 
 ## Live Site
 
-[Anaesthetic Physiology](https://k1924947.github.io/anaesthetic-physiology) — main page
+[Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
 
----
+No login or download needed. Open directly in any browser:
 
-## Tools
-
-No login or download needed — open directly in any browser:
 - [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
 - [Arterial Waveform](https://k1924947.github.io/anaesthetic-physiology/Arterial_Waveform.html)
+- [Cardiac Action Potential](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Action_Potential.html)
+- [Cardiac Murmurs](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Murmurs.html)
+- [Heart Failure notes](https://k1924947.github.io/anaesthetic-physiology/HF_Notes.html)
 - [MI Timeline](https://k1924947.github.io/anaesthetic-physiology/MI_Timeline.html)
 
 ---
 
-Built for teaching · Anaesthetic Physiology Series  
+Built for teaching · Physio Lab  
 Developed by **Dr Ed Kim**
