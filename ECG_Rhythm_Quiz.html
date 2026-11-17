@@ -62,22 +62,11 @@ html[data-theme="colour-blind"] {
   .rp-row .scen-btn { min-height: 38px; }
   .ecg-controls .scen-panel { padding-bottom: 8px; }
 }
-.rp-row .scen-btn {
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  min-width: 0;
-  max-width: 100%;
-}
 @media (max-width: 899px) {
   .rp-sub { grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 6px; margin-bottom: 6px; }
   .rp-sub .scen-group-label { margin: 0; font-size: 14px; line-height: 1.2; padding-left: 6px; }
   .rp-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
   .rp-row .scen-btn { min-height: 40px; font-size: 13px; }
-}
-@media (max-width: 499px) {
-  .rp-sub { grid-template-columns: 1fr; }
-  .rp-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Strip stage */
@@ -239,6 +228,7 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .act-ff { grid-column: 1 / -1; border-style: dashed; }
 .verdict-glyph { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 2px solid currentColor; border-radius: 50%; font-size: 13px; font-weight: 700; margin-right: 6px; vertical-align: -4px; }
 .scn-fb { margin: 6px 0; }
+.scn-change { margin: 8px 0; padding: 8px 10px 8px 12px; border-left: 3px solid var(--text); background: var(--surface-2, var(--bg)); font-family: var(--font-sans); font-size: 15px; }
 .scn-src { font-size: 13px; margin: 8px 0 0; padding-left: 8px; border-left: 2px solid var(--border); overflow-wrap: anywhere; }
 .scn-log-scroll { max-height: 260px; overflow-y: auto; }
 .scn-log { list-style: none; margin: 0; padding: 0; font-size: 14px; }
@@ -2385,7 +2375,7 @@ var TXT = {
   a_atro: ["Atropine is not part of the cardiac arrest algorithm.", "ALS algorithm: drugs in arrest are adrenaline and, for VF/pVT, amiodarone", "noAtroArrest", 1],
   a_aden: ["Adenosine is for a tachycardia with a pulse (regular narrow, or suspected SVT with aberrancy in a stable patient), not cardiac arrest.", "Tachyarrhythmia algorithm, not ALS", "narrow", 1],
   a_vagal: ["Vagal manoeuvres are for a stable regular narrow complex tachycardia with a pulse, not cardiac arrest.", "Tachyarrhythmia algorithm, not ALS", "narrow", 1],
-  a_sync: ["The patient is pulseless. Synchronised cardioversion is for a tachyarrhythmia with a pulse. VF/pVT is a shockable cardiac arrest: give an unsynchronised shock.", "ALS: shockable rhythm, shock", "sync", 1],
+  a_sync: ["There is no pulse, so there is nothing to synchronise to. Synchronised cardioversion is for a tachyarrhythmia with a pulse. VF or pulseless VT is a shockable cardiac arrest: give an unsynchronised shock.", "ALS: shockable rhythm, unsynchronised shock", "sync", 1],
   a_pace: ["Pacing is not a step in the cardiac arrest algorithm; the bradyarrhythmia algorithm uses it for bradycardia with a pulse. RCUK notes that asystole with P waves is more likely to respond to pacing than true asystole.", "Bradyarrhythmia algorithm, not ALS", "pacing", 1],
   a_mg: ["Magnesium is not a drug in the cardiac arrest algorithm. The tachyarrhythmia algorithm uses it for polymorphic VT with QT prolongation.", "Tachyarrhythmia algorithm, not ALS", "tdp", 1],
   a_bicarb: ["Do not routinely give sodium bicarbonate in cardiac arrest.", "ALS: other drugs", "noRoutine", 1],
@@ -2493,8 +2483,8 @@ var TXT = {
   s5_noSed: ["Right treatment, but this patient is conscious: RCUK says conscious patients need careful anaesthesia or sedation before synchronised cardioversion.", "Tachyarrhythmia: consider sedation or anaesthesia if conscious", "sync", 1],
   s5_sync1: ["Synchronised shock 1 (120 to 150 J): VT persists. Repeat the synchronised shock, considering a stepwise increase in energy (up to 3 attempts).", "Tachyarrhythmia: synchronised shock, up to 3 attempts", "sync", 1],
   s5_sync2: ["Synchronised shock 2: sinus rhythm with a better BP. Continue the ABCDE assessment and record a 12-lead ECG; seek expert help if the tachyarrhythmia or life-threatening features persist.", "Tachyarrhythmia: synchronised shock, up to 3 attempts", "sync", 1],
-  s5_unsync: ["Unsynchronised shock given to a patient with a pulse. In this simulation it has caused VF: the patient is now in cardiac arrest. Defibrillate (unsynchronised) and follow ALS.", "Tachyarrhythmia: shock must be synchronised", "sync", 1],
-  s5_arrestShock: ["VF: unsynchronised shock delivered. Sinus rhythm with a pulse has returned.", "ALS: shockable, shock", "shock", 1],
+  s5_unsync: ["The patient had a pulse, so a synchronised shock was needed. An unsynchronised shock can land on the T wave and has caused VF. There is now no pulse: this is a shockable cardiac arrest, so the next shock should be unsynchronised.", "Tachyarrhythmia: shock must be synchronised", "sync", 1],
+  s5_arrestShock: ["There is now no pulse, so unsynchronised defibrillation is correct. Shock delivered. Sinus rhythm with a pulse has returned.", "ALS: shockable, unsynchronised shock", "shock", 1],
   s5_arrestCPR: ["Starting CPR is right in an arrest, but with VF just triggered on a monitored patient and pads already on, defibrillate first.", "ALS: early defibrillation", "alsPriority", 1],
   s5_amio: ["With life-threatening features, electrical cardioversion comes first. Amiodarone 300 mg over 10 to 20 min is for when up to 3 synchronised shocks fail.", "Tachyarrhythmia: unstable, synchronised shock first", "tachy", 1],
   s5_aden: ["Regular broad complex tachycardia is treated as VT. Adenosine is considered only for suspected SVT with aberrancy in a stable patient; this patient is unstable.", "Tachyarrhythmia: broad regular, treat as VT", "broad", 1],
@@ -2588,6 +2578,7 @@ var SCENARIOS = [
         st.amio = true; st.did.amio300 = 1; return O("ok", "s1_amio", { phys: "amio" });
       }
       if (a === "amio150") { if (st.shocks >= 5 && st.amio && !st.amio150) { st.amio150 = true; return O("ok", "s1_amio150"); } return O("bad", "a_amio150"); }
+      if (a === "sync") return O("bad", "a_sync");
       return null;
     } },
 
@@ -2615,6 +2606,7 @@ var SCENARIOS = [
       }
       if (a === "cpr") { if (st.cpr) return O("info", "a_cprRunning"); st.did.cpr = 1; return O("ok", "s2_cpr", { cprStart: true }); }
       if (a === "shock") return O("bad", "s2_shock");
+      if (a === "sync") return O("bad", "a_sync");
       if (a === "adr") {
         if (st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] < 180) return O("bad", "s2_adrSoon");
         st.adrT.push(st.clock); st.did.adr = 1;
@@ -2684,6 +2676,7 @@ var SCENARIOS = [
     step: function (a, st) {
       if (st.arrest) {
         if (a === "shock") { st.arrest = false; return O("ok", "s5_arrestShock", { end: true, pulse: true, rhythm: { gen: "sinus", opts: { rate: 92 } }, phys: "shockVF", vit: { pulse: "Present", bp: "94/60 mmHg", consc: "Drowsy", threats: "Immediately post-ROSC" } }); }
+        if (a === "sync") return O("bad", "a_sync");
         if (a === "cpr") return O("part", "s5_arrestCPR", { cprStart: true });
         return null;
       }
@@ -2711,6 +2704,7 @@ var SCENARIOS = [
       var done = function (o) { if (st.mg && st.cause && !st.arrest) o.end = true; return o; };
       if (st.arrest) {
         if (a === "shock") { st.arrest = false; return done(O("ok", "s6_arrestShock", { pulse: true, rhythm: { gen: "sinus", opts: { rate: 62, longQT: true } }, phys: "shockVF", vit: { pulse: "Present", bp: "96/58 mmHg", consc: "Drowsy", threats: "Immediately post-ROSC" } })); }
+        if (a === "sync") return O("bad", "a_sync");
         if (a === "cpr") return O("part", "s6_arrestCPR", { cprStart: true });
         return null;
       }
@@ -2942,16 +2936,27 @@ function doAction(a) {
   var changed = false;
   if (o.rhythm) { changed = o.rhythm.gen !== SIM.rhythm.gen || JSON.stringify(o.rhythm.opts || {}) !== JSON.stringify(SIM.rhythm.opts || {}); SIM.rhythm = o.rhythm; }
   if (o.rhythm || o.cprStart || o.cprStop) SIM.sig = monitor.set(SIM.rhythm, SIM.cpr, true);
-  if (changed) logEvent(null, "Monitor: rhythm changed.");
+  if (changed) {
+    o.changeAnnounce = rhythmAnnounce(o);
+    logEvent(null, o.changeAnnounce);
+  }
   renderVitals(); renderClock(); renderFeedback(o, changed);
   if (a === "aden" && o.v !== "info") renderActions();
-  $("scnLive").textContent = (changed ? "Rhythm change on the monitor. " : "") + label + ": " + VERD[o.v][1] + ". " + TXT[o.keys[o.keys.length - 1]][0];
+  $("scnLive").textContent = (o.changeAnnounce ? o.changeAnnounce + ". " : "") + label + ": " + VERD[o.v][1] + ". " + TXT[o.keys[o.keys.length - 1]][0];
   if (o.end) finishScenario(true);
   if (window.innerWidth < 900) $("scnFeedback").scrollIntoView({ block: "start", behavior: prefersReduced() ? "auto" : "smooth" });
+}
+function rhythmAnnounce(o) {
+  var names = { vf: "VF", vt: "VT", torsades: "torsades de pointes", asystole: "asystole", pea: "PEA", sinus: "sinus rhythm", sinus_tachy: "sinus tachycardia", sinus_brady: "sinus bradycardia" };
+  var name = names[o.rhythm.gen] || o.rhythm.gen;
+  if (o.pulse === false) return "Rhythm change: " + name + ", pulse lost";
+  if (o.pulse === true) return "Rhythm change: " + name + ", pulse returned";
+  return "Rhythm change: " + name;
 }
 function renderFeedback(o, changed) {
   var ic = o.v === "ok" ? ICON_OK : o.v === "bad" ? ICON_NO : "<span class='verdict-glyph' aria-hidden='true'>" + VERD[o.v][0] + "</span>";
   var html = "<p class='explain-kicker'>Feedback</p><p class='verdict-line'>" + ic + VERD[o.v][1] + ": " + esc(o.label) + "</p>";
+  if (o.changeAnnounce) html += "<p class='scn-change'><strong>" + esc(o.changeAnnounce) + "</strong></p>";
   html += o.keys.map(function (k) { return "<p class='scn-fb'>" + txtHTML(k) + "</p>"; }).join("");
   if (o.phys) html += "<div class='panel-block'><h3>" + (changed ? "Why the rhythm changed" : "Physiology") + "</h3><p>" + esc(PHYS[o.phys]) + "</p></div>";
   var k = o.keys[o.keys.length - 1];
