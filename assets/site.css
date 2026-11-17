@@ -538,6 +538,54 @@ footer,
   border-color: var(--chip-border);
 }
 
+.footer-feedback {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.footer-feedback:hover { text-decoration-thickness: 2px; }
+.footer-feedback:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+.feedback-invite {
+  margin-top: 28px;
+  max-width: 70ch;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+.feedback-invite-title {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.feedback-invite p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.feedback-invite a {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+.feedback-invite a:hover { text-decoration-thickness: 2px; }
+.feedback-invite a:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
 /* ===== Shared tool UI ===== */
 .tool-header { margin-bottom: 24px; }
 .tool-header .kicker { margin-top: 12px; }

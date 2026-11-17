@@ -430,7 +430,57 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .vq-note { font-style: italic; }
 .vq-cell { font-size: 13px; min-width: 220px; }
 .footer-disc { flex-basis: 100%; margin: 8px 0 0; font-size: 13px; }
+.footer-feedback { color: var(--text); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.footer-feedback:hover { text-decoration-thickness: 2px; }
+.footer-feedback:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
 .footer-disc a { color: inherit; }
+.scn-note { margin: 0 0 16px; font-size: 15px; }
+.scn-sources-btn {
+  font-family: var(--font-sans); font-size: 15px; font-weight: 700;
+  min-height: 44px; padding: 6px 12px; margin-left: 8px;
+  border: 2px solid var(--text); border-radius: 999px;
+  background: var(--surface); color: var(--text); cursor: pointer;
+}
+.scn-sources-btn:hover { background: var(--surface-2, var(--bg)); }
+.scn-sources-btn:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.scn-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; }
+.scn-modal[hidden] { display: none !important; }
+.scn-modal-backdrop { position: absolute; inset: 0; background: rgba(17, 17, 17, 0.45); }
+.scn-modal-panel {
+  position: relative; z-index: 1; max-width: 36rem; width: 100%; max-height: min(80vh, 40rem);
+  overflow: auto; padding: 16px 18px; background: var(--surface); color: var(--text);
+  border: 2px solid var(--text); border-radius: var(--radius-card); box-shadow: var(--shadow);
+}
+.scn-modal-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.scn-source-links { margin: 0; padding-left: 1.1em; }
+.scn-source-links a { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.scn-source-links a:hover { text-decoration-thickness: 2px; }
+.scn-clock-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 8px; }
+.scn-clock-row .scn-clock { margin: 0; }
+.scn-skip {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700; min-height: 44px; padding: 6px 12px;
+  border: 2px dashed var(--text); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer;
+}
+.scn-skip:hover:not(:disabled) { background: var(--surface-2, var(--bg)); }
+.scn-skip:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.scn-skip:disabled { opacity: 0.55; cursor: not-allowed; }
+.scn-sublist {
+  margin: 10px 0 0; padding: 12px; border: 2px solid var(--text); border-radius: 12px; background: var(--surface-2, var(--bg));
+}
+.scn-sublist[hidden] { display: none !important; }
+.scn-sublist-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.scn-sublist-title { font-family: var(--font-serif); font-size: 17px; font-weight: 600; margin: 0; }
+.scn-sublist-lead { margin: 6px 0 8px; font-size: 14px; }
+.scn-sublist-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.scn-sub-btn { width: 100%; text-align: left; }
+.scn-alg-link { margin: 10px 0 0; }
+.scn-alg-link a { color: var(--text); font-weight: 700; font-size: 16px; text-decoration: underline; text-underline-offset: 3px; }
+.scn-alg-link a:hover { text-decoration-thickness: 2px; }
+.scn-alg-link a:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.stat-note { display: block; font-size: 12px; font-weight: 600; margin-top: 2px; }
+@media (max-width: 480px) {
+  .scn-sources-btn { margin-left: 0; margin-top: 8px; display: inline-flex; }
+}
 </style>
 </head>
 <body>
@@ -533,7 +583,25 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
       </div>
 
       <div id="scnWrap" class="hidden">
-        <p class="scn-disclaimer"><strong>Teaching simulation based on Resus Council UK 2025 adult ALS algorithms and the BNF. Not clinical guidance; follow local protocols and current guidelines.</strong> Sources: <a href="https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-advanced-life-support-guidelines" target="_blank" rel="noopener">RCUK 2025 Adult ALS guideline</a>, <a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf" target="_blank" rel="noopener">ALS algorithm</a>, <a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20bradyarrhythmia%202025.pdf" target="_blank" rel="noopener">bradyarrhythmia algorithm</a>, <a href="https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf" target="_blank" rel="noopener">tachyarrhythmia algorithm (March 2026)</a>, <a href="https://bnf.nice.org.uk/" target="_blank" rel="noopener">BNF</a>. Scenarios are scripted and simplified; each statement is labelled <span class="vtag tag-src"><span class="vtag-k">Source</span></span>, <span class="vtag tag-phys"><span class="vtag-k">Physiology</span></span> or <span class="vtag tag-sim"><span class="vtag-k">Simulation simplification</span></span>.</p>
+                <p class="scn-note">Simulation for teaching, not clinical guidance. <button type="button" class="scn-sources-btn" id="scnSourcesBtn">Sources and disclaimer</button></p>
+        <div class="scn-modal" id="scnSourcesModal" hidden aria-hidden="true">
+          <div class="scn-modal-backdrop" id="scnSourcesBackdrop" tabindex="-1"></div>
+          <div class="scn-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scnSourcesTitle">
+            <div class="scn-modal-head">
+              <h2 class="explain-title" id="scnSourcesTitle" tabindex="-1">Sources and disclaimer</h2>
+              <button type="button" class="tool-btn" id="scnSourcesClose">Close</button>
+            </div>
+            <p>Teaching simulation based on Resus Council UK 2025 adult ALS algorithms and the BNF. Not clinical guidance; follow local protocols and current guidelines. Scenarios are scripted and simplified; each statement is labelled Source, Physiology or Simulation simplification.</p>
+            <ul class="scn-source-links">
+              <li><a href="https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-advanced-life-support-guidelines" target="_blank" rel="noopener" aria-label="RCUK 2025 Adult ALS guideline, opens in a new tab">RCUK 2025 Adult ALS guideline</a></li>
+              <li><a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf" target="_blank" rel="noopener" aria-label="RCUK 2025 Adult ALS algorithm, opens a PDF in a new tab">RCUK 2025 Adult ALS algorithm</a></li>
+              <li><a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20bradyarrhythmia%202025.pdf" target="_blank" rel="noopener" aria-label="RCUK 2025 Adult bradycardia algorithm, opens a PDF in a new tab">RCUK 2025 Adult bradycardia algorithm</a></li>
+              <li><a href="https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf" target="_blank" rel="noopener" aria-label="RCUK 2025 Adult tachyarrhythmia algorithm, opens a PDF in a new tab">RCUK 2025 Adult tachyarrhythmia algorithm</a></li>
+              <li><a href="https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/special-circumstances-guidelines" target="_blank" rel="noopener" aria-label="RCUK 2025 Special circumstances guidelines, opens in a new tab">RCUK 2025 Special circumstances guidelines</a></li>
+              <li><a href="https://bnf.nice.org.uk/" target="_blank" rel="noopener" aria-label="BNF, opens in a new tab">BNF</a></li>
+            </ul>
+          </div>
+        </div>
         <div id="scnChooserWrap">
           <details class="scn-guide" id="scnGuide" open>
             <summary>
@@ -542,13 +610,15 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
             </summary>
             <ol class="scn-guide-steps">
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random draws from a larger pool that includes extra cases not shown in the list. The title appears once the case starts.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>Skip 2 min continues CPR for two minutes and shows the rhythm on the monitor. Check rhythm and pulse is a separate step.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>Feedback judges only the action you just took, and will not tell you what to do next.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Nothing you should have to request is shown up front.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>CPR for 2 minutes performs two minutes of CPR and shows the rhythm on the monitor. Skip time only advances the clock and does not count as an action. Check rhythm and pulse is a separate step.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback states only what was done and the objective event. It will not interpret the monitor or tell you what to do next.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends. The debrief names the missed step and the correct action; the live nudges stay vague.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><span class="scn-guide-n" aria-hidden="true">6</span><span>Call the reg gives a hint. Each call deducts 0.5 from the decision score, with a minimum of 0.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 8 h10 a4 4 0 0 1 0 8 H7 a4 4 0 0 1 0-8 z M17 12 a2 2 0 1 1 0 0.01"/></svg></span><span class="scn-guide-n" aria-hidden="true">7</span><span>The Hints switch is off by default. Turn it on if you want more guidance.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 8 h10 a4 4 0 0 1 0 8 H7 a4 4 0 0 1 0-8 z M17 12 a2 2 0 1 1 0 0.01"/></svg></span><span class="scn-guide-n" aria-hidden="true">7</span><span>Show solution is off by default. Turn it on for more guidance, including why the rhythm changed and the guideline link.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 4 h8 l2 3 v13 H6 V7 z M8 4 V7 h8 V4"/></svg></span><span class="scn-guide-n" aria-hidden="true">8</span><span>The debrief shows your score, what you missed, and the guideline for each decision.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3 l2 4 5 .5-3.5 3 1 5L12 13.5 7.5 15.5l1-5L5 7.5 10 7z"/></svg></span><span class="scn-guide-n" aria-hidden="true">9</span><span>A dangerous error (for example CPR or an unsynchronised shock in a patient with a pulse, or shocking asystole) ends the case immediately when Show solution is off, with the words Patient harmed: scenario ended. The debrief explains why. With Show solution on, it is marked Not quite and the case continues.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6 h16 v12 H4 z M8 6 V4 h8 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">10</span><span>Restart starts the same case again.</span></li>
             </ol>
           </details>
           <script>
@@ -574,19 +644,20 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
               <h2 class="strip-title" id="scnTitle" tabindex="-1">Scenario</h2>
               <div class="strip-tools">
                 <button type="button" class="scn-hints" id="scnHints" role="switch" aria-checked="false" aria-labelledby="scnHintsLabel scnHintsState">
-                  <span id="scnHintsLabel" class="scn-hints-name">Hints</span>
+                  <span id="scnHintsLabel" class="scn-hints-name">Show solution</span>
                   <span class="scn-hints-track" aria-hidden="true"><span class="scn-hints-knob"></span></span>
                   <span class="scn-hints-state" id="scnHintsState">Off</span>
                 </button>
+                <button type="button" class="tool-btn" id="scnRestart">Restart</button>
                 <button type="button" class="tool-btn" id="scnEnd">End scenario</button>
                 <button type="button" class="tool-btn" id="scnBack">All scenarios</button>
               </div>
             </div>
-            <p class="scn-clock" id="scnClock" aria-label="Simulated time, CPR cycle and shocks">Time 00:00</p>
+            <div class="scn-clock-row"><p class="scn-clock" id="scnClock" aria-label="Simulated time, CPR cycle and shocks">Time 00:00</p><span id="scnSkipHost"></span></div>
             <p class="stem" id="scnScene"></p>
             <div class="scn-monitor" id="scnMonitor"></div>
             <p class="strip-meta">Monitor lead II, sweeping in real time; 1 s per large block of 5. The rhythm is not named until you assess it.</p>
-            <div class="live-readout scn-vitals" id="scnVitals" aria-label="Vital signs"></div>
+            <div class="live-readout scn-vitals" id="scnVitals" aria-label="Monitor values: heart rate, SpO2, respiratory rate and NIBP"></div>
           </div>
           <div class="scn-panels" id="scnPanels">
             <div class="card explain-panel scn-actions-card">
@@ -603,6 +674,22 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
                 </button>
               </div>
               <div id="scnActions"></div>
+              <div class="scn-sublist" id="scnCauseList" hidden aria-hidden="true" role="region" aria-labelledby="scnCauseTitle">
+                <div class="scn-sublist-head">
+                  <h3 class="scn-sublist-title" id="scnCauseTitle">Identify and treat reversible causes</h3>
+                  <button type="button" class="tool-btn" id="scnCauseClose">Close</button>
+                </div>
+                <p class="scn-sublist-lead">Pick the cause that fits this case. Wrong picks are marked Not quite.</p>
+                <ul class="scn-sublist-list" id="scnCauseButtons"></ul>
+              </div>
+              <div class="scn-sublist" id="scnAskList" hidden aria-hidden="true" role="region" aria-labelledby="scnAskTitle">
+                <div class="scn-sublist-head">
+                  <h3 class="scn-sublist-title" id="scnAskTitle">Ask for / check</h3>
+                  <button type="button" class="tool-btn" id="scnAskClose">Close</button>
+                </div>
+                <p class="scn-sublist-lead">Values appear only when you request them, and each request takes simulated time.</p>
+                <ul class="scn-sublist-list" id="scnAskButtons"></ul>
+              </div>
             </div>
             <div class="scn-right">
               <div class="card explain-panel" id="scnFeedback"></div>
@@ -673,6 +760,8 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
       <span>Dr Ed Kim</span>
       <span class="footer-dot">·</span>
       <span>Physio Lab</span>
+      <span class="footer-dot">·</span>
+      <a class="footer-feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="Give feedback, opens Google Forms in a new tab">Give feedback</a>
     </div>
     <span class="footer-tag">Built for teaching</span>
     <p class="footer-disc">Teaching simulation based on Resus Council UK 2025 adult ALS algorithms and the BNF. Not clinical guidance; follow local protocols and current guidelines. Sources: <a href="https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-advanced-life-support-guidelines" target="_blank" rel="noopener">RCUK 2025 Adult ALS guideline</a>, <a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf" target="_blank" rel="noopener">ALS algorithm</a>, <a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20bradyarrhythmia%202025.pdf" target="_blank" rel="noopener">bradyarrhythmia algorithm</a>, <a href="https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf" target="_blank" rel="noopener">tachyarrhythmia algorithm (March 2026)</a>, <a href="https://bnf.nice.org.uk/" target="_blank" rel="noopener">BNF</a>.</p>
@@ -3404,7 +3493,7 @@ var TXT = {
     src: "narrow",
     flag: 1,
     outcome: "",
-    whyWrong: "Adenosine can work here, but it is not the first step on the algorithm.",
+    whyWrong: "Right drug, but vagal manoeuvres had not been tried first.",
     nextStep: "The algorithm starts with vagal manoeuvres."
   },
   s4_aden6: {
@@ -3834,7 +3923,7 @@ var HIDDEN_SCENARIOS = [];
 HIDDEN_SCENARIOS.push(
   { id: "h1", hidden: true, group: "Cardiac arrest", title: "Asystole from hyperkalaemia",
     blurb: "Hidden random-pool case.",
-    scene: "A 61-year-old who usually has haemodialysis three times a week missed yesterday's session. This morning the potassium was 7.8 mmol/L and the team was called to review. They are now unresponsive and not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for the first rhythm check.",
+    scene: "A 61-year-old who usually has haemodialysis three times a week missed yesterday's session. The team was called to review them this morning. They are now unresponsive and not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for the first rhythm check.",
     start: { rhythm: { gen: "asystole" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
     req: [["cpr", "CPR 30:2 without delay", "als"], ["adr", "Adrenaline 1 mg as soon as possible", "adrNon"], ["causes", "Identify the reversible cause (hyperkalaemia)", "causes"], ["calcium", "Calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest", "hyperkArrest"]],
     due: function (st) {
@@ -4367,14 +4456,491 @@ HIDDEN_SCENARIOS.push(
       return null;
     } }
 );
+/* ===== Scenarios extras: causes list, ask/check, monitor, harm, sources modal ===== */
+var ALG_LINKS = {
+  als: { href: "https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf", label: "RCUK 2025 Adult ALS algorithm" },
+  alsPriority: { href: "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-advanced-life-support-guidelines", label: "RCUK 2025 Adult ALS guideline" },
+  brady: { href: "https://www.resus.org.uk/sites/default/files/2025-10/Adult%20bradyarrhythmia%202025.pdf", label: "RCUK 2025 Adult bradycardia algorithm" },
+  tachy: { href: "https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf", label: "RCUK 2025 Adult tachyarrhythmia algorithm" },
+  special: { href: "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/special-circumstances-guidelines", label: "RCUK 2025 Special circumstances guidelines" },
+  aden: { href: "https://bnf.nice.org.uk/", label: "BNF" },
+  amio: { href: "https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf", label: "RCUK 2025 Adult ALS algorithm" },
+  causes: { href: "https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf", label: "RCUK 2025 Adult ALS algorithm" },
+  rosc: { href: "https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf", label: "RCUK 2025 Adult ALS algorithm" },
+  tdp: { href: "https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf", label: "RCUK 2025 Adult tachyarrhythmia algorithm" },
+  tdpCauses: { href: "https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf", label: "RCUK 2025 Adult tachyarrhythmia algorithm" },
+  narrow: { href: "https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf", label: "RCUK 2025 Adult tachyarrhythmia algorithm" },
+  sync: { href: "https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf", label: "RCUK 2025 Adult tachyarrhythmia algorithm" },
+  fluid: { href: "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-advanced-life-support-guidelines", label: "RCUK 2025 Adult ALS guideline" },
+  chestDecomp: { href: "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/special-circumstances-guidelines", label: "RCUK 2025 Special circumstances guidelines" },
+  hyperkArrest: { href: "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/special-circumstances-guidelines", label: "RCUK 2025 Special circumstances guidelines" },
+  pacing: { href: "https://www.resus.org.uk/sites/default/files/2025-10/Adult%20bradyarrhythmia%202025.pdf", label: "RCUK 2025 Adult bradycardia algorithm" }
+};
+
+function algLinkForKey(k) {
+  var src = TXT[k] && TXT[k].src, rec = src && (ALG_LINKS[src] || null);
+  if (rec && rec.label && rec.label.indexOf("RCUK") === 0) return rec;
+  if (SIM && SIM.scn) {
+    var g = SIM.scn.group || "";
+    if (/Bradycardia/i.test(g)) return ALG_LINKS.brady;
+    if (/Tachycardia/i.test(g)) return ALG_LINKS.tachy;
+    if (/arrest/i.test(g)) return ALG_LINKS.als;
+  }
+  return rec || ALG_LINKS.als;
+}
+function algLinkHTML(k) {
+  var rec = algLinkForKey(k);
+  if (!rec) return "";
+  return "<p class='scn-alg-link'><a href='" + rec.href + "' target='_blank' rel='noopener' aria-label='" + rec.label + ", opens in a new tab'>" + rec.label + "</a></p>";
+}
+
+/* Arrest reversible causes, from the RCUK 2025 Adult ALS algorithm list. */
+var CAUSE_ARREST = [
+  { id: "hypoxia", label: "Hypoxia" },
+  { id: "hypovolaemia", label: "Hypovolaemia" },
+  { id: "hyperkalaemia", label: "Hyperkalaemia" },
+  { id: "hypokalaemia", label: "Hypokalaemia" },
+  { id: "metabolic", label: "Other metabolic (calcium, magnesium, hypoglycaemia)" },
+  { id: "temperature", label: "Hypothermia or hyperthermia" },
+  { id: "thrombosis", label: "Thrombosis (coronary or pulmonary)" },
+  { id: "tension", label: "Tension pneumothorax" },
+  { id: "toxins", label: "Toxins" },
+  { id: "tamponade", label: "Cardiac tamponade" }
+];
+/* Brady: algorithm says identify and treat reversible causes, e.g. electrolyte abnormalities.
+   Extra items below are common ALS teaching and are flagged where not printed on the 2025 algorithm. */
+var CAUSE_BRADY = [
+  { id: "electrolytes", label: "Electrolyte abnormalities (including hyperkalaemia)" },
+  { id: "drugs", label: "Drugs (beta-blocker or calcium-channel blocker, or other rate-limiting drugs)" },
+  { id: "ischaemia", label: "Myocardial ischaemia" },
+  { id: "hypothermia", label: "Hypothermia", flag: 1 },
+  { id: "hypothyroid", label: "Hypothyroidism", flag: 1 },
+  { id: "icp", label: "Raised intracranial pressure", flag: 1 }
+];
+var CAUSE_TACHY = [
+  { id: "drugs", label: "Drugs (including QT-prolonging medicines)" },
+  { id: "hypokalaemia", label: "Electrolytes: hypokalaemia" },
+  { id: "hypomag", label: "Electrolytes: hypomagnesaemia" },
+  { id: "ischaemia", label: "Myocardial ischaemia" },
+  { id: "hyperthyroidism", label: "Hyperthyroidism", flag: 1 },
+  { id: "hypovolaemia", label: "Hypovolaemia or anaemia", flag: 1 },
+  { id: "pain", label: "Pain, anxiety or another sinus-tachycardia cause", flag: 1 }
+];
+
+/* Per-scenario extras: correct cause ids, dangerous extra actions, labs, ask text, monitor ranges. */
+var SCN_EXTRAS = {
+  s1: { kind: "arrest", causes: [], harm: [], mon: { arrest: true } },
+  s2: { kind: "arrest", causes: ["hypovolaemia"], harm: [], mon: { arrest: true },
+        labs: { k: 4.2, na: 138, ica: 1.18, hb: 78, lactate: 8.4, ph: 7.18, pco2: 5.8, po2: 9.5, glu: 6.4, temp: 36.4 },
+        ask: {
+          gas: "pH 7.18, PaCO2 5.8 kPa, PaO2 9.5 kPa, lactate 8.4 mmol/L, K+ 4.2 mmol/L, Na+ 138 mmol/L, ionised Ca 1.18 mmol/L, Hb 78 g/L.",
+          examine: "Cool, mottled peripheries. Abdomen tense and distended. Weak femoral pulses. Pupils mid-size and reactive.",
+          history: "Theatre notes: major abdominal surgery today with ongoing blood loss into the drains.",
+          airway: "Airway patent. High-flow oxygen is on. Chest is moving equally."
+        } },
+  s3: { kind: "brady", causes: [], harm: [], mon: { hr: 40, spo2: 94, rr: 18, sys: 78, dia: 44, trend: -1 } },
+  s4: { kind: "tachy", causes: [], harm: [], mon: { hr: 180, spo2: 98, rr: 18, sys: 128, dia: 78, trend: 0 } },
+  s5: { kind: "tachy", causes: ["ischaemia"], harm: ["aden"], mon: { hr: 190, spo2: 93, rr: 24, sys: 76, dia: 40, trend: -1 } },
+  s6: { kind: "tachy", causes: ["drugs", "hypokalaemia"], harm: [], mon: { hr: 88, spo2: 97, rr: 16, sys: 104, dia: 62, trend: 0 },
+        labs: { k: 3.1, mg: 0.7 },
+        ask: {
+          gas: "pH 7.41, PaCO2 5.1 kPa, PaO2 12.0 kPa, lactate 1.2 mmol/L, K+ 3.1 mmol/L, Na+ 138 mmol/L, ionised Ca 1.20 mmol/L, Hb 128 g/L.",
+          history: "The drug chart includes two QT-prolonging medicines. Potassium this morning was 3.1 mmol/L."
+        } },
+  h1: { kind: "arrest", causes: ["hyperkalaemia"], harm: [], mon: { arrest: true },
+        labs: { k: 7.8, na: 132, ica: 1.05, hb: 102, lactate: 3.6, ph: 7.22, pco2: 4.4, po2: 11.2, glu: 6.8, temp: 36.6 },
+        ask: {
+          gas: "pH 7.22, PaCO2 4.4 kPa, PaO2 11.2 kPa, lactate 3.6 mmol/L, K+ 7.8 mmol/L, Na+ 132 mmol/L, ionised Ca 1.05 mmol/L, Hb 102 g/L.",
+          history: "Usual haemodialysis three times a week. Yesterday's session was missed. No other new medicines."
+        } },
+  h2: { kind: "arrest", causes: ["tension"], harm: [], mon: { arrest: true },
+        ask: {
+          examine: "Trachea deviated to the left. Right chest is resonant with reduced air entry. Distended neck veins. Pupils mid-size and reactive.",
+          history: "A right internal jugular central line was just being placed.",
+          airway: "Airway patent. High-flow oxygen is on. The right chest is not moving well."
+        } },
+  h3: { kind: "arrest", causes: [], harm: [], mon: { arrest: true } },
+  h4: { kind: "arrest", causes: [], harm: [], mon: { arrest: true } },
+  h5: { kind: "tachy", causes: [], harm: [], mon: { hr: 170, spo2: 99, rr: 16, sys: 124, dia: 76, trend: 0 } },
+  h6: { kind: "tachy", causes: [], harm: ["aden"], mon: { hr: 160, spo2: 92, rr: 26, sys: 80, dia: 50, trend: -1 } },
+  h7: { kind: "tachy", causes: ["ischaemia"], harm: [], mon: { hr: 150, spo2: 97, rr: 16, sys: 126, dia: 80, trend: 0 } },
+  h8: { kind: "brady", causes: [], harm: [], mon: { hr: 32, spo2: 95, rr: 16, sys: 110, dia: 68, trend: 0 } },
+  h9: { kind: "arrest", causes: ["hypokalaemia"], harm: [], mon: { arrest: true }, labs: { k: 2.8 } },
+  h10: { kind: "tachy", causes: ["ischaemia"], harm: ["aden"], mon: { hr: 180, spo2: 91, rr: 22, sys: 82, dia: 48, trend: -1 } }
+};
+
+var ASK_ITEMS = [
+  { id: "bm", label: "Capillary glucose (BM)", time: 20 },
+  { id: "gas", label: "Blood gas (pH, PaCO2, PaO2, lactate, K+, Na+, ionised Ca, Hb)", time: 120 },
+  { id: "temp", label: "Temperature", time: 20 },
+  { id: "ecg12", label: "12-lead ECG description", time: 60 },
+  { id: "examine", label: "Examine (airway, chest, pulses, pupils)", time: 30 },
+  { id: "history", label: "Collateral history or drug chart", time: 30 },
+  { id: "airway", label: "Airway check", time: 20 }
+];
+
+/* Reference ranges used in ask results. SpO2 94 to 98% is from the RCUK 2025 ALS algorithm (immediately after ROSC). Other numerical ranges are teaching defaults and are flagged. */
+var REF_RANGE_NOTE = "Teaching reference ranges (flagged unless quoted from RCUK 2025): K+ 3.5 to 5.3 mmol/L; Na+ 135 to 145 mmol/L; ionised Ca 1.10 to 1.30 mmol/L; pH 7.35 to 7.45; PaCO2 4.7 to 6.0 kPa; PaO2 11 to 13 kPa on air; lactate less than 2.0 mmol/L; Hb about 120 to 170 g/L; glucose 4.0 to 7.8 mmol/L; temperature 36.0 to 37.5 C. Post-ROSC SpO2 target 94 to 98% and systolic blood pressure over 100 mmHg: RCUK 2025 Adult ALS algorithm.";
+
+function extrasFor(st) {
+  var id = st && st.scn && st.scn.id;
+  return (id && SCN_EXTRAS[id]) || { kind: "arrest", causes: [], harm: [], mon: {} };
+}
+function causeSetFor(st) {
+  var k = extrasFor(st).kind;
+  if (k === "brady") return CAUSE_BRADY;
+  if (k === "tachy") return CAUSE_TACHY;
+  return CAUSE_ARREST;
+}
+
+function detectHarm(a, st) {
+  if (!st) return null;
+  var pulse = !!st.pulse;
+  var gen = (st.rhythm && st.rhythm.gen) || "";
+  var extra = extrasFor(st);
+  if (pulse && a === "shock") return { id: "harm_shockPulse", label: "Unsynchronised shock in a patient with a pulse" };
+  if (pulse && a === "cpr") return { id: "harm_cprPulse", label: "CPR in a patient with a pulse" };
+  if (!pulse && gen === "asystole" && (a === "shock" || a === "sync")) return { id: "harm_shockAsys", label: "Shock delivered for asystole" };
+  if (extra.harm && extra.harm.indexOf(a) >= 0) {
+    if (a === "aden") return { id: "harm_adenUnstable", label: "Adenosine in an unstable broad-complex tachycardia" };
+    return { id: "harm_other", label: ACT[a] ? ACT[a].label : a };
+  }
+  return null;
+}
+
+function defaultEvent(a, label) {
+  var ev = {
+    assess: "Rhythm and pulse checked.",
+    expert: "Expert help requested.",
+    cpr: "CPR 30:2 started.",
+    ff: "Two minutes of CPR completed. The rhythm is on the monitor.",
+    skip: "Simulated time advanced by 1 minute.",
+    shock: "Unsynchronised shock delivered.",
+    sync: "Synchronised shock delivered.",
+    pace: "Transcutaneous pacing started.",
+    vagal: "Vagal manoeuvres performed.",
+    adr: "Adrenaline 1 mg IV given.",
+    amio300: "Amiodarone 300 mg IV given.",
+    amio150: "Amiodarone 150 mg IV given.",
+    atro: "Atropine 500 micrograms IV given.",
+    aden: "Adenosine given.",
+    mg: "Magnesium 8 mmol (2 g) IV given.",
+    fluid: "IV fluid bolus given.",
+    bicarb: "Sodium bicarbonate IV given.",
+    calcium: "Calcium chloride IV given.",
+    decompress: "Chest decompression performed.",
+    amioInf: "Amiodarone 300 mg IV infusion started.",
+    adrInf: "Adrenaline infusion started.",
+    iso: "Isoprenaline infusion started.",
+    observe: "Observe and reassess later chosen.",
+    nibp: "NIBP cycled.",
+    causes: "A reversible cause was named."
+  };
+  if (ev[a]) return ev[a];
+  return (label || a || "Action") + ".";
+}
+
+function initScenarioExtras(st) {
+  var x = extrasFor(st);
+  var m = x.mon || {};
+  st.asked = {};
+  st.found = {};
+  st.mon = {
+    arrest: !!m.arrest || !st.pulse,
+    hr: m.hr || 0,
+    hrBase: m.hr || 0,
+    spo2: m.arrest ? null : (m.spo2 != null ? m.spo2 : 97),
+    spo2Base: m.arrest ? null : (m.spo2 != null ? m.spo2 : 97),
+    rr: m.arrest ? 0 : (m.rr != null ? m.rr : 16),
+    rrBase: m.arrest ? 0 : (m.rr != null ? m.rr : 16),
+    sys: m.sys != null ? m.sys : null,
+    dia: m.dia != null ? m.dia : null,
+    sysBase: m.sys != null ? m.sys : null,
+    diaBase: m.dia != null ? m.dia : null,
+    trend: m.trend || 0,
+    interval: m.interval || 180,
+    lastNIBP: m.arrest || !st.pulse ? { t: 0, unrecordable: true } : (m.sys != null ? { t: 0, sys: m.sys, dia: m.dia } : null),
+    nextDrift: prefersReduced() ? 15 : 4,
+    labs: Object.assign({ k: 4.3, na: 140, ica: 1.20, hb: 134, lactate: 1.1, ph: 7.40, pco2: 5.3, po2: 12.4, glu: 5.6, temp: 36.8, mg: 0.85 }, x.labs || {})
+  };
+}
+
+function tickMonitor(st) {
+  if (!st || !st.mon || st.done) return;
+  var m = st.mon;
+  m.arrest = !st.pulse;
+  if (st.pulse && st.sig && typeof st.sig.measure.rate === "number") {
+    m.hrBase = st.sig.measure.rate;
+  } else if (!st.pulse) {
+    m.hrBase = 0;
+  }
+  if (m.arrest) {
+    m.hr = 0;
+    m.spo2 = null;
+    m.rr = 0;
+    if (m.lastNIBP) m.lastNIBP.unrecordable = true;
+  }
+  var every = prefersReduced() ? 15 : 4;
+  if (prefersReduced() && every > 20) return;
+  m.nextDrift = (m.nextDrift || every) - 1;
+  if (m.nextDrift > 0) return;
+  m.nextDrift = every;
+  function drift(val, base, lo, hi, amt) {
+    if (val == null || !base) return val;
+    var t = m.trend || 0;
+    var d = (Math.random() * 2 - 1) * amt + t * amt * 0.35;
+    var n = Math.round((val + d) * 10) / 10;
+    if (n < lo) n = lo;
+    if (n > hi) n = hi;
+    return n;
+  }
+  if (!m.arrest && m.hrBase) m.hr = drift(m.hr || m.hrBase, m.hrBase, m.hrBase - 4, m.hrBase + 4, prefersReduced() ? 1 : 3);
+  if (!m.arrest && m.spo2Base != null) m.spo2 = Math.round(drift(m.spo2 != null ? m.spo2 : m.spo2Base, m.spo2Base, Math.max(84, m.spo2Base - 3), Math.min(100, m.spo2Base + 2), 1));
+  if (!m.arrest) m.rr = Math.round(drift(m.rr || m.rrBase, m.rrBase, Math.max(8, m.rrBase - 3), m.rrBase + 4, 1));
+  if (!m.arrest && st.pulse && m.lastNIBP && !m.lastNIBP.unrecordable && m.interval && (st.clock - (m.lastNIBP.t || 0) >= m.interval)) {
+    cycleNIBP(st, true);
+  }
+}
+
+function cycleNIBP(st, auto) {
+  var m = st.mon;
+  if (!st.pulse || m.arrest) {
+    m.lastNIBP = { t: st.clock, unrecordable: true };
+    return { v: "info", keys: ["n_nibpFail"], event: "NIBP cycled: unrecordable." };
+  }
+  var sys = m.sysBase, dia = m.diaBase;
+  if (sys == null) { sys = 118; dia = 72; }
+  var amtS = prefersReduced() ? 2 : 5, amtD = prefersReduced() ? 2 : 4;
+  var t = m.trend || 0;
+  sys = Math.round(sys + (Math.random() * 2 - 1) * amtS + t * 3);
+  dia = Math.round(dia + (Math.random() * 2 - 1) * amtD + t * 2);
+  m.lastNIBP = { t: st.clock, sys: sys, dia: dia, unrecordable: false, auto: !!auto };
+  m.sys = sys; m.dia = dia;
+  return { v: "info", keys: ["n_nibp"], event: "NIBP " + sys + "/" + dia + " mmHg at " + mmss(st.clock) + "." };
+}
+
+function renderMonitor() {
+  if (!SIM || !SIM.mon) { renderVitalsLegacy && renderVitalsLegacy(); return; }
+  var m = SIM.mon, pulse = !!SIM.pulse;
+  tickMonitor(SIM);
+  function cell(label, val, note) {
+    return "<div class='stat'><div class='stat-val'>" + esc(val) + "</div><div class='stat-label'>" + esc(label) + (note ? " <span class='stat-note'>" + esc(note) + "</span>" : "") + "</div></div>";
+  }
+  var hr = !pulse ? "No pulse" : (m.hr ? Math.round(m.hr) + " /min" : "Not yet checked");
+  var spo2 = !pulse ? "No trace" : (m.spo2 != null ? Math.round(m.spo2) + " %" : "No trace");
+  var rr = !pulse ? "Not breathing" : (m.rr != null ? Math.round(m.rr) + " /min" : "Not yet counted");
+  var nibp, nibpNote = "";
+  if (!pulse || (m.lastNIBP && m.lastNIBP.unrecordable)) {
+    nibp = "Unrecordable";
+    if (m.lastNIBP) nibpNote = "Last cycled " + mmss(m.lastNIBP.t);
+  } else if (!m.lastNIBP) {
+    nibp = "Not yet measured";
+  } else {
+    nibp = m.lastNIBP.sys + "/" + m.lastNIBP.dia + " mmHg";
+    nibpNote = "Last measured " + mmss(m.lastNIBP.t) + " (NIBP)";
+  }
+  var v = SIM.vit || {};
+  var html = cell("Heart rate", hr) + cell("SpO2", spo2, !pulse ? "No pulse: no pulse oximeter trace" : "") + cell("Respiratory rate", rr) + cell("NIBP", nibp, nibpNote);
+  html += cell("Conscious level", v.consc || "") + cell("Life-threatening features", v.threats || "");
+  $("scnVitals").innerHTML = html;
+}
+
+if (typeof SRC === "object") {
+  SRC.causesList = "RCUK 2025 Adult ALS algorithm, reversible causes: hypoxia; hypovolaemia; hyper-hypokalaemia, -calcaemia, -magnesaemia, hypoglycaemia (metabolic); hypo-hyperthermia; thrombosis (coronary/pulmonary); tension pneumothorax; toxins; tamponade (cardiac).";
+  SRC.bradyCauses = "RCUK 2025 Adult bradyarrhythmia algorithm: identify and treat reversible causes, e.g. electrolyte abnormalities. RCUK 2025 Adult ALS guideline: consider glucagon if beta-blockers or calcium channel blockers are a potential cause of the bradycardia.";
+  SRC.refRanges = REF_RANGE_NOTE;
+  SRC.harmAden = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features (including shock and immediately post-ROSC) lead to synchronised shock, not adenosine. Adenosine is on the stable regular narrow (or selected regular monomorphic) pathway. Treating an unstable broad-complex tachycardia with adenosine instead of cardioversion was treated as a dangerous error in this simulation; see flagged items.";
+  SRC.harmShockPulse = "RCUK 2025 Adult ALS guideline and tachyarrhythmia algorithm: unsynchronised defibrillation is for VF or pulseless VT. A tachyarrhythmia with a pulse is treated with synchronised cardioversion when unstable.";
+  SRC.harmCprPulse = "RCUK 2025 Adult ALS guideline: CPR is for cardiac arrest (unresponsive, not breathing normally). Chest compressions in a patient with a pulse were treated as a dangerous error in this simulation.";
+  SRC.harmAsys = "RCUK 2025 Adult ALS algorithm: asystole is a non-shockable rhythm. Do not shock asystole.";
+}
+
+function Tfb(full, guideline, src, extra) {
+  extra = extra || {};
+  return { full: full, guideline: guideline, src: src, flag: extra.flag || 0, outcome: extra.outcome || "", whyWrong: extra.whyWrong || "", nextStep: extra.nextStep || "", event: extra.event || "" };
+}
+if (typeof TXT === "object") {
+  TXT.n_nibp = Tfb("NIBP cycled. Blood pressure is measured non-invasively, not continuously, unless an arterial line is in place (simulation: no arterial line by default).", "Monitor BP", "refRanges", { outcome: "", event: "NIBP cycled." });
+  TXT.n_nibpFail = Tfb("NIBP cycled. No reading was obtained (unrecordable in cardiac arrest).", "Monitor BP", "als", { event: "NIBP cycled: unrecordable." });
+  TXT.harm_shockPulse = Tfb("An unsynchronised shock was delivered in a patient who had a pulse. Unsynchronised defibrillation is for VF or pulseless VT. With a pulse, unstable tachyarrhythmias are treated with synchronised cardioversion.", "Tachyarrhythmia: synchronised shock if unstable", "harmShockPulse", { whyWrong: "Unsynchronised shock is not used in a patient with a pulse.", event: "Unsynchronised shock delivered." });
+  TXT.harm_cprPulse = Tfb("CPR was started in a patient who had a pulse. Chest compressions are for cardiac arrest.", "ALS: CPR is for cardiac arrest", "harmCprPulse", { whyWrong: "The patient had a pulse, so CPR should not have been started.", event: "CPR 30:2 started." });
+  TXT.harm_shockAsys = Tfb("A shock was delivered for asystole. Asystole is a non-shockable rhythm.", "ALS: non-shockable pathway", "harmAsys", { whyWrong: "Asystole is not a shockable rhythm.", event: "Shock delivered." });
+  TXT.harm_adenUnstable = Tfb("Adenosine was given in an unstable broad-complex tachycardia. The algorithm's unstable path is synchronised cardioversion, not adenosine.", "Tachyarrhythmia: unstable, synchronised shock", "harmAden", { whyWrong: "Adenosine is not the treatment for an unstable broad-complex tachycardia.", event: "Adenosine given." });
+  TXT.cause_ok = Tfb("The cause named fits this case.", "Identify and treat reversible causes", "causesList", { outcome: "The cause named fits this case.", event: "A reversible cause was named." });
+  TXT.cause_bad = Tfb("Nothing in this scene supports that reversible cause.", "Identify and treat reversible causes", "causesList", { whyWrong: "Nothing in this scene supports that reversible cause.", event: "A reversible cause was named." });
+  TXT.n_skipTime = Tfb("Simulated time advanced by 1 minute. Skip time is not an algorithm action and does not count as performing CPR.", "Simulation clock", "alsPriority", { event: "Simulated time advanced by 1 minute." });
+}
+
+function closeScnMenu(id) {
+  var el = $(id); if (!el) return;
+  el.hidden = true;
+  el.setAttribute("aria-hidden", "true");
+}
+function openScnMenu(id, opener) {
+  ["scnCauseList", "scnAskList"].forEach(function (other) { if (other !== id) closeScnMenu(other); });
+  var el = $(id); if (!el) return;
+  el.hidden = false;
+  el.setAttribute("aria-hidden", "false");
+  var first = el.querySelector("button, [href], input");
+  if (first) first.focus();
+  el._opener = opener;
+}
+
+function pickCause(cid) {
+  if (!SIM || SIM.done) return;
+  closeScnMenu("scnCauseList");
+  var set = causeSetFor(SIM), item = null;
+  set.forEach(function (c) { if (c.id === cid) item = c; });
+  if (!item) return;
+  var correct = extrasFor(SIM).causes || [];
+  var ok = correct.indexOf(cid) !== -1;
+  var o;
+  if (ok) {
+    SIM.did.causes = 1;
+    SIM.cause = true;
+    SIM.found = SIM.found || {};
+    SIM.found[cid] = 1;
+    o = O("ok", "cause_ok", { event: item.label + " named as a reversible cause." });
+    if (typeof SIM.scn.step === "function") {
+      var stepO = SIM.scn.step("causes", SIM);
+      if (stepO) {
+        if (stepO.end) o.end = true;
+        if (stepO.endReason) o.endReason = stepO.endReason;
+        if (stepO.phys) o.phys = stepO.phys;
+        if (stepO.vit) o.vit = stepO.vit;
+        if (stepO.rhythm) o.rhythm = stepO.rhythm;
+        if (stepO.pulse !== undefined) o.pulse = stepO.pulse;
+        if (stepO.keys) {
+          stepO.keys.forEach(function (k) { if (o.keys.indexOf(k) < 0) o.keys.push(k); });
+        }
+      }
+    }
+  } else {
+    o = O("bad", "cause_bad", { event: item.label + " named as a reversible cause." });
+  }
+  o.label = "Identify and treat reversible causes: " + item.label;
+  finishPickedAction("causes", o, 30);
+}
+
+function doAsk(aid) {
+  if (!SIM || SIM.done) return;
+  closeScnMenu("scnAskList");
+  var item = null;
+  ASK_ITEMS.forEach(function (c) { if (c.id === aid) item = c; });
+  if (!item) return;
+  SIM.asked[aid] = 1;
+  var x = extrasFor(SIM), custom = (x.ask || {})[aid];
+  var m = SIM.mon, labs = m.labs || {};
+  var text = custom;
+  if (!text) {
+    if (aid === "bm") text = "Capillary glucose " + labs.glu + " mmol/L.";
+    else if (aid === "gas") text = "pH " + labs.ph + ", PaCO2 " + labs.pco2 + " kPa, PaO2 " + labs.po2 + " kPa, lactate " + labs.lactate + " mmol/L, K+ " + labs.k + " mmol/L, Na+ " + labs.na + " mmol/L, ionised Ca " + labs.ica + " mmol/L, Hb " + labs.hb + " g/L.";
+    else if (aid === "temp") text = "Temperature " + labs.temp + " C.";
+    else if (aid === "ecg12") text = "A 12-lead ECG is consistent with the monitor rhythm already seen. No additional acute change is reported in this simulation.";
+    else if (aid === "examine") text = "Airway patent. Chest moving equally. Central and peripheral pulses " + (SIM.pulse ? "present" : "absent") + ". Pupils mid-size and reactive.";
+    else if (aid === "history") text = "No additional background is available beyond the scene you were given.";
+    else if (aid === "airway") text = "Airway patent. No obstruction is seen.";
+  }
+  var keys = "ask_" + aid;
+  if (!TXT[keys]) {
+    TXT[keys] = Tfb(text, "Information requested", "refRanges", { event: text, outcome: text });
+  } else {
+    TXT[keys].full = text; TXT[keys].event = text; TXT[keys].outcome = text;
+  }
+  var relevant = false;
+  if (aid === "gas" || aid === "bm" || aid === "history" || aid === "examine") {
+    (extrasFor(SIM).causes || []).forEach(function (c) {
+      if ((c === "hyperkalaemia" && /K\+ 7\.|K\+ 6/.test(text)) ||
+          (c === "hypokalaemia" && /K\+ 3\.|K\+ 2/.test(text)) ||
+          (c === "hypovolaemia" && /Hb 78|blood loss|drains/.test(text)) ||
+          (c === "tension" && /deviated|resonant|central line/.test(text)) ||
+          (c === "drugs" && /QT-prolonging/.test(text))) relevant = true;
+    });
+  }
+  if (relevant) {
+    SIM.did.causes = 1;
+    SIM.cause = true;
+    SIM.found = SIM.found || {};
+    SIM.found.ask = 1;
+  }
+  var o = O("info", keys, { event: text });
+  o.label = item.label;
+  o.askText = text;
+  finishPickedAction("ask:" + aid, o, item.time || 30);
+}
+
+/* Shared closer used once doAction / applyReview exist (defined in part-scn.js). */
+function finishPickedAction(a, o, timeCost) {
+  if (typeof doActionFinish === "function") doActionFinish(a, o, timeCost);
+}
+
+function fillCauseList() {
+  var host = $("scnCauseButtons"); if (!host || !SIM) return;
+  var correct = extrasFor(SIM).causes || [];
+  host.innerHTML = causeSetFor(SIM).map(function (c) {
+    return "<li><button type='button' class='act-btn scn-sub-btn' data-cause='" + c.id + "'" + (SIM.done ? " disabled" : "") + ">" + esc(c.label) + "</button></li>";
+  }).join("");
+  host.querySelectorAll("[data-cause]").forEach(function (b) {
+    b.addEventListener("click", function () { pickCause(b.getAttribute("data-cause")); });
+  });
+}
+function fillAskList() {
+  var host = $("scnAskButtons"); if (!host || !SIM) return;
+  host.innerHTML = ASK_ITEMS.map(function (c) {
+    var got = SIM.asked && SIM.asked[c.id];
+    return "<li><button type='button' class='act-btn scn-sub-btn' data-ask='" + c.id + "'" + (SIM.done ? " disabled" : "") + ">" + esc(c.label) + (got ? " (already requested)" : "") + "</button></li>";
+  }).join("");
+  host.querySelectorAll("[data-ask]").forEach(function (b) {
+    b.addEventListener("click", function () { doAsk(b.getAttribute("data-ask")); });
+  });
+}
+
+var scnModalPrev = null;
+function getFocusable(root) {
+  return [].slice.call(root.querySelectorAll("a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex='-1'])")).filter(function (el) { return !el.disabled && el.offsetParent !== null || el === document.activeElement || el.getAttribute("type") !== "hidden"; });
+}
+function openSourcesModal() {
+  var m = $("scnSourcesModal"); if (!m) return;
+  scnModalPrev = document.activeElement;
+  m.hidden = false;
+  m.setAttribute("aria-hidden", "false");
+  var close = $("scnSourcesClose");
+  if (close) close.focus();
+  document.addEventListener("keydown", sourcesModalKey);
+}
+function closeSourcesModal() {
+  var m = $("scnSourcesModal"); if (!m) return;
+  m.hidden = true;
+  m.setAttribute("aria-hidden", "true");
+  document.removeEventListener("keydown", sourcesModalKey);
+  if (scnModalPrev && scnModalPrev.focus) scnModalPrev.focus();
+}
+function sourcesModalKey(e) {
+  var m = $("scnSourcesModal"); if (!m || m.hidden) return;
+  if (e.key === "Escape") { e.preventDefault(); closeSourcesModal(); return; }
+  if (e.key !== "Tab") return;
+  var list = getFocusable(m);
+  if (!list.length) return;
+  var first = list[0], last = list[list.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
+function missedStepLine(d) {
+  if (!d) return "";
+  var name = d.name || d[1] || d.id;
+  return "Missed: " + name;
+}
 /* ===== Scenarios: actions, scripted branches, monitor and debrief ===== */
 var ACTIONS = [
   { id: "assess", label: "Check rhythm and pulse", g: "Assess and call" },
   { id: "expert", label: "Seek expert help", g: "Assess and call" },
-  { id: "causes", label: "Treat reversible causes (4 Hs and 4 Ts)", g: "Assess and call" },
+  { id: "causes", label: "Identify and treat reversible causes", g: "Assess and call" },
+  { id: "ask", label: "Ask for / check", g: "Assess and call" },
+  { id: "nibp", label: "Cycle NIBP now", g: "Assess and call" },
   { id: "observe", label: "Observe and reassess later", g: "Assess and call" },
   { id: "cpr", label: "Start CPR 30:2", g: "CPR and electrical" },
-  { id: "ff", label: "Skip 2 min", g: "CPR and electrical" },
+  { id: "ff", label: "CPR for 2 minutes", g: "CPR and electrical" },
   { id: "shock", label: "Shock (unsynchronised)", g: "CPR and electrical" },
   { id: "sync", label: "Synchronised DC cardioversion", g: "CPR and electrical" },
   { id: "pace", label: "Transcutaneous pacing", g: "CPR and electrical" },
@@ -4394,7 +4960,7 @@ var ACTIONS = [
   { id: "iso", label: "Isoprenaline infusion 5 mcg/min", g: "Drugs and fluids" }
 ];
 var ACT = {}; ACTIONS.forEach(function (a) { ACT[a.id] = a; });
-var ACT_TIME = { assess: 10, expert: 5, causes: 30, observe: 60, cpr: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20, decompress: 30, amioInf: 30, adrInf: 30, iso: 30 };
+var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, nibp: 30, observe: 60, cpr: 5, skip: 0, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20, decompress: 30, amioInf: 30, adrInf: 30, iso: 30 };
 function adenLabel(n) { return n === 0 ? "Adenosine 6 mg rapid IV" : n === 1 ? "Adenosine 12 mg rapid IV" : "Adenosine 18 mg (RCUK) or 12 mg (BNF) rapid IV"; }
 
 function O(v, keys, x) { x = x || {}; x.v = v; x.keys = [].concat(keys); return x; }
@@ -4590,7 +5156,7 @@ var SCENARIOS = [
 
   { id: "s6", group: "Tachycardia", title: "Torsades de pointes",
     blurb: "Repeated light-headed spells in an inpatient on several drugs.",
-    scene: "A 71-year-old inpatient taking several QT-prolonging drugs has repeated brief spells of light-headedness. Potassium this morning was 3.1 mmol/L. The monitor alarms.",
+    scene: "A 71-year-old inpatient taking several QT-prolonging drugs has repeated brief spells of light-headedness. The monitor alarms.",
     start: { rhythm: { gen: "torsades", opts: { runLen: 2.4 } }, pulse: true, vit: { pulse: "Present between runs", bp: "104/62 mmHg between runs", consc: "Alert, light-headed during runs", threats: "None sustained; runs are self-terminating" } },
     req: [["mg", "Magnesium 8 mmol IV over 10 min", "tdp"], ["causes", "Identify and treat reversible causes (low potassium, QT-prolonging drugs)", "tdpCauses"]],
     idleNudge: true,
@@ -4757,12 +5323,8 @@ function physForLive(key) {
 }
 function liveFbParts(o) {
   var parts = [];
-  if (o.changeAnnounce) parts.push(o.changeAnnounce);
-  o.keys.forEach(function (k) {
-    var t = TXT[k];
-    if (t.outcome) parts.push(t.outcome);
-    if ((o.v === "bad" || o.v === "part") && t.whyWrong) parts.push(t.whyWrong);
-  });
+  if (o.event) parts.push(o.event);
+  if (o.v === "part") (o.keys || []).forEach(function (k) { if (TXT[k] && TXT[k].whyWrong) parts.push(TXT[k].whyWrong); });
   return parts;
 }
 function announceFeedback(o) {
@@ -4868,9 +5430,11 @@ function isCycleCheck(o) {
 }
 function applyReview(a, o) {
   if (!SIM || o.end) return o;
-  SIM.actionN = (SIM.actionN || 0) + 1;
+  if (a !== "skip" && !o.notAction) SIM.actionN = (SIM.actionN || 0) + 1;
+  else if (o.forceReview) { /* skip time can trigger an overdue review without counting as an action */ }
+  else return o;
   var due = outstandingSteps(SIM);
-  var review = isCycleCheck(o) || (a === "assess" && o.keys && o.keys[0] === "a_assessAgain");
+  var review = isCycleCheck(o) || !!o.forceReview || (a === "assess" && o.keys && o.keys[0] === "a_assessAgain");
   if (!review && due.length && SIM.scn.idleNudge) {
     SIM.idleSinceDue = (SIM.idleSinceDue || 0) + 1;
     if (SIM.idleSinceDue >= 3) { review = true; SIM.idleSinceDue = 0; }
@@ -4973,6 +5537,7 @@ function renderScnChooser() {
 function startScenario(id, random) {
   var s = SCN[id]; lastScn = id;
   SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false };
+  if (typeof initScenarioExtras === "function") initScenarioExtras(SIM);
   document.querySelectorAll("#scnGrid .scn-card").forEach(function (b) { b.setAttribute("aria-pressed", !random && b.dataset.id === id ? "true" : "false"); });
   $("scnChooserWrap").classList.add("hidden");
   $("scnStage").classList.remove("hidden");
@@ -4990,7 +5555,7 @@ function startScenario(id, random) {
   $("scnFeedback").innerHTML = "<p class='explain-kicker'>Feedback</p><p class='ep-wait'>Choose an action. Each choice is checked against the RCUK 2025 algorithms; the rhythm responds.</p>";
   renderVitals(); renderClock(); syncScnBanner();
   clearInterval(simTimer);
-  simTimer = setInterval(function () { if (!SIM || SIM.done || document.hidden) return; SIM.clock++; renderClock(); }, 1000);
+  simTimer = setInterval(function () { if (!SIM || SIM.done || document.hidden) return; SIM.clock++; if (typeof tickMonitor === "function") tickMonitor(SIM); renderClock(); renderVitals(); }, 1000);
   $("scnTitle").focus({ preventScroll: true });
 }
 function renderActions() {
@@ -5000,15 +5565,23 @@ function renderActions() {
     return "<div class='act-group'><h3 class='scen-group-label' id='act-g" + gi + "'>" + esc(g) + "</h3><div class='act-row' role='group' aria-labelledby='act-g" + gi + "'>" +
       ACTIONS.filter(function (a) { return a.g === g; }).map(function (a) {
         var lab = a.id === "aden" ? adenLabel(SIM.aden) : a.label;
-        var aria = a.id === "ff" ? " aria-label='Skip 2 min of CPR'" : "";
+        var aria = a.id === "ff" ? " aria-label='CPR for 2 minutes'" : (a.id === "causes" ? " aria-haspopup='true' aria-controls='scnCauseList'" : (a.id === "ask" ? " aria-haspopup='true' aria-controls='scnAskList'" : ""));
         return "<button type='button' class='act-btn" + (a.id === "ff" ? " act-ff" : "") + "' data-a='" + a.id + "'" + aria + (SIM.done ? " disabled" : "") + ">" + esc(lab) + "</button>";
       }).join("") + "</div></div>";
   }).join("");
   host.querySelectorAll(".act-btn").forEach(function (b) { b.addEventListener("click", function () { doAction(b.dataset.a); }); });
+  var skipHost = $("scnSkipHost");
+  if (skipHost) {
+    skipHost.innerHTML = "<button type='button' class='scn-skip' id='scnSkip' aria-label='Skip time, advances the clock by 1 minute, not an algorithm action'" + (SIM.done ? " disabled" : "") + ">Skip time</button>";
+    $("scnSkip").addEventListener("click", function () { doAction("skip"); });
+  }
   var reg = $("scnReg");
   if (reg) reg.disabled = !!(SIM && SIM.done);
+  var rs = $("scnRestart");
+  if (rs) rs.disabled = !SIM;
 }
 function renderVitals() {
+  if (typeof renderMonitor === "function" && SIM && SIM.mon) { renderMonitor(); return; }
   var v = SIM.vit, rate = "";
   if (SIM.pulse && SIM.sig && typeof SIM.sig.measure.rate === "number") rate = " · about " + Math.round(SIM.sig.measure.rate) + " /min";
   var cells = [["Pulse", (v.pulse || "") + (SIM.pulse && !/Not yet/.test(v.pulse) ? rate : "")], ["Blood pressure", v.bp], ["Conscious level", v.consc], ["Life-threatening features", v.threats]];
@@ -5037,25 +5610,86 @@ function logEvent(o, text, act) {
 }
 function doAction(a) {
   if (!SIM || SIM.done) return;
-  var label = a === "aden" ? adenLabel(SIM.aden) : ACT[a].label;
+  if (a && a.indexOf("cause:") === 0) { pickCause(a.slice(6)); return; }
+  if (a && a.indexOf("ask:") === 0) { doAsk(a.slice(4)); return; }
+  if (a === "causes") { fillCauseList(); openScnMenu("scnCauseList", document.querySelector("[data-a='causes']")); return; }
+  if (a === "ask") { fillAskList(); openScnMenu("scnAskList", document.querySelector("[data-a='ask']")); return; }
+  if (a === "skip") {
+    var so = O("info", "n_skipTime", { event: "Simulated time advanced by 1 minute.", notAction: true });
+    so.label = "Skip time";
+    SIM.clock += 60;
+    if (outstandingSteps(SIM).length) {
+      SIM.idleSinceDue = (SIM.idleSinceDue || 0) + 1;
+      if (SIM.idleSinceDue >= 3) {
+        so.forceReview = true;
+        applyReview("skip", so);
+      }
+    }
+    doActionFinish("skip", so, 0);
+    return;
+  }
+  if (a === "nibp") {
+    var no = (typeof cycleNIBP === "function" ? cycleNIBP(SIM, false) : O("info", "n_nibp"));
+    no.label = "Cycle NIBP now";
+    doActionFinish("nibp", no, 30);
+    return;
+  }
+  var harm = typeof detectHarm === "function" ? detectHarm(a, SIM) : null;
+  var label = a === "aden" ? adenLabel(SIM.aden) : (ACT[a] ? ACT[a].label : a);
   var o = SIM.scn.step(a, SIM) || genericOutcome(a, SIM);
-  /* time cost */
-  if (a === "ff" && SIM.cpr) SIM.clock = Math.max(SIM.clock, SIM.cycleStart + 120);
-  else SIM.clock += ACT_TIME[a] || 0;
-  if (o.cprStart && !SIM.cpr) { SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false; }
+  if (a === "ff" && !SIM.cpr && !SIM.pulse && SIM.phase !== "organised" && o.keys && o.keys.indexOf("a_ffNoCPR") >= 0) {
+    o = O("ok", "n_skip", { cprStart: true, cprStop: true, cycleCheck: true });
+  }
+  if (harm) {
+    o.harm = harm;
+    o.keys = [harm.id].concat(o.keys || []);
+    if (!hintsOn()) {
+      o.v = "bad";
+      o.end = true;
+      o.endReason = "harm";
+      o.verdictText = "Patient harmed: scenario ended";
+    } else {
+      o.v = "bad";
+      o.end = false;
+      o.endReason = "";
+    }
+  }
+  if (!o.label) o.label = label;
+  doActionFinish(a, o, null);
+}
+function doActionFinish(a, o, timeCost) {
+  if (!SIM || !o) return;
+  var label = o.label || (a === "aden" ? adenLabel(SIM.aden) : (ACT[a] ? ACT[a].label : a));
+  if (timeCost == null) {
+    if (a === "ff") {
+      if (o.cprStart && !SIM.cpr) { SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false; }
+      if (SIM.cpr) SIM.clock = Math.max(SIM.clock, (SIM.cycleStart || SIM.clock) + 120);
+      else SIM.clock += ACT_TIME[a] || 0;
+    } else {
+      SIM.clock += ACT_TIME[a] || 0;
+      if (o.cprStart && !SIM.cpr) { SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false; }
+    }
+  } else if (timeCost) {
+    SIM.clock += timeCost;
+    if (o.cprStart && !SIM.cpr) { SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false; }
+  } else if (o.cprStart && !SIM.cpr) {
+    SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false;
+  }
   if (o.cprStop) SIM.cpr = false;
   if (o.pulse !== undefined) SIM.pulse = o.pulse;
   if (o.vit) Object.keys(o.vit).forEach(function (k) { SIM.vit[k] = o.vit[k]; });
+  if (SIM.mon) SIM.mon.arrest = !SIM.pulse;
   o.label = label; o.t = SIM.clock;
-  if ((a === "shock" || a === "sync") && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync", "h1_shock", "h2_shock", "h4_shockAsys", "h9_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
-  applyReview(a, o);
+  if (o.event == null && typeof defaultEvent === "function") o.event = defaultEvent(a, label);
+  if ((a === "shock" || a === "sync") && o.keys && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync", "h1_shock", "h2_shock", "h4_shockAsys", "h9_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
+  if (a !== "skip") applyReview(a, o);
   logEvent(o, label, a);
   var changed = false;
   if (o.rhythm) { changed = o.rhythm.gen !== SIM.rhythm.gen || JSON.stringify(o.rhythm.opts || {}) !== JSON.stringify(SIM.rhythm.opts || {}); SIM.rhythm = o.rhythm; }
   if (o.rhythm || o.cprStart || o.cprStop) SIM.sig = monitor.set(SIM.rhythm, SIM.cpr, true);
   if (changed) {
     o.changeAnnounce = rhythmAnnounce(o);
-    logEvent(null, o.changeAnnounce);
+    if (hintsOn()) logEvent(null, o.changeAnnounce);
   }
   renderVitals(); renderClock(); renderFeedback(o, changed);
   if (a === "aden" && o.v !== "info") renderActions();
@@ -5063,6 +5697,7 @@ function doAction(a) {
   if (o.end) finishScenario(!o.endReason || o.endReason === "complete", o.endReason);
   if (window.innerWidth < 900) $("scnFeedback").scrollIntoView({ block: "start", behavior: prefersReduced() ? "auto" : "smooth" });
 }
+
 function rhythmAnnounce(o) {
   var names = { vf: "VF", vt: "VT", torsades: "torsades de pointes", asystole: "asystole", pea: "PEA", sinus: "sinus rhythm", sinus_tachy: "sinus tachycardia", sinus_brady: "sinus bradycardia" };
   var name = names[o.rhythm.gen] || o.rhythm.gen;
@@ -5075,25 +5710,36 @@ function renderFeedback(o, changed) {
   var ic = o.v === "ok" ? ICON_OK : o.v === "bad" ? ICON_NO : "<span class='verdict-glyph' aria-hidden='true'>" + VERD[o.v][0] + "</span>";
   var verdict = o.verdictText ? (ic + esc(o.verdictText)) : (ic + VERD[o.v][1] + ": " + esc(o.label));
   var html = "<p class='explain-kicker'>Feedback</p><p class='verdict-line'>" + verdict + "</p>";
-  if (o.changeAnnounce) html += "<p class='scn-change'><strong>" + esc(o.changeAnnounce) + "</strong></p>";
+  if (o.harm && o.endReason === "harm" && !hintsOn()) {
+    $("scnFeedback").innerHTML = html;
+    return;
+  }
+  var on = hintsOn();
+  if (on && o.changeAnnounce) html += "<p class='scn-change'><strong>" + esc(o.changeAnnounce) + "</strong></p>";
   if (o.regLine) html += "<p class='scn-nudge'><strong>" + esc(o.regLine) + "</strong></p>";
   else if (o.nudge === 2 && o.nudgeText) html += "<p class='scn-nudge'>" + esc(o.nudgeText) + "</p>";
-  var on = hintsOn();
-  o.keys.forEach(function (k) {
-    var t = TXT[k]; if (!t) return;
-    if (!on && (k === "n_due1" || k === "n_due2" || k === "n_dueEnd" || k === "n_capEnd" || k === "n_reg")) return;
-    if (on) html += "<p class='scn-fb'>" + txtHTML(k) + "</p>";
-    else {
-      if (t.outcome) html += "<p class='scn-fb'>" + esc(t.outcome) + "</p>";
-      if ((o.v === "bad" || o.v === "part") && t.whyWrong) html += "<p class='scn-fb'>" + esc(t.whyWrong) + "</p>";
+  if (!on) {
+    var ev = o.event || (o.keys && TXT[o.keys[0]] && TXT[o.keys[0]].event) || "";
+    if (!ev && typeof defaultEvent === "function") ev = defaultEvent("", o.label);
+    if (ev) html += "<p class='scn-fb'>" + esc(ev) + "</p>";
+    if (o.v === "part") {
+      (o.keys || []).forEach(function (k) {
+        var tx = TXT[k];
+        if (tx && tx.whyWrong) html += "<p class='scn-fb'>" + esc(tx.whyWrong) + "</p>";
+      });
     }
-  });
-  var phys = physForLive(o.phys);
-  if (phys) html += "<div class='panel-block'><h3>" + (changed ? "Why the rhythm changed" : "Physiology") + "</h3><p>" + esc(phys) + "</p></div>";
-  if (on) {
+  } else {
+    o.keys.forEach(function (k) {
+      var t = TXT[k]; if (!t) return;
+      html += "<p class='scn-fb'>" + txtHTML(k) + "</p>";
+    });
+    var phys = physForLive(o.phys);
+    if (phys) html += "<div class='panel-block'><h3>" + (changed ? "Why the rhythm changed" : "Physiology") + "</h3><p>" + esc(phys) + "</p></div>";
     var k = o.keys[o.keys.length - 1], i;
     for (i = o.keys.length - 1; i >= 0; i--) if (TXT[o.keys[i]] && TXT[o.keys[i]].guideline) { k = o.keys[i]; break; }
-    if (TXT[k] && TXT[k].guideline) html += "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[k].guideline) + "</p><p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(k) + "</p>";
+    if (TXT[k] && TXT[k].guideline) html += "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[k].guideline) + "</p>";
+    if (typeof algLinkHTML === "function") html += algLinkHTML(k);
+    else if (TXT[k] && TXT[k].guideline) html += "<p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(k) + "</p>";
   }
   $("scnFeedback").innerHTML = html;
 }
@@ -5102,9 +5748,15 @@ function finishScenario(completed, reason) {
   SIM.done = true; SIM.completed = completed; SIM.endReason = reason || (completed ? "complete" : "early");
   clearInterval(simTimer);
   renderActions();
-  var endLine = SIM.endReason === "missed" ? "Scenario ended: key step missed." : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution." : (completed ? "Scenario complete." : "Scenario ended early.");
+  var endLine;
+  if (SIM.endReason === "harm") endLine = "Patient harmed: scenario ended.";
+  else if (SIM.endReason === "missed") {
+    var missNames = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean);
+    endLine = missNames.length ? "Scenario ended: key step missed. Missed: " + missNames.join("; ") : "Scenario ended: key step missed.";
+  } else if (SIM.endReason === "cap") endLine = "Scenario ended: too many cycles without a resolution.";
+  else endLine = completed ? "Scenario complete." : "Scenario ended early.";
   logEvent(null, endLine);
-  if (SIM.endReason === "missed" || SIM.endReason === "cap") {
+  if (SIM.endReason === "missed" || SIM.endReason === "cap" || SIM.endReason === "harm") {
     showDebrief();
   } else {
     var b = $("scnFeedback"), btn = document.createElement("div"); btn.className = "predict-actions";
@@ -5127,7 +5779,7 @@ function showDebrief() {
     if (!seenMiss[d.id] && !SIM.did[d.id]) { missed.push([d.id, d.name, d.src, d.guideline]); seenMiss[d.id] = 1; }
   });
   var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
-  var ended = SIM.endReason === "missed" ? "Scenario ended: key step missed" : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
+  var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
   html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct scores 1, partly right 0.5, not quite 0; noted actions are not scored. Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed at the end." : "") + "</p>";
   html += "<ol class='debrief-list'>" + acts.map(function (l) {
     var k = l.o.keys || [];
@@ -5197,7 +5849,21 @@ function exitScenarioMode(silent) {
 }
 $("scnToggle").addEventListener("click", function () { if (mode === "scenario") exitScenarioMode(); else enterScenarioMode(); });
 $("scnEnd").addEventListener("click", function () { if (SIM && !SIM.done) finishScenario(false); });
+$("scnRestart").addEventListener("click", function () { if (SIM) startScenario(SIM.scn.id, SIM.random); });
 $("scnBack").addEventListener("click", showChooser);
+var srcBtn = $("scnSourcesBtn"), srcClose = $("scnSourcesClose"), srcBg = $("scnSourcesBackdrop");
+if (srcBtn) srcBtn.addEventListener("click", openSourcesModal);
+if (srcClose) srcClose.addEventListener("click", closeSourcesModal);
+if (srcBg) srcBg.addEventListener("click", closeSourcesModal);
+var causeClose = $("scnCauseClose"), askClose = $("scnAskClose");
+if (causeClose) causeClose.addEventListener("click", function () { closeScnMenu("scnCauseList"); });
+if (askClose) askClose.addEventListener("click", function () { closeScnMenu("scnAskList"); });
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Escape") return;
+  if ($("scnSourcesModal") && !$("scnSourcesModal").hidden) return;
+  closeScnMenu("scnCauseList"); closeScnMenu("scnAskList");
+});
+
 $("scnHints").addEventListener("click", function () { setHints(!hintsOn()); });
 $("scnReg").addEventListener("click", callReg);
 (function initScnGuide() {
@@ -5210,6 +5876,6 @@ $("scnReg").addEventListener("click", callReg);
   });
 })();
 syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, due: function () { return outstandingSteps(SIM); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; } };
+window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; } };
 </script>
 </body></html>
