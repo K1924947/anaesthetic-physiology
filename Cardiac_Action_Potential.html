@@ -3,19 +3,99 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex">
 <title>Cardiac Action Potential · Physio Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css">
 <link rel="stylesheet" href="assets/layout.css">
+<link rel="stylesheet" href="assets/pv-core.css">
+<link rel="stylesheet" href="assets/pv-tool.css">
 <script src="assets/theme.js"></script>
+
+<style>
+/* Cardiac Action Potential: page additions on top of the PV tool template */
+.tool-controls { grid-template-columns: 1fr; }
+@media (min-width: 900px) { .tool-controls { grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); } }
+.scen-elec .scen-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.scen-auto .scen-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.scen-isch .scen-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.scen-drug .scen-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.scen-mid { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+@media (max-width: 640px) {
+  .scen-elec .scen-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .scen-drug .scen-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .scen-mid { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) { .scen-drug .scen-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ctl-block + .ctl-block { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.ctl-label { font-family: var(--font-sans); font-size: 15px; font-weight: 700; margin: 0 0 6px; padding-left: 8px; border-left: 3px solid var(--text); }
+.seg { display: grid; gap: 6px; }
+.seg-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.seg-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.seg button { min-height: 44px; font-family: var(--font-sans); font-size: 14px; font-weight: 700; padding: 6px 8px; line-height: 1.2; white-space: normal; }
+.seg.seg-minor button { min-height: 40px; font-size: 13px; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+.seg button[aria-pressed="true"]::before { content: "\2713\00a0"; }
+.seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+.seg button:disabled[aria-pressed="true"] { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.seg button:disabled[aria-pressed="true"]::before { content: none; }
+.minor-label { font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: var(--muted); margin: 8px 0 4px; }
+.grade-note { font-family: var(--font-sans); font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.live-readout { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.live-readout .stat-val { font-size: 16px; }
+.live-readout .stat-label { font-size: 12.5px; line-height: 1.2; }
+.live-readout .stat.is-changed { border-color: var(--text); border-width: 2px; }
+.live-readout .stat .delta { display: block; font-family: var(--font-sans); font-size: 12px; color: var(--muted); }
+@media (max-width: 640px) { .live-readout { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.graph-card #phaseBtns { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.graph-card #phaseBtns.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .graph-card #phaseBtns { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.graph-card .phase-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 48px; font-family: var(--font-sans); font-size: 13.5px; font-weight: 700; line-height: 1.2; padding: 6px 4px; white-space: normal; text-align: center; }
+.phase-btn[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+.phase-btn small { display: block; font-weight: 600; font-size: 12px; }
+.trace-key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-family: var(--font-sans); font-size: 13px; }
+.trace-key li { display: inline-flex; align-items: center; gap: 6px; }
+.trace-key svg { width: 34px; height: 14px; flex: 0 0 34px; }
+#apSvg .clickable { cursor: pointer; }
+#apSvg text { font-family: var(--font-sans); }
+.tag { display: inline-block; font-family: var(--font-sans); font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em; padding: 0 6px; border-radius: 999px; border: 1.5px solid var(--text); margin-left: 4px; vertical-align: 1px; line-height: 1.5; white-space: nowrap; }
+.tag-S { background: var(--surface); }
+.tag-P { border-style: dashed; }
+.tag-M { border-style: dotted; background: var(--surface-2); }
+.src-note { display: block; font-family: var(--font-sans); font-size: 12px; color: var(--muted); margin-top: 1px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; padding: 0; list-style: none; }
+.chips li { font-family: var(--font-sans); font-size: 12.5px; font-weight: 700; border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 1px 7px; }
+.switch-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; padding: 8px 10px; border: 1px dashed var(--text); border-radius: 10px; font-family: var(--font-sans); font-size: 13.5px; }
+.switch-hint button { min-height: 40px; font-size: 13px; padding: 4px 10px; }
+.predict-debrief { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.predict-debrief h3 { font-family: var(--font-sans); font-size: 15px; margin: 0 0 6px; }
+.predict-debrief ul { margin: 0; padding-left: 1.1em; font-size: 14px; }
+.tag-key { font-family: var(--font-sans); font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+.vw-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.vw-table th, .vw-table td { border-bottom: 1px solid var(--border); padding: 7px 8px; text-align: left; vertical-align: top; }
+.vw-table thead th { font-family: var(--font-sans); font-size: 13.5px; }
+.vw-table tbody th { font-family: var(--font-sans); white-space: nowrap; }
+.vw-wrap { overflow-x: auto; }
+@media (max-width: 700px) {
+  .vw-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .vw-table, .vw-table tbody, .vw-table tr, .vw-table th, .vw-table td { display: block; width: 100%; }
+  .vw-table tr { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; padding: 6px 8px; }
+  .vw-table td, .vw-table th { border: 0; padding: 3px 0; }
+  .vw-table td::before { content: attr(data-h) ": "; font-family: var(--font-sans); font-weight: 700; }
+}
+.scen-elec .scen-btn { padding-left: 4px; padding-right: 4px; }
+.skip-link:focus { outline: 3px solid var(--text); outline-offset: 2px; }
+.footer-disc { font-family: var(--font-sans); font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.page-tool .tool-view-header h1 { font-weight: 700; }
+.revise-title { font-size: 24px; font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="page page-wide">
-  <header class="site-header">
+<a class="skip-link" href="#tool">Skip to the action potential</a>
+<div class="page page-wide page-tool">
+  <header class="site-header tool-view-header">
     <div class="site-header-top">
       <nav class="crumb" aria-label="Breadcrumb">
         <a href="index.html">Home</a>
@@ -29,23 +109,208 @@
         <span class="cb-toggle-text">Colour-blind mode</span>
       </button>
     </div>
-    <div class="brand" style="text-align:left;">
-      <p class="kicker" style="text-align:left;">Cardiac</p>
-      <h1 class="title" style="text-align:left;">Cardiac Action Potential</h1>
-    </div>
+    <h1>Cardiac Action Potential</h1>
+    <p class="subtitle">Fast Na+ channels drive the working myocyte; Ca2+ channels and the funny current set the pace.</p>
   </header>
 
-  <main id="main">
-    <div class="uc-panel">
-      <span class="uc-badge"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2 13.5h12M3.2 13.5l2.4-8h4.8l2.4 8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M4.4 10.5h7.2M5.3 8h5.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Under construction</span>
-      <p>Under construction: this tool is being rebuilt and rechecked. Check back soon.</p>
-      <ul class="uc-links">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="cardiac.html">Cardiac hub</a></li>
-        <li><a href="PV_Loop.html">Pressure–Volume Loop</a></li>
-        <li><a href="ECG_Rhythm_Quiz.html">ECG Rhythm Quiz</a></li>
-      </ul>
-    </div>
+  <main>
+    <section id="tool" aria-label="Interactive cardiac action potential">
+      <div class="test-banner" id="testBanner">
+        <span class="test-banner-icon" aria-hidden="true">?</span>
+        <div class="test-banner-copy">
+          <h2 class="test-banner-title" id="predict-label">Test yourself!</h2>
+          <p class="test-banner-tag">Predict how the action potential and ECG change, then reveal.</p>
+        </div>
+        <p class="test-banner-score" id="testBannerScore" hidden></p>
+        <button type="button" class="test-banner-cta" id="predictToggle" role="switch" aria-checked="false" aria-label="Start Test yourself">
+          <span class="test-cta-label">Start</span>
+        </button>
+      </div>
+
+      <div class="tool-controls">
+        <fieldset class="scen-panel">
+          <legend>Scenarios</legend>
+          <div class="scen-groups" id="scenarioGroups"></div>
+        </fieldset>
+        <div class="guide-panel">
+          <div class="ctl-block">
+            <h2 class="ctl-label" id="cell-label">Cell</h2>
+            <div class="seg seg-2" role="group" aria-labelledby="cell-label" id="cellMain"></div>
+            <p class="minor-label" id="cell-extra-label">Optional extras</p>
+            <div class="seg seg-2 seg-minor" role="group" aria-labelledby="cell-extra-label" id="cellExtra"></div>
+          </div>
+          <div class="ctl-block">
+            <h2 class="ctl-label" id="grade-label">Potassium severity</h2>
+            <div class="seg seg-3" role="group" aria-labelledby="grade-label" id="gradeBtns"></div>
+            <p class="grade-note" id="gradeNote"></p>
+          </div>
+          <div class="ctl-block try-this" role="group" aria-labelledby="try-heading">
+            <h2 id="try-heading" class="ctl-label">Try this</h2>
+            <ol class="try-list">
+              <li><button type="button" class="try-btn" data-try="hyperk" data-cell="vent" data-grade="2">Severe hyperkalaemia: the resting potential rises and the T wave peaks</button></li>
+              <li><button type="button" class="try-btn" data-try="symp" data-cell="sa">SA node with sympathetic tone: phase 4 steepens and the rate rises</button></li>
+              <li><button type="button" class="try-btn" data-try="c3" data-cell="vent">Class III: phase 3 and the QT lengthen</button></li>
+              <li><button type="button" class="try-btn" data-try="c2" data-cell="sa">Class II: the nodal phase 4 flattens</button></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-hero">
+        <div class="tool-stage">
+          <div class="graph-card">
+            <svg id="apSvg" viewBox="0 0 640 604" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ap-title ap-desc"></svg>
+            <p id="ap-title" class="visually-hidden">Cardiac action potential with a linked ECG strip</p>
+            <p id="ap-desc" class="visually-hidden">Membrane potential in millivolts against time in milliseconds, above a schematic ECG on the same time axis. The current trace is solid with filled circles; the normal trace is dashed with open squares. Use the phase buttons below to select a phase.</p>
+            <div class="graph-chrome">
+              <p class="loop-status" id="loopStatus" hidden></p>
+              <div class="live-readout" id="statsStrip" aria-label="Live action potential values"></div>
+              <div class="phase-btns" id="phaseBtns" role="group" aria-label="Action potential phases"></div>
+              <ul class="trace-key" id="traceKey" aria-label="Key to the graph"></ul>
+            </div>
+          </div>
+          <p class="disclaimer">Schematic traces built from textbook anchor values (simulation simplifications). Exact millivolt values, durations and thresholds vary between sources, species and cell types. The dashed trace is the schematic normal.</p>
+          <p class="sr-status visually-hidden" id="srStatus" aria-live="polite"></p>
+        </div>
+        <aside class="tool-side">
+          <div class="card explain-panel" id="scenarioPanel" aria-live="polite"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="revise-section" aria-labelledby="revise-heading">
+      <h2 id="revise-heading" class="revise-title">Revise this topic</h2>
+      <div class="revise-tabs" role="tablist" aria-label="Revision sections">
+        <button type="button" role="tab" id="tab-summary" aria-selected="true" aria-controls="panel-summary" tabindex="0">One-screen summary</button>
+        <button type="button" role="tab" id="tab-viva" aria-selected="false" aria-controls="panel-viva" tabindex="-1">Viva questions</button>
+        <button type="button" role="tab" id="tab-numbers" aria-selected="false" aria-controls="panel-numbers" tabindex="-1">Key numbers</button>
+        <button type="button" role="tab" id="tab-vw" aria-selected="false" aria-controls="panel-vw" tabindex="-1">Vaughan Williams classes</button>
+      </div>
+      <div class="revise-panels">
+        <div id="panel-summary" class="revise-panel" role="tabpanel" aria-labelledby="tab-summary" tabindex="0">
+          <div class="summary-grid">
+            <article class="card summary-card">
+              <h3 class="card-title">Fast response: ventricle, atria, Purkinje</h3>
+              <ul>
+                <li><strong>Phase 4:</strong> rest about <strong>−90 mV</strong>, near EK; IK1 open</li>
+                <li><strong>Phase 0:</strong> INa (Nav1.5) from threshold about <strong>−70 mV</strong> rapidly to about +20 mV</li>
+                <li><strong>Phase 1:</strong> Ito notch · <strong>Phase 2:</strong> ICa-L balances IK (plateau) · <strong>Phase 3:</strong> IKr, IKs, IK1</li>
+                <li>AP lasts <strong>200 to 400 ms</strong>; long refractory period</li>
+              </ul>
+            </article>
+            <article class="card summary-card">
+              <h3 class="card-title">Slow response: SA and AV node</h3>
+              <ul>
+                <li>No stable rest: maximum diastolic about <strong>−60 mV</strong></li>
+                <li><strong>Phase 4:</strong> If (HCN), then T-type (about −50 mV) and L-type (about −40 mV) Ca2+; IK falls</li>
+                <li><strong>Phase 0:</strong> ICa-L from <strong>−40 to −30 mV</strong>, much slower upstroke · <strong>Phase 3:</strong> IK</li>
+                <li><strong>Phase 4 slope sets the rate</strong>: intrinsic 100 to 110 /min, about 60 to 80 /min with resting vagal tone</li>
+              </ul>
+            </article>
+            <article class="card summary-card">
+              <h3 class="card-title">From cell to ECG</h3>
+              <ul>
+                <li>Ventricular <strong>phase 0 → QRS</strong>; <strong>phase 2 → ST segment</strong>; <strong>phase 3 → T wave</strong></li>
+                <li>Atrial phase 0 → P wave; atrial repolarisation hidden in the QRS</li>
+                <li>SA <strong>phase 4 slope → rate</strong> (RR interval); faster upstroke → faster conduction</li>
+                <li>Longer ventricular AP → longer QT</li>
+              </ul>
+            </article>
+            <article class="card summary-card">
+              <h3 class="card-title">What changes it</h3>
+              <ul>
+                <li><strong>High K+:</strong> rest less negative, slow phase 0, fast phase 3: peaked T, wide QRS, slow rate</li>
+                <li><strong>Low K+:</strong> slow phase 3: flat T, U waves, long QU · <strong>Ca2+:</strong> high shortens, low lengthens the plateau and QT</li>
+                <li><strong>β1:</strong> steeper nodal phase 4 · <strong>ACh (M2):</strong> hyperpolarised, flatter</li>
+                <li><strong>Drugs:</strong> I phase 0 (QRS) · III phase 3 (QT) · II, IV, adenosine on the <strong>nodal</strong> phase 4 and AV node (rate, PR)</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+        <div id="panel-viva" class="revise-panel" role="tabpanel" aria-labelledby="tab-viva" tabindex="0" hidden>
+          <details class="hy-details"><summary><span class="viva-q">1. Why does a ventricular myocyte rest near −90 mV?</span></summary>
+            <div class="details-body viva-a">At rest the membrane is mostly permeable to K+ (IK1 open; fast Na+ and L-type Ca2+ channels closed), so it sits close to the K+ equilibrium potential, about −96 mV at an extracellular K+ of 4 mmol/L. The Na+/K+-ATPase keeps the gradients. <span class="src-note">Klabunde, Membrane potentials and Non-pacemaker action potentials; Wikipedia, Cardiac action potential.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">2. Compare fast-response and slow-response action potentials.</span></summary>
+            <div class="details-body viva-a">Fast response (atrial and ventricular myocytes, Purkinje fibres): stable rest near −90 mV, a rapid Na+-driven phase 0 and a plateau. Slow response (SA and AV nodes): no stable rest, a pacemaker phase 4, a slow Ca2+-driven phase 0 from about −40 mV and no distinct phases 1 and 2. Purkinje cells are fast response but show slow phase 4 depolarisation. <span class="src-note">Klabunde, Action potentials; SA node action potentials.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">3. What carries the plateau, and why does it matter?</span></summary>
+            <div class="details-body viva-a">Inward L-type Ca2+ current balances outward K+ current. The Ca2+ triggers calcium-induced calcium release from the sarcoplasmic reticulum for contraction. The plateau prolongs the AP and the effective refractory period (phases 0 to 3 and early 4), which limits how quickly the cell can be re-excited. <span class="src-note">Klabunde, Non-pacemaker action potentials; Wikipedia, Cardiac action potential.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">4. How do sympathetic and vagal nerves change the heart rate?</span></summary>
+            <div class="details-body viva-a">Noradrenaline on β1 receptors raises cAMP, which increases If and L-type Ca2+ current: phase 4 steepens and threshold is reached sooner. ACh on M2 receptors activates Gi: K+ channels open (hyperpolarisation) and If and Ca2+ current fall, so phase 4 starts lower and rises more slowly. At rest vagal tone dominates. <span class="src-note">Klabunde, Regulation of pacemaker activity; Wikipedia, Cardiac action potential.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">5. Explain the ECG of hyperkalaemia from the action potential.</span></summary>
+            <div class="details-body viva-a">Raised K+ makes the resting potential less negative, inactivating fast Na+ channels: phase 0 slows, so conduction slows (wide QRS, longer PR, flat P). Raised K+ also speeds repolarisation, tenting the T wave. In the SA node the pacemaker slope falls (bradycardia). Changes usually appear from about 6.0 mmol/L but correlate poorly with the level. <span class="src-note">Wikipedia, Hyperkalemia; LITFL, Hyperkalaemia; Klabunde, Regulation of pacemaker activity.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">6. Why does hypokalaemia give U waves and an apparently long QT?</span></summary>
+            <div class="details-body viva-a">Low K+ paradoxically reduces IKr and delays repolarisation. T waves flatten or invert, U waves (attributed to prolonged Purkinje repolarisation) become prominent and fuse with the T wave, so the measured interval is really a long QU. <span class="src-note">Wikipedia, Hypokalemia; LITFL, Hypokalaemia.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">7. How do classes Ia, Ib and Ic differ?</span></summary>
+            <div class="details-body viva-a">All block fast Na+ channels and slow phase 0. Ic has the strongest effect and leaves APD little changed; Ia is intermediate and lengthens APD and ERP (K+ block); Ib has the weakest effect in normal tissue, shortens APD and binds mainly inactivated channels, so it acts most in ischaemic tissue. <span class="src-note">Klabunde, Class I antiarrhythmics; Wikipedia, Antiarrhythmic agent.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">8. On which phase do β-blockers, verapamil and adenosine act?</span></summary>
+            <div class="details-body viva-a">On the <strong>nodal</strong> action potential. β-blockers flatten the SA phase 4 by removing sympathetic drive; verapamil and diltiazem flatten phase 4 and slow the Ca2+-driven phase 0; adenosine (A1, Gi) opens K+ channels, inhibits If and slows AV conduction. Ventricular phase 4 is a stable resting potential, not a pacemaker slope. <span class="src-note">Klabunde, CV Pharmacology: Beta-blockers, Calcium-channel blockers, Adenosine.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">9. Why do drugs that prolong the AP help re-entry but risk torsades?</span></summary>
+            <div class="details-body viva-a">A longer ERP means a re-entering wave meets refractory tissue and dies out. A longer AP and QT can also allow afterdepolarisations, which trigger torsades de pointes, especially with long QT syndrome or hypokalaemia. <span class="src-note">Klabunde, Class III antiarrhythmics; BNF, Arrhythmias.</span></div></details>
+          <details class="hy-details"><summary><span class="viva-q">10. Why does ischaemia slow conduction?</span></summary>
+            <div class="details-body viva-a">Without ATP the Na+/K+-ATPase fails and K+ is lost, so the membrane depolarises. Depolarised cells have more inactivated Na+ channels (all are inactivated near −50 mV), so phase 0 is slower and smaller and conduction slows. Ischaemic cells may then fire slow Ca2+-dependent APs and show abnormal automaticity. <span class="src-note">Klabunde, Na+/K+-ATPase; Non-pacemaker action potentials.</span></div></details>
+        </div>
+        <div id="panel-numbers" class="revise-panel" role="tabpanel" aria-labelledby="tab-numbers" tabindex="0" hidden>
+          <p class="hy-lead" style="margin-top:0;">Teaching values. Sources differ on exact millivolt values; see the flags in the sources section.</p>
+          <div class="nums-table-wrap">
+            <table class="nums-table">
+              <caption class="visually-hidden">Key numbers for the cardiac action potential with sources</caption>
+              <thead><tr><th scope="col">Parameter</th><th scope="col">Typical teaching value</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Ventricular resting potential</th><td><div class="val">About −90 mV</div><div class="src">Klabunde; Wikipedia, Cardiac action potential</div></td></tr>
+                <tr><th scope="row">Fast-cell threshold</th><td><div class="val">About −70 mV</div><div class="src">Klabunde; Wikipedia</div></td></tr>
+                <tr><th scope="row">Ventricular AP peak</th><td><div class="val">About +20 mV (Klabunde); Wikipedia quotes about +50 mV</div><div class="src">Klabunde, Membrane potentials; Wikipedia</div></td></tr>
+                <tr><th scope="row">Cardiac AP duration</th><td><div class="val">200 to 400 ms (nerve about 1 ms; skeletal muscle 2 to 5 ms)</div><div class="src">Klabunde, Action potentials</div></td></tr>
+                <tr><th scope="row">SA node maximum diastolic potential</th><td><div class="val">About −60 mV</div><div class="src">Klabunde, SA node action potentials</div></td></tr>
+                <tr><th scope="row">SA node threshold</th><td><div class="val">About −40 to −30 mV</div><div class="src">Klabunde, SA node action potentials</div></td></tr>
+                <tr><th scope="row">SA node rate</th><td><div class="val">Intrinsic 100 to 110 /min; 60 to 80 /min with resting vagal tone</div><div class="src">Klabunde, Regulation of pacemaker activity</div></td></tr>
+                <tr><th scope="row">Escape rates</th><td><div class="val">AV node 40 to 60 /min; Purkinje 20 to 40 /min</div><div class="src">Wikipedia, Cardiac action potential (partly uncited)</div></td></tr>
+                <tr><th scope="row">Equilibrium potentials</th><td><div class="val">EK about −96 mV (K+ 4 mmol/L); ENa about +52 mV; ECa about +134 mV</div><div class="src">Klabunde, Membrane potentials</div></td></tr>
+                <tr><th scope="row">Conduction velocity</th><td><div class="val">Atria 0.5; AV node 0.05; bundle branches 2; Purkinje 4 m/s</div><div class="src">Klabunde, Electrical conduction</div></td></tr>
+                <tr><th scope="row">Hyperkalaemia</th><td><div class="val">Over 5.2 mmol/L; mild 5.3 to 6.0, moderate 6.0 to 6.9, severe 7.0 or more; ECG changes usually from 6.0</div><div class="src">LITFL, Hyperkalaemia</div></td></tr>
+                <tr><th scope="row">Hypokalaemia</th><td><div class="val">Under 3.5 mmol/L; mild 3.0 to 3.4, moderate 2.5 to 2.9, severe 2.4 or less</div><div class="src">LITFL, Hypokalaemia</div></td></tr>
+                <tr><th scope="row">Corrected calcium</th><td><div class="val">Normal about 2.1 to 2.6 mmol/L; severe hypercalcaemia over 3.4; severe hypocalcaemia under 1.9</div><div class="src">LITFL, Hypercalcaemia and Hypocalcaemia (lower limit 2.1 or 2.2)</div></td></tr>
+                <tr><th scope="row">Adenosine half-life</th><td><div class="val">Under 10 s (about 8 to 10 s)</div><div class="src">Klabunde, Adenosine; BNF, Arrhythmias</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="panel-vw" class="revise-panel" role="tabpanel" aria-labelledby="tab-vw" tabindex="0" hidden>
+          <p class="hy-lead" style="margin-top:0;">Vaughan Williams classes. Many drugs act in more than one class, so any classification is imprecise. Examples only: check the BNF for indications and doses.</p>
+          <div class="vw-wrap">
+            <table class="vw-table">
+              <caption class="visually-hidden">Vaughan Williams classes with example, channel, action potential effect and ECG effect</caption>
+              <thead><tr><th scope="col">Class</th><th scope="col">Example</th><th scope="col">Channel or target</th><th scope="col">AP effect</th><th scope="col">ECG effect</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Ia</th><td data-h="Example">Disopyramide (quinidine, procainamide)</td><td data-h="Channel">Fast Na+ (intermediate) plus K+</td><td data-h="AP effect">Phase 0 slower; APD and ERP longer</td><td data-h="ECG effect">QRS a little wider; QT longer</td></tr>
+                <tr><th scope="row">Ib</th><td data-h="Example">Lidocaine</td><td data-h="Channel">Fast Na+ (fast kinetics, inactivated channels)</td><td data-h="AP effect">Little phase 0 change in normal tissue; APD shorter</td><td data-h="ECG effect">Little change</td></tr>
+                <tr><th scope="row">Ic</th><td data-h="Example">Flecainide</td><td data-h="Channel">Fast Na+ (slow dissociation)</td><td data-h="AP effect">Phase 0 markedly slower; APD little changed</td><td data-h="ECG effect">QRS wider</td></tr>
+                <tr><th scope="row">II</th><td data-h="Example">Metoprolol, bisoprolol</td><td data-h="Channel">β1 receptor (less cAMP: If, ICa-L)</td><td data-h="AP effect">Nodal phase 4 flatter; slower AV conduction</td><td data-h="ECG effect">Slower rate; PR longer</td></tr>
+                <tr><th scope="row">III</th><td data-h="Example">Amiodarone, sotalol</td><td data-h="Channel">K+ (IKr), phase 3</td><td data-h="AP effect">Phase 3 slower; APD and ERP longer</td><td data-h="ECG effect">QT longer; torsades risk</td></tr>
+                <tr><th scope="row">IV</th><td data-h="Example">Verapamil, diltiazem</td><td data-h="Channel">L-type Ca2+</td><td data-h="AP effect">Nodal phase 4 flatter, phase 0 slower; lower plateau</td><td data-h="ECG effect">Slower rate; PR longer</td></tr>
+                <tr><th scope="row">Other</th><td data-h="Example">Adenosine</td><td data-h="Channel">A1 receptor: K+ channels open; If and ICa-L fall</td><td data-h="AP effect">Nodal phase 4 hyperpolarised and flatter</td><td data-h="ECG effect">Transient AV block (seconds)</td></tr>
+                <tr><th scope="row">Other</th><td data-h="Example">Digoxin</td><td data-h="Channel">Na+/K+-ATPase; more vagal activity</td><td data-h="AP effect">Nodal slowing; shorter ventricular AP</td><td data-h="ECG effect">Sagging ST, short QT, PR a little longer</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="src-note" style="margin-top:8px;">Sources: Klabunde, CV Pharmacology (Class I, Class III, Beta-blockers, Calcium-channel blockers, Adenosine, Digoxin); Wikipedia, Antiarrhythmic agent; BNF, Arrhythmias treatment summary; LITFL, Digoxin effect.</p>
+        </div>
+      </div>
+      <details class="revise-sources">
+        <summary>Sources and how to read the tags</summary>
+        <div class="details-body">
+          <p class="tag-key">Tags in the panel: <span class="tag tag-S">Source</span> taken from the cited page or book; <span class="tag tag-P">Physiology</span> standard reasoning not quoted from a fetched page; <span class="tag tag-M">Simulation</span> a simplification made to draw the trace.</p>
+          <ul class="source-list">
+            <li>Klabunde RE. <cite>CV Physiology</cite> (cvphysiology.com): Non-pacemaker action potentials; Sinoatrial node action potentials; Regulation of pacemaker activity; Membrane potentials; Na+/K+-ATPase; Action potentials; Normal and abnormal electrical conduction.</li>
+            <li>Klabunde RE. <cite>CV Pharmacology</cite> (cvpharmacology.com): Antiarrhythmic drugs; Class I and Class III antiarrhythmics; Beta-blockers; Calcium-channel blockers; Adenosine; Digoxin.</li>
+            <li><cite>BNF</cite> (bnf.nice.org.uk): Arrhythmias treatment summary; adenosine; amiodarone; digoxin; disopyramide; flecainide; lidocaine; metoprolol; sotalol; verapamil.</li>
+            <li>LITFL ECG Library: Hyperkalaemia; Hypokalaemia; Hypercalcaemia; Hypocalcaemia; Digoxin effect; Myocardial ischaemia; QT interval.</li>
+            <li>Wikipedia: Cardiac action potential; Electrocardiography; Antiarrhythmic agent; Hyperkalemia; Hypokalemia; Hypercalcaemia; Hypocalcaemia (secondary sources, used with the above).</li>
+            <li>Guyton AC, Hall JE. <cite>Textbook of Medical Physiology</cite>; Hampton JR. <cite>The ECG Made Easy</cite>: standard background, not checked online for this page.</li>
+          </ul>
+          <p class="caveat">All traces are schematic. Resting potentials, thresholds and peaks are rounded teaching anchors; real values vary by source, species, cell type, rate and recording method. ECG strips are simplified single-lead drawings. This is a physiology teaching tool, not clinical guidance: check the BNF and local guidance before using any drug.</p>
+        </div>
+      </details>
+    </section>
   </main>
 
   <footer>
@@ -59,5 +324,1243 @@
     <span class="footer-tag">Built for teaching</span>
   </footer>
 </div>
+<script>
+"use strict";
+/* Cardiac Action Potential: teaching data.
+   Every line carries a tag: S = from a fetched or named source, P = standard physiology
+   (not quoted from a fetched page), M = simulation simplification. Source keys map to SRC. */
+var SRC = {
+  "KL-NP": "Klabunde, CV Physiology: Non-pacemaker action potentials",
+  "KL-SA": "Klabunde, CV Physiology: SA node action potentials",
+  "KL-REG": "Klabunde, CV Physiology: Regulation of pacemaker activity",
+  "KL-MP": "Klabunde, CV Physiology: Membrane potentials",
+  "KL-PUMP": "Klabunde, CV Physiology: Na+/K+-ATPase",
+  "KL-AP": "Klabunde, CV Physiology: Action potentials",
+  "KL-COND": "Klabunde, CV Physiology: Electrical conduction",
+  "CP-AA": "Klabunde, CV Pharmacology: Antiarrhythmic drugs",
+  "CP-I": "Klabunde, CV Pharmacology: Class I antiarrhythmics",
+  "CP-III": "Klabunde, CV Pharmacology: Class III antiarrhythmics",
+  "CP-BB": "Klabunde, CV Pharmacology: Beta-blockers",
+  "CP-CCB": "Klabunde, CV Pharmacology: Calcium-channel blockers",
+  "CP-ADO": "Klabunde, CV Pharmacology: Adenosine",
+  "CP-DIG": "Klabunde, CV Pharmacology: Digoxin",
+  "LITFL-HK": "LITFL: Hyperkalaemia",
+  "LITFL-LK": "LITFL: Hypokalaemia",
+  "LITFL-HCA": "LITFL: Hypercalcaemia",
+  "LITFL-LCA": "LITFL: Hypocalcaemia",
+  "LITFL-DIG": "LITFL: Digoxin effect",
+  "LITFL-ISCH": "LITFL: Myocardial ischaemia",
+  "LITFL-QT": "LITFL: QT interval",
+  "WP-CAP": "Wikipedia: Cardiac action potential",
+  "WP-ECG": "Wikipedia: Electrocardiography",
+  "WP-AA": "Wikipedia: Antiarrhythmic agent",
+  "WP-HK": "Wikipedia: Hyperkalemia",
+  "WP-LK": "Wikipedia: Hypokalemia",
+  "WP-HCA": "Wikipedia: Hypercalcaemia",
+  "WP-LCA": "Wikipedia: Hypocalcaemia",
+  "BNF-TS": "BNF: Arrhythmias treatment summary",
+  "BNF-ADO": "BNF: Adenosine",
+  "BNF-DIG": "BNF: Digoxin",
+  "BNF-FLEC": "BNF: Flecainide acetate",
+  "BNF-LIDO": "BNF: Lidocaine hydrochloride",
+  "BNF-VERA": "BNF: Verapamil hydrochloride",
+  "BNF-SOT": "BNF: Sotalol hydrochloride",
+  "BNF-AMIO": "BNF: Amiodarone hydrochloride",
+  "BNF-DISO": "BNF: Disopyramide",
+  "BNF-METO": "BNF: Metoprolol tartrate",
+  "GUY": "Guyton and Hall (not checked online)",
+  "HAMP": "Hampton, The ECG Made Easy (not checked online)"
+};
+
+var CELLS = {
+  vent: { label: "Ventricular myocyte", short: "Ventricle", kind: "fast", phases: ["p4", "p0", "p1", "p2", "p3"] },
+  sa: { label: "SA node", short: "SA node", kind: "slow", phases: ["p4", "p0", "p3"] },
+  purk: { label: "Purkinje fibre", short: "Purkinje", kind: "fast", phases: ["p4", "p0", "p1", "p2", "p3"] },
+  atr: { label: "Atrial myocyte", short: "Atrium", kind: "fast", phases: ["p4", "p0", "p1", "p2", "p3"] }
+};
+
+/* Phase information. fast = ventricular, atrial and Purkinje cells; slow = SA node. */
+var PHASE_INFO = {
+  fast: {
+    p4: { name: "Phase 4", title: "Resting potential",
+      currents: ["IK1 (inward rectifier K+)", "Na+/K+-ATPase"],
+      lines: [
+        ["Stable at about \u221290 mV, close to the K+ equilibrium potential: K+ channels are open while fast Na+ and L-type Ca2+ channels are closed.", "S", "KL-NP; WP-CAP"],
+        ["At \u221290 mV almost all fast Na+ channels are in the resting, available state. A less negative resting potential leaves some inactivated, so phase 0 is slower.", "S", "CP-I; KL-NP"]
+      ],
+      ecg: ["TP segment: the isoelectric baseline between beats.", "P", ""] },
+    p0: { name: "Phase 0", title: "Rapid depolarisation",
+      currents: ["INa (Nav1.5)"],
+      lines: [
+        ["Depolarised to threshold (about \u221270 mV) by a neighbouring cell, fast Na+ channels open and the membrane overshoots rapidly to about +20 mV.", "S", "KL-NP; KL-MP; WP-CAP"],
+        ["Drawn as 1.5 ms; real upstroke times vary with species and recording method.", "M", ""],
+        ["The slope (dV/dt max) sets conduction velocity. Class I drugs reduce it.", "S", "CP-I; CP-AA"]
+      ],
+      ecg: ["Phase 0 sweeping through the ventricles writes the QRS complex.", "P", "WP-CAP; HAMP"] },
+    p1: { name: "Phase 1", title: "Early repolarisation (notch)",
+      currents: ["Ito (transient outward K+)"],
+      lines: [
+        ["Fast Na+ channels inactivate and transient outward K+ channels open briefly, giving a small notch.", "S", "KL-NP; WP-CAP"]
+      ],
+      ecg: ["Lies within the end of the QRS and the J point; not seen separately.", "P", ""] },
+    p2: { name: "Phase 2", title: "Plateau",
+      currents: ["ICa-L (Cav1.2)", "IKs"],
+      lines: [
+        ["Inward L-type Ca2+ current balances outward K+ current, so the membrane stays near 0 mV. The Ca2+ entering triggers Ca2+ release from the sarcoplasmic reticulum for contraction.", "S", "KL-NP; WP-CAP"],
+        ["The long plateau keeps the cell refractory (phases 0 to 3 and early 4), which limits how fast it can be re-excited.", "S", "KL-NP"]
+      ],
+      ecg: ["ST segment: flat because the ventricular cells sit at a similar plateau voltage.", "P", "HAMP"] },
+    p3: { name: "Phase 3", title: "Repolarisation",
+      currents: ["IKr (hERG)", "IKs", "IK1"],
+      lines: [
+        ["L-type Ca2+ channels inactivate while delayed rectifier K+ channels (IKr, IKs) and IK1 carry K+ out, returning the cell to about \u221290 mV.", "S", "KL-NP; WP-CAP"],
+        ["Class III drugs block these K+ channels, prolonging phase 3 and the effective refractory period.", "S", "CP-III"]
+      ],
+      ecg: ["T wave. The end of phase 3 across the ventricles marks the end of the QT interval.", "P", "HAMP"] }
+  },
+  slow: {
+    p4: { name: "Phase 4", title: "Pacemaker potential",
+      currents: ["If (HCN, funny current)", "ICa-T", "falling IK"],
+      lines: [
+        ["No stable resting potential. From about \u221260 mV the funny current (If, HCN channels) carries slow inward Na+; T-type Ca2+ channels open near \u221250 mV and L-type near \u221240 mV, while outward K+ current declines.", "S", "KL-SA; WP-CAP"],
+        ["The slope sets the rate. Sympathetic tone steepens it; vagal tone flattens it and hyperpolarises the cell.", "S", "KL-REG"]
+      ],
+      ecg: ["No deflection of its own: the time to threshold sets the RR interval (rate).", "P", ""] },
+    p0: { name: "Phase 0", title: "Slow upstroke",
+      currents: ["ICa-L (Cav1.2)"],
+      lines: [
+        ["Driven mainly by L-type Ca2+ current from a threshold of about \u221240 to \u221230 mV. SA nodal cells have no fast Na+ channels, so the upstroke is much slower than in other cardiac cells.", "S", "KL-SA"],
+        ["Drawn as 15 ms.", "M", ""],
+        ["Class IV drugs (verapamil, diltiazem) slow it.", "S", "CP-AA; KL-REG"]
+      ],
+      ecg: ["The impulse then spreads through the atria: the P wave follows.", "P", ""] },
+    p3: { name: "Phase 3", title: "Repolarisation",
+      currents: ["IKr", "ICa-L inactivating"],
+      lines: [
+        ["L-type Ca2+ channels inactivate and K+ channels open, returning the cell to about \u221260 mV.", "S", "KL-SA; WP-CAP"],
+        ["This hyperpolarisation is needed to reactivate the pacemaker channels. Hypoxia and hyperkalaemia blunt it and slow the rate.", "S", "KL-SA; KL-REG"]
+      ],
+      ecg: ["No separate deflection.", "P", ""] }
+  }
+};
+
+var CELL_NOTES = {
+  vent: ["Fast-response, non-pacemaker cell.", "S", "KL-AP"],
+  sa: ["Slow-response pacemaker cell; the AV node is similar.", "S", "KL-SA"],
+  purk: ["Fast-response cell with slow spontaneous phase 4 depolarisation, normally overtaken by the sinus impulse (overdrive suppression). Conducts at about 4 m/s; intrinsic rate about 20 to 40 /min. Its longer AP is drawn for teaching.", "S", "KL-AP; KL-COND; WP-CAP"],
+  atr: ["Fast-response cell. Atrial phase 0 writes the P wave; atrial repolarisation is usually hidden in the QRS. The shorter, more triangular AP is drawn for teaching.", "S", "KL-AP; WP-ECG"]
+};
+
+var SCEN_GROUPS = [
+  { label: "Electrolytes", key: "elec", ids: ["normal", "hyperk", "hypok", "hyperca", "hypoca"] },
+  { label: "Autonomic", key: "auto", ids: ["symp", "vagal"] },
+  { label: "Ischaemia", key: "isch", ids: ["isch"] },
+  { label: "Drugs", key: "drug", ids: ["c1a", "c1b", "c1c", "c2", "c3", "c4", "ado", "dig"] }
+];
+
+/* focus: where the modifier mainly acts. sa = nodal, fast = working myocardium, both. */
+var MODS = {
+  normal: { label: "Normal", group: "Baseline", focus: "both", target: [],
+    mech: [["Ventricular myocyte resting near \u221290 mV; SA node firing at about 70 /min with normal resting vagal tone (intrinsic rate 100 to 110 /min).", "S", "KL-NP; KL-REG"]],
+    ap: [["Fast response: Na+-driven phase 0 and a plateau. Slow response: Ca2+-driven phase 0 and a pacemaker phase 4.", "S", "KL-AP"]],
+    ecg: [["PR 160 ms, QRS 90 ms, QT about 370 ms (QTc about 400 ms) in this schematic.", "M", ""]] },
+  hyperk: { label: "Hyperkalaemia", group: "Electrolytes", graded: true, focus: "both", target: ["fast:p4", "fast:p0", "fast:p3", "slow:p4"],
+    mech: [["Raised extracellular K+ reduces the K+ gradient, so the resting potential becomes less negative (Nernst). This inactivates some fast Na+ channels, and raised K+ speeds repolarisation.", "S", "WP-HK; KL-MP"]],
+    ap: [["Resting potential moves toward threshold; phase 0 is slower and smaller; phase 3 is faster, so the AP shortens. SA node: phase 4 flattens and the rate falls.", "S", "WP-HK; KL-REG"],
+         ["Resting potential drawn from the Nernst equation (EK + 6 mV).", "M", "KL-MP"]],
+    ecgByGrade: [
+      [["Mild: a taller T wave is the earliest change; ECG changes usually appear from about 6.0 mmol/L.", "S", "LITFL-HK"]],
+      [["Moderate: peaked T waves, flatter and wider P waves, longer PR.", "S", "LITFL-HK"]],
+      [["Severe: wide, bizarre QRS, bradycardia and blocks; above about 9 mmol/L a sine-wave pattern (not drawn).", "S", "LITFL-HK"]]
+    ],
+    ecg: [["Serum K+ correlates poorly with the ECG. Calcium salts protect by restoring conduction; the traditional explanation (a raised threshold) has been questioned.", "S", "LITFL-HK; WP-HK"]] },
+  hypok: { label: "Hypokalaemia", group: "Electrolytes", graded: true, focus: "both", target: ["fast:p3", "slow:p4"],
+    mech: [["Low extracellular K+ makes the resting potential more negative but paradoxically reduces IKr, delaying ventricular repolarisation.", "S", "WP-LK"]],
+    ap: [["Phase 3 is slower, so the AP lengthens. SA node: phase 4 steepens and the rate rises a little.", "S", "WP-LK; KL-REG"],
+         ["Resting shift drawn smaller than the Nernst prediction.", "M", ""]],
+    ecgByGrade: [
+      [["Mild: lower T-wave amplitude is the earliest change.", "S", "LITFL-LK"]],
+      [["Moderate: T flattening, ST depression and U waves (best seen in V2 to V3).", "S", "LITFL-LK"]],
+      [["Severe: T inversion, prominent U waves fusing with T (long QU), longer PR; risk of ectopics, VT, VF and torsades.", "S", "LITFL-LK"]]
+    ],
+    ecg: [["U waves are attributed to prolonged repolarisation of Purkinje fibres.", "S", "WP-LK"]] },
+  hyperca: { label: "Hypercalcaemia", group: "Electrolytes", focus: "fast", target: ["fast:p0", "fast:p2"],
+    mech: [["Extracellular Ca2+ interacts with Na+ channels and raises the threshold for depolarisation.", "S", "WP-HCA"]],
+    ap: [["Threshold less negative (drawn as \u221265 mV).", "M", "WP-HCA"], ["Plateau shorter, so the AP shortens.", "P", "LITFL-HCA"]],
+    ecg: [["Short QT interval; Osborn (J) waves when severe.", "S", "LITFL-HCA"]] },
+  hypoca: { label: "Hypocalcaemia", group: "Electrolytes", focus: "fast", target: ["fast:p0", "fast:p2"],
+    mech: [["Less Ca2+ interaction with Na+ channels lowers the threshold, so cells are more excitable (tetany).", "S", "WP-LCA"]],
+    ap: [["Threshold more negative (drawn as \u221275 mV).", "M", "WP-LCA"], ["Plateau longer, so the AP lengthens.", "P", "LITFL-LCA"]],
+    ecg: [["QTc prolongation, mainly by lengthening the ST segment; the T wave is typically unchanged. Torsades is less common than with hypokalaemia.", "S", "LITFL-LCA"]] },
+  symp: { label: "Sympathetic (\u03B21)", group: "Autonomic", focus: "sa", target: ["slow:p4", "slow:p0", "fast:p2"],
+    mech: [["Noradrenaline on \u03B21 receptors raises cAMP: more funny current (If, HCN) and more L-type Ca2+ current.", "S", "KL-REG; WP-CAP; CP-BB"]],
+    ap: [["SA node: steeper phase 4 and faster phase 0, so threshold is reached sooner and the rate rises.", "S", "KL-REG; WP-CAP"],
+         ["Ventricle: higher plateau (more Ca2+ entry; positive inotropy). The shorter AP at the faster rate is drawn.", "S", "CP-BB"]],
+    ecg: [["Sinus tachycardia; shorter PR (faster AV conduction); QT shortens as the rate rises.", "S", "CP-BB; LITFL-QT"]] },
+  vagal: { label: "Vagal (M2, ACh)", group: "Autonomic", focus: "sa", target: ["slow:p4"],
+    mech: [["ACh on M2 receptors activates Gi: its \u03B2\u03B3 subunits open K+ channels and cAMP falls, reducing If and Ca2+ current.", "S", "WP-CAP; KL-REG"]],
+    ap: [["SA node: maximum diastolic potential more negative and phase 4 flatter, so threshold takes longer to reach. Vagal efferent nerves extensively innervate the SA and AV nodes.", "S", "KL-REG; CP-I"],
+         ["Ventricular myocytes are drawn unchanged.", "P", ""]],
+    ecg: [["Sinus bradycardia and a longer PR (slower AV conduction).", "S", "KL-REG; CP-DIG"]] },
+  isch: { label: "Acute ischaemia", group: "Ischaemia", focus: "both", target: ["fast:p4", "fast:p0", "fast:p2"],
+    mech: [["Without ATP the Na+/K+-ATPase fails, K+ is lost from the cells and the membrane depolarises.", "S", "KL-PUMP; KL-REG"]],
+    ap: [["Resting potential less negative, so fast Na+ channels inactivate (all of them near \u221250 mV): slower, smaller phase 0. SA node: hypoxia causes bradycardia.", "S", "KL-NP; KL-REG"],
+         ["The AP is drawn shorter with a lower plateau.", "P", ""]],
+    ecg: [["ST depression and T-wave flattening or inversion; hyperacute T waves can herald STEMI. Drawn as ST depression with a flat T.", "S", "LITFL-ISCH"],
+          ["Ischaemic cells can fire slow, Ca2+-dependent APs and show abnormal automaticity.", "S", "KL-NP"]] },
+  c1a: { label: "Class Ia", group: "Drugs", focus: "fast", target: ["fast:p0", "fast:p3"], ex: "Disopyramide (quinidine, procainamide)",
+    mech: [["Blocks fast Na+ channels (intermediate kinetics) and K+ channels.", "S", "CP-I; WP-AA"]],
+    ap: [["Phase 0 slope moderately reduced; APD and effective refractory period longer.", "S", "CP-I; WP-AA"]],
+    ecg: [["QRS a little wider and QT longer; torsades risk.", "S", "WP-AA; CP-I"], ["Anticholinergic effects can speed the SA node and AV conduction.", "S", "CP-I"]] },
+  c1b: { label: "Class Ib", group: "Drugs", focus: "fast", target: ["fast:p0"], ex: "Lidocaine",
+    mech: [["Binds mainly to inactivated Na+ channels with fast kinetics, so it acts most on ischaemic or rapidly firing tissue.", "S", "CP-I"]],
+    ap: [["Normal tissue: phase 0 barely changed; APD slightly shorter.", "S", "CP-I; WP-AA"]],
+    ecg: [["Little change in a normal heart. BNF use: ventricular arrhythmias, especially after myocardial infarction.", "S", "CP-I; BNF-LIDO"]] },
+  c1c: { label: "Class Ic", group: "Drugs", focus: "fast", target: ["fast:p0"], ex: "Flecainide",
+    mech: [["Strongest Na+ channel block (slow dissociation).", "S", "CP-I; WP-AA"]],
+    ap: [["Phase 0 slope markedly reduced; APD little changed.", "S", "CP-I; WP-AA"]],
+    ecg: [["QRS widens; QT changes little beyond the wider QRS.", "P", ""], ["BNF: avoid with structural or ischaemic heart disease (contra-indicated in heart failure, abnormal LV function, and after MI with ectopics).", "S", "BNF-FLEC; BNF-TS"]] },
+  c2: { label: "Class II", group: "Drugs", focus: "sa", target: ["slow:p4"], ex: "Metoprolol, bisoprolol",
+    mech: [["Blocks \u03B21 receptors, removing sympathetic drive (less cAMP, If and Ca2+ current) at the SA and AV nodes.", "S", "CP-BB; WP-AA"]],
+    ap: [["Acts on the nodal phase 4: flatter pacemaker slope, slower rate, slower AV conduction. Ventricular APD and ERP lengthen slightly.", "S", "CP-BB"]],
+    ecg: [["Slower sinus rate and longer PR.", "S", "CP-BB"]] },
+  c3: { label: "Class III", group: "Drugs", focus: "fast", target: ["fast:p3", "slow:p3"], ex: "Amiodarone, sotalol",
+    mech: [["Blocks the K+ channels that repolarise in phase 3. Amiodarone also has class I, II and IV actions; sotalol is also a \u03B2-blocker.", "S", "CP-III; BNF-TS"]],
+    ap: [["Phase 3 slower: longer APD and effective refractory period.", "S", "CP-III"]],
+    ecg: [["Long QT; torsades de pointes risk.", "S", "CP-III; BNF-SOT"]] },
+  c4: { label: "Class IV", group: "Drugs", focus: "sa", target: ["slow:p4", "slow:p0", "fast:p2"], ex: "Verapamil, diltiazem",
+    mech: [["Blocks L-type Ca2+ channels (rate-limiting calcium-channel blockers, not dihydropyridines).", "S", "CP-CCB; BNF-TS"]],
+    ap: [["Nodal cells: flatter phase 4 and slower phase 0, so a slower rate and slower AV conduction. Ventricle: less Ca2+ entry in the plateau (negative inotropy).", "S", "CP-AA; KL-REG; CP-CCB; KL-NP"]],
+    ecg: [["Slower rate and longer PR; QRS unchanged.", "P", ""], ["BNF: serious interaction hazard with \u03B2-blockers for intravenous verapamil.", "S", "BNF-TS"]] },
+  ado: { label: "Adenosine", group: "Drugs", focus: "sa", target: ["slow:p4"], ex: "Adenosine (IV bolus)",
+    mech: [["A1 receptors (Gi) in nodal tissue open K+ channels (hyperpolarisation), lower cAMP, and inhibit If and L-type Ca2+ current.", "S", "CP-ADO"]],
+    ap: [["Acts on the nodal phase 4: more negative and flatter, so the SA rate falls; AV nodal conduction slows.", "S", "CP-ADO"]],
+    ecg: [["Transient AV block: P waves without QRS complexes, lasting seconds (half-life about 8 to 10 s). Used to end paroxysmal SVT.", "S", "CP-ADO; BNF-TS; BNF-ADO"]] },
+  dig: { label: "Digoxin", group: "Drugs", focus: "sa", target: ["slow:p4", "fast:p2", "fast:p3"], ex: "Digoxin",
+    mech: [["Inhibits the Na+/K+-ATPase (more intracellular Ca2+, stronger contraction) and increases vagal activity.", "S", "CP-DIG; BNF-DIG; KL-REG"]],
+    ap: [["Nodal: vagal slowing of phase 4 and of AV conduction. Ventricle: shorter refractory period and AP.", "S", "CP-DIG; LITFL-DIG"]],
+    ecg: [["Digoxin effect: sagging \u2018reverse tick\u2019 ST depression, flat or biphasic T, short QT, mild PR prolongation. It shows the drug is present, not toxicity.", "S", "LITFL-DIG"],
+          ["Toxic levels increase automaticity; hypokalaemia enhances its effects.", "S", "KL-REG; CP-DIG"]] }
+};
+
+var GRADES = {
+  hyperk: [{ name: "Mild", k: 6.0 }, { name: "Moderate", k: 7.0 }, { name: "Severe", k: 8.0 }],
+  hypok: [{ name: "Mild", k: 3.2 }, { name: "Moderate", k: 2.7 }, { name: "Severe", k: 2.2 }]
+};
+
+/* Test yourself: feedback judges only the choice; hints appear in the debrief. */
+var PREDICT = {
+  hyperk: { cell: "vent", grade: 1, qs: [
+    { q: "What happens to the resting membrane potential?", o: ["Less negative (depolarised)", "More negative", "Unchanged"], a: 0, hint: "Less K+ gradient means a less negative EK (Nernst)." },
+    { q: "Which ECG change appears first?", o: ["Tall, peaked T waves", "Prominent U waves", "Short QT"], a: 0, hint: "Faster phase 3 repolarisation tents the T wave." }] },
+  hypok: { cell: "vent", grade: 1, qs: [
+    { q: "What happens to phase 3 repolarisation?", o: ["Slower, so the AP lengthens", "Faster, so the AP shortens", "Unchanged"], a: 0, hint: "Low K+ paradoxically reduces IKr." },
+    { q: "Which ECG feature is typical?", o: ["Prominent U waves", "Peaked T waves", "Short QT"], a: 0, hint: "T flattens and U waves become prominent (long QU)." }] },
+  hyperca: { cell: "vent", qs: [
+    { q: "What happens to the QT interval?", o: ["Shorter", "Longer", "Unchanged"], a: 0, hint: "The plateau shortens, so the ST segment and QT shorten." },
+    { q: "What happens to the threshold?", o: ["Raised (less negative)", "Lowered (more negative)", "Unchanged"], a: 0, hint: "Ca2+ interacts with Na+ channels and raises the threshold." }] },
+  hypoca: { cell: "vent", qs: [
+    { q: "Which part of the ECG lengthens most?", o: ["ST segment", "PR interval", "QRS complex"], a: 0, hint: "A longer plateau lengthens the ST segment; T is usually unchanged." },
+    { q: "What happens to the QTc?", o: ["Longer", "Shorter", "Unchanged"], a: 0, hint: "QTc prolongs mainly through the ST segment." }] },
+  symp: { cell: "sa", qs: [
+    { q: "What happens to the SA node phase 4 slope?", o: ["Steeper", "Flatter", "Unchanged"], a: 0, hint: "cAMP increases If and Ca2+ current." },
+    { q: "Which current is increased in SA phase 4?", o: ["If through HCN channels", "IK1", "INa through Nav1.5"], a: 0, hint: "cAMP binds HCN channels directly." }] },
+  vagal: { cell: "sa", qs: [
+    { q: "What happens to the SA node maximum diastolic potential?", o: ["More negative", "Less negative", "Unchanged"], a: 0, hint: "ACh opens K+ channels via Gi \u03B2\u03B3 subunits." },
+    { q: "What happens to the heart rate?", o: ["Falls", "Rises", "Unchanged"], a: 0, hint: "Flatter phase 4 from a lower start: longer to threshold." }] },
+  isch: { cell: "vent", qs: [
+    { q: "What happens to the resting potential?", o: ["Less negative", "More negative", "Unchanged"], a: 0, hint: "Pump failure and K+ loss depolarise the cell." },
+    { q: "What happens to the phase 0 upstroke?", o: ["Slower and smaller", "Faster and taller", "Unchanged"], a: 0, hint: "Depolarisation inactivates fast Na+ channels." }] },
+  c1a: { cell: "vent", qs: [
+    { q: "What happens to the QRS?", o: ["A little wider", "Narrower", "Unchanged"], a: 0, hint: "Na+ channel block slows phase 0 and conduction." },
+    { q: "What happens to the QT?", o: ["Longer", "Shorter", "Unchanged"], a: 0, hint: "Class Ia also blocks K+ channels, lengthening the AP." }] },
+  c1b: { cell: "vent", qs: [
+    { q: "In normal tissue at a normal rate, how much does the QRS change?", o: ["Little change", "Markedly wider", "Markedly narrower"], a: 0, hint: "Fast on and off kinetics: little block between normal beats." },
+    { q: "Which Na+ channels does lidocaine bind best?", o: ["Inactivated channels, as in ischaemic tissue", "Resting channels in healthy tissue", "None: it blocks L-type Ca2+ channels"], a: 0, hint: "Ischaemic depolarisation inactivates Na+ channels." }] },
+  c1c: { cell: "vent", qs: [
+    { q: "How much is the phase 0 slope reduced?", o: ["Markedly", "Slightly", "Not at all"], a: 0, hint: "Class Ic dissociates slowly: the strongest Na+ block." },
+    { q: "What happens to the APD?", o: ["Little change", "Much longer", "Much shorter"], a: 0, hint: "Class Ic has little effect on repolarisation." }] },
+  c2: { cell: "sa", qs: [
+    { q: "Which phase does a \u03B2-blocker mainly slow?", o: ["Phase 4 of the SA (nodal) cell", "Phase 4 of the ventricular myocyte", "Phase 0 of the ventricular myocyte"], a: 0, hint: "Ventricular phase 4 is a stable resting potential; the pacemaker slope is nodal." },
+    { q: "What happens to the PR interval?", o: ["Longer", "Shorter", "Unchanged"], a: 0, hint: "Less sympathetic drive slows AV nodal conduction." }] },
+  c3: { cell: "vent", qs: [
+    { q: "Which phase is prolonged?", o: ["Phase 3", "Phase 0", "Phase 4"], a: 0, hint: "K+ channel block delays repolarisation." },
+    { q: "What happens to the QT?", o: ["Longer", "Shorter", "Unchanged"], a: 0, hint: "Longer ventricular APD lengthens QT; torsades risk." }] },
+  c4: { cell: "sa", qs: [
+    { q: "What happens to the SA node phase 0?", o: ["Slower", "Faster", "Unchanged"], a: 0, hint: "Nodal phase 0 is carried by L-type Ca2+ current." },
+    { q: "What happens to the PR interval?", o: ["Longer", "Shorter", "Unchanged"], a: 0, hint: "AV nodal cells also depend on Ca2+ current." }] },
+  ado: { cell: "sa", qs: [
+    { q: "How does adenosine act on nodal cells?", o: ["A1 receptors open K+ channels and hyperpolarise", "\u03B21 receptors raise cAMP", "It blocks fast Na+ channels"], a: 0, hint: "A1 is Gi-coupled: K+ channels open, cAMP falls." },
+    { q: "What does the ECG show during the bolus?", o: ["Transient AV block: P waves without QRS", "Wide QRS complexes", "Peaked T waves"], a: 0, hint: "AV nodal conduction slows for seconds." }] },
+  dig: { cell: "sa", qs: [
+    { q: "What happens to the sinus rate?", o: ["Falls", "Rises", "Unchanged"], a: 0, hint: "Digoxin increases vagal activity." },
+    { q: "Which ECG pattern is typical at therapeutic levels?", o: ["Sagging ST depression with a short QT", "Peaked T waves", "Wide QRS"], a: 0, hint: "Shorter refractory periods: the \u2018reverse tick\u2019." }] }
+};
+/* Schematic models. All traces are simulation simplifications built from the sourced
+   anchor values (fast cell: rest about -90 mV, threshold about -70 mV, peak about +20 mV,
+   phase 0 under 2 ms, AP 200 to 400 ms; SA node: maximum diastolic about -60 mV,
+   threshold about -40 mV, phase 0 10 to 20 ms, resting rate about 70 /min). */
+var WIN = 1200;              /* ms shown */
+var T_S0 = 55;               /* first SA upstroke, ms */
+var NORM_RR = 857;           /* 70 /min */
+
+function nernstK(k) { return -61 * Math.log10(150 / k); }      /* EK = -96 mV at 4 mmol/L */
+function naAvail(v) { return 1 / (1 + Math.exp((v + 70) / 5)); } /* fraction of Na+ channels available */
+
+var FAST_BASE = {
+  vent: { rmp: -90, thr: -70, peak: 20, p2s: 8, p2e: -15, d0: 1.5, d1: 8, d2: 185, d3: 110, p4: 0, anchor: "Q", off: 8 },
+  purk: { rmp: -90, thr: -70, peak: 24, p2s: 6, p2e: -15, d0: 1.2, d1: 8, d2: 235, d3: 115, p4: 0.012, anchor: "Q", off: -12 },
+  atr:  { rmp: -90, thr: -70, peak: 18, p2s: 2, p2e: -30, d0: 1.5, d1: 6, d2: 70, d3: 100, p4: 0, anchor: "P", off: 12 }
+};
+var SA_BASE = { mdp: -60, thr: -40, peak: 10, d0: 15, drep: 140, t4: 702, k: 0.8 };
+var ECG_BASE = { pr: 160, qrs: 90, pAmp: 0.15, pW: 1, tAmp: 0.32, tW: 1, st: 0, u: 0.04, sag: false, block: false, qtOff: 95 };
+
+/* Per-modifier changes. g = grade index for graded electrolytes. */
+function modDelta(id, g) {
+  g = g || 0;
+  var D = { fast: {}, sa: {}, ecg: {} };
+  var pick = function (a) { return a[g]; };
+  switch (id) {
+    case "hyperk": {
+      var k = GRADES.hyperk[g].k;
+      D.fast = { rmpAbs: nernstK(k) + 6, f2: pick([0.92, 0.85, 0.8]), f3: pick([0.85, 0.75, 0.68]) };
+      D.sa = { dMdp: pick([2, 5, 8]), s: pick([0.85, 0.6, 0.35]), dPeak: pick([-2, -5, -8]), fr: pick([0.95, 0.9, 0.85]) };
+      D.ecg = { tAmp: pick([0.55, 0.8, 1.0]), tW: pick([0.75, 0.6, 0.55]), pAmp: pick([0.15, 0.08, 0.03]), pW: pick([1, 1.25, 1.4]), pr: pick([160, 210, 240]), qrs: pick([94, 104, 140]) };
+      D.k = k; break;
+    }
+    case "hypok": {
+      var k2 = GRADES.hypok[g].k;
+      D.fast = { rmpAbs: -90 + 0.5 * ((nernstK(k2) + 6) + 90), f2: pick([1.03, 1.08, 1.12]), f3: pick([1.2, 1.4, 1.65]) };
+      D.sa = { s: pick([1.08, 1.18, 1.3]) };
+      D.ecg = { tAmp: pick([0.2, 0.1, -0.06]), u: pick([0.07, 0.15, 0.26]), st: pick([0, -0.05, -0.09]), pAmp: pick([0.16, 0.18, 0.2]), pr: pick([160, 175, 195]), tW: pick([1.1, 1.2, 1.2]) };
+      D.k = k2; break;
+    }
+    case "hyperca": D.fast = { dThr: 5, f2: 0.62, dP2: 2 }; break;
+    case "hypoca": D.fast = { dThr: -5, f2: 1.42 }; break;
+    case "symp": D.fast = { dP2: 9, f2: 0.92, f3: 0.92 }; D.sa = { s: 1.9, f0: 0.75, dPeak: 4, fr: 0.9 }; D.ecg = { pr: 130 }; break;
+    case "vagal": D.sa = { dMdp: -4, s: 0.8, fr: 1.05 }; D.ecg = { pr: 195 }; break;
+    case "isch": D.fast = { rmpAbs: -80, dP2: -10, f2: 0.62, f3: 0.85 }; D.sa = { dMdp: 6, s: 0.6 }; D.ecg = { st: -0.12, tAmp: 0.08 }; break;
+    case "c1a": D.fast = { block: 0.7, f2: 1.12, f3: 1.3 }; D.ecg = { qrs: 104 }; break;
+    case "c1b": D.fast = { block: 0.93, f2: 0.92, f3: 0.95 }; D.ecg = { qrs: 92 }; break;
+    case "c1c": D.fast = { block: 0.45 }; D.ecg = { qrs: 125 }; break;
+    case "c2": D.fast = { f2: 1.05 }; D.sa = { s: 0.75, f0: 1.15 }; D.ecg = { pr: 195 }; break;
+    case "c3": D.fast = { f2: 1.15, f3: 1.6 }; D.sa = { fr: 1.25 }; break;
+    case "c4": D.fast = { dP2: -6, f2: 0.92 }; D.sa = { s: 0.75, f0: 1.6, dPeak: -6 }; D.ecg = { pr: 210 }; break;
+    case "ado": D.sa = { dMdp: -5, s: 0.6 }; D.ecg = { block: true }; break;
+    case "dig": D.fast = { f2: 0.78, f3: 0.9 }; D.sa = { s: 0.85 }; D.ecg = { sag: true, pr: 190, tAmp: 0.12 }; break;
+  }
+  return D;
+}
+
+function saParams(d) {
+  var p = Object.assign({}, SA_BASE);
+  d = d || {};
+  p.mdp += d.dMdp || 0; p.thr += d.dThr || 0; p.peak += d.dPeak || 0;
+  p.d0 *= d.f0 || 1; p.drep *= d.fr || 1;
+  p.t4 = SA_BASE.t4 * ((p.thr - p.mdp) / (SA_BASE.thr - SA_BASE.mdp)) / (d.s || 1);
+  p.cycle = p.t4 + p.d0 + p.drep;
+  p.rate = 60000 / p.cycle;
+  p.slope4 = (p.thr - p.mdp) / p.t4 * 1000;          /* mV/s, mean */
+  p.slope0 = (p.peak - p.thr) / p.d0;                 /* mV/ms */
+  return p;
+}
+
+function fastParams(cell, d, rr) {
+  var b = FAST_BASE[cell], p = Object.assign({}, b);
+  d = d || {};
+  if (d.rmpAbs !== undefined) p.rmp = d.rmpAbs;
+  p.thr += d.dThr || 0;
+  var m0 = naAvail(p.rmp) / naAvail(b.rmp) * (d.block || 1);
+  p.m0 = m0;
+  p.peak = b.peak - (1 - m0) * 25;
+  p.d0 = b.d0 / m0;
+  var dP2 = d.dP2 || 0;
+  p.p2s = Math.min(b.p2s + dP2, p.peak - 4);
+  p.p2e = b.p2e + dP2 * 0.6;
+  var rf = Math.pow((rr || NORM_RR) / NORM_RR, 0.35);
+  p.d2 = b.d2 * (d.f2 || 1) * rf;
+  p.d3 = b.d3 * (d.f3 || 1) * Math.pow((rr || NORM_RR) / NORM_RR, 0.2);
+  p.slope0 = (p.peak - p.rmp) / p.d0;
+  return p;
+}
+
+/* Voltage of one fast-cell AP at time s after activation (s may be negative). */
+function fastBeatV(p, s) {
+  if (s < 0) return null;
+  if (s < p.d0) { var u = s / p.d0; return p.rmp + (p.peak - p.rmp) * Math.sin(u * Math.PI / 2); }
+  s -= p.d0;
+  if (s < p.d1) { var u1 = s / p.d1; return p.peak + (p.p2s - p.peak) * (1 - Math.pow(1 - u1, 2)); }
+  s -= p.d1;
+  if (s < p.d2) { var u2 = s / p.d2; return p.p2s + (p.p2e - p.p2s) * Math.pow(u2, 1.6); }
+  s -= p.d2;
+  if (s < p.d3) { var u3 = s / p.d3; return p.rmp + (p.p2e - p.rmp) * (1 - u3) * (1 - u3) * (1 + 2 * u3); }
+  s -= p.d3;
+  return Math.min(p.rmp + p.p4 * s, p.thr - 2);
+}
+function fastApd90(p) {
+  var target = p.peak - 0.9 * (p.peak - p.rmp), t = p.d0 + p.d1;
+  while (t < 2000) { if (fastBeatV(p, t) <= target) return t; t += 0.5; }
+  return t;
+}
+
+/* SA trace: upstroke (threshold crossing) at time 0 of each beat. */
+function saBeatV(p, s) {
+  if (s < p.d0) { var u = s / p.d0; return p.thr + (p.peak - p.thr) * Math.sin(u * Math.PI / 2); }
+  s -= p.d0;
+  if (s < p.drep) { var u2 = s / p.drep; return p.mdp + (p.peak - p.mdp) * Math.cos(Math.PI / 2 * Math.pow(u2, 1.25)); }
+  s -= p.drep;
+  var u4 = Math.min(s / p.t4, 1.4);
+  return p.mdp + (p.thr - p.mdp) * (u4 + p.k * u4 * u4 * u4) / (1 + p.k);
+}
+function saApd90(p) {
+  var target = p.peak - 0.9 * (p.peak - p.mdp), t = p.d0;
+  while (t < p.d0 + p.drep) { if (saBeatV(p, t) <= target) return t; t += 0.5; }
+  return p.d0 + p.drep;
+}
+
+/* Full state for a modifier, grade and cell. */
+function buildState(id, g, cell) {
+  var D = modDelta(id, g);
+  var sa = saParams(D.sa);
+  var e = Object.assign({}, ECG_BASE, D.ecg);
+  var rr = sa.cycle;
+  var vent = fastParams("vent", D.fast, rr);
+  e.qt = Math.round(fastApd90(vent) + e.qtOff);
+  var beats = [];
+  for (var k = -1; k < 6; k++) {
+    var tS = T_S0 + k * rr, tP = tS + 20, tQ = tP + e.pr;
+    beats.push({ k: k, tS: tS, tP: tP, tQ: tQ, conducted: !(e.block && k >= 0) });
+  }
+  var st = { id: id, g: g, cell: cell, D: D, sa: sa, ecg: e, rr: rr, beats: beats, vent: vent, k: D.k };
+  if (cell !== "sa") st.fast = fastParams(cell, D.fast, rr);
+  return st;
+}
+
+function apTrace(st, cell) {
+  var pts = [], dt = 1;
+  if (cell === "sa") {
+    var p = st.sa;
+    for (var t = 0; t <= WIN; t += dt) {
+      var k = Math.floor((t - T_S0) / p.cycle), s = t - (T_S0 + k * p.cycle);
+      pts.push([t, saBeatV(p, s)]);
+    }
+    return pts;
+  }
+  var f = st.fast || fastParams(cell, st.D.fast, st.rr);
+  var acts = st.beats.filter(function (b) { return b.conducted || f.anchor === "P"; }).map(function (b) { return (f.anchor === "P" ? b.tP : b.tQ) + f.off; });
+  for (var t2 = 0; t2 <= WIN; t2 += (t2 < 1 ? 0.25 : dt)) {
+    var v = f.rmp, last = null;
+    for (var i = 0; i < acts.length; i++) if (acts[i] <= t2) last = acts[i];
+    if (last !== null) v = fastBeatV(f, t2 - last);
+    else if (f.p4) v = Math.min(f.rmp + f.p4 * (t2 + 300), f.thr - 2);
+    pts.push([t2, v]);
+  }
+  /* add exact phase 0 points so the upstroke is crisp */
+  acts.forEach(function (a) {
+    if (a > 0 && a < WIN) { pts.push([a, fastBeatV(f, 0)]); pts.push([a + f.d0, f.peak]); }
+  });
+  pts.sort(function (x, y) { return x[0] - y[0]; });
+  return pts;
+}
+
+function gauss(t, c, s) { return Math.exp(-0.5 * ((t - c) / s) * ((t - c) / s)); }
+function ecgV(st, t) {
+  var e = st.ecg, v = 0;
+  st.beats.forEach(function (b) {
+    var pd = 90 * e.pW, pc = b.tP + pd / 2;
+    v += e.pAmp * gauss(t, pc, pd / 5);
+    if (!b.conducted) return;
+    var w = e.qrs, q0 = b.tQ;
+    var wide = w > 120;
+    v += -0.1 * gauss(t, q0 + 0.14 * w, w * 0.07);
+    v += (wide ? 0.85 : 1.15) * gauss(t, q0 + 0.42 * w, w * (wide ? 0.13 : 0.09));
+    v += -0.28 * gauss(t, q0 + 0.72 * w, w * (wide ? 0.12 : 0.08));
+    if (wide) v += 0.22 * gauss(t, q0 + 0.88 * w, w * 0.12);
+    var J = q0 + w, tEnd = q0 + e.qt;
+    var sR = 32 * e.tW, sL = 55 * e.tW;
+    var tc = tEnd - 2.3 * sR;
+    if (e.st) { if (t > J - 5 && t < tc) v += e.st * Math.min(1, (t - J + 5) / 12) * Math.min(1, (tc - t) / 40); }
+    if (e.sag) {
+      v += -0.17 * gauss(t, J + 55, 45) * (t > J ? 1 : Math.max(0, 1 - (J - t) / 10));
+      v += 0.2 * gauss(t, tc + 10, sR * 0.8);
+    } else {
+      v += e.tAmp * (t < tc ? gauss(t, tc, sL) : gauss(t, tc, sR));
+    }
+    if (e.u) v += e.u * gauss(t, tEnd + 75, 32);
+  });
+  return v;
+}
+function ecgTrace(st) {
+  var pts = [];
+  for (var t = 0; t <= WIN; t += 2) pts.push([t, ecgV(st, t)]);
+  return pts;
+}
+/* Key ECG times for the first beat in the window (k = 0). */
+function ecgMarks(st, k) {
+  var b = st.beats.filter(function (x) { return x.k === (k || 0); })[0], e = st.ecg;
+  var pd = 90 * e.pW, sR = 32 * e.tW, sL = 55 * e.tW, tEnd = b.tQ + e.qt, tc = tEnd - 2.3 * sR;
+  return { P0: b.tP, P1: b.tP + pd, Q0: b.tQ, J: b.tQ + e.qrs, Tpk: tc, T0: tc - 1.8 * sL, T1: tEnd, U: tEnd + 75, conducted: b.conducted,
+    R: b.tQ + 0.42 * e.qrs, nextP: b.tP + st.rr };
+}
+/* Drawing: one SVG with the AP panel on top and the linked ECG strip below. */
+var NS = "http://www.w3.org/2000/svg";
+var G = { W: 640, H: 604, x0: 74, x1: 624, apTop: 34, apBot: 286, vMax: 40, vMin: -110,
+  ecgTop: 334, ecgBase: 480, ecgBot: 548, mvPx: 62 };
+function X(t) { return G.x0 + (t / WIN) * (G.x1 - G.x0); }
+function Y(v) { return G.apTop + (G.vMax - v) / (G.vMax - G.vMin) * (G.apBot - G.apTop); }
+function YE(mv) { return G.ecgBase - mv * G.mvPx; }
+var FS = 1;  /* text scale: larger on narrow screens so labels stay legible */
+function sv(tag, attrs, parent, text) {
+  var e = document.createElementNS(NS, tag);
+  if (attrs["font-size"]) attrs = Object.assign({}, attrs, { "font-size": +(attrs["font-size"] * FS).toFixed(1) });
+  for (var k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function pathOf(pts, fx, fy) {
+  var d = "";
+  for (var i = 0; i < pts.length; i++) d += (i ? "L" : "M") + fx(pts[i][0]).toFixed(1) + " " + fy(pts[i][1]).toFixed(1);
+  return d;
+}
+function estW(text, fs, bold) { return text.length * fs * FS * (bold ? 0.58 : 0.52) + 4; }
+
+/* Greedy label placement with collision avoidance against placed labels and trace samples. */
+function Placer(view) { this.boxes = []; this.view = view; }
+Placer.prototype.block = function (b) { this.boxes.push(b); };
+Placer.prototype.free = function (b) {
+  var v = this.view;
+  if (b.x < v.x || b.y < v.y || b.x + b.w > v.x + v.w || b.y + b.h > v.y + v.h) return false;
+  for (var i = 0; i < this.boxes.length; i++) {
+    var o = this.boxes[i];
+    if (b.x < o.x + o.w && b.x + b.w > o.x && b.y < o.y + o.h && b.y + b.h > o.y) return false;
+  }
+  return true;
+};
+Placer.prototype.place = function (w, h, cands) {
+  for (var i = 0; i < cands.length; i++) {
+    var b = { x: cands[i][0] - w / 2, y: cands[i][1] - h / 2, w: w, h: h };
+    if (this.free(b)) { this.boxes.push(b); return { cx: cands[i][0], cy: cands[i][1], box: b }; }
+  }
+  return null;
+};
+function aroundCands(px, py, r) {
+  var out = [], rs = [r, r * 1.6, r * 2.3, r * 3.2, r * 4.4, r * 5.8];
+  var dirs = [[0, -1], [0, 1], [1, 0], [-1, 0], [0.8, -0.8], [-0.8, -0.8], [0.8, 0.8], [-0.8, 0.8]];
+  rs.forEach(function (rr) { dirs.forEach(function (d) { out.push([px + d[0] * rr, py + d[1] * rr]); }); });
+  return out;
+}
+function blockTrace(pl, pts, fx, fy, pad) {
+  for (var i = 0; i < pts.length; i += 3) {
+    var x = fx(pts[i][0]), y = fy(pts[i][1]);
+    pl.block({ x: x - pad, y: y - pad, w: pad * 2, h: pad * 2 });
+    if (i + 3 < pts.length) {
+      var y2 = fy(pts[i + 3][1]);
+      if (Math.abs(y2 - y) > pad * 2) {
+        var n = Math.ceil(Math.abs(y2 - y) / (pad * 2));
+        for (var j = 1; j < n; j++) pl.block({ x: x - pad, y: y + (y2 - y) * j / n - pad, w: pad * 2, h: pad * 2 });
+      }
+    }
+  }
+}
+function halo(parent, attrs, text) {
+  var a = Object.assign({ "paint-order": "stroke", stroke: COL.halo, "stroke-width": 4, "stroke-linejoin": "round" }, attrs);
+  return sv("text", a, parent, text);
+}
+function marker(parent, type, x, y, color, filled, r) {
+  r = r || 4;
+  var fill = filled ? color : COL.halo, a = { stroke: color, "stroke-width": 1.6, fill: fill, "pointer-events": "none" };
+  if (type === "circle") return sv("circle", Object.assign({ cx: x, cy: y, r: r }, a), parent);
+  if (type === "square") return sv("rect", Object.assign({ x: x - r, y: y - r, width: 2 * r, height: 2 * r }, a), parent);
+  if (type === "triangle") return sv("path", Object.assign({ d: "M" + x + " " + (y - r - 1) + " L" + (x + r + 1) + " " + (y + r) + " L" + (x - r - 1) + " " + (y + r) + " Z" }, a), parent);
+  if (type === "diamond") return sv("path", Object.assign({ d: "M" + x + " " + (y - r - 1) + " L" + (x + r + 1) + " " + y + " L" + x + " " + (y + r + 1) + " L" + (x - r - 1) + " " + y + " Z" }, a), parent);
+}
+
+var COL = {};
+function readColours() {
+  var t = PhysioTheme.tokens();
+  COL = { trace: t.a, ghost: t.e, ecg: t.d, thr: t.b, band: t.a, target: t.c, text: t.text, muted: t.muted, grid: t.grid, axis: t.axis, halo: t.chartBg || "#fff", font: t.fontSans };
+}
+
+/* Phase time windows (ms) for the first beat in view. */
+function phaseWindows(st, cell) {
+  var W = {};
+  if (cell === "sa") {
+    var p = st.sa, t0 = T_S0;
+    W.p0 = [t0, t0 + p.d0];
+    W.p3 = [t0 + p.d0, t0 + p.d0 + p.drep];
+    W.p4 = [t0 + p.d0 + p.drep, Math.min(t0 + p.cycle, WIN)];
+    return W;
+  }
+  var f = st.fast, b = st.beats.filter(function (x) { return x.k === 0; })[0];
+  var a = (f.anchor === "P" ? b.tP : b.tQ) + f.off;
+  if (!b.conducted && f.anchor !== "P") a = null;
+  if (a === null) return W;
+  W.p0 = [a, a + f.d0];
+  W.p1 = [a + f.d0, a + f.d0 + f.d1];
+  W.p2 = [W.p1[1], W.p1[1] + f.d2];
+  W.p3 = [W.p2[1], W.p2[1] + f.d3];
+  W.p4 = [W.p3[1], Math.min(WIN, a + st.rr)];
+  return W;
+}
+/* Matching ECG window and label for each phase. */
+function ecgWindow(st, cell, ph) {
+  var m = ecgMarks(st, 0);
+  if (cell === "sa") {
+    if (ph === "p0") return [m.P0, m.P1, "P wave follows"];
+    if (ph === "p3") return [m.P1, m.Q0, "PR segment"];
+    return [m.T1, Math.min(m.nextP, WIN), "TP interval: time to threshold sets the rate"];
+  }
+  if (cell === "atr") {
+    if (ph === "p0") return [m.P0, m.P1, "P wave"];
+    if (ph === "p1" || ph === "p2") return [m.P1, m.Q0, "PR segment"];
+    if (ph === "p3") return [m.Q0, m.J, "Atrial repolarisation hidden in the QRS"];
+    return [m.J, Math.min(m.nextP, WIN), "Atrial diastole"];
+  }
+  if (!m.conducted) return null;
+  if (ph === "p0") return [m.Q0, m.J, cell === "purk" ? "QRS follows Purkinje activation" : "QRS complex"];
+  if (ph === "p1") return [m.J - 8, m.J + 8, "J point"];
+  if (ph === "p2") return [m.J, m.T0, "ST segment"];
+  if (ph === "p3") return [m.T0, m.T1, "T wave"];
+  return [m.T1, Math.min(m.nextP, WIN), "TP segment"];
+}
+
+function drawAll(svg, S) {
+  readColours();
+  var cw = svg.getBoundingClientRect().width;
+  FS = cw && cw < 560 ? 1.35 : 1;
+  svg.innerHTML = "";
+  var defs = sv("defs", {}, svg);
+  var pat = sv("pattern", { id: "ap-target-hatch", patternUnits: "userSpaceOnUse", width: 8, height: 8, patternTransform: "rotate(45)" }, defs);
+  sv("rect", { width: 8, height: 8, fill: COL.target, "fill-opacity": 0.06 }, pat);
+  sv("line", { x1: 0, y1: 0, x2: 0, y2: 8, stroke: COL.target, "stroke-width": 2, "stroke-opacity": 0.45 }, pat);
+  var st = S.state, cell = S.cell, ghost = S.ghost;
+  var g = sv("g", { "font-family": COL.font }, svg);
+  var pl = new Placer({ x: G.x0 + 2, y: 2, w: G.x1 - G.x0 - 2, h: G.H - 4 });
+
+  /* panels and grids */
+  sv("rect", { x: G.x0, y: G.apTop, width: G.x1 - G.x0, height: G.apBot - G.apTop, fill: COL.halo, stroke: COL.grid }, g);
+  sv("rect", { x: G.x0, y: G.ecgTop, width: G.x1 - G.x0, height: G.ecgBot - G.ecgTop, fill: COL.halo, stroke: COL.grid }, g);
+  for (var v = -100; v <= 40; v += 20) {
+    sv("line", { x1: G.x0, x2: G.x1, y1: Y(v), y2: Y(v), stroke: COL.grid, "stroke-width": v === 0 ? 1.4 : 1 }, g);
+    sv("text", { x: G.x0 - 8, y: Y(v) + 4, "text-anchor": "end", "font-size": 13, fill: COL.muted }, g, (v > 0 ? "+" : v < 0 ? "\u2212" : "") + Math.abs(v));
+  }
+  for (var t = 0; t <= WIN; t += 200) {
+    sv("line", { x1: X(t), x2: X(t), y1: G.apTop, y2: G.apBot, stroke: COL.grid }, g);
+    sv("line", { x1: X(t), x2: X(t), y1: G.ecgTop, y2: G.ecgBot, stroke: COL.grid }, g);
+    sv("text", { x: t === WIN ? X(t) + 3 : X(t), y: G.ecgBot + 18, "text-anchor": t === WIN ? "end" : "middle", "font-size": 13, fill: COL.muted }, g, String(t));
+  }
+  sv("text", { x: (G.x0 + G.x1) / 2, y: G.ecgBot + 40, "text-anchor": "middle", "font-size": 14, "font-weight": 600, fill: COL.text }, g, "Time (ms)");
+  sv("text", { x: 22, y: (G.apTop + G.apBot) / 2, "text-anchor": "middle", "font-size": 14, "font-weight": 600, fill: COL.text, transform: "rotate(-90 22 " + (G.apTop + G.apBot) / 2 + ")" }, g, "Membrane potential (mV)");
+  sv("text", { x: 22, y: (G.ecgTop + G.ecgBot) / 2, "text-anchor": "middle", "font-size": 14, "font-weight": 600, fill: COL.text, transform: "rotate(-90 22 " + (G.ecgTop + G.ecgBot) / 2 + ")" }, g, "ECG");
+  sv("text", { x: G.x0, y: G.apTop - 12, "font-size": 14, "font-weight": 700, fill: COL.text }, g, CELLS[cell].label + " action potential");
+  sv("text", { x: G.x0, y: G.ecgTop - 12, "font-size": 14, "font-weight": 700, fill: COL.text }, g, FS > 1 ? "ECG (schematic)" : "Linked ECG (schematic lead II)");
+  var e = st.ecg;
+  var qtc = Math.round(e.qt / Math.sqrt(st.rr / 1000));
+  var ecgSum = (e.block ? "AV block: P not conducted" : "PR " + Math.round(e.pr) + " \u00B7 QRS " + Math.round(e.qrs) + " \u00B7 QT " + e.qt + " ms (QTc " + qtc + ")");
+  sv("text", { x: G.x1, y: G.ecgTop - 12, "text-anchor": "end", "font-size": 13, fill: COL.text }, g, ecgSum);
+  pl.block({ x: G.x0, y: G.apTop - 28, w: G.x1 - G.x0, h: 22 });
+  pl.block({ x: G.x0, y: G.ecgTop - 28, w: G.x1 - G.x0, h: 22 });
+
+  /* modifier target bands (hatched) */
+  var wins = phaseWindows(st, cell), tg = [];
+  (MODS[S.mod].target || []).forEach(function (k) {
+    var parts = k.split(":"), kind = CELLS[cell].kind;
+    if (parts[0] === kind && wins[parts[1]]) tg.push(parts[1]);
+  });
+  tg.forEach(function (ph) {
+    var w = wins[ph], xa = X(w[0]), xb = Math.max(X(w[1]), xa + 8);
+    sv("rect", { x: xa - (xb - xa < 10 ? 3 : 0), y: G.apTop + 1, width: Math.max(xb - xa, 8) + (xb - xa < 10 ? 6 : 0), height: G.apBot - G.apTop - 2, fill: "url(#ap-target-hatch)", "pointer-events": "none" }, g);
+  });
+  /* selected phase band in both panels with a connector */
+  if (S.phase && wins[S.phase]) {
+    var w0 = wins[S.phase], xa0 = X(w0[0]), xb0 = Math.max(X(w0[1]), xa0 + 6);
+    if (xb0 - xa0 < 10) { xa0 -= 4; xb0 += 4; }
+    sv("rect", { x: xa0, y: G.apTop + 1, width: xb0 - xa0, height: G.apBot - G.apTop - 2, fill: COL.band, "fill-opacity": 0.13, stroke: COL.band, "stroke-width": 1.5, "pointer-events": "none" }, g);
+    var ew = ecgWindow(st, cell, S.phase);
+    if (ew) {
+      var ea = X(ew[0]), eb = Math.max(X(ew[1]), ea + 6);
+      sv("rect", { x: ea, y: G.ecgTop + 1, width: eb - ea, height: G.ecgBot - G.ecgTop - 2, fill: COL.band, "fill-opacity": 0.13, stroke: COL.band, "stroke-width": 1.5, "pointer-events": "none" }, g);
+      var cx1 = (xa0 + xb0) / 2, cx2 = (ea + eb) / 2, my = (G.apBot + G.ecgTop) / 2 + 6;
+      sv("path", { d: "M" + cx1 + " " + G.apBot + " V" + my + " H" + cx2 + " V" + G.ecgTop, fill: "none", stroke: COL.band, "stroke-width": 1.5, "stroke-dasharray": "3 3", "pointer-events": "none" }, g);
+      var lw = estW(ew[2], 13, true);
+      var lx = Math.min(Math.max(cx2, G.x0 + lw / 2 + 2), G.x1 - lw / 2 - 2);
+      var spot = pl.place(lw, 18 * FS, [[lx, G.ecgTop + 14], [lx, G.ecgBot - 12]]);
+      if (spot) halo(g, { x: spot.cx, y: spot.cy + 4, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: COL.band }, ew[2]);
+    }
+  }
+
+  /* threshold line */
+  var thr = cell === "sa" ? st.sa.thr : st.fast.thr;
+  sv("line", { x1: G.x0, x2: G.x1, y1: Y(thr), y2: Y(thr), stroke: COL.thr, "stroke-width": 1.6, "stroke-dasharray": "10 3 2 3", "pointer-events": "none" }, g);
+
+  /* traces */
+  var apPts = apTrace(st, cell), gPts = ghost ? apTrace(ghost, cell) : null;
+  if (gPts) sv("path", { d: pathOf(gPts, X, Y), fill: "none", stroke: COL.ghost, "stroke-width": 2, "stroke-dasharray": "7 5", "pointer-events": "none" }, g);
+  sv("path", { d: pathOf(apPts, X, Y), fill: "none", stroke: COL.trace, "stroke-width": 3, "stroke-linejoin": "round", "pointer-events": "none" }, g);
+  var ePts = ecgTrace(st), egPts = ghost ? ecgTrace(ghost) : null;
+  sv("line", { x1: G.x0, x2: G.x1, y1: YE(0), y2: YE(0), stroke: COL.grid, "stroke-width": 1 }, g);
+  if (egPts) sv("path", { d: pathOf(egPts, X, YE), fill: "none", stroke: COL.ghost, "stroke-width": 1.8, "stroke-dasharray": "7 5", "pointer-events": "none" }, g);
+  sv("path", { d: pathOf(ePts, X, YE), fill: "none", stroke: COL.ecg, "stroke-width": 2.4, "stroke-linejoin": "round", "pointer-events": "none" }, g);
+  blockTrace(pl, apPts, X, Y, 5);
+  blockTrace(pl, ePts, X, YE, 5);
+  if (gPts) blockTrace(pl, gPts, X, Y, 3);
+  if (egPts) blockTrace(pl, egPts, X, YE, 3);
+
+  /* markers: current AP filled circles at phase starts, ghost open squares at peaks, ECG triangles */
+  var mk = [];
+  if (cell === "sa") {
+    st.beats.forEach(function (b) { if (b.tS >= 0 && b.tS <= WIN) { mk.push([b.tS, st.sa.thr]); if (b.tS + st.sa.d0 <= WIN) mk.push([b.tS + st.sa.d0, st.sa.peak]); } });
+  } else {
+    var f = st.fast;
+    st.beats.forEach(function (b) {
+      if (!b.conducted && f.anchor !== "P") return;
+      var a = (f.anchor === "P" ? b.tP : b.tQ) + f.off;
+      [[a, f.rmp], [a + f.d0, f.peak], [a + f.d0 + f.d1 + f.d2, f.p2e]].forEach(function (q) { if (q[0] >= 0 && q[0] <= WIN) mk.push(q); });
+    });
+  }
+  mk.forEach(function (q) { marker(g, "circle", X(q[0]), Y(q[1]), COL.trace, true, 4); });
+  if (ghost) {
+    if (cell === "sa") ghost.beats.forEach(function (b) { var tt = b.tS + ghost.sa.d0; if (tt >= 0 && tt <= WIN) marker(g, "square", X(tt), Y(ghost.sa.peak), COL.ghost, false, 3.5); });
+    else { var gf = ghost.fast; ghost.beats.forEach(function (b) { var tt = (gf.anchor === "P" ? b.tP : b.tQ) + gf.off + gf.d0; if (tt >= 0 && tt <= WIN) marker(g, "square", X(tt), Y(gf.peak), COL.ghost, false, 3.5); }); }
+    ghost.beats.forEach(function (b) { if (!b.conducted) return; var tr = b.tQ + 0.42 * ghost.ecg.qrs; if (tr >= 0 && tr <= WIN) marker(g, "square", X(tr), YE(ecgV(ghost, tr)), COL.ghost, false, 3.5); });
+  }
+  st.beats.forEach(function (b) {
+    if (!b.conducted) return;
+    var tr = b.tQ + 0.42 * e.qrs;
+    if (tr >= 0 && tr <= WIN) marker(g, "triangle", X(tr), YE(ecgV(st, tr)) - 1, COL.ecg, true, 4);
+  });
+  mk.forEach(function (q) { pl.block({ x: X(q[0]) - 6, y: Y(q[1]) - 6, w: 12, h: 12 }); });
+
+  /* threshold label */
+  var tl = "Threshold " + (thr < 0 ? "\u2212" : "") + Math.abs(Math.round(thr)) + " mV";
+  var tw = estW(tl, 13, true), tpos = [];
+  for (var xx = G.x1 - tw / 2 - 4; xx > G.x0 + tw / 2; xx -= 30) { tpos.push([xx, Y(thr) - 10]); tpos.push([xx, Y(thr) + 12]); }
+  var ts = pl.place(tw, 16 * FS, tpos);
+  if (ts) halo(g, { x: ts.cx, y: ts.cy + 4, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: COL.thr }, tl);
+  pl.block({ x: G.x0, y: Y(thr) - 3, w: G.x1 - G.x0, h: 6 });
+
+  /* rate bracket */
+  var b0 = st.beats.filter(function (b) { return b.k === 0; })[0], b1 = st.beats.filter(function (b) { return b.k === 1; })[0];
+  var bt0 = cell === "sa" ? b0.tS : b0.tQ, bt1 = cell === "sa" ? b1.tS : b1.tQ;
+  var rateTxt = Math.round(st.rr) + " ms cycle = " + Math.round(60000 / st.rr) + " /min";
+  if (bt1 <= WIN) {
+    var by = cell === "sa" ? Y(st.sa.peak) - 26 : G.ecgTop + 18;
+    if (cell === "sa") {
+      sv("path", { d: "M" + X(bt0) + " " + (by + 6) + " V" + by + " H" + X(bt1) + " V" + (by + 6), fill: "none", stroke: COL.text, "stroke-width": 1.4, "pointer-events": "none" }, g);
+      var rw = estW(rateTxt, 13, true);
+      var rs = pl.place(rw, 16 * FS, [[(X(bt0) + X(bt1)) / 2, by - 10], [(X(bt0) + X(bt1)) / 2, by + 16]]);
+      if (rs) halo(g, { x: rs.cx, y: rs.cy + 4, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: COL.text }, rateTxt);
+      pl.block({ x: X(bt0), y: by - 2, w: X(bt1) - X(bt0), h: 8 });
+    }
+  }
+  if (cell === "sa" && bt1 > WIN) {
+    var nt = "Next upstroke at " + Math.round(bt1) + " ms (" + Math.round(60000 / st.rr) + " /min)";
+    var nw = estW(nt, 13, true);
+    var ns = pl.place(nw, 16 * FS, [[G.x1 - nw / 2 - 6, G.apTop + 14], [G.x1 - nw / 2 - 6, G.apTop + 34]]);
+    if (ns) halo(g, { x: ns.cx, y: ns.cy + 4, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: COL.text }, nt);
+  }
+
+  /* phase badges (clickable) on the first beat */
+  var anchors = {};
+  if (cell === "sa") {
+    var sp = st.sa, s0 = T_S0;
+    anchors.p0 = [s0 + sp.d0 * 0.5, saBeatV(sp, sp.d0 * 0.5)];
+    anchors.p3 = [s0 + sp.d0 + sp.drep * 0.55, saBeatV(sp, sp.d0 + sp.drep * 0.55)];
+    anchors.p4 = [s0 + sp.d0 + sp.drep + sp.t4 * 0.5, saBeatV(sp, sp.d0 + sp.drep + sp.t4 * 0.5)];
+  } else if (wins.p0) {
+    var ff = st.fast, a0 = wins.p0[0];
+    anchors.p0 = [a0, (ff.rmp + ff.peak) / 2];
+    anchors.p1 = [a0 + ff.d0 + ff.d1 * 0.6, fastBeatV(ff, ff.d0 + ff.d1 * 0.6)];
+    anchors.p2 = [a0 + ff.d0 + ff.d1 + ff.d2 * 0.5, fastBeatV(ff, ff.d0 + ff.d1 + ff.d2 * 0.5)];
+    anchors.p3 = [a0 + ff.d0 + ff.d1 + ff.d2 + ff.d3 * 0.45, fastBeatV(ff, ff.d0 + ff.d1 + ff.d2 + ff.d3 * 0.45)];
+    var t4 = Math.min(wins.p4[1], wins.p3[1] + 140);
+    anchors.p4 = [wins.p3[1] + (t4 - wins.p3[1]) * 0.6, ff.rmp];
+    if (a0 > 120) anchors.p4 = [a0 * 0.5, fastBeatV(ff, -1) === null ? ff.rmp : ff.rmp];
+  }
+  var order = cell === "sa" ? ["p0", "p3", "p4"] : ["p0", "p1", "p2", "p3", "p4"];
+  order.forEach(function (ph) {
+    var an = anchors[ph]; if (!an) return;
+    var ax = X(an[0]), ay = Y(an[1]);
+    var c = ph === "p1" ? [[ax + 16, ay - 16], [ax + 24, ay - 26], [ax + 30, ay - 12]].concat(aroundCands(ax, ay, 18)) : aroundCands(ax, ay, 18);
+    var spot = pl.place(24, 24, c);
+    if (!spot) return;
+    var dx = spot.cx - ax, dy = spot.cy - ay, dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 14) sv("line", { x1: ax + dx / dist * 4, y1: ay + dy / dist * 4, x2: spot.cx - dx / dist * 11, y2: spot.cy - dy / dist * 11, stroke: COL.text, "stroke-width": 1, "pointer-events": "none" }, g);
+    var on = S.phase === ph;
+    var bg = sv("g", { class: "clickable phase-badge", "data-phase": ph, "aria-hidden": "true" }, g);
+    sv("circle", { cx: spot.cx, cy: spot.cy, r: 11, fill: on ? COL.text : COL.halo, stroke: COL.text, "stroke-width": 1.6 }, bg);
+    sv("text", { x: spot.cx, y: spot.cy + 5, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: on ? COL.halo : COL.text }, bg, ph.slice(1));
+  });
+
+  /* ECG wave labels for the first conducted beat */
+  var m = ecgMarks(st, 0), lab = [];
+  lab.push(["P", m.P0 + (m.P1 - m.P0) / 2, ecgV(st, m.P0 + (m.P1 - m.P0) / 2)]);
+  if (m.conducted) {
+    lab.push(["QRS", m.R, ecgV(st, m.R)]);
+    if (m.T0 - m.J > 40) lab.push(["ST", (m.J + m.T0) / 2, ecgV(st, (m.J + m.T0) / 2)]);
+    lab.push([e.sag ? "ST-T" : "T", m.Tpk, ecgV(st, m.Tpk)]);
+    if (e.u >= 0.07) lab.push(["U", m.U, ecgV(st, m.U)]);
+  } else {
+    lab.push(["No QRS", m.P1 + 120, 0]);
+  }
+  lab.forEach(function (L) {
+    var lx = X(L[1]), ly = YE(L[2]), w = estW(L[0], 14, true);
+    var c = [[lx, ly - 16], [lx, ly - 26], [lx, ly + 18], [lx + w / 2 + 6, ly - 12], [lx - w / 2 - 6, ly - 12], [lx, ly - 38], [lx, ly + 30]];
+    var spot = pl.place(w, 18 * FS, c);
+    if (spot) halo(g, { x: spot.cx, y: spot.cy + 5, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: COL.ecg }, L[0]);
+  });
+
+  /* hit areas for phases (pointer only; keyboard uses the phase buttons) */
+  order.forEach(function (ph) {
+    var w = wins[ph]; if (!w) return;
+    var xa = X(w[0]), xb = X(w[1]);
+    if (xb - xa < 16) { var mid = (xa + xb) / 2; xa = mid - 8; xb = mid + 8; }
+    sv("rect", { x: xa, y: G.apTop, width: xb - xa, height: G.apBot - G.apTop, fill: "transparent", class: "clickable phase-hit", "data-phase": ph, "aria-hidden": "true" }, g);
+  });
+  /* fast cell with no conducted beat in view (adenosine AV block) */
+  if (cell !== "sa" && cell !== "atr" && !wins.p0) {
+    var nm = "No conducted beat in view: transient AV block", nw2 = estW(nm, 14, true);
+    var nsp = pl.place(nw2, 20 * FS, [[(G.x0 + G.x1) / 2, Y(-40)], [(G.x0 + G.x1) / 2, Y(-20)], [(G.x0 + G.x1) / 2, Y(0)]]);
+    if (nsp) halo(g, { x: nsp.cx, y: nsp.cy + 5, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: COL.text }, nm);
+  }
+  /* badges sit above the hit areas so each badge selects its own phase */
+  Array.prototype.forEach.call(g.querySelectorAll(".phase-badge"), function (b) { g.appendChild(b); });
+  return { wins: wins };
+}
+/* App state, rendering and interaction. */
+var A = {
+  mod: "normal", grade: 1, cell: "vent", phase: null, note: null,
+  predictOn: false, pending: null, choices: {}, revealed: false, shown: false,
+  asked: 0, correct: 0, scored: {}, perm: {}, complete: false
+};
+var PRED_ORDER = SCEN_GROUPS.reduce(function (a, g) { return a.concat(g.ids); }, []).filter(function (id) { return PREDICT[id]; });
+var TAGNAME = { S: "Source", P: "Physiology", M: "Simulation" };
+var lastRender = null;
+
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function $(id) { return document.getElementById(id); }
+function srcNames(keys) {
+  if (!keys) return "";
+  return keys.split(";").map(function (k) { k = k.trim(); return SRC[k] || k; }).join("; ");
+}
+function lineHTML(L) {
+  var tag = '<span class="tag tag-' + L[1] + '">' + TAGNAME[L[1]] + "</span>";
+  var src = L[2] ? '<span class="src-note">' + (L[1] === "S" ? "" : "See ") + esc(srcNames(L[2])) + "</span>" : "";
+  return "<li>" + esc(L[0]) + " " + tag + src + "</li>";
+}
+function listHTML(lines) { return '<ul class="panel-lines">' + lines.map(lineHTML).join("") + "</ul>"; }
+function block(h, inner) { return '<div class="panel-block"><h3>' + h + "</h3>" + inner + "</div>"; }
+
+/* What is on the graph right now */
+function shownMod() {
+  if (A.predictOn) return (A.pending && A.shown) ? A.pending : "normal";
+  return A.mod;
+}
+function gradeFor(id) { return MODS[id] && MODS[id].graded ? A.grade : 0; }
+
+function setMod(id, fromUser) {
+  var m = MODS[id];
+  A.mod = id; A.phase = null; A.note = null;
+  if (fromUser && m.focus === "sa" && A.cell !== "sa") {
+    A.note = { text: "Switched to the SA node: " + m.label + " acts mainly on nodal cells.", back: A.cell };
+    A.cell = "sa";
+  } else if (fromUser && m.focus === "fast" && A.cell === "sa") {
+    A.note = { text: "Switched to the ventricular myocyte: " + m.label + " acts mainly on working myocardium.", back: "sa" };
+    A.cell = "vent";
+  }
+}
+
+/* ---------- stats ---------- */
+function metrics(st, cell) {
+  var sa = st.sa, out = {};
+  if (cell === "sa") {
+    out.rest = sa.mdp; out.thr = sa.thr; out.slope0 = sa.slope0; out.apd = saApd90(sa);
+  } else {
+    var f = st.fast;
+    out.rest = f.rmp; out.thr = f.thr; out.slope0 = f.slope0; out.apd = fastApd90(f);
+  }
+  out.slope4 = sa.slope4; out.rate = sa.rate; out.qt = st.ecg.qt;
+  return out;
+}
+function signed(n, unit) { var r = Math.round(n); if (r === 0) return ""; return (r > 0 ? "+" : "\u2212") + Math.abs(r) + (unit || ""); }
+function mv(n) { var r = Math.round(n); return (r < 0 ? "\u2212" : r > 0 ? "+" : "") + Math.abs(r) + " mV"; }
+function renderStats(st, base) {
+  var m = metrics(st, A.cell), b = metrics(base, A.cell), sa = A.cell === "sa";
+  var pct = Math.round(m.slope0 / b.slope0 * 100);
+  var items = [
+    { label: sa ? "Max diastolic potential" : "Resting potential", val: mv(m.rest), d: signed(m.rest - b.rest, " mV") },
+    { label: "Threshold", val: mv(m.thr), d: signed(m.thr - b.thr, " mV") },
+    { label: "Phase 0 slope", val: pct + "%", d: pct === 100 ? "" : "of normal", changed: Math.abs(pct - 100) >= 2 },
+    { label: "APD90", val: Math.round(m.apd) + " ms", d: signed(m.apd - b.apd, " ms") },
+    { label: "SA phase 4 slope", val: Math.round(m.slope4) + " mV/s", d: signed(m.slope4 - b.slope4, " mV/s") },
+    { label: "SA rate", val: Math.round(m.rate) + " /min", d: signed(m.rate - b.rate) }
+  ];
+  var root = $("statsStrip");
+  root.innerHTML = items.map(function (s) {
+    var ch = s.changed !== undefined ? s.changed : !!s.d;
+    return '<div class="stat' + (ch ? " is-changed" : "") + '"><div class="stat-val">' + s.val + (s.d ? '<span class="delta">' + s.d + (s.d === "of normal" ? "" : " vs normal") + "</span>" : "") + '</div><div class="stat-label">' + s.label + "</div></div>";
+  }).join("");
+}
+
+/* ---------- key ---------- */
+function keyItem(svg, label) { return '<li><svg viewBox="0 0 34 14" aria-hidden="true" focusable="false">' + svg + "</svg>" + label + "</li>"; }
+function renderKey(hasGhost, hasTarget) {
+  var c = COL, h = [];
+  h.push(keyItem('<line x1="1" y1="7" x2="33" y2="7" stroke="' + c.trace + '" stroke-width="3"/><circle cx="17" cy="7" r="4" fill="' + c.trace + '"/>', "Action potential (solid, filled circles)"));
+  if (hasGhost) h.push(keyItem('<line x1="1" y1="7" x2="33" y2="7" stroke="' + c.ghost + '" stroke-width="2" stroke-dasharray="7 5"/><rect x="13" y="3" width="8" height="8" fill="' + c.halo + '" stroke="' + c.ghost + '" stroke-width="1.6"/>', "Normal (dashed, open squares)"));
+  h.push(keyItem('<line x1="1" y1="7" x2="33" y2="7" stroke="' + c.thr + '" stroke-width="2" stroke-dasharray="8 3 2 3"/>', "Threshold (dash-dot)"));
+  h.push(keyItem('<polyline points="1,9 10,9 13,2 16,12 19,9 33,9" fill="none" stroke="' + c.ecg + '" stroke-width="2.2"/><path d="M13 0 L17 7 L9 7 Z" fill="' + c.ecg + '" transform="translate(12 0) scale(.6)"/>', "ECG, schematic (triangles at R)"));
+  if (hasTarget) h.push(keyItem('<rect x="1" y="1" width="32" height="12" fill="url(#ap-target-hatch)" stroke="' + c.target + '" stroke-width="1"/>', "Where the scenario acts (hatched)"));
+  $("traceKey").innerHTML = h.join("");
+}
+
+/* ---------- controls ---------- */
+function segButton(label, pressed, onClick, disabled) {
+  var b = document.createElement("button");
+  b.type = "button"; b.textContent = label;
+  b.setAttribute("aria-pressed", pressed ? "true" : "false");
+  if (disabled) b.disabled = true;
+  b.addEventListener("click", onClick);
+  return b;
+}
+function renderCells() {
+  var main = $("cellMain"), extra = $("cellExtra");
+  main.innerHTML = ""; extra.innerHTML = "";
+  ["vent", "sa"].forEach(function (c) { main.appendChild(segButton(CELLS[c].label, A.cell === c, function () { chooseCell(c); })); });
+  ["purk", "atr"].forEach(function (c) { extra.appendChild(segButton(CELLS[c].label, A.cell === c, function () { chooseCell(c); })); });
+}
+function chooseCell(c) {
+  if (A.cell === c) return;
+  A.cell = c; A.phase = null; A.note = null;
+  announce("Showing the " + CELLS[c].label.toLowerCase() + ".");
+  renderAll();
+}
+function renderGrades() {
+  var root = $("gradeBtns"), id = A.predictOn ? (A.pending || "") : A.mod;
+  var graded = MODS[id] && MODS[id].graded, locked = A.predictOn;
+  root.innerHTML = "";
+  ["Mild", "Moderate", "Severe"].forEach(function (n, i) {
+    root.appendChild(segButton(n, A.grade === i, function () { A.grade = i; announce(n + " " + MODS[A.mod].label.toLowerCase() + "."); renderAll(); }, !graded || locked));
+  });
+  var note = $("gradeNote");
+  if (graded) {
+    var gr = GRADES[id][A.grade];
+    note.textContent = "Serum K+ drawn at " + gr.k.toFixed(1) + " mmol/L (" + gr.name.toLowerCase() + ")." + (locked ? " Test yourself uses Moderate." : "");
+  } else {
+    note.textContent = "Choose Hyperkalaemia or Hypokalaemia to set the severity.";
+  }
+}
+function renderScenarios() {
+  var root = $("scenarioGroups");
+  root.innerHTML = "";
+  SCEN_GROUPS.forEach(function (gr, gi) {
+    var wrap = document.createElement("div");
+    wrap.className = "scen-subgroup scen-" + gr.key;
+    var hid = "scen-h-" + gi;
+    var lab = document.createElement("h3");
+    lab.className = "scen-group-label"; lab.id = hid; lab.textContent = gr.label;
+    wrap.appendChild(lab);
+    var row = document.createElement("div");
+    row.className = "scen-row"; row.setAttribute("role", "group"); row.setAttribute("aria-labelledby", hid);
+    gr.ids.forEach(function (id) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "scen-btn"; b.textContent = MODS[id].label;
+      var predictable = !!PREDICT[id];
+      if (A.predictOn) {
+        b.setAttribute("aria-pressed", "false");
+        if (A.pending === id) b.setAttribute("aria-current", "true");
+        if (!predictable) b.disabled = true;
+      } else {
+        b.setAttribute("aria-pressed", A.mod === id ? "true" : "false");
+      }
+      b.addEventListener("click", function () { requestScenario(id); });
+      row.appendChild(b);
+    });
+    wrap.appendChild(row);
+    root.appendChild(wrap);
+  });
+}
+function requestScenario(id) {
+  if (A.predictOn) { if (PREDICT[id]) startPending(id); return; }
+  setMod(id, true);
+  announce(MODS[id].label + " applied" + (A.note ? ". " + A.note.text : "."));
+  renderAll();
+}
+function renderPhaseButtons() {
+  var root = $("phaseBtns"), ph = CELLS[A.cell].phases, kind = CELLS[A.cell].kind;
+  root.className = "phase-btns" + (ph.length === 3 ? " n3" : "");
+  root.innerHTML = "";
+  ph.slice().sort().forEach(function (p) {
+    var info = PHASE_INFO[kind][p];
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "phase-btn";
+    b.setAttribute("aria-pressed", A.phase === p ? "true" : "false");
+    b.innerHTML = info.name + "<small>" + esc(info.title) + "</small>";
+    b.addEventListener("click", function () { togglePhase(p); });
+    root.appendChild(b);
+  });
+}
+function togglePhase(p) {
+  A.phase = A.phase === p ? null : p;
+  renderAll();
+}
+
+/* ---------- panel ---------- */
+function targetsPhase(id, kind, p) { return (MODS[id].target || []).indexOf(kind + ":" + p) >= 0; }
+function noteHTML() {
+  if (!A.note) return "";
+  return '<div class="switch-hint"><span>' + esc(A.note.text) + '</span><button type="button" class="secondary" id="noteBack">Show the ' + esc(CELLS[A.note.back].label.toLowerCase()) + "</button></div>";
+}
+function modBlocks(id, g) {
+  var m = MODS[id], h = "";
+  h += block("Mechanism", listHTML(m.mech));
+  h += block("Action potential", listHTML(m.ap));
+  var e = (m.ecgByGrade ? m.ecgByGrade[g] : []).concat(m.ecg || []);
+  h += block("ECG (schematic)", listHTML(e));
+  return h;
+}
+function phasePanel() {
+  var kind = CELLS[A.cell].kind, info = PHASE_INFO[kind][A.phase], id = shownMod();
+  var h = '<p class="explain-kicker">' + esc(CELLS[A.cell].label) + " · " + info.name + "</p>";
+  h += '<h2 class="explain-title">' + esc(info.title) + "</h2>";
+  h += '<ul class="chips" aria-label="Main currents">' + info.currents.map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("") + "</ul>";
+  h += block("What happens", listHTML(info.lines));
+  h += block("On the ECG", listHTML([info.ecg]));
+  if (id !== "normal" && targetsPhase(id, kind, A.phase)) {
+    h += block("With " + esc(MODS[id].label.toLowerCase()), listHTML(MODS[id].ap.slice(0, 1)));
+  }
+  h += '<div class="predict-actions"><button type="button" class="secondary" id="phaseClose">Back to the scenario</button></div>';
+  return h;
+}
+function scenarioPanel() {
+  var id = A.mod, m = MODS[id];
+  var kicker = m.group + (m.ex ? " · " + m.ex : "") + (m.graded ? " · " + GRADES[id][A.grade].name : "");
+  var h = noteHTML();
+  h += '<p class="explain-kicker">' + esc(kicker) + "</p>";
+  h += '<h2 class="explain-title">' + esc(m.label) + "</h2>";
+  h += modBlocks(id, gradeFor(id));
+  h += block("This cell: " + esc(A.cell === "sa" ? "SA node" : CELLS[A.cell].label.toLowerCase()), listHTML([CELL_NOTES[A.cell]]));
+  h += '<p class="tag-key">Click a numbered phase on the trace or a phase button for its ion channels.</p>';
+  return h;
+}
+
+/* ---------- predict ---------- */
+function shuffle(n) {
+  var a = []; for (var i = 0; i < n; i++) a.push(i);
+  for (var j = n - 1; j > 0; j--) { var k = Math.floor(Math.random() * (j + 1)); var t = a[j]; a[j] = a[k]; a[k] = t; }
+  if (a[0] === 0 && Math.random() < 0.67) { a.push(a.shift()); }
+  return a;
+}
+function startPending(id) {
+  var P = PREDICT[id];
+  A.pending = id; A.choices = {}; A.revealed = false; A.shown = false; A.complete = false; A.phase = null; A.note = null;
+  A.cell = P.cell; A.grade = P.grade !== undefined ? P.grade : 1;
+  A.perm[id] = P.qs.map(function (q) { return shuffle(q.o.length); });
+  announce("Test yourself: " + MODS[id].label + ". The graph shows the normal trace.");
+  renderAll();
+}
+function predictPanel() {
+  if (A.complete) {
+    return '<p class="explain-kicker">Test yourself!</p><h2 class="explain-title">You have finished every scenario</h2>' +
+      '<p class="predict-score">Final score: ' + A.correct + " of " + A.asked + ".</p>" +
+      '<div class="predict-actions"><button type="button" id="predictRestart">Start again</button></div>';
+  }
+  if (!A.pending) {
+    return '<p class="explain-kicker">Test yourself!</p><h2 class="explain-title">Pick a scenario</h2><p>Choose a scenario, or start with the first one.</p><div class="predict-actions"><button type="button" id="predictFirst">First scenario</button></div>';
+  }
+  var id = A.pending, P = PREDICT[id], m = MODS[id];
+  var h = '<p class="explain-kicker">Test yourself! · ' + (PRED_ORDER.indexOf(id) + 1) + " of " + PRED_ORDER.length + "</p>";
+  h += '<h2 class="explain-title">' + esc(m.label) + (P.grade !== undefined ? " (moderate)" : "") + "</h2>";
+  h += '<p class="predict-status">' + (A.shown ? "Showing " + esc(m.label.toLowerCase()) + " against the dashed normal." : "The graph shows the normal " + esc(CELLS[P.cell].label.toLowerCase()) + ". Predict, then reveal.") + "</p>";
+  P.qs.forEach(function (q, i) {
+    h += '<div class="predict-q" data-q="' + i + '"><p>' + (i + 1) + ". " + esc(q.q) + '</p><div class="predict-opts">';
+    A.perm[id][i].forEach(function (j) {
+      var pressed = A.choices[i] === j, cls = "", mark = "", verdict = "", aria = q.o[j];
+      if (A.revealed) {
+        if (j === q.a) {
+          cls = "is-correct"; mark = '<span class="predict-mark" aria-hidden="true">\u2713</span>';
+          if (pressed) { verdict = '<span class="predict-verdict">Correct</span>'; aria += " (Correct)"; } else aria += " (Correct answer)";
+        } else if (pressed) {
+          cls = "is-wrong"; mark = '<span class="predict-mark" aria-hidden="true">\u2717</span>';
+          verdict = '<span class="predict-verdict">Not quite</span>'; aria += " (Not quite)";
+        }
+      }
+      h += '<button type="button" class="' + cls + '" data-q="' + i + '" data-opt="' + j + '" aria-pressed="' + pressed + '" aria-label="' + esc(aria) + '"' + (A.revealed ? ' aria-disabled="true"' : "") + ">" + mark + '<span class="predict-opt-text">' + esc(q.o[j]) + verdict + "</span></button>";
+    });
+    h += "</div></div>";
+  });
+  if (A.revealed) {
+    var got = P.qs.filter(function (q, i) { return A.choices[i] === q.a; }).length;
+    h += '<p class="predict-score">This scenario: ' + got + " of " + P.qs.length + " · Running score: " + A.correct + " of " + A.asked + "</p>";
+    h += '<div class="predict-debrief"><h3>Debrief</h3><ul>' + P.qs.map(function (q) { return "<li>" + esc(q.hint) + "</li>"; }).join("") +
+      "<li>" + esc(m.ap[0][0]) + "</li></ul></div>";
+  }
+  h += '<div class="predict-actions">';
+  if (A.revealed) {
+    if (!A.shown) h += '<button type="button" id="predictShow">Show the trace</button>';
+    h += '<button type="button" id="predictNext"' + (A.shown ? "" : ' class="secondary"') + ">Next scenario</button>";
+  } else {
+    h += '<button type="button" id="predictReveal">Reveal answers</button>';
+    h += '<button type="button" class="secondary" id="predictSkip">Skip and show</button>';
+  }
+  h += "</div>";
+  return h;
+}
+function scorePending() {
+  var id = A.pending; if (!id || A.scored[id]) return;
+  var P = PREDICT[id];
+  A.scored[id] = true;
+  A.asked += P.qs.length;
+  A.correct += P.qs.filter(function (q, i) { return A.choices[i] === q.a; }).length;
+}
+function nextPending() {
+  var i = PRED_ORDER.indexOf(A.pending);
+  for (var n = 1; n <= PRED_ORDER.length; n++) {
+    var id = PRED_ORDER[(i + n) % PRED_ORDER.length];
+    if (!A.scored[id]) return id;
+  }
+  return null;
+}
+function wirePanel() {
+  var p = $("scenarioPanel");
+  p.querySelectorAll(".predict-opts button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (A.revealed) return;
+      A.choices[+b.getAttribute("data-q")] = +b.getAttribute("data-opt");
+      renderPanel(true, b.getAttribute("data-q") + ":" + b.getAttribute("data-opt"));
+    });
+  });
+  var on = function (id, fn) { var e = $(id); if (e) e.addEventListener("click", fn); };
+  on("predictReveal", function () { A.revealed = true; scorePending(); renderAll(); focusEl("predictShow"); });
+  on("predictSkip", function () { A.revealed = true; scorePending(); A.shown = true; renderAll(); focusEl("predictNext"); });
+  on("predictShow", function () { A.shown = true; announce("Showing " + MODS[A.pending].label.toLowerCase() + "."); renderAll(); focusEl("predictNext"); });
+  on("predictNext", function () {
+    var n = nextPending();
+    if (n) startPending(n); else { A.complete = true; A.pending = null; renderAll(); }
+    focusPanelTitle();
+  });
+  on("predictRestart", function () { A.asked = 0; A.correct = 0; A.scored = {}; A.complete = false; startPending(PRED_ORDER[0]); focusPanelTitle(); });
+  on("predictFirst", function () { startPending(PRED_ORDER[0]); focusPanelTitle(); });
+  on("noteBack", function () { var c = A.note.back; A.note = null; A.cell = c; A.phase = null; renderAll(); });
+  on("phaseClose", function () { A.phase = null; renderAll(); });
+}
+function focusEl(id) { var e = $(id); if (e) e.focus(); }
+function focusPanelTitle() {
+  var t = document.querySelector("#scenarioPanel .explain-title");
+  if (t) { t.setAttribute("tabindex", "-1"); t.focus({ preventScroll: false }); }
+}
+function renderPanel(keepFocus, focusKey) {
+  var html;
+  if (A.predictOn && !(A.phase && A.shown)) html = predictPanel();
+  else if (A.phase) html = phasePanel();
+  else html = scenarioPanel();
+  $("scenarioPanel").innerHTML = html;
+  wirePanel();
+  if (focusKey) {
+    var parts = focusKey.split(":");
+    var b = document.querySelector('#scenarioPanel .predict-opts button[data-q="' + parts[0] + '"][data-opt="' + parts[1] + '"]');
+    if (b) b.focus();
+  }
+}
+
+/* ---------- chrome ---------- */
+function announce(t) { var s = $("srStatus"); if (s) s.textContent = t; }
+function syncBanner() {
+  var banner = $("testBanner"), tog = $("predictToggle");
+  banner.classList.toggle("is-on", A.predictOn);
+  tog.setAttribute("aria-checked", A.predictOn ? "true" : "false");
+  tog.querySelector(".test-cta-label").textContent = A.predictOn ? "Exit" : "Start";
+  tog.setAttribute("aria-label", A.predictOn ? "Exit Test yourself" : "Start Test yourself");
+  var sc = $("testBannerScore");
+  if (A.predictOn && A.asked) { sc.hidden = false; sc.textContent = "Score: " + A.correct + " of " + A.asked; }
+  else { sc.hidden = true; sc.textContent = ""; }
+}
+function updateStatus() {
+  var el = $("loopStatus");
+  if (A.predictOn && A.pending) {
+    el.hidden = false;
+    el.textContent = A.shown ? "Showing " + MODS[A.pending].label.toLowerCase() + " against the dashed normal." : "Showing the normal trace. The questions are about " + MODS[A.pending].label.toLowerCase() + ".";
+  } else if (!A.predictOn && A.note) {
+    el.hidden = false; el.textContent = A.note.text;
+  } else { el.hidden = true; el.textContent = ""; }
+}
+function renderGraph() {
+  var id = shownMod(), g = gradeFor(id);
+  var st = buildState(id, g, A.cell), base = buildState("normal", 0, A.cell);
+  var ghost = id === "normal" ? null : base;
+  lastRender = drawAll($("apSvg"), { state: st, cell: A.cell, ghost: ghost, mod: id, phase: A.phase });
+  renderStats(st, base);
+  renderKey(!!ghost, id !== "normal" && (MODS[id].target || []).some(function (t) { return t.indexOf(CELLS[A.cell].kind + ":") === 0; }));
+  window.__ap.state = st;
+}
+function renderAll() {
+  renderScenarios(); renderCells(); renderGrades(); renderPhaseButtons();
+  renderGraph(); renderPanel(); syncBanner(); updateStatus();
+}
+function wire() {
+  $("predictToggle").addEventListener("click", function () {
+    A.predictOn = !A.predictOn;
+    A.pending = null; A.revealed = false; A.shown = false; A.choices = {}; A.complete = false; A.phase = null; A.note = null;
+    if (A.predictOn) { A.asked = 0; A.correct = 0; A.scored = {}; startPending(PRED_ORDER[0]); }
+    else { A.mod = "normal"; announce("Test yourself closed."); renderAll(); }
+  });
+  document.querySelectorAll(".try-btn").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (A.predictOn) $("predictToggle").click();
+      var id = b.getAttribute("data-try");
+      setMod(id, false);
+      A.cell = b.getAttribute("data-cell") || A.cell;
+      if (b.getAttribute("data-grade")) A.grade = +b.getAttribute("data-grade");
+      announce(MODS[id].label + " on the " + CELLS[A.cell].label.toLowerCase() + ".");
+      renderAll();
+    });
+  });
+  $("apSvg").addEventListener("click", function (e) {
+    var t = e.target.closest ? e.target.closest("[data-phase]") : null;
+    if (t) togglePhase(t.getAttribute("data-phase"));
+  });
+  window.addEventListener("themechange", function () { renderAll(); });
+  var lastNarrow = null, rt = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () {
+      var n = $("apSvg").getBoundingClientRect().width < 560;
+      if (n !== lastNarrow) { lastNarrow = n; renderGraph(); }
+    }, 120);
+  });
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.revise-tabs [role="tab"]'));
+  function activate(tab, focus) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      $(t.getAttribute("aria-controls")).hidden = !on;
+    });
+    if (focus) tab.focus();
+  }
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener("click", function () { activate(tab, false); });
+    tab.addEventListener("keydown", function (e) {
+      var n = null;
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") n = tabs[(i + 1) % tabs.length];
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") n = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === "Home") n = tabs[0];
+      else if (e.key === "End") n = tabs[tabs.length - 1];
+      if (n) { e.preventDefault(); activate(n, true); }
+    });
+  });
+}
+window.__ap = {
+  A: A, state: null,
+  set: function (o) { Object.assign(A, o); renderAll(); },
+  apply: function (id) { requestScenario(id); },
+  cell: function (c) { chooseCell(c); },
+  phase: function (p) { A.phase = p; renderAll(); },
+  wins: function () { return lastRender && lastRender.wins; }
+};
+wire();
+renderAll();
+</script>
 </body>
 </html>
