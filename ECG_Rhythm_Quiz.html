@@ -3549,6 +3549,665 @@ var TXT = {
   }
 };
 
+/* ===== Hidden random-pool scenarios (not listed in the picker) =====
+   Sourced to RCUK 2025 ALS / special circumstances, tachy and brady algorithms
+   (tachy V3 March 2026), and BNF monographs. Scripted shortcuts are tagged
+   as simulation simplifications. */
+Object.assign(SRC, {
+  hyperkArrest: "RCUK 2025 Special circumstances guidelines (27 Oct 2025): in hyperkalaemic cardiac arrest, administer 10 mL 10% calcium chloride IV and 50 mmol sodium bicarbonate IV, through separate lines or with a flush in between. BNF calcium chloride (acute severe hyperkalaemia with ECG changes): 10 mL of calcium chloride 10%, repeat if no improvement in the ECG within 5 to 10 minutes.",
+  chestDecomp: "RCUK 2025 Special circumstances guidelines: always address tension pneumothorax among the reversible causes; where appropriate, prioritise treating reversible causes, even if chest compressions are briefly interrupted. In traumatic cardiac arrest, early and aggressive management of reversible causes (for example haemorrhage control, airway management, chest decompression) is essential for survival.",
+  afEnergy: "RCUK 2025 Adult ALS guideline (peri-arrest): for atrial fibrillation, an initial synchronised shock at maximum defibrillator output, rather than an escalating approach, is a reasonable strategy based on current data.",
+  broadStable: "RCUK Adult tachyarrhythmia algorithm (updated March 2026): broad and regular: treat as VT; synchronised shock(s); if sedation or anaesthesia risk is too high consider drug treatments: procainamide 10 to 15 mg/kg over 20 min, or if procainamide is not available or contraindicated give amiodarone 300 mg IV over 10 to 60 min, then 900 mg IV over 24 h; if drugs are ineffective, synchronised shock(s) with expert advice.",
+  bradyRisk: "RCUK 2025 Adult bradyarrhythmia algorithm: after a satisfactory response, or when there are no current life-threatening features, ask whether there is a risk of asystole (recent asystole; Mobitz II AV block; complete heart block with broad QRS; ventricular pause greater than 3 s). If yes: seek expert help; monitor, treat the underlying cause and consider transvenous pacing.",
+  amioInf: "RCUK Adult tachyarrhythmia algorithm (updated March 2026): amiodarone 300 mg IV over 10 to 60 min, then 900 mg IV over 24 h, for stable broad and regular tachycardia when procainamide is not used."
+});
+Object.assign(PHYS, {
+  asys: "Asystole means no organised ventricular depolarisation, so there is no mechanical output.",
+  hyperk: "High extracellular potassium reduces the resting membrane potential (it becomes less negative), inactivates fast sodium channels and slows conduction. Pacemaker cells can stop firing altogether: asystole. Calcium antagonises that membrane effect without immediately lowering the serum potassium.",
+  roscHyperk: "Calcium has antagonised the membrane effect of high potassium, so depolarisation and contraction can resume. The potassium itself has not yet been shifted or removed.",
+  tension: "A tension pneumothorax raises intrathoracic pressure, kinks great veins and collapses venous return. Preload falls so far that organised electrical activity produces no palpable pulse (PEA).",
+  roscTension: "Decompressing the chest lets the lung re-expand, intrathoracic pressure falls and venous return is restored, so each beat again ejects a palpable stroke volume.",
+  vfToAsys: "After a shock, the myocardium may have no organised activity left: asystole rather than a perfusing rhythm. This is now a non-shockable arrest.",
+  aden18: "A larger adenosine bolus blocks the AV node for a little longer, so this time the re-entry circuit is interrupted and the SA node takes over.",
+  aden12fail: "The 12 mg bolus still did not block the AV node for long enough to break the circuit.",
+  afSync: "A synchronised shock timed to the R wave depolarises the atria and ventricles together, extinguishing the multiple wavelets of atrial fibrillation so that sinus rhythm can resume.",
+  amioInf: "A slower intravenous load of amiodarone prolongs refractoriness in ventricular muscle and can terminate monomorphic VT, or make it less likely to continue, without using the cardiac-arrest bolus.",
+  adrInf: "An adrenaline infusion at 2 to 10 mcg/min supports heart rate and blood pressure through beta-1 and some alpha-1 effects, as an interim measure while pacing is arranged.",
+  iso: "Isoprenaline is a beta agonist that speeds the escape pacemaker and can raise the ventricular rate as an interim measure."
+});
+Object.assign(PHYS_LIVE, {
+  vfToAsys: "After the shock there is no organised ventricular activity: the rhythm is now asystole.",
+  hyperk: "High extracellular potassium inactivates fast sodium channels and can stop pacemaker cells firing: asystole.",
+  tension: "High pressure in the chest has collapsed venous return, so organised electrical activity produces no pulse.",
+  aden12fail: "This dose did not block the AV node for long enough to break the circuit."
+});
+
+function T(full, guideline, src, extra) {
+  extra = extra || {};
+  return {
+    full: full,
+    guideline: guideline,
+    src: src,
+    flag: extra.flag === 0 ? 0 : 1,
+    outcome: extra.outcome != null ? extra.outcome : "",
+    whyWrong: extra.whyWrong || "",
+    nextStep: extra.nextStep || ""
+  };
+}
+
+Object.assign(TXT, {
+  a_decompress: T("Chest decompression is for tension pneumothorax. Nothing in this scene suggests that.", "ALS: reversible causes", "causes", { whyWrong: "Chest decompression is for tension pneumothorax. Nothing in this scene suggests that." }),
+  a_amioInf: T("A slow amiodarone infusion is not a step in the cardiac arrest algorithm.", "ALS: antiarrhythmic drugs", "amio", { whyWrong: "A slow amiodarone infusion is not a step in the cardiac arrest algorithm." }),
+  a_adrInf: T("An adrenaline infusion is not the arrest dose. In cardiac arrest, adrenaline is given as 1 mg IV.", "ALS: adrenaline", "adrNon", { whyWrong: "An adrenaline infusion is not the arrest dose used in cardiac arrest." }),
+  a_iso: T("Isoprenaline is not part of the cardiac arrest algorithm.", "ALS algorithm: drugs in arrest", "noAtroArrest", { whyWrong: "Isoprenaline is not part of the cardiac arrest algorithm." }),
+  p_decompress: T("Chest decompression is not a step in the peri-arrest arrhythmia algorithms.", "Peri-arrest algorithms", "tachy", { whyWrong: "Chest decompression is not a step in the peri-arrest arrhythmia algorithms." }),
+  p_amioInf: T("A slow amiodarone infusion is not the step for this presentation.", "Tachyarrhythmia algorithm", "broadStable", { whyWrong: "A slow amiodarone infusion is not the step for this presentation." }),
+  p_adrInf: T("An adrenaline infusion is an interim measure for bradycardia, not a step here.", "Bradyarrhythmia algorithm", "brady", { whyWrong: "An adrenaline infusion is not a step for this presentation." }),
+  p_iso: T("Isoprenaline is an interim measure for bradycardia or for pulsed torsades, not a step here.", "Peri-arrest algorithms", "brady", { whyWrong: "Isoprenaline is not a step for this presentation." }),
+
+  h1_assess: T("Asystole: a non-shockable arrest. Confirm the leads, the gain and that this is true asystole, then resume CPR and give adrenaline as soon as possible.", "ALS: non-shockable", "adrNon", { outcome: "Asystole: a non-shockable arrest. Confirm the leads, the gain and that this is true asystole.", nextStep: "Resume CPR and give adrenaline as soon as possible." }),
+  h1_cpr: T("CPR 30:2 is under way. In a non-shockable arrest, adrenaline 1 mg is due as soon as possible, and reversible causes should be treated.", "ALS: non-shockable", "adrNon", { outcome: "CPR 30:2 is under way.", nextStep: "In a non-shockable arrest, adrenaline 1 mg is due as soon as possible, and reversible causes should be treated." }),
+  h1_shock: T("Do not shock asystole. It is a non-shockable rhythm.", "ALS: non-shockable", "als", { whyWrong: "This is asystole, a non-shockable rhythm, so a shock will not help." }),
+  h1_causes: T("The history (missed dialysis, a very high potassium) points to hyperkalaemia as the reversible cause.", "ALS: identify and treat reversible causes", "causes", { outcome: "The history (missed dialysis, a very high potassium) points to hyperkalaemia as the reversible cause." }),
+  h1_calcium: T("Calcium chloride 10 mL of 10% IV given in hyperkalaemic cardiac arrest, to antagonise the membrane effect of high potassium. RCUK 2025 special circumstances also include 50 mmol sodium bicarbonate IV through a separate line. Insulin-glucose is used to shift potassium but is not modelled as a separate action here (simulation simplification).", "Special circumstances: hyperkalaemic cardiac arrest", "hyperkArrest", { outcome: "Calcium chloride 10 mL of 10% IV given in hyperkalaemic cardiac arrest, to antagonise the membrane effect of high potassium.", nextStep: "RCUK 2025 special circumstances also include 50 mmol sodium bicarbonate IV through a separate line. Continue ALS." }),
+  h1_calciumEarly: T("Calcium chloride is the right drug if this arrest is caused by hyperkalaemia. Naming the reversible cause first keeps the team aligned, but the dose itself is still indicated.", "Special circumstances: hyperkalaemic cardiac arrest", "hyperkArrest", { outcome: "Calcium chloride given.", whyWrong: "The reversible cause had not yet been named, but calcium is still indicated if hyperkalaemia is the cause." }),
+  h1_bicarb: T("Sodium bicarbonate 50 mmol is included with calcium in the RCUK 2025 special-circumstances treatment of hyperkalaemic cardiac arrest, through a separate line or with a flush in between. It is not required to complete this simulation (simulation simplification).", "Special circumstances: hyperkalaemic cardiac arrest", "hyperkArrest", { outcome: "Sodium bicarbonate given, which is included in the special-circumstances treatment of hyperkalaemic cardiac arrest.", nextStep: "It is not required to complete this simulation." }),
+  h1_rosc: T("A pulse has returned. Immediately after ROSC: ABCDE assessment, aim SpO2 94 to 98% and a normal PaCO2, systolic blood pressure over 100 mmHg, a 12-lead ECG, identify and treat the cause, and temperature control. The potassium still needs to be shifted and removed.", "ALS: immediately after ROSC", "rosc", { outcome: "A pulse has returned.", nextStep: "Immediately after ROSC: ABCDE assessment, aim SpO2 94 to 98% and a normal PaCO2, systolic blood pressure over 100 mmHg, a 12-lead ECG, identify and treat the cause, and temperature control." }),
+
+  h2_assess: T("Pulseless electrical activity: an organised rhythm but no pulse. This is a non-shockable arrest.", "ALS: non-shockable", "adrNon", { outcome: "Pulseless electrical activity: an organised rhythm but no pulse.", nextStep: "Resume CPR and give adrenaline as soon as possible, and treat the reversible cause." }),
+  h2_causes: T("The sudden arrest after a central line, with a deviated trachea and no air entry on one side, is tension pneumothorax.", "ALS: identify and treat reversible causes", "causes", { outcome: "The sudden arrest after a central line, with a deviated trachea and no air entry on one side, is tension pneumothorax." }),
+  h2_decomp: T("Chest decompression (needle or thoracostomy) is performed to relieve the tension. RCUK 2025 special circumstances list chest decompression among the time-critical treatments of reversible causes. The precise technique is a local-protocol decision (see flagged items).", "Special circumstances: chest decompression", "chestDecomp", { outcome: "Chest decompression is performed to relieve the tension." }),
+  h2_decompEarly: T("Chest decompression is the right treatment if this is tension pneumothorax. Naming the reversible cause first keeps the team aligned, but decompression should not be delayed.", "Special circumstances: chest decompression", "chestDecomp", { outcome: "Chest decompression performed.", whyWrong: "The reversible cause had not yet been named, but decompression should not be delayed if tension pneumothorax is clear." }),
+  h2_shock: T("Do not shock PEA. It is a non-shockable rhythm.", "ALS: non-shockable", "als", { whyWrong: "This is PEA, a non-shockable rhythm, so a shock will not help." }),
+  h2_rosc: T("A pulse has returned after the chest was decompressed. Immediately after ROSC: ABCDE assessment and post-ROSC care, and complete the chest drainage as local practice requires.", "ALS: immediately after ROSC", "rosc", { outcome: "A pulse has returned after the chest was decompressed.", nextStep: "ABCDE assessment and post-ROSC care." })
+});
+
+Object.assign(TXT, {
+  h3_checkLater: T("Still VF after five shocks. Amiodarone 150 mg is due after a total of five shocks, in addition to adrenaline every 3 to 5 minutes.", "ALS: amiodarone 150 mg after 5 shocks", "amio", { outcome: "Still VF after five shocks.", nextStep: "Amiodarone 150 mg is due after a total of five shocks, in addition to adrenaline every 3 to 5 minutes." }),
+  h3_rosc: T("A pulse has returned after a prolonged shockable arrest. Immediately after ROSC: ABCDE assessment, aim SpO2 94 to 98% and a normal PaCO2, systolic blood pressure over 100 mmHg, a 12-lead ECG, identify and treat the cause, and temperature control.", "ALS: immediately after ROSC", "rosc", { outcome: "A pulse has returned after a prolonged shockable arrest.", nextStep: "Immediately after ROSC: ABCDE assessment and the usual post-ROSC targets." }),
+  h4_asys: T("Rhythm change: asystole, still no pulse. This is now a non-shockable arrest. Do not keep shocking. Give adrenaline 1 mg as soon as possible and continue CPR.", "ALS: non-shockable", "adrNon", { outcome: "Rhythm change: asystole, still no pulse.", nextStep: "This is now a non-shockable arrest. Give adrenaline 1 mg as soon as possible and continue CPR." }),
+  h4_shockAsys: T("The rhythm is now asystole. Do not shock a non-shockable rhythm.", "ALS: non-shockable", "als", { whyWrong: "The rhythm is now asystole, so a further shock will not help." }),
+  h4_rosc: T("A pulse has returned, now in an organised rhythm. Immediately after ROSC: ABCDE assessment and the usual post-ROSC targets.", "ALS: immediately after ROSC", "rosc", { outcome: "A pulse has returned, now in an organised rhythm.", nextStep: "ABCDE assessment and the usual post-ROSC targets." }),
+  h5_assess: T("A regular narrow-complex tachycardia in a stable patient: no shock, syncope, ischaemia, heart failure or recent ROSC.", "Tachyarrhythmia: stable, narrow and regular", "narrow", { outcome: "A regular narrow-complex tachycardia in a stable patient: no life-threatening features." }),
+  h5_aden18: T("Adenosine 18 mg (RCUK; the BNF third dose is 12 mg) given after 6 mg and 12 mg. The circuit breaks and sinus rhythm returns. The two sources differ on the third dose (already flagged).", "Tachyarrhythmia: adenosine 18 mg", "aden", { outcome: "Adenosine 18 mg given after 6 mg and 12 mg. The circuit breaks and sinus rhythm returns." }),
+  h5_aden12fail: T("Adenosine 12 mg given. The tachycardia continues. RCUK uses a third dose of 18 mg; the BNF repeats 12 mg.", "Tachyarrhythmia: adenosine", "aden", { outcome: "Adenosine 12 mg given. The tachycardia continues.", nextStep: "RCUK uses a third dose of 18 mg; the BNF repeats 12 mg." }),
+  h6_assess: T("Atrial fibrillation with a rapid ventricular rate, and life-threatening features (shock and myocardial ischaemia). This is an unstable tachyarrhythmia.", "Tachyarrhythmia: unstable", "tachy", { outcome: "Atrial fibrillation with a rapid ventricular rate, and life-threatening features (shock and myocardial ischaemia)." }),
+  h6_sync1: T("Synchronised shock delivered. For atrial fibrillation, RCUK 2025 says an initial synchronised shock at maximum defibrillator output is a reasonable strategy. Energy selection is not modelled numerically here (simulation simplification). The rhythm has not yet changed.", "Tachyarrhythmia: unstable, synchronised shock; AF energy", "afEnergy", { outcome: "Synchronised shock delivered. The rhythm has not yet changed." }),
+  h6_sync2: T("A further synchronised shock. Sinus rhythm is restored. Anticoagulation if the arrhythmia has lasted more than 24 hours is on the stable AF pathway and is not modelled as a separate action here (simulation simplification).", "Tachyarrhythmia: synchronised shock, up to 3 attempts", "tachy", { outcome: "A further synchronised shock. Sinus rhythm is restored." }),
+  h6_aden: T("Adenosine is for a stable, regular narrow-complex tachycardia without pre-excitation. This is irregular, and the patient is unstable.", "Tachyarrhythmia: adenosine if no pre-excitation, regular narrow", "narrow", { whyWrong: "Adenosine is not the treatment for unstable, irregular narrow-complex tachycardia." }),
+  h6_vagal: T("Vagal manoeuvres are for a stable regular narrow-complex tachycardia. This patient has life-threatening features, so electrical cardioversion is preferred.", "Tachyarrhythmia: unstable", "tachy", { whyWrong: "Vagal manoeuvres are not the treatment for an unstable tachyarrhythmia." }),
+  h7_assess: T("A regular broad-complex tachycardia in a stable patient. Treat as VT unless a prior diagnosis of SVT with aberrancy is known.", "Tachyarrhythmia: broad and regular", "broadStable", { outcome: "A regular broad-complex tachycardia in a stable patient. Treat as VT unless a prior diagnosis of SVT with aberrancy is known." }),
+  h7_amioInf: T("Amiodarone 300 mg IV over 10 to 60 min given, as on the stable broad-and-regular pathway when procainamide is not used. The tachycardia slows and then returns to sinus rhythm. A 900 mg infusion over 24 hours would usually follow (simulation simplification: not modelled as a separate action).", "Tachyarrhythmia: amiodarone 300 mg IV over 10 to 60 min", "amioInf", { outcome: "Amiodarone 300 mg IV over 10 to 60 min given. The tachycardia slows and then returns to sinus rhythm." }),
+  h7_amioBolus: T("The cardiac-arrest bolus of amiodarone 300 mg is not the stable-pathway dose. For stable broad and regular tachycardia the load is 300 mg IV over 10 to 60 min.", "Tachyarrhythmia: amiodarone 300 mg IV over 10 to 60 min", "amioInf", { whyWrong: "The cardiac-arrest bolus of amiodarone 300 mg is not the dose or rate used on the stable broad-complex pathway." }),
+  h7_sync: T("Synchronised cardioversion is an accepted treatment for monomorphic VT, including in some stable patients, with careful sedation or anaesthesia if the patient is conscious.", "Tachyarrhythmia: broad and regular, synchronised shock", "broadStable", { outcome: "Synchronised cardioversion. Sinus rhythm is restored." }),
+  h7_aden: T("IV adenosine is only for suspected SVT with aberrant conduction in a stable patient. This case should be treated as VT.", "Tachyarrhythmia: suspected SVT with aberrant conduction", "broad", { whyWrong: "Adenosine is only for suspected SVT with aberrancy. This case should be treated as VT." }),
+  h8_assess: T("Complete heart block with a broad QRS. There are no current life-threatening features, but this is a risk of asystole on the bradyarrhythmia algorithm (complete heart block with broad QRS).", "Bradyarrhythmia: risk of asystole", "bradyRisk", { outcome: "Complete heart block with a broad QRS. There are no current life-threatening features, but this is a risk of asystole." }),
+  h8_atro: T("Do not give atropine to patients with high-degree atrioventricular block and a wide QRS. It is ineffective and may worsen the block.", "Bradyarrhythmia: do not give atropine in high-degree block with wide QRS", "bradyWide", { whyWrong: "Atropine should not be given in high-degree atrioventricular block with a wide QRS: it is ineffective and may worsen the block." }),
+  h8_pace: T("Transcutaneous pacing started as a bridge to transvenous pacing. Seek expert help and consider transvenous pacing.", "Bradyarrhythmia: transcutaneous pacing; consider transvenous pacing", "pacing", { outcome: "Transcutaneous pacing started as a bridge to transvenous pacing.", nextStep: "Seek expert help and consider transvenous pacing." }),
+  h8_adrInf: T("Adrenaline infusion 2 to 10 mcg/min started as an interim measure. Seek expert help and arrange pacing.", "Bradyarrhythmia: interim measures, adrenaline 2 to 10 mcg/min", "brady", { outcome: "Adrenaline infusion 2 to 10 mcg/min started as an interim measure.", nextStep: "Seek expert help and arrange pacing." }),
+  h8_iso: T("Isoprenaline infusion 5 mcg/min started as an interim measure. Seek expert help and arrange pacing.", "Bradyarrhythmia: interim measures, isoprenaline 5 mcg/min", "brady", { outcome: "Isoprenaline infusion 5 mcg/min started as an interim measure.", nextStep: "Seek expert help and arrange pacing." }),
+  h8_expert: T("Expert help sought. In a patient at risk of asystole, consider transvenous pacing and treat the underlying cause.", "Bradyarrhythmia: risk of asystole, seek expert help", "bradyRisk", { outcome: "Expert help sought.", nextStep: "Consider transvenous pacing and treat the underlying cause." }),
+  h8_observe: T("Do not simply observe. Complete heart block with a broad QRS is a risk of asystole: seek expert help and arrange interim measures or pacing.", "Bradyarrhythmia: risk of asystole", "bradyRisk", { whyWrong: "This is a risk of asystole, so observation alone is not the step." }),
+  h9_assess: T("Pulseless polymorphic VT (torsades de pointes): this is a cardiac arrest. Treat it as a shockable rhythm, and give magnesium.", "ALS: early defibrillation; tachyarrhythmia: Mg2+ 8 mmol", "tdp", { outcome: "Pulseless polymorphic VT (torsades de pointes): this is a cardiac arrest.", nextStep: "Treat it as a shockable rhythm, and give magnesium." }),
+  h9_shock: T("Unsynchronised shock delivered for pulseless polymorphic VT. Resume CPR immediately. Magnesium 8 mmol (2 g) IV is the specific treatment for torsades with QT prolongation.", "ALS: shockable; tachyarrhythmia: Mg2+ 8 mmol", "tdp", { outcome: "Unsynchronised shock delivered for pulseless polymorphic VT. Resume CPR immediately.", nextStep: "Magnesium 8 mmol (2 g) IV is the specific treatment for torsades with QT prolongation." }),
+  h9_mg: T("Magnesium 8 mmol (2 g) IV given for polymorphic VT with QT prolongation. Avoid amiodarone.", "Tachyarrhythmia: Mg2+ 8 mmol IV over 10 min; avoid amiodarone", "tdp", { outcome: "Magnesium 8 mmol (2 g) IV given for polymorphic VT with QT prolongation." }),
+  h9_mgOnly: T("Magnesium is the right specific drug, but this patient has no pulse, so unsynchronised defibrillation is also needed.", "ALS: early defibrillation", "alsPriority", { outcome: "Magnesium given.", whyWrong: "The patient has no pulse, so defibrillation is also needed." }),
+  h9_sync: T("Synchronise only when there is a pulse to time to. Pulseless polymorphic VT is treated with unsynchronised shocks, like VF.", "ALS: early defibrillation", "alsPriority", { whyWrong: "There is no pulse to synchronise to. Pulseless polymorphic VT is treated with unsynchronised shocks." }),
+  h9_rosc: T("A pulse has returned, now in a slow sinus rhythm with a long QT. Identify and treat reversible causes (electrolytes, QT-prolonging drugs).", "ALS: immediately after ROSC", "rosc", { outcome: "A pulse has returned, now in a slow sinus rhythm with a long QT.", nextStep: "Identify and treat reversible causes (electrolytes, QT-prolonging drugs)." }),
+  h10_assess: T("Immediately post-ROSC is itself a life-threatening feature on the tachyarrhythmia algorithm. The patient now has a regular broad-complex tachycardia and hypotension: this is unstable VT.", "Tachyarrhythmia: immediately post-ROSC; unstable", "tachy", { outcome: "Immediately post-ROSC is a life-threatening feature. The patient now has a regular broad-complex tachycardia and hypotension: this is unstable VT." }),
+  h10_sync: T("Synchronised shock in an unstable patient immediately after ROSC. Sinus rhythm is restored. Continue ABCDE and the usual post-ROSC targets (SpO2 94 to 98%, systolic blood pressure over 100 mmHg, 12-lead ECG, treat the cause, temperature control).", "Tachyarrhythmia: unstable, synchronised shock; immediately after ROSC", "rosc", { outcome: "Synchronised shock in an unstable patient immediately after ROSC. Sinus rhythm is restored.", nextStep: "Continue ABCDE and the usual post-ROSC targets." }),
+  h10_amio: T("Do not start with an anti-arrhythmic infusion while life-threatening features are present. Electrical cardioversion is preferred in the unstable patient, including immediately after ROSC.", "Tachyarrhythmia: unstable, synchronised shock", "tachy", { whyWrong: "Electrical cardioversion is preferred while life-threatening features are present, including immediately after ROSC." })
+});
+
+function hiddenDueArrestAdr(st, also) {
+  var out = [];
+  if (!st.did.adr && (st.cpr || st.checked || (st.reviews || 0) > 0 || (st.actionN || 0) >= 2)) {
+    out.push(dueItem("adr", "Adrenaline 1 mg as soon as possible", "Review drug timing in this non-shockable arrest", "In a non-shockable arrest, have you thought about your drugs?", "adrNon", "ALS: non-shockable, adrenaline as soon as possible"));
+  }
+  if (st.did.adr && st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] >= 180) {
+    out.push(dueItem("adrRepeat", "Repeat adrenaline 1 mg every 3 to 5 minutes", "Review drug timing later in the arrest", "Have you thought about whether any drugs are due again?", "adrNon", "ALS: adrenaline every 3 to 5 min"));
+  }
+  return out.concat(also || []);
+}
+
+var HIDDEN_SCENARIOS = [];
+
+HIDDEN_SCENARIOS.push(
+  { id: "h1", hidden: true, group: "Cardiac arrest", title: "Asystole from hyperkalaemia",
+    blurb: "Hidden random-pool case.",
+    scene: "A 61-year-old who usually has haemodialysis three times a week missed yesterday's session. This morning the potassium was 7.8 mmol/L and the team was called to review. They are now unresponsive and not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for the first rhythm check.",
+    start: { rhythm: { gen: "asystole" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
+    req: [["cpr", "CPR 30:2 without delay", "als"], ["adr", "Adrenaline 1 mg as soon as possible", "adrNon"], ["causes", "Identify the reversible cause (hyperkalaemia)", "causes"], ["calcium", "Calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest", "hyperkArrest"]],
+    due: function (st) {
+      var out = hiddenDueArrestAdr(st);
+      if ((!st.did.causes || !st.did.calcium) && (st.cpr || st.checked || (st.actionN || 0) >= 2)) {
+        out.push(dueItem(st.did.causes ? "calcium" : "causes", st.did.causes ? "Calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest" : "Identify the reversible cause (hyperkalaemia)", "Think about reversible causes", "Have you thought about reversible causes?", st.did.causes ? "hyperkArrest" : "causes", st.did.causes ? "Special circumstances: hyperkalaemic cardiac arrest" : "ALS: identify and treat reversible causes"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      var roscVit = { pulse: "Present, weak", bp: "88/54 mmHg", consc: "Unresponsive but breathing", threats: "Immediately post-ROSC" };
+      if (st.phase === "organised") {
+        if (a === "assess") return O("ok", "h1_rosc", { end: true, pulse: true, vit: roscVit, phys: "roscHyperk", rhythm: { gen: "hyperk" } });
+        if (a === "ff") return O("info", "a_ffNoCPR");
+        if (a === "cpr") return O("bad", "s1_roscCPR");
+        if (a === "shock") return O("bad", "s1_roscShock");
+      }
+      if (a === "ff") {
+        if (!st.cpr) return O("info", "a_ffNoCPR");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (st.did.adr && st.did.calcium) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "hyperk" } }); }
+        return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "asystole" } });
+      }
+      if (a === "assess") {
+        if (!st.cpr) {
+          if (st.phase === "organised") return O("ok", "h1_rosc", { end: true, pulse: true, vit: roscVit, phys: "roscHyperk", rhythm: { gen: "hyperk" } });
+          if (!st.checked) { st.checked = true; return O("ok", "h1_assess", { vit: { pulse: "Absent" }, phys: "asys" }); }
+          if (st.monitorReady) { st.monitorReady = false; return O("ok", "n_noPulse", { vit: { pulse: "Absent" } }); }
+          return O("info", "a_assessAgain");
+        }
+        if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (st.did.adr && st.did.calcium) return O("ok", "h1_rosc", { end: true, pulse: true, cprStop: true, rhythm: { gen: "hyperk" }, phys: "roscHyperk", vit: roscVit });
+        return O("ok", "h1_assess", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
+      }
+      if (a === "cpr") { if (st.cpr) return O("info", "a_cprRunning"); st.did.cpr = 1; return O("ok", "h1_cpr", { cprStart: true }); }
+      if (a === "shock" || a === "sync") return O("bad", "h1_shock");
+      if (a === "adr") {
+        if (st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] < 180) return O("bad", "s2_adrSoon");
+        st.adrT.push(st.clock); st.did.adr = 1;
+        return O("ok", st.adrT.length === 1 ? "s2_adr" : "s2_adrRepeat", { phys: "adr" });
+      }
+      if (a === "causes") { st.did.causes = 1; return O("ok", "h1_causes", { phys: "hyperk" }); }
+      if (a === "calcium") { st.did.calcium = 1; return O(st.did.causes ? "ok" : "part", st.did.causes ? "h1_calcium" : ["h1_calciumEarly", "h1_calcium"], { phys: "hyperk" }); }
+      if (a === "bicarb") { st.did.bicarb = 1; return O("ok", "h1_bicarb"); }
+      if (a === "expert") return O("ok", "a_expert");
+      return null;
+    } }
+);
+
+HIDDEN_SCENARIOS.push(
+  { id: "h2", hidden: true, group: "Cardiac arrest", title: "PEA from tension pneumothorax",
+    blurb: "Hidden random-pool case.",
+    scene: "A 58-year-old has just had a right internal jugular central line on the high-dependency unit. They suddenly become unresponsive and not breathing normally. The right chest is resonant, with no air entry, and the trachea is deviated to the left. CPR 30:2 is under way and pads are on. Compressions are paused for a rhythm check.",
+    start: { rhythm: { gen: "pea", opts: { lo: 100, hi: 120 } }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
+    req: [["cpr", "CPR 30:2 without delay", "als"], ["adr", "Adrenaline 1 mg as soon as possible", "adrNon"], ["causes", "Identify the reversible cause (tension pneumothorax)", "causes"], ["decompress", "Chest decompression for tension pneumothorax", "chestDecomp"]],
+    due: function (st) {
+      var out = hiddenDueArrestAdr(st);
+      if ((!st.did.causes || !st.did.decompress) && (st.cpr || st.checked || (st.actionN || 0) >= 2)) {
+        out.push(dueItem(st.did.causes ? "decompress" : "causes", st.did.causes ? "Chest decompression for tension pneumothorax" : "Identify the reversible cause (tension pneumothorax)", "Think about reversible causes", "Have you thought about reversible causes?", st.did.causes ? "chestDecomp" : "causes", st.did.causes ? "Special circumstances: chest decompression" : "ALS: identify and treat reversible causes"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      var roscVit = { pulse: "Present", bp: "96/60 mmHg", consc: "Unresponsive but breathing", threats: "Immediately post-ROSC" };
+      if (st.phase === "organised") {
+        if (a === "assess") return O("ok", "h2_rosc", { end: true, pulse: true, vit: roscVit, phys: "roscTension", rhythm: R_SINUS_ROSC });
+        if (a === "ff") return O("info", "a_ffNoCPR");
+        if (a === "cpr") return O("bad", "s1_roscCPR");
+        if (a === "shock") return O("bad", "s1_roscShock");
+      }
+      if (a === "ff") {
+        if (!st.cpr) return O("info", "a_ffNoCPR");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (st.did.adr && st.did.decompress) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: R_SINUS_ROSC }); }
+        return O("ok", "n_skip", { cprStop: true, cycleCheck: true });
+      }
+      if (a === "assess") {
+        if (!st.cpr) {
+          if (st.phase === "organised") return O("ok", "h2_rosc", { end: true, pulse: true, vit: roscVit, phys: "roscTension", rhythm: R_SINUS_ROSC });
+          if (!st.checked) { st.checked = true; return O("ok", "h2_assess", { vit: { pulse: "Absent" }, phys: "tension" }); }
+          if (st.monitorReady) { st.monitorReady = false; return O("ok", "n_noPulse", { vit: { pulse: "Absent" } }); }
+          return O("info", "a_assessAgain");
+        }
+        if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (st.did.adr && st.did.decompress) return O("ok", "h2_rosc", { end: true, pulse: true, cprStop: true, rhythm: R_SINUS_ROSC, phys: "roscTension", vit: roscVit });
+        return O("ok", "s2_check", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
+      }
+      if (a === "cpr") { if (st.cpr) return O("info", "a_cprRunning"); st.did.cpr = 1; return O("ok", "s2_cpr", { cprStart: true }); }
+      if (a === "shock" || a === "sync") return O("bad", "h2_shock");
+      if (a === "adr") {
+        if (st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] < 180) return O("bad", "s2_adrSoon");
+        st.adrT.push(st.clock); st.did.adr = 1;
+        return O("ok", st.adrT.length === 1 ? "s2_adr" : "s2_adrRepeat", { phys: "adr" });
+      }
+      if (a === "causes") { st.did.causes = 1; return O("ok", "h2_causes", { phys: "tension" }); }
+      if (a === "decompress") { st.did.decompress = 1; return O(st.did.causes ? "ok" : "part", st.did.causes ? "h2_decomp" : ["h2_decompEarly", "h2_decomp"], { phys: "tension" }); }
+      if (a === "fluid") return O("bad", "a_fluid");
+      if (a === "expert") return O("ok", "a_expert");
+      return null;
+    } }
+);
+
+HIDDEN_SCENARIOS.push(
+  { id: "h3", hidden: true, group: "Cardiac arrest", title: "Refractory VF: amiodarone after the fifth shock",
+    blurb: "Hidden random-pool case.",
+    scene: "A 72-year-old collapses in the emergency department waiting room. Unresponsive and not breathing normally. The resuscitation team is present, CPR 30:2 has been started and defibrillator pads are on. Compressions are paused for the first rhythm check. This arrest will not be brief.",
+    start: { rhythm: { gen: "vf" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
+    req: [["shock", "Shock VF without delay", "shock"], ["cpr", "Resume CPR immediately after each shock", "als"], ["adr", "Adrenaline 1 mg after the third shock", "adrShock"], ["amio300", "Amiodarone 300 mg after the third shock", "amio"], ["amio150", "Amiodarone 150 mg after a total of five shocks", "amio"]],
+    due: function (st) {
+      var out = [];
+      if (st.shocks === 0 && (st.cpr || (st.reviews || 0) > 0 || (st.actionN || 0) >= 2)) {
+        out.push(dueItem("shock", "Shock VF without delay", "Reconsider how this rhythm is treated electrically", "Have you thought about how this rhythm is treated electrically?", "alsPriority", "ALS: shockable, shock first"));
+      }
+      if (st.shocks >= 3 && !st.adrAfter3) {
+        out.push(dueItem("adr", "Adrenaline 1 mg after the third shock", "Review drug timing after the third shock", "Have you thought about your drugs after the third shock?", "adrShock", "ALS: adrenaline after 3 shocks"));
+      }
+      if (st.shocks >= 3 && !st.amio) {
+        out.push(dueItem("amio300", "Amiodarone 300 mg after the third shock", "Review drug timing after the third shock", "Have you thought about your drugs after the third shock?", "amio", "ALS: amiodarone after 3 shocks"));
+      }
+      if (st.adrAfter3 && st.amio && st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] >= 180) {
+        out.push(dueItem("adrRepeat", "Repeat adrenaline 1 mg every 3 to 5 minutes", "Review drug timing later in the arrest", "Have you thought about whether any drugs are due again?", "adrShock", "ALS: adrenaline every 3 to 5 min"));
+      }
+      if (st.shocks >= 5 && st.amio && !st.amio150) {
+        out.push(dueItem("amio150", "Amiodarone 150 mg after a total of five shocks", "Review drug timing later in the arrest", "Have you thought about whether any further drugs are due?", "amio", "ALS: amiodarone 150 mg after 5 shocks"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      var ready = st.shocks >= 5 && st.adrAfter3 && st.amio && st.amio150;
+      var roscVit = { pulse: "Present", bp: "94/58 mmHg", consc: "Unresponsive but breathing", threats: "Immediately post-ROSC" };
+      if (st.phase === "organised") {
+        if (a === "assess") return O("ok", "h3_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc", rhythm: R_SINUS_ROSC });
+        if (a === "ff") return O("info", "a_ffNoCPR");
+        if (a === "cpr") return O("bad", "s1_roscCPR");
+        if (a === "shock") return O("bad", "s1_roscShock");
+      }
+      if (a === "shock") {
+        if (st.cpr) return O("bad", "a_shockMid");
+        if (st.justShocked) return O("bad", "a_shockTwice");
+        st.shocks++; st.justShocked = true; st.did.shock = 1;
+        return O("ok", st.shocks === 1 ? "s1_shock1" : st.shocks === 3 ? "s1_shock3" : "s1_shockN", { shock: true, phys: st.shocks === 1 ? "shockVF" : "vfPersists" });
+      }
+      if (a === "cpr") {
+        if (st.cpr) return O("info", "a_cprRunning");
+        if (!st.justShocked && st.shocks === 0) return O("bad", "s1_cprFirst", { cprStart: true });
+        st.justShocked = false; st.did.cpr = 1;
+        return O("ok", "s1_cpr", { cprStart: true });
+      }
+      if (st.justShocked && a !== "expert" && a !== "causes") return O("bad", "a_resumeFirst");
+      if (a === "ff") {
+        if (!st.cpr) return O("info", "a_ffNoCPR");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (ready) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: R_SINUS_ROSC }); }
+        return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "vf" }, phys: "vfPersists" });
+      }
+      if (a === "assess") {
+        if (!st.cpr) {
+          if (st.phase === "organised") return O("ok", "h3_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc", rhythm: R_SINUS_ROSC });
+          if (!st.checked) { st.checked = true; return O("ok", "s1_assess", { vit: { pulse: "Absent" } }); }
+          if (st.monitorReady) { st.monitorReady = false; return O("ok", "n_noPulse", { vit: { pulse: "Absent" } }); }
+          return O("info", "a_assessAgain");
+        }
+        if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (ready) return O("ok", "h3_rosc", { end: true, pulse: true, cprStop: true, rhythm: R_SINUS_ROSC, phys: "rosc", vit: roscVit });
+        var k = st.shocks >= 5 && st.amio && !st.amio150 ? "h3_checkLater" : st.shocks >= 3 ? "s1_checkNoDrugs" : "s1_check";
+        return O("ok", k, { cprStop: true, cycleCheck: true, rhythm: { gen: "vf" }, phys: "vfPersists", vit: { pulse: "Absent" } });
+      }
+      if (a === "adr") {
+        if (st.shocks < 3) return O("bad", "s1_adrEarly");
+        if (st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] < 180) return O("bad", "a_adrSoon");
+        st.adrT.push(st.clock); st.adrAfter3 = true; st.did.adr = 1;
+        return O("ok", st.adrT.length === 1 ? "s1_adr" : "s1_adrRepeat", { phys: "adr" });
+      }
+      if (a === "amio300") {
+        if (st.amio) return O("bad", "s1_amioTwice");
+        if (st.shocks < 3) return O("bad", "s1_amioEarly");
+        st.amio = true; st.did.amio300 = 1; return O("ok", "s1_amio", { phys: "amio" });
+      }
+      if (a === "amio150") { if (st.shocks >= 5 && st.amio && !st.amio150) { st.amio150 = true; st.did.amio150 = 1; return O("ok", "s1_amio150"); } return O("bad", "a_amio150"); }
+      if (a === "sync") return O("bad", "a_sync");
+      return null;
+    } }
+);
+
+HIDDEN_SCENARIOS.push(
+  { id: "h4", hidden: true, group: "Cardiac arrest", title: "VF converting to asystole",
+    blurb: "Hidden random-pool case.",
+    scene: "A 66-year-old is found unresponsive in the hospital car park and brought in under CPR. Pads are on. Compressions are paused for the first rhythm check. The first rhythm will not be the last.",
+    start: { rhythm: { gen: "vf" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
+    req: [["shock", "Shock VF without delay", "shock"], ["cpr", "Resume CPR immediately after the shock", "als"], ["adr", "Once the rhythm is asystole, adrenaline 1 mg as soon as possible", "adrNon"]],
+    due: function (st) {
+      var out = [];
+      if (!st.asys && st.shocks === 0 && (st.cpr || (st.reviews || 0) > 0 || (st.actionN || 0) >= 2)) {
+        out.push(dueItem("shock", "Shock VF without delay", "Reconsider how this rhythm is treated electrically", "Have you thought about how this rhythm is treated electrically?", "alsPriority", "ALS: shockable, shock first"));
+      }
+      if (st.asys) {
+        if (!st.did.adr && (st.cpr || st.checked || (st.reviews || 0) > 0 || (st.actionN || 0) >= 2)) {
+          out.push(dueItem("adr", "Adrenaline 1 mg as soon as possible", "Review drug timing in this non-shockable arrest", "In a non-shockable arrest, have you thought about your drugs?", "adrNon", "ALS: non-shockable, adrenaline as soon as possible"));
+        }
+        if (st.did.adr && st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] >= 180) {
+          out.push(dueItem("adrRepeat", "Repeat adrenaline 1 mg every 3 to 5 minutes", "Review drug timing later in the arrest", "Have you thought about whether any drugs are due again?", "adrNon", "ALS: adrenaline every 3 to 5 min"));
+        }
+      }
+      return out;
+    },
+    step: function (a, st) {
+      var roscVit = { pulse: "Present", bp: "90/56 mmHg", consc: "Unresponsive but breathing", threats: "Immediately post-ROSC" };
+      if (st.phase === "organised") {
+        if (a === "assess") return O("ok", "h4_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc", rhythm: R_SINUS_ROSC });
+        if (a === "ff") return O("info", "a_ffNoCPR");
+        if (a === "cpr") return O("bad", "s1_roscCPR");
+        if (a === "shock") return O("bad", "s1_roscShock");
+      }
+      if (a === "shock") {
+        if (st.asys) return O("bad", "h4_shockAsys");
+        if (st.cpr) return O("bad", "a_shockMid");
+        if (st.justShocked) return O("bad", "a_shockTwice");
+        st.shocks++; st.justShocked = true; st.did.shock = 1;
+        return O("ok", "s1_shock1", { shock: true });
+      }
+      if (a === "sync") return O("bad", st.asys ? "h4_shockAsys" : "a_sync");
+      if (a === "cpr") {
+        if (st.cpr) return O("info", "a_cprRunning");
+        if (!st.asys && !st.justShocked && st.shocks === 0) return O("bad", "s1_cprFirst", { cprStart: true });
+        st.justShocked = false; st.did.cpr = 1;
+        return O("ok", "s1_cpr", { cprStart: true });
+      }
+      if (!st.asys && st.justShocked && a !== "expert" && a !== "causes") return O("bad", "a_resumeFirst");
+      if (a === "ff") {
+        if (!st.cpr) return O("info", "a_ffNoCPR");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (!st.asys && st.shocks >= 1) {
+          st.asys = true;
+          return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "asystole" }, phys: "vfToAsys" });
+        }
+        if (st.asys && st.did.adr) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: R_SINUS_ROSC }); }
+        return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: st.asys ? { gen: "asystole" } : { gen: "vf" } });
+      }
+      if (a === "assess") {
+        if (!st.cpr) {
+          if (st.phase === "organised") return O("ok", "h4_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc", rhythm: R_SINUS_ROSC });
+          if (!st.checked) { st.checked = true; return O("ok", "s1_assess", { vit: { pulse: "Absent" } }); }
+          if (st.monitorReady) {
+            st.monitorReady = false;
+            if (st.asys) return O("ok", "h4_asys", { vit: { pulse: "Absent" }, phys: "vfToAsys", rhythm: { gen: "asystole" } });
+            return O("ok", "n_noPulse", { vit: { pulse: "Absent" } });
+          }
+          return O("info", "a_assessAgain");
+        }
+        if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (!st.asys && st.shocks >= 1) {
+          st.asys = true;
+          return O("ok", "h4_asys", { cprStop: true, cycleCheck: true, rhythm: { gen: "asystole" }, phys: "vfToAsys", vit: { pulse: "Absent" } });
+        }
+        if (st.asys && st.did.adr) return O("ok", "h4_rosc", { end: true, pulse: true, cprStop: true, rhythm: R_SINUS_ROSC, phys: "rosc", vit: roscVit });
+        return O("ok", st.asys ? "h4_asys" : "s1_check", { cprStop: true, cycleCheck: true, rhythm: st.asys ? { gen: "asystole" } : { gen: "vf" }, vit: { pulse: "Absent" } });
+      }
+      if (a === "adr") {
+        if (!st.asys) return O("bad", "s1_adrEarly");
+        if (st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] < 180) return O("bad", "s2_adrSoon");
+        st.adrT.push(st.clock); st.did.adr = 1;
+        return O("ok", st.adrT.length === 1 ? "s2_adr" : "s2_adrRepeat", { phys: "adr" });
+      }
+      if (a === "causes") return O("ok", "a_causes");
+      if (a === "expert") return O("ok", "a_expert");
+      return null;
+    } }
+);
+
+HIDDEN_SCENARIOS.push(
+  { id: "h5", hidden: true, idleNudge: true, group: "Tachycardia", title: "Stable SVT needing a third adenosine dose",
+    blurb: "Hidden random-pool case.",
+    scene: "A 28-year-old attends with sudden palpitations for 40 minutes. Alert and talking, no chest pain, no breathlessness, blood pressure is normal. Monitoring and a large IV cannula are in place. A previous identical episode stopped only after a third dose of adenosine.",
+    start: { rhythm: { gen: "svt" }, pulse: true, vit: { pulse: "Present, regular", bp: "122/78 mmHg", consc: "Alert, talking", threats: "None" } },
+    req: [["vagal", "Vagal manoeuvres first", "narrow"], ["aden", "Adenosine 6 mg, then 12 mg, then 18 mg (RCUK)", "aden"]],
+    due: function (st) {
+      var out = [], hadChance = (st.actionN || 0) >= 1 || st.checked;
+      if (!st.vagal && st.aden === 0 && hadChance) {
+        out.push(dueItem("vagal", "Vagal manoeuvres first", "Review the first manoeuvres on this algorithm", "Have you thought about the first manoeuvres on this algorithm?", "narrow", "Tachyarrhythmia: vagal manoeuvres first"));
+      }
+      if (st.vagal && st.aden === 0) {
+        out.push(dueItem("aden", "Adenosine 6 mg, then 12 mg, then 18 mg (RCUK)", "The first manoeuvre has not worked. Review what the algorithm does next", "The first manoeuvre has not worked. Have you thought about what the algorithm does next?", "aden", "Tachyarrhythmia: if ineffective, adenosine"));
+      }
+      if (st.aden === 1 || st.aden === 2) {
+        out.push(dueItem("adenNext", "Complete adenosine treatment with the next dose", "Review whether that drug treatment is complete", "Have you thought about whether that drug treatment is complete?", "aden", st.aden === 1 ? "Tachyarrhythmia: adenosine 12 mg" : "Tachyarrhythmia: adenosine 18 mg"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "h5_assess"); }
+      if (a === "vagal") { if (st.vagal) return O("info", "s4_vagalAgain"); st.vagal = true; st.did.vagal = 1; return O("ok", "s4_vagal", { phys: "vagal" }); }
+      if (a === "aden") {
+        var n = st.aden++; st.did.aden = 1;
+        var early = !st.vagal;
+        if (n === 0) return O(early ? "part" : "ok", early ? ["s4_adenEarly", "s4_aden6"] : "s4_aden6", { phys: "adenFail" });
+        if (n === 1) return O(early ? "part" : "ok", early ? ["s4_adenEarly", "h5_aden12fail"] : "h5_aden12fail", { phys: "aden12fail" });
+        return O(early ? "part" : "ok", early ? ["s4_adenEarly", "h5_aden18"] : "h5_aden18", { end: true, rhythm: { gen: "sinus", opts: { rate: 80 } }, phys: "aden18", vit: { threats: "None; now in sinus rhythm" } });
+      }
+      if (a === "sync") return O("bad", "s4_sync");
+      if (a === "amio300" || a === "amioInf") return O("bad", "s4_amio");
+      if (a === "observe") return O("bad", "s4_observe");
+      return null;
+    } },
+
+  { id: "h6", hidden: true, idleNudge: true, group: "Tachycardia", title: "Unstable atrial fibrillation",
+    blurb: "Hidden random-pool case.",
+    scene: "A 74-year-old with known atrial fibrillation arrives with sudden breathlessness and chest tightness for 20 minutes. Conscious, pale and clammy. The ventricular rate is very rapid. Monitoring, oxygen and IV access are in place; defibrillator pads are on.",
+    start: { rhythm: { gen: "af", opts: { lo: 150, hi: 175 } }, pulse: true, vit: { pulse: "Present, irregular, rapid", bp: "78/48 mmHg", consc: "Conscious, clammy, chest pain", threats: "Shock; myocardial ischaemia" } },
+    req: [["expert", "Careful sedation or anaesthesia before cardioversion (conscious patient)", "sync"], ["sync", "Synchronised shock for unstable atrial fibrillation", "tachy"]],
+    due: function (st) {
+      var out = [], hadChance = (st.actionN || 0) >= 1 || st.checked;
+      if (st.sync === 0 && hadChance) {
+        out.push(dueItem("sync", "Synchronised shock for unstable atrial fibrillation", "Review urgent electrical treatment", "Have you thought about urgent electrical treatment?", "tachy", "Tachyarrhythmia: unstable, synchronised shock"));
+      } else if (st.sync === 1) {
+        out.push(dueItem("sync2", "A further synchronised shock (up to 3 attempts)", "The first electrical attempt has not worked. Review whether to try again", "The first electrical attempt has not worked. Have you thought about a further attempt?", "sync", "Tachyarrhythmia: synchronised shock, up to 3 attempts"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      if (st.arrest) {
+        if (a === "shock") { st.arrest = false; return O("ok", "s5_arrestShock", { end: true, pulse: true, rhythm: { gen: "sinus", opts: { rate: 88 } }, phys: "shockVF", vit: { pulse: "Present", bp: "94/60 mmHg", consc: "Drowsy", threats: "Immediately post-ROSC" } }); }
+        if (a === "sync") return O("bad", "a_sync");
+        if (a === "cpr") return O("part", "s5_arrestCPR", { cprStart: true });
+        return null;
+      }
+      if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "h6_assess"); }
+      if (a === "expert") { st.expert = true; st.did.expert = 1; return O("ok", "s5_expert"); }
+      if (a === "sync") {
+        st.sync++; st.did.sync = 1;
+        var k = st.sync === 1 ? "h6_sync1" : "h6_sync2", v = st.expert ? "ok" : "part", keys = st.expert ? k : ["s5_noSed", k];
+        if (st.sync === 1) return O(v, keys, { phys: "syncFail" });
+        return O(v, keys, { end: true, rhythm: { gen: "sinus", opts: { rate: 84 } }, phys: "afSync", vit: { pulse: "Present, regular", bp: "106/68 mmHg", consc: "Drowsy after sedation", threats: "None now" } });
+      }
+      if (a === "shock") { st.arrest = true; return O("bad", "s5_unsync", { pulse: false, rhythm: { gen: "vf" }, phys: "ront", vit: { pulse: "Absent", bp: "Not recordable", consc: "Unresponsive", threats: "Cardiac arrest" } }); }
+      if (a === "aden") return O("bad", "h6_aden");
+      if (a === "vagal") return O("bad", "h6_vagal");
+      if (a === "amio300" || a === "amioInf") return O("bad", "h10_amio");
+      return null;
+    } },
+
+  { id: "h7", hidden: true, idleNudge: true, group: "Tachycardia", title: "Stable broad-complex tachycardia",
+    blurb: "Hidden random-pool case.",
+    scene: "A 57-year-old with a previous myocardial infarction attends with palpitations for two hours. Alert, talking, no chest pain, no breathlessness, blood pressure is 118/74 mmHg. Monitoring and IV access are in place.",
+    start: { rhythm: { gen: "vt" }, pulse: true, vit: { pulse: "Present, regular", bp: "118/74 mmHg", consc: "Alert, talking", threats: "None" } },
+    req: [["amioInf", "Amiodarone 300 mg IV over 10 to 60 min, or synchronised cardioversion", "amioInf"]],
+    due: function (st) {
+      var out = [], hadChance = (st.actionN || 0) >= 1 || st.checked;
+      if (st.arrest) {
+        out.push(dueItem("shock", "Unsynchronised shock for this pulseless rhythm", "This is now a cardiac arrest. Review the immediate electrical treatment", "This is now a cardiac arrest. Have you thought about the immediate electrical treatment?", "alsPriority", "ALS: early defibrillation"));
+      } else if (!st.did.amioInf && st.sync === 0 && hadChance) {
+        out.push(dueItem("amioInf", "Amiodarone 300 mg IV over 10 to 60 min, or synchronised cardioversion", "Review drug or electrical treatment for this stable broad rhythm", "Have you thought about drug or electrical treatment for this rhythm?", "amioInf", "Tachyarrhythmia: broad and regular"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      if (st.arrest) {
+        if (a === "shock") { st.arrest = false; return O("ok", "s5_arrestShock", { end: true, pulse: true, rhythm: { gen: "sinus", opts: { rate: 90 } }, phys: "shockVF", vit: { pulse: "Present", bp: "100/64 mmHg", consc: "Drowsy", threats: "Immediately post-ROSC" } }); }
+        if (a === "sync") return O("bad", "a_sync");
+        if (a === "cpr") return O("part", "s5_arrestCPR", { cprStart: true });
+        return null;
+      }
+      if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "h7_assess"); }
+      if (a === "expert") { st.expert = true; st.did.expert = 1; return O("ok", "s5_expert"); }
+      if (a === "amioInf") {
+        st.did.amioInf = 1;
+        return O("ok", "h7_amioInf", { end: true, rhythm: { gen: "sinus", opts: { rate: 86 } }, phys: "amioInf", vit: { pulse: "Present, regular", bp: "116/72 mmHg", threats: "None; now in sinus rhythm" } });
+      }
+      if (a === "amio300") return O("bad", "h7_amioBolus");
+      if (a === "sync") {
+        st.sync++; st.did.sync = 1;
+        var v = st.expert ? "ok" : "part", keys = st.expert ? "h7_sync" : ["s5_noSed", "h7_sync"];
+        return O(v, keys, { end: true, rhythm: { gen: "sinus", opts: { rate: 88 } }, phys: "sync", vit: { pulse: "Present, regular", bp: "110/70 mmHg", consc: "Drowsy after sedation", threats: "None now" } });
+      }
+      if (a === "shock") { st.arrest = true; return O("bad", "s5_unsync", { pulse: false, rhythm: { gen: "vf" }, phys: "ront", vit: { pulse: "Absent", bp: "Not recordable", consc: "Unresponsive", threats: "Cardiac arrest" } }); }
+      if (a === "aden") return O("bad", "h7_aden");
+      return null;
+    } }
+);
+
+HIDDEN_SCENARIOS.push(
+  { id: "h8", hidden: true, idleNudge: true, group: "Bradycardia", title: "Broad-complex complete heart block, risk of asystole",
+    blurb: "Hidden random-pool case.",
+    scene: "A 81-year-old is found to have a ventricular pause of 4 seconds on telemetry, then a slow broad rhythm. They are awake, a little light-headed, but not shocked or confused. Blood pressure is 102/60 mmHg. Monitoring and IV access are in place.",
+    start: { rhythm: { gen: "chb", opts: { broad: true, vr: 34 } }, pulse: true, vit: { pulse: "Present, regular, slow", bp: "102/60 mmHg", consc: "Awake, light-headed", threats: "None currently; recent ventricular pause greater than 3 s" } },
+    req: [["expert", "Seek expert help; consider transvenous pacing", "bradyRisk"], ["pace", "Interim measure: transcutaneous pacing, or an adrenaline or isoprenaline infusion", "brady"]],
+    due: function (st) {
+      var out = [], hadChance = (st.actionN || 0) >= 1 || st.checked;
+      var interim = st.paced || st.did.adrInf || st.did.iso;
+      if (!interim && hadChance) {
+        out.push(dueItem("pace", "Interim measure: transcutaneous pacing, or an adrenaline or isoprenaline infusion", "Review interim measures for this risk of asystole", "Have you thought about interim measures?", "brady", "Bradyarrhythmia: interim measures"));
+      }
+      if (!st.did.expert && hadChance) {
+        out.push(dueItem("expert", "Seek expert help; consider transvenous pacing", "Think about who else needs to be involved", "Have you thought about who else needs to be involved?", "bradyRisk", "Bradyarrhythmia: risk of asystole, seek expert help"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      var done = function (o) { if ((st.paced || st.did.adrInf || st.did.iso) && st.did.expert) o.end = true; return o; };
+      if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "h8_assess"); }
+      if (a === "atro") return O("bad", "h8_atro");
+      if (a === "pace") {
+        if (st.paced) return O("info", "s3_paceAgain");
+        st.paced = true; st.did.pace = 1;
+        return done(O("ok", "h8_pace", { rhythm: { gen: "pace_v", opts: { rate: 70, pRate: 85 } }, phys: "pace", vit: { bp: "114/68 mmHg", consc: "Awake, less light-headed", threats: "Improving with pacing" } }));
+      }
+      if (a === "adrInf") {
+        if (st.did.adrInf) return O("info", "h8_adrInf");
+        st.did.adrInf = 1;
+        return done(O("ok", "h8_adrInf", { phys: "adrInf", vit: { pulse: "Present, a little faster", bp: "110/64 mmHg", threats: "Interim drug support" } }));
+      }
+      if (a === "iso") {
+        if (st.did.iso) return O("info", "h8_iso");
+        st.did.iso = 1;
+        return done(O("ok", "h8_iso", { phys: "iso", vit: { pulse: "Present, a little faster", bp: "110/64 mmHg", threats: "Interim drug support" } }));
+      }
+      if (a === "expert") { st.did.expert = 1; return done(O("ok", "h8_expert")); }
+      if (a === "causes") return O("ok", "s3_causes");
+      if (a === "adr") return O("bad", "s3_adr");
+      if (a === "observe") return O("bad", "h8_observe");
+      return null;
+    } },
+
+  { id: "h9", hidden: true, group: "Cardiac arrest", title: "Pulseless torsades de pointes",
+    blurb: "Hidden random-pool case.",
+    scene: "A 69-year-old inpatient on several QT-prolonging drugs, with a potassium of 3.0 mmol/L this morning, becomes unresponsive and pulseless. CPR 30:2 has been started and pads are on. Compressions are paused for a rhythm check. The QT was already long on this morning's ECG.",
+    start: { rhythm: { gen: "torsades", opts: {} }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
+    req: [["shock", "Unsynchronised shock for pulseless polymorphic VT", "alsPriority"], ["cpr", "Resume CPR immediately after the shock", "als"], ["mg", "Magnesium 8 mmol (2 g) IV", "tdp"]],
+    due: function (st) {
+      var out = [];
+      if (st.shocks === 0 && (st.cpr || st.checked || (st.reviews || 0) > 0 || (st.actionN || 0) >= 2)) {
+        out.push(dueItem("shock", "Unsynchronised shock for pulseless polymorphic VT", "Reconsider how this rhythm is treated electrically", "Have you thought about how this rhythm is treated electrically?", "alsPriority", "ALS: early defibrillation"));
+      }
+      if ((st.shocks >= 1 || st.cpr || st.checked) && !st.did.mg && (st.actionN || 0) >= 1) {
+        out.push(dueItem("mg", "Magnesium 8 mmol (2 g) IV", "Review the specific treatment for this polymorphic rhythm", "Have you thought about the specific treatment for this rhythm?", "tdp", "Tachyarrhythmia: Mg2+ 8 mmol IV over 10 min"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      var roscVit = { pulse: "Present", bp: "96/58 mmHg", consc: "Drowsy, breathing", threats: "Immediately post-ROSC" };
+      if (st.phase === "organised") {
+        if (a === "assess") return O("ok", "h9_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc", rhythm: { gen: "sinus", opts: { rate: 62, longQT: true } } });
+        if (a === "ff") return O("info", "a_ffNoCPR");
+        if (a === "cpr") return O("bad", "s1_roscCPR");
+        if (a === "shock") return O("bad", "s1_roscShock");
+      }
+      if (a === "shock") {
+        if (st.cpr) return O("bad", "a_shockMid");
+        if (st.justShocked) return O("bad", "a_shockTwice");
+        st.shocks++; st.justShocked = true; st.did.shock = 1;
+        return O("ok", "h9_shock", { shock: true });
+      }
+      if (a === "sync") return O("bad", "h9_sync");
+      if (a === "cpr") {
+        if (st.cpr) return O("info", "a_cprRunning");
+        if (!st.justShocked && st.shocks === 0) return O("bad", "s1_cprFirst", { cprStart: true });
+        st.justShocked = false; st.did.cpr = 1;
+        return O("ok", "s1_cpr", { cprStart: true });
+      }
+      if (st.justShocked && a !== "expert" && a !== "causes" && a !== "mg") return O("bad", "a_resumeFirst");
+      if (a === "ff") {
+        if (!st.cpr) return O("info", "a_ffNoCPR");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (st.shocks >= 1 && st.did.mg) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "sinus", opts: { rate: 62, longQT: true } } }); }
+        return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "torsades" } });
+      }
+      if (a === "assess") {
+        if (!st.cpr) {
+          if (st.phase === "organised") return O("ok", "h9_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc", rhythm: { gen: "sinus", opts: { rate: 62, longQT: true } } });
+          if (!st.checked) { st.checked = true; return O("ok", "h9_assess", { vit: { pulse: "Absent" }, phys: "tdpArrest" }); }
+          if (st.monitorReady) { st.monitorReady = false; return O("ok", "n_noPulse", { vit: { pulse: "Absent" } }); }
+          return O("info", "a_assessAgain");
+        }
+        if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
+        st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (st.shocks >= 1 && st.did.mg) return O("ok", "h9_rosc", { end: true, pulse: true, cprStop: true, rhythm: { gen: "sinus", opts: { rate: 62, longQT: true } }, phys: "rosc", vit: roscVit });
+        return O("ok", "h9_assess", { cprStop: true, cycleCheck: true, rhythm: { gen: "torsades" }, vit: { pulse: "Absent" } });
+      }
+      if (a === "mg") {
+        if (st.did.mg) return O("info", "s6_mgAgain");
+        st.did.mg = 1;
+        return O(st.shocks ? "ok" : "part", st.shocks ? "h9_mg" : "h9_mgOnly", { phys: "mg" });
+      }
+      if (a === "amio300" || a === "amio150" || a === "amioInf") return O("bad", "s6_amio");
+      if (a === "causes") { st.did.causes = 1; return O("ok", "s6_causes"); }
+      if (a === "expert") return O("ok", "a_expert");
+      if (a === "adr") {
+        if (st.shocks < 3) return O("bad", "s1_adrEarly");
+        st.adrT.push(st.clock); st.did.adr = 1;
+        return O("ok", "s1_adr", { phys: "adr" });
+      }
+      return null;
+    } },
+
+  { id: "h10", hidden: true, idleNudge: true, group: "Tachycardia", title: "Post-ROSC deterioration into unstable VT",
+    blurb: "Hidden random-pool case.",
+    scene: "A 64-year-old has just had return of spontaneous circulation after a shockable arrest on the ward. ABCDE is under way. They open their eyes to voice. A minute later the monitor changes and the blood pressure falls. Defibrillator pads are still on.",
+    start: { rhythm: { gen: "vt" }, pulse: true, vit: { pulse: "Present, weak, regular", bp: "82/50 mmHg", consc: "Eyes open to voice, drowsy", threats: "Immediately post-ROSC; shock" } },
+    req: [["expert", "Careful sedation or anaesthesia before cardioversion if needed", "sync"], ["sync", "Synchronised shock for unstable VT immediately after ROSC", "tachy"]],
+    due: function (st) {
+      var out = [], hadChance = (st.actionN || 0) >= 1 || st.checked;
+      if (st.arrest) {
+        out.push(dueItem("shock", "Unsynchronised shock for this pulseless rhythm", "This is now a cardiac arrest. Review the immediate electrical treatment", "This is now a cardiac arrest. Have you thought about the immediate electrical treatment?", "alsPriority", "ALS: early defibrillation"));
+      } else if (st.sync === 0 && hadChance) {
+        out.push(dueItem("sync", "Synchronised shock for unstable VT immediately after ROSC", "Review urgent electrical treatment", "Have you thought about urgent electrical treatment?", "tachy", "Tachyarrhythmia: unstable, synchronised shock"));
+      }
+      return out;
+    },
+    step: function (a, st) {
+      if (st.arrest) {
+        if (a === "shock") { st.arrest = false; return O("ok", "s5_arrestShock", { end: true, pulse: true, rhythm: { gen: "sinus", opts: { rate: 96 } }, phys: "shockVF", vit: { pulse: "Present", bp: "96/60 mmHg", consc: "Drowsy", threats: "Immediately post-ROSC" } }); }
+        if (a === "sync") return O("bad", "a_sync");
+        if (a === "cpr") return O("part", "s5_arrestCPR", { cprStart: true });
+        return null;
+      }
+      if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "h10_assess"); }
+      if (a === "expert") { st.expert = true; st.did.expert = 1; return O("ok", "s5_expert"); }
+      if (a === "sync") {
+        st.sync++; st.did.sync = 1;
+        var v = st.expert ? "ok" : "part", keys = st.expert ? "h10_sync" : ["s5_noSed", "h10_sync"];
+        return O(v, keys, { end: true, rhythm: { gen: "sinus", opts: { rate: 98 } }, phys: "sync", vit: { pulse: "Present, regular", bp: "104/64 mmHg", consc: "Drowsy", threats: "Immediately post-ROSC; improving" } });
+      }
+      if (a === "shock") { st.arrest = true; return O("bad", "s5_unsync", { pulse: false, rhythm: { gen: "vf" }, phys: "ront", vit: { pulse: "Absent", bp: "Not recordable", consc: "Unresponsive", threats: "Cardiac arrest" } }); }
+      if (a === "amio300" || a === "amioInf") return O("bad", "h10_amio");
+      if (a === "cpr") return O("bad", "p_cpr");
+      if (a === "observe") return O("bad", "p_observe");
+      return null;
+    } }
+);
 /* ===== Scenarios: actions, scripted branches, monitor and debrief ===== */
 var ACTIONS = [
   { id: "assess", label: "Check rhythm and pulse", g: "Assess and call" },
@@ -3569,10 +4228,14 @@ var ACTIONS = [
   { id: "mg", label: "Magnesium 8 mmol (2 g) IV over 10 min", g: "Drugs and fluids" },
   { id: "fluid", label: "IV fluid bolus", g: "Drugs and fluids" },
   { id: "bicarb", label: "Sodium bicarbonate IV", g: "Drugs and fluids" },
-  { id: "calcium", label: "Calcium chloride IV", g: "Drugs and fluids" }
+  { id: "calcium", label: "Calcium chloride IV", g: "Drugs and fluids" },
+  { id: "decompress", label: "Chest decompression (needle or thoracostomy)", g: "CPR and electrical" },
+  { id: "amioInf", label: "Amiodarone 300 mg IV over 10 to 60 min", g: "Drugs and fluids" },
+  { id: "adrInf", label: "Adrenaline infusion 2 to 10 mcg/min", g: "Drugs and fluids" },
+  { id: "iso", label: "Isoprenaline infusion 5 mcg/min", g: "Drugs and fluids" }
 ];
 var ACT = {}; ACTIONS.forEach(function (a) { ACT[a.id] = a; });
-var ACT_TIME = { assess: 10, expert: 5, causes: 30, observe: 60, cpr: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20 };
+var ACT_TIME = { assess: 10, expert: 5, causes: 30, observe: 60, cpr: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20, decompress: 30, amioInf: 30, adrInf: 30, iso: 30 };
 function adenLabel(n) { return n === 0 ? "Adenosine 6 mg rapid IV" : n === 1 ? "Adenosine 12 mg rapid IV" : "Adenosine 18 mg (RCUK) or 12 mg (BNF) rapid IV"; }
 
 function O(v, keys, x) { x = x || {}; x.v = v; x.keys = [].concat(keys); return x; }
@@ -3692,7 +4355,7 @@ var SCENARIOS = [
     scene: "A 79-year-old on a medical ward felt dizzy and fainted while walking to the bathroom. Now awake but pale, clammy and confused. Monitoring and IV access are in place.",
     start: { rhythm: { gen: "chb", opts: { broad: false, vr: 40 } }, pulse: true, vit: { pulse: "Present, regular", bp: "78/44 mmHg", consc: "Awake, pale, clammy, confused", threats: "Shock; syncope" } },
     req: [["atro", "Atropine 500 mcg IV first", "brady"], ["pace", "Transcutaneous pacing when atropine fails", "pacing"], ["expert", "Seek expert help (transvenous pacing)", "brady"]],
-    extra: "s3_widePoint",
+    extra: "s3_widePoint", idleNudge: true,
     step: function (a, st) {
       var done = function (o) { if (st.paced && st.expert) o.end = true; return o; };
       if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "s3_assess"); }
@@ -3722,6 +4385,7 @@ var SCENARIOS = [
     scene: "A 32-year-old attends with sudden-onset palpitations that started an hour ago. Alert and talking, no chest pain, no breathlessness. Monitoring and a large IV cannula are in place.",
     start: { rhythm: { gen: "svt" }, pulse: true, vit: { pulse: "Present, regular", bp: "118/76 mmHg", consc: "Alert, talking", threats: "None" } },
     req: [["vagal", "Vagal manoeuvres first", "narrow"], ["aden", "Adenosine 6 mg, then 12 mg", "aden"]],
+    idleNudge: true,
     step: function (a, st) {
       if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "s4_assess"); }
       if (a === "vagal") { if (st.vagal) return O("info", "s4_vagalAgain"); st.vagal = true; st.did.vagal = 1; return O("ok", "s4_vagal", { phys: "vagal" }); }
@@ -3742,6 +4406,7 @@ var SCENARIOS = [
     scene: "A 63-year-old with a previous myocardial infarction has chest pain and light-headedness on the cardiology ward. Conscious but pale and clammy. Monitoring, oxygen and IV access are in place; defibrillator pads are on.",
     start: { rhythm: { gen: "vt" }, pulse: true, vit: { pulse: "Present, weak, regular", bp: "76/40 mmHg", consc: "Conscious, clammy, chest pain", threats: "Shock; myocardial ischaemia" } },
     req: [["expert", "Careful sedation or anaesthesia before cardioversion (conscious patient)", "sync"], ["sync", "Synchronised shock (up to 3 attempts)", "tachy"]],
+    idleNudge: true,
     step: function (a, st) {
       if (st.arrest) {
         if (a === "shock") { st.arrest = false; return O("ok", "s5_arrestShock", { end: true, pulse: true, rhythm: { gen: "sinus", opts: { rate: 92 } }, phys: "shockVF", vit: { pulse: "Present", bp: "94/60 mmHg", consc: "Drowsy", threats: "Immediately post-ROSC" } }); }
@@ -3769,6 +4434,7 @@ var SCENARIOS = [
     scene: "A 71-year-old inpatient taking several QT-prolonging drugs has repeated brief spells of light-headedness. Potassium this morning was 3.1 mmol/L. The monitor alarms.",
     start: { rhythm: { gen: "torsades", opts: { runLen: 2.4 } }, pulse: true, vit: { pulse: "Present between runs", bp: "104/62 mmHg between runs", consc: "Alert, light-headed during runs", threats: "None sustained; runs are self-terminating" } },
     req: [["mg", "Magnesium 8 mmol IV over 10 min", "tdp"], ["causes", "Identify and treat reversible causes (low potassium, QT-prolonging drugs)", "tdpCauses"]],
+    idleNudge: true,
     step: function (a, st) {
       var done = function (o) { if (st.mg && st.cause && !st.arrest) o.end = true; return o; };
       if (st.arrest) {
@@ -3790,12 +4456,14 @@ var SCENARIOS = [
       return null;
     } }
 ];
-var SCN = {}; SCENARIOS.forEach(function (s) { SCN[s.id] = s; });
+var HIDDEN_SCENARIOS = HIDDEN_SCENARIOS || [];
+var ALL_SCENARIOS = SCENARIOS.concat(HIDDEN_SCENARIOS);
+var SCN = {}; ALL_SCENARIOS.forEach(function (s) { SCN[s.id] = s; });
 
 /* Generic outcomes when a scenario script does not handle an action */
 function genericOutcome(a, st) {
   if (!st.pulse) {
-    var m = { atro: "a_atro", aden: "a_aden", vagal: "a_vagal", sync: "a_sync", pace: "a_pace", mg: "a_mg", bicarb: "a_bicarb", calcium: "a_calcium", fluid: "a_fluid", observe: "a_observe", amio150: "a_amio150", amio300: "a_amio300", adr: "s1_adrEarly", ff: "a_ffNoCPR" };
+    var m = { atro: "a_atro", aden: "a_aden", vagal: "a_vagal", sync: "a_sync", pace: "a_pace", mg: "a_mg", bicarb: "a_bicarb", calcium: "a_calcium", fluid: "a_fluid", observe: "a_observe", amio150: "a_amio150", amio300: "a_amio300", adr: "s1_adrEarly", ff: "a_ffNoCPR", decompress: "a_decompress", amioInf: "a_amioInf", adrInf: "a_adrInf", iso: "a_iso" };
     if (a === "expert") return O("ok", "a_expert");
     if (a === "causes") return O("ok", "a_causes");
     if (a === "cpr") { if (st.cpr) return O("info", "a_cprRunning"); return O("ok", "s1_cpr", { cprStart: true }); }
@@ -3808,7 +4476,7 @@ function genericOutcome(a, st) {
     }
     return O("bad", m[a] || "a_observe");
   }
-  var p = { cpr: "p_cpr", shock: "p_shock", adr: "p_adr", amio300: "p_amio", amio150: "p_amio150", atro: "p_atro", aden: "p_aden", vagal: "p_vagal", sync: "p_sync", pace: "p_pace", mg: "p_mg", fluid: "p_fluid", bicarb: "p_bicarb", calcium: "p_calcium", observe: "p_observe", expert: "p_expert", causes: "p_causes", ff: "a_ffNoCPR", assess: "a_assessAgain" };
+  var p = { cpr: "p_cpr", shock: "p_shock", adr: "p_adr", amio300: "p_amio", amio150: "p_amio150", atro: "p_atro", aden: "p_aden", vagal: "p_vagal", sync: "p_sync", pace: "p_pace", mg: "p_mg", fluid: "p_fluid", bicarb: "p_bicarb", calcium: "p_calcium", observe: "p_observe", expert: "p_expert", causes: "p_causes", ff: "a_ffNoCPR", assess: "a_assessAgain", decompress: "p_decompress", amioInf: "p_amioInf", adrInf: "p_adrInf", iso: "p_iso" };
   var v = (a === "expert" || a === "causes") ? "ok" : (a === "ff" || a === "assess") ? "info" : "bad";
   return O(v, p[a]);
 }
@@ -3818,10 +4486,10 @@ function genericOutcome(a, st) {
   var nS = 0, sid = function () { nS++; return "S" + String(nS).padStart(2, "0"); };
   Object.keys(TXT).forEach(function (k) {
     if (!TXT[k].flag) return;
-    var w = /^s\d_/.test(k) ? SCN[k.slice(0, 2)].title : "Scenarios (shared)";
+    var m = k.match(/^(s\d+|h\d+)_/); var w = (m && SCN[m[1]]) ? SCN[m[1]].title : "Scenarios (shared)";
     FLAGS.push({ id: sid(), where: w + " · " + TXT[k].guideline, text: TXT[k].full, key: k });
   });
-  SCENARIOS.forEach(function (sc) {
+  ALL_SCENARIOS.forEach(function (sc) {
     sc.req.forEach(function (r, i) { FLAGS.push({ id: sid(), where: sc.title + " · debrief key step", text: r[1] + ".", key: "req:" + sc.id + ":" + i }); });
   });
   renderVerTable();
@@ -3961,6 +4629,7 @@ function dueItem(id, name, category, reg, src, guideline) {
 }
 function outstandingSteps(st) {
   if (!st || !st.scn) return [];
+  if (typeof st.scn.due === "function") return st.scn.due(st) || [];
   var id = st.scn.id, out = [], hadChance = (st.actionN || 0) >= 1 || st.checked || st.shocks > 0 || st.cpr;
   if (id === "s1") {
     if (st.shocks === 0 && (st.cpr || (st.reviews || 0) > 0 || (st.actionN || 0) >= 2)) {
@@ -4043,7 +4712,7 @@ function applyReview(a, o) {
   SIM.actionN = (SIM.actionN || 0) + 1;
   var due = outstandingSteps(SIM);
   var review = isCycleCheck(o) || (a === "assess" && o.keys && o.keys[0] === "a_assessAgain");
-  if (!review && due.length && (SIM.scn.id === "s3" || SIM.scn.id === "s4" || SIM.scn.id === "s5" || SIM.scn.id === "s6")) {
+  if (!review && due.length && SIM.scn.idleNudge) {
     SIM.idleSinceDue = (SIM.idleSinceDue || 0) + 1;
     if (SIM.idleSinceDue >= 3) { review = true; SIM.idleSinceDue = 0; }
   } else if (!due.length) {
@@ -4117,13 +4786,13 @@ function callReg() {
 
 var lastScn = null;
 function randomScenario() {
-  var pool = SCENARIOS.filter(function (x) { return x.id !== lastScn; });
+  var pool = ALL_SCENARIOS.filter(function (x) { return x.id !== lastScn; });
   startScenario(pool[Math.floor(Math.random() * pool.length)].id, true);
 }
 function renderScnChooser() {
   var host = $("scnGrid"); if (host.childElementCount) return;
   var rb = document.createElement("div"); rb.className = "scn-random-wrap";
-  rb.innerHTML = "<button type='button' class='scn-random' id='scnRandom'><svg class='dice' viewBox='0 0 24 24' width='26' height='26' aria-hidden='true'><rect x='2.5' y='2.5' width='19' height='19' rx='4' fill='none' stroke='currentColor' stroke-width='2'/><circle cx='8' cy='8' r='1.8' fill='currentColor'/><circle cx='16' cy='8' r='1.8' fill='currentColor'/><circle cx='12' cy='12' r='1.8' fill='currentColor'/><circle cx='8' cy='16' r='1.8' fill='currentColor'/><circle cx='16' cy='16' r='1.8' fill='currentColor'/></svg><span><span class='scn-random-title'>Random scenario</span><span class='scn-random-sub'>A case picked for you. The title and diagnosis stay hidden until the debrief.</span></span></button>";
+  rb.innerHTML = "<button type='button' class='scn-random' id='scnRandom'><svg class='dice' viewBox='0 0 24 24' width='26' height='26' aria-hidden='true'><rect x='2.5' y='2.5' width='19' height='19' rx='4' fill='none' stroke='currentColor' stroke-width='2'/><circle cx='8' cy='8' r='1.8' fill='currentColor'/><circle cx='16' cy='8' r='1.8' fill='currentColor'/><circle cx='12' cy='12' r='1.8' fill='currentColor'/><circle cx='8' cy='16' r='1.8' fill='currentColor'/><circle cx='16' cy='16' r='1.8' fill='currentColor'/></svg><span><span class='scn-random-title'>Random scenario</span><span class='scn-random-sub'>A case picked for you from a larger pool, including cases not listed here. The title appears once the case starts.</span></span></button>";
   host.appendChild(rb);
   rb.querySelector("button").addEventListener("click", randomScenario);
   var groups = {};
@@ -4149,7 +4818,8 @@ function startScenario(id, random) {
   $("scnChooserWrap").classList.add("hidden");
   $("scnStage").classList.remove("hidden");
   $("scnDebrief").classList.add("hidden"); $("scnPanels").classList.remove("hidden");
-  $("scnTitle").textContent = random ? "Random scenario" : "Scenario " + (SCENARIOS.indexOf(s) + 1) + ": " + s.title;
+  var baseN = SCENARIOS.indexOf(s);
+  $("scnTitle").textContent = random ? "Random case: " + s.title : baseN >= 0 ? "Scenario " + (baseN + 1) + ": " + s.title : s.title;
   $("scnScene").innerHTML = "<strong>Scene</strong>" + esc(s.scene);
   $("scnLog").innerHTML = "";
   monitor = new Monitor($("scnMonitor"));
@@ -4171,7 +4841,7 @@ function renderActions() {
     return "<div class='act-group'><h3 class='scen-group-label' id='act-g" + gi + "'>" + esc(g) + "</h3><div class='act-row' role='group' aria-labelledby='act-g" + gi + "'>" +
       ACTIONS.filter(function (a) { return a.g === g; }).map(function (a) {
         var lab = a.id === "aden" ? adenLabel(SIM.aden) : a.label;
-        var aria = a.id === "ff" ? " aria-label='Skip 2 minutes of CPR'" : "";
+        var aria = a.id === "ff" ? " aria-label='Skip 2 min of CPR'" : "";
         return "<button type='button' class='act-btn" + (a.id === "ff" ? " act-ff" : "") + "' data-a='" + a.id + "'" + aria + (SIM.done ? " disabled" : "") + ">" + esc(lab) + "</button>";
       }).join("") + "</div></div>";
   }).join("");
@@ -4217,7 +4887,7 @@ function doAction(a) {
   if (o.pulse !== undefined) SIM.pulse = o.pulse;
   if (o.vit) Object.keys(o.vit).forEach(function (k) { SIM.vit[k] = o.vit[k]; });
   o.label = label; o.t = SIM.clock;
-  if ((a === "shock" || a === "sync") && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
+  if ((a === "shock" || a === "sync") && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync", "h1_shock", "h2_shock", "h4_shockAsys", "h9_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
   applyReview(a, o);
   logEvent(o, label, a);
   var changed = false;
@@ -4296,7 +4966,7 @@ function showDebrief() {
   (SIM.endedDue || []).forEach(function (d) {
     if (!seenMiss[d.id] && !SIM.did[d.id]) { missed.push([d.id, d.name, d.src, d.guideline]); seenMiss[d.id] = 1; }
   });
-  var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random scenario revealed: " : "") + esc(s.title) + "</h2>";
+  var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
   var ended = SIM.endReason === "missed" ? "Scenario ended: key step missed" : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
   html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct scores 1, partly right 0.5, not quite 0; noted actions are not scored. Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed at the end." : "") + "</p>";
   html += "<ol class='debrief-list'>" + acts.map(function (l) {
@@ -4342,7 +5012,11 @@ function syncScnBanner() {
   t.setAttribute("aria-pressed", on ? "true" : "false");
   t.querySelector(".test-cta-label").textContent = on ? "Exit" : "Start";
   t.setAttribute("aria-label", on ? "Exit Scenarios" : "Start Scenarios");
-  if (on && SIM) { st.hidden = false; st.textContent = SIM.done ? "Scenario finished" : SIM.random ? "Random scenario running" : "Scenario " + (SCENARIOS.indexOf(SIM.scn) + 1) + " running"; }
+  if (on && SIM) {
+    var n = SCENARIOS.indexOf(SIM.scn);
+    st.hidden = false;
+    st.textContent = SIM.done ? "Scenario finished" : SIM.random ? "Random case running" : n >= 0 ? "Scenario " + (n + 1) + " running" : "Case running";
+  }
   else { st.hidden = true; st.textContent = ""; }
 }
 function enterScenarioMode() {
@@ -4366,6 +5040,6 @@ $("scnEnd").addEventListener("click", function () { if (SIM && !SIM.done) finish
 $("scnBack").addEventListener("click", showChooser);
 $("scnHints").addEventListener("click", function () { setHints(!hintsOn()); });
 syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, due: function () { return outstandingSteps(SIM); }, get sim() { return SIM; } };
+window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, due: function () { return outstandingSteps(SIM); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; } };
 </script>
 </body></html>
