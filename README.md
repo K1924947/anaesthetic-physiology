@@ -20,6 +20,17 @@ An interactive cardiac PV loop exploring how the loop changes across physiologic
 
 ---
 
+### ECG Rhythm Quiz
+
+An interactive lead II rhythm tool with synthetic strips, callipers, conduction diagrams, a Test yourself quiz, and guideline-based scenarios.
+
+- Learn mode: pick a rhythm and read features, electrophysiology and a sourced management line
+- Test yourself: identify the rhythm, then reveal
+- Scenarios: scripted adult ALS situations based on the Resuscitation Council UK 2025 algorithms and the BNF
+- Teaching simulation, not clinical guidance
+
+---
+
 ### Arterial Pressure Waveform
 
 An interactive arterial line trace showing how the waveform morphs across haemodynamic states, with each feature linked back to the PV loop.
@@ -51,6 +62,7 @@ An interactive timeline of MI pathology from the moment of occlusion through to 
 No login or download needed. Open directly in any browser:
 
 - [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
+- [ECG Rhythm Quiz](https://k1924947.github.io/anaesthetic-physiology/ECG_Rhythm_Quiz.html)
 - [Arterial Waveform](https://k1924947.github.io/anaesthetic-physiology/Arterial_Waveform.html)
 - [Cardiac Action Potential](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Action_Potential.html)
 - [Cardiac Murmurs](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Murmurs.html)
