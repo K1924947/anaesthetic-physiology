@@ -287,3 +287,93 @@
   padding: 28px 24px;
   min-height: 200px;
 }
+
+/* Under construction: text plus icon and a dashed/striped pattern, not colour alone */
+.uc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+  border: 1px dashed var(--text);
+  background: repeating-linear-gradient(-45deg, var(--surface-2) 0 4px, var(--surface) 4px 8px);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px 3px 8px;
+  line-height: 1.2;
+  width: fit-content;
+}
+.uc-badge svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+.hub-card.is-under-construction {
+  border-style: dashed;
+  background: repeating-linear-gradient(-45deg, var(--surface) 0 10px, var(--surface-2) 10px 12px);
+  cursor: default;
+  color: inherit;
+}
+.hub-card.is-under-construction:hover {
+  transform: none;
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+.hub-card.is-under-construction .tool-title,
+.hub-card.is-under-construction .tool-desc,
+.hub-card.is-under-construction .open-btn {
+  color: var(--muted);
+}
+.hub-card.is-under-construction .open-btn {
+  font-weight: 600;
+}
+
+.order-list li.is-under-construction {
+  padding-bottom: 4px;
+}
+.order-list .is-under-construction .order-name {
+  font-weight: 600;
+  color: var(--muted);
+}
+.order-list .is-under-construction .uc-badge {
+  margin: 0 0 0 6px;
+  vertical-align: middle;
+  font-size: 10px;
+  padding: 2px 8px 2px 6px;
+}
+.order-list li.is-under-construction > span:last-child {
+  display: block;
+  margin-top: 2px;
+}
+
+.uc-panel {
+  max-width: 62ch;
+  padding: 22px 24px;
+  border: 1px dashed var(--text);
+  background: repeating-linear-gradient(-45deg, var(--surface) 0 10px, var(--surface-2) 10px 12px);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+.uc-panel .uc-badge { margin: 0 0 12px; }
+.uc-panel p { margin: 0 0 16px; font-size: 18px; }
+.uc-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.uc-links a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.uc-links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+

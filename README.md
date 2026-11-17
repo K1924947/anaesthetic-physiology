@@ -31,27 +31,15 @@ An interactive lead II rhythm tool with synthetic strips, callipers, conduction 
 
 ---
 
-### Arterial Pressure Waveform
+### Tools under construction
 
-An interactive arterial line trace showing how the waveform morphs across haemodynamic states, with each feature linked back to the PV loop.
+These tools keep their usual addresses but the old pages are offline while they are rebuilt and rechecked:
 
-- Clickable features: Upstroke, Peak SBP, Downslope, Dicrotic Notch, Diastolic Runoff, Trough DBP
-- Live readout: SBP, DBP, Pulse Pressure, MAP
-- States: Normal, increased/reduced SVR, reduced CO, Hypovolaemia, Stiff Aorta
-- PV Loop link panel, Key Relationships, and Clinical Pearl for each state
-
----
-
-### Myocardial Infarction Timeline
-
-An interactive timeline of MI pathology from the moment of occlusion through to mature scar.
-
-- Eight time stages: 0–4h, 4–12h, 12–24h, 1–3d, 3–7d, 7–14d, 2wk–2mo, 2mo+
-- Cross-sectional LV diagram with infarct zone morphing through each stage
-- Gross appearance, microscopic findings, and complications for each stage
-- Wavefront indicator showing endo-to-epi progression of cell death
-- Complication Gantt chart with all complications mapped across the full timeline
-- Cell activity bars: Neutrophils, Macrophages, Fibroblasts
+- Arterial Pressure Waveform
+- Cardiac Action Potential
+- Cardiac Murmurs
+- Heart Failure notes
+- Myocardial Infarction Timeline
 
 ---
 
@@ -59,15 +47,12 @@ An interactive timeline of MI pathology from the moment of occlusion through to 
 
 [Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
 
-No login or download needed. Open directly in any browser:
+No login or download needed. Open the live tools directly in any browser:
 
 - [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
 - [ECG Rhythm Quiz](https://k1924947.github.io/anaesthetic-physiology/ECG_Rhythm_Quiz.html)
-- [Arterial Waveform](https://k1924947.github.io/anaesthetic-physiology/Arterial_Waveform.html)
-- [Cardiac Action Potential](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Action_Potential.html)
-- [Cardiac Murmurs](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Murmurs.html)
-- [Heart Failure notes](https://k1924947.github.io/anaesthetic-physiology/HF_Notes.html)
-- [MI Timeline](https://k1924947.github.io/anaesthetic-physiology/MI_Timeline.html)
+
+Five further cardiac tools are under construction and are not available yet.
 
 ---
 
