@@ -15,8 +15,24 @@
 
 <style>
 /* Cardiac Action Potential: page additions on top of the PV tool template */
-.tool-controls { grid-template-columns: 1fr; }
-@media (min-width: 900px) { .tool-controls { grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); } }
+.tool-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.tool-col > .tool-block:last-child { flex: 1 1 auto; }
+/* when the scenarios card is taller, the Try this buttons share the extra height instead of leaving a gap */
+.tool-col > .tool-block:last-child .guide-panel { display: flex; flex-direction: column; }
+.tool-col .try-this { flex: 1 1 auto; display: flex; flex-direction: column; }
+.tool-col .try-list { flex: 1 1 auto; }
+.tool-col .try-list li { flex: 1 1 auto; }
+.glance-steps { margin: 2px 0 0; padding-left: 1.3em; font-size: 14.5px; line-height: 1.5; }
+.tool-block .scen-panel { display: flex; flex-direction: column; gap: 12px; }
+.glance { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-left: 4px solid var(--text); border-radius: 12px; background: var(--surface-2); min-width: 0; }
+.glance-title { font-family: var(--font-sans); font-size: 16px; font-weight: 700; margin: 0; line-height: 1.3; }
+.glance-kicker { font-family: var(--font-sans); font-size: 13px; color: var(--muted); margin: 0; }
+.glance dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; margin: 2px 0 0; font-size: 14.5px; line-height: 1.45; }
+.glance dt { font-family: var(--font-sans); font-weight: 700; }
+.glance dd { margin: 0; min-width: 0; }
+.glance .chips { margin: 0; }
+.glance-foot { font-family: var(--font-sans); font-size: 13px; color: var(--muted); margin: auto 0 0; padding-top: 4px; }
+@media (max-width: 480px) { .glance dl { grid-template-columns: 1fr; gap: 2px; } .glance dd { margin-bottom: 6px; } }
 .scen-elec .scen-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .scen-auto .scen-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .scen-isch .scen-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -33,8 +49,10 @@
 .seg { display: grid; gap: 6px; }
 .seg-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .seg-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.seg button { min-height: 44px; font-family: var(--font-sans); font-size: 14px; font-weight: 700; padding: 6px 8px; line-height: 1.2; white-space: normal; }
+.seg button { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; min-height: 44px; font-family: var(--font-sans); font-size: 14px; font-weight: 700; padding: 6px 8px; line-height: 1.2; white-space: normal; }
 .seg.seg-minor button { min-height: 40px; font-size: 13px; font-weight: 600; }
+.seg button:hover:not(:disabled) { border-color: var(--text); background: var(--surface-2); }
+.seg button[aria-pressed="true"]:hover { background: var(--text); }
 .seg button[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
 .seg button[aria-pressed="true"]::before { content: "\2713\00a0"; }
 .seg button:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -66,6 +84,21 @@
 .src-note { display: block; font-family: var(--font-sans); font-size: 12px; color: var(--muted); margin-top: 1px; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; padding: 0; list-style: none; }
 .chips li { font-family: var(--font-sans); font-size: 12.5px; font-weight: 700; border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 1px 7px; }
+.switch-callout { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 12px; padding: 12px 14px; border: 2px solid var(--text); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); color: var(--text); }
+.switch-callout.compact { padding: 8px 12px; margin-bottom: 10px; }
+.switch-icon { flex: none; width: 26px; height: 26px; margin-top: 1px; }
+.switch-body { min-width: 0; }
+.switch-lead { font-family: var(--font-sans); font-size: 17px; font-weight: 700; margin: 0 0 3px; line-height: 1.3; }
+.switch-reason { font-size: 14.5px; line-height: 1.45; margin: 0; }
+.switch-callout .ap-btn-secondary { margin-top: 10px; }
+.ap-btn-secondary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 14px; font-family: var(--font-sans); font-size: 14px; font-weight: 700; line-height: 1.25; text-align: left; color: var(--text); background: var(--surface); border: 1.5px solid var(--border); border-radius: 999px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.ap-btn-secondary:hover { border-color: var(--text); background: var(--surface-2); }
+.ap-btn-secondary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.ap-btn-secondary .btn-icon { flex: none; width: 18px; height: 18px; }
+.seg button.is-switched { outline: 3px dashed var(--text); outline-offset: 3px; animation: ap-switch-pulse 0.7s ease-out 2; }
+.seg button.is-switched:focus-visible { outline-style: solid; }
+.switched-tag { display: inline-block; margin-left: 6px; padding: 0 7px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; border: 1.5px solid currentColor; border-radius: 999px; line-height: 1.5; }
+@keyframes ap-switch-pulse { 0% { box-shadow: 0 0 0 0 var(--text); } 100% { box-shadow: 0 0 0 8px transparent; } }
 .switch-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; padding: 8px 10px; border: 1px dashed var(--text); border-radius: 10px; font-family: var(--font-sans); font-size: 13.5px; }
 .switch-hint button { min-height: 40px; font-size: 13px; padding: 4px 10px; }
 .predict-debrief { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
@@ -128,30 +161,42 @@
       </div>
 
       <div class="tool-controls">
-        <fieldset class="scen-panel">
-          <legend>Scenarios</legend>
-          <div class="scen-groups" id="scenarioGroups"></div>
-        </fieldset>
-        <div class="guide-panel">
-          <div class="ctl-block">
-            <h2 class="ctl-label" id="cell-label">Cell</h2>
-            <div class="seg seg-2" role="group" aria-labelledby="cell-label" id="cellMain"></div>
-            <p class="minor-label" id="cell-extra-label">Optional extras</p>
-            <div class="seg seg-2 seg-minor" role="group" aria-labelledby="cell-extra-label" id="cellExtra"></div>
+        <div class="tool-block">
+          <h2 class="tool-section-title" id="scen-heading">Scenarios</h2>
+          <div class="scen-panel" role="group" aria-labelledby="scen-heading">
+            <div class="scen-groups" id="scenarioGroups"></div>
+            <section class="glance" id="scenGlance" aria-labelledby="glance-title"></section>
           </div>
-          <div class="ctl-block">
-            <h2 class="ctl-label" id="grade-label">Potassium severity</h2>
-            <div class="seg seg-3" role="group" aria-labelledby="grade-label" id="gradeBtns"></div>
-            <p class="grade-note" id="gradeNote"></p>
+        </div>
+        <div class="tool-col">
+          <div class="tool-block">
+            <h2 class="tool-section-title" id="setup-heading">Cell and severity</h2>
+            <div class="guide-panel" role="group" aria-labelledby="setup-heading">
+              <div class="ctl-block">
+                <h3 class="ctl-label" id="cell-label">Cell</h3>
+                <div class="seg seg-2" role="group" aria-labelledby="cell-label" id="cellMain"></div>
+                <p class="minor-label" id="cell-extra-label">Optional extras</p>
+                <div class="seg seg-2 seg-minor" role="group" aria-labelledby="cell-extra-label" id="cellExtra"></div>
+              </div>
+              <div class="ctl-block">
+                <h3 class="ctl-label" id="grade-label">Potassium severity</h3>
+                <div class="seg seg-3" role="group" aria-labelledby="grade-label" id="gradeBtns"></div>
+                <p class="grade-note" id="gradeNote"></p>
+              </div>
+            </div>
           </div>
-          <div class="ctl-block try-this" role="group" aria-labelledby="try-heading">
-            <h2 id="try-heading" class="ctl-label">Try this</h2>
-            <ol class="try-list">
-              <li><button type="button" class="try-btn" data-try="hyperk" data-cell="vent" data-grade="2">Severe hyperkalaemia: the resting potential rises and the T wave peaks</button></li>
-              <li><button type="button" class="try-btn" data-try="symp" data-cell="sa">SA node with sympathetic tone: phase 4 steepens and the rate rises</button></li>
-              <li><button type="button" class="try-btn" data-try="c3" data-cell="vent">Class III: phase 3 and the QT lengthen</button></li>
-              <li><button type="button" class="try-btn" data-try="c2" data-cell="sa">Class II: the nodal phase 4 flattens</button></li>
-            </ol>
+          <div class="tool-block">
+            <h2 class="tool-section-title" id="try-heading">Try this</h2>
+            <div class="guide-panel">
+              <div class="try-this" role="group" aria-labelledby="try-heading">
+                <ol class="try-list">
+                  <li><button type="button" class="try-btn" data-try="hyperk" data-cell="vent" data-grade="2">Severe hyperkalaemia: the resting potential rises and the T wave peaks</button></li>
+                  <li><button type="button" class="try-btn" data-try="symp" data-cell="sa">SA node with sympathetic tone: phase 4 steepens and the rate rises</button></li>
+                  <li><button type="button" class="try-btn" data-try="c3" data-cell="vent">Class III: phase 3 and the QT lengthen</button></li>
+                  <li><button type="button" class="try-btn" data-try="c2" data-cell="sa">Class II: the nodal phase 4 flattens</button></li>
+                </ol>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -318,8 +363,6 @@
       <span>Dr Ed Kim</span>
       <span class="footer-dot">·</span>
       <span>Physio Lab</span>
-      <span class="footer-dot">·</span>
-      <a class="footer-feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="Give feedback, opens Google Forms in a new tab">Give feedback</a>
     </div>
     <span class="footer-tag">Built for teaching</span>
   </footer>
@@ -953,7 +996,9 @@ function drawAll(svg, S) {
   sv("text", { x: (G.x0 + G.x1) / 2, y: G.ecgBot + 40, "text-anchor": "middle", "font-size": 14, "font-weight": 600, fill: COL.text }, g, "Time (ms)");
   sv("text", { x: 22, y: (G.apTop + G.apBot) / 2, "text-anchor": "middle", "font-size": 14, "font-weight": 600, fill: COL.text, transform: "rotate(-90 22 " + (G.apTop + G.apBot) / 2 + ")" }, g, "Membrane potential (mV)");
   sv("text", { x: 22, y: (G.ecgTop + G.ecgBot) / 2, "text-anchor": "middle", "font-size": 14, "font-weight": 600, fill: COL.text, transform: "rotate(-90 22 " + (G.ecgTop + G.ecgBot) / 2 + ")" }, g, "ECG");
-  sv("text", { x: G.x0, y: G.apTop - 12, "font-size": 14, "font-weight": 700, fill: COL.text }, g, CELLS[cell].label + " action potential");
+  var ttl = CELLS[cell].label + " action potential" + (S.switched ? " (cell switched)" : "");
+  sv("text", { x: G.x0, y: G.apTop - 12, "font-size": 14, "font-weight": 700, fill: COL.text }, g, ttl);
+  if (S.switched) sv("line", { x1: G.x0, x2: G.x0 + estW(ttl, 14, true) - 6, y1: G.apTop - 6, y2: G.apTop - 6, stroke: COL.text, "stroke-width": 2, "stroke-dasharray": "5 3" }, g);
   sv("text", { x: G.x0, y: G.ecgTop - 12, "font-size": 14, "font-weight": 700, fill: COL.text }, g, FS > 1 ? "ECG (schematic)" : "Linked ECG (schematic lead II)");
   var e = st.ecg;
   var qtc = Math.round(e.qt / Math.sqrt(st.rr / 1000));
@@ -1161,15 +1206,19 @@ function gradeFor(id) { return MODS[id] && MODS[id].graded ? A.grade : 0; }
 
 function setMod(id, fromUser) {
   var m = MODS[id];
-  A.mod = id; A.phase = null; A.note = null;
+  A.mod = id; A.phase = null; A.note = null; A.autoCell = null;
   if (fromUser && m.focus === "sa" && A.cell !== "sa") {
-    A.note = { text: "Switched to the SA node: " + m.label + " acts mainly on nodal cells.", back: A.cell };
+    A.note = { to: "sa", back: A.cell, mod: id,
+      reason: m.label + " acts mainly on nodal cells (the pacemaker phase 4 and AV conduction), so the graph now shows the SA node." };
     A.cell = "sa";
   } else if (fromUser && m.focus === "fast" && A.cell === "sa") {
-    A.note = { text: "Switched to the ventricular myocyte: " + m.label + " acts mainly on working myocardium.", back: "sa" };
+    A.note = { to: "vent", back: "sa", mod: id,
+      reason: m.label + " acts mainly on working myocardium (phases 0 to 3), so the graph now shows the ventricular myocyte." };
     A.cell = "vent";
   }
 }
+function cellName(c) { return c === "sa" ? "SA node" : CELLS[c].label.toLowerCase(); }
+function noteLead() { return A.note ? "Cell switched to " + (A.note.to === "sa" ? "SA node" : "ventricular myocyte") : ""; }
 
 /* ---------- stats ---------- */
 function metrics(st, cell) {
@@ -1227,12 +1276,22 @@ function segButton(label, pressed, onClick, disabled) {
 function renderCells() {
   var main = $("cellMain"), extra = $("cellExtra");
   main.innerHTML = ""; extra.innerHTML = "";
-  ["vent", "sa"].forEach(function (c) { main.appendChild(segButton(CELLS[c].label, A.cell === c, function () { chooseCell(c); })); });
-  ["purk", "atr"].forEach(function (c) { extra.appendChild(segButton(CELLS[c].label, A.cell === c, function () { chooseCell(c); })); });
+  var mk = function (c, parent) {
+    var b = segButton(CELLS[c].label, A.cell === c, function () { chooseCell(c); });
+    if (A.flash === c) {
+      b.classList.add("is-switched");
+      var t = document.createElement("span"); t.className = "switched-tag"; t.textContent = "Switched";
+      b.appendChild(document.createTextNode(" "));
+      b.appendChild(t);
+    }
+    parent.appendChild(b);
+  };
+  ["vent", "sa"].forEach(function (c) { mk(c, main); });
+  ["purk", "atr"].forEach(function (c) { mk(c, extra); });
 }
 function chooseCell(c) {
   if (A.cell === c) return;
-  A.cell = c; A.phase = null; A.note = null;
+  A.cell = c; A.phase = null; A.note = null; A.autoCell = null;
   announce("Showing the " + CELLS[c].label.toLowerCase() + ".");
   renderAll();
 }
@@ -1284,7 +1343,7 @@ function renderScenarios() {
 function requestScenario(id) {
   if (A.predictOn) { if (PREDICT[id]) startPending(id); return; }
   setMod(id, true);
-  announce(MODS[id].label + " applied" + (A.note ? ". " + A.note.text : "."));
+  announce(MODS[id].label + " applied." + (A.note ? " " + noteLead() + ". " + A.note.reason : ""));
   renderAll();
 }
 function renderPhaseButtons() {
@@ -1306,11 +1365,54 @@ function togglePhase(p) {
   renderAll();
 }
 
+/* ---------- scenario at a glance (fills the scenarios card) ---------- */
+function targetName(t) {
+  var p = t.split(":");
+  return "Phase " + p[1].slice(1) + (p[0] === "slow" ? ", SA node" : ", working cells");
+}
+function renderGlance() {
+  var root = $("scenGlance");
+  if (A.predictOn) {
+    var pid = A.pending;
+    root.innerHTML = '<h3 class="glance-title" id="glance-title">Test yourself' + (pid ? ": " + esc(MODS[pid].label) : "") + "</h3>" +
+      '<p class="glance-kicker">' + (pid && A.shown ? "What this scenario does:" : "Predict first; the effects appear here once you show the trace.") + '</p>' +
+      (pid && A.shown ? "" : '<ol class="glance-steps"><li>Read the normal trace on the graph.</li><li>Choose an answer to each question.</li><li>Reveal answers, then Show the trace.</li><li>Read the debrief, then Next scenario.</li></ol>') +
+      (pid && A.shown ? glanceRows(pid) : "") +
+      '<p class="glance-foot">Scenarios without questions are paused during Test yourself.</p>';
+    return;
+  }
+  var id = A.mod, m = MODS[id];
+  var h = '<h3 class="glance-title" id="glance-title">At a glance: ' + esc(m.label) + (m.graded ? " (" + GRADES[id][A.grade].name.toLowerCase() + ")" : "") + "</h3>";
+  if (m.ex) h += '<p class="glance-kicker">' + esc(m.ex) + "</p>";
+  h += glanceRows(id);
+  h += '<p class="glance-foot">Solid trace: this scenario. Dashed: normal. Hatched band: where it acts.</p>';
+  root.innerHTML = h;
+}
+function glanceRows(id) {
+  var m = MODS[id], g = gradeFor(id), h = "<dl>";
+  if (id === "normal") {
+    h += "<dt>Fast cells</dt><dd>Rest about \u221290 mV; Na+-driven phase 0; plateau; AP 200 to 400 ms.</dd>";
+    h += "<dt>SA node</dt><dd>No stable rest; If and Ca2+ drive phase 4; the slope sets the rate.</dd>";
+    h += "<dt>ECG</dt><dd>Phase 0 \u2192 QRS, phase 2 \u2192 ST, phase 3 \u2192 T, SA phase 4 \u2192 rate.</dd>";
+    return h + "</dl>";
+  }
+  h += '<dt>Acts on</dt><dd><ul class="chips">' + m.target.map(function (t) { return "<li>" + targetName(t) + "</li>"; }).join("") + "</ul></dd>";
+  h += "<dt>AP</dt><dd>" + esc(m.ap[0][0]) + "</dd>";
+  var e = (m.ecgByGrade ? m.ecgByGrade[g] : m.ecg)[0][0];
+  h += "<dt>ECG</dt><dd>" + esc(e) + "</dd>";
+  return h + "</dl>";
+}
+
 /* ---------- panel ---------- */
 function targetsPhase(id, kind, p) { return (MODS[id].target || []).indexOf(kind + ":" + p) >= 0; }
+var ICON_INFO = '<svg class="switch-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.2" r="1.5" fill="currentColor"/><path d="M12 10.5v7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+var ICON_COMPARE = '<svg class="btn-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 7h11l-3-3M17 13H6l3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function noteHTML() {
   if (!A.note) return "";
-  return '<div class="switch-hint"><span>' + esc(A.note.text) + '</span><button type="button" class="secondary" id="noteBack">Show the ' + esc(CELLS[A.note.back].label.toLowerCase()) + "</button></div>";
+  return '<div class="switch-callout" role="note" aria-labelledby="switchLead">' + ICON_INFO +
+    '<div class="switch-body"><p class="switch-lead" id="switchLead">' + esc(noteLead()) + "</p>" +
+    '<p class="switch-reason">' + esc(A.note.reason) + "</p>" +
+    '<button type="button" class="ap-btn-secondary" id="noteBack">' + ICON_COMPARE + "<span>Optional: compare with the " + esc(cellName(A.note.back)) + "</span></button></div></div>";
 }
 function modBlocks(id, g) {
   var m = MODS[id], h = "";
@@ -1355,6 +1457,7 @@ function shuffle(n) {
 function startPending(id) {
   var P = PREDICT[id];
   A.pending = id; A.choices = {}; A.revealed = false; A.shown = false; A.complete = false; A.phase = null; A.note = null;
+  A.autoCell = (A.cell !== P.cell) ? P.cell : null;
   A.cell = P.cell; A.grade = P.grade !== undefined ? P.grade : 1;
   A.perm[id] = P.qs.map(function (q) { return shuffle(q.o.length); });
   announce("Test yourself: " + MODS[id].label + ". The graph shows the normal trace.");
@@ -1372,6 +1475,7 @@ function predictPanel() {
   var id = A.pending, P = PREDICT[id], m = MODS[id];
   var h = '<p class="explain-kicker">Test yourself! · ' + (PRED_ORDER.indexOf(id) + 1) + " of " + PRED_ORDER.length + "</p>";
   h += '<h2 class="explain-title">' + esc(m.label) + (P.grade !== undefined ? " (moderate)" : "") + "</h2>";
+  if (A.autoCell) h += '<div class="switch-callout compact" role="note">' + ICON_INFO + '<div class="switch-body"><p class="switch-lead">Cell switched to ' + esc(cellName(A.autoCell).replace(/^v/, "V")) + '</p><p class="switch-reason">This question is about the ' + esc(cellName(A.autoCell)) + ".</p></div></div>";
   h += '<p class="predict-status">' + (A.shown ? "Showing " + esc(m.label.toLowerCase()) + " against the dashed normal." : "The graph shows the normal " + esc(CELLS[P.cell].label.toLowerCase()) + ". Predict, then reveal.") + "</p>";
   P.qs.forEach(function (q, i) {
     h += '<div class="predict-q" data-q="' + i + '"><p>' + (i + 1) + ". " + esc(q.q) + '</p><div class="predict-opts">';
@@ -1442,7 +1546,7 @@ function wirePanel() {
   });
   on("predictRestart", function () { A.asked = 0; A.correct = 0; A.scored = {}; A.complete = false; startPending(PRED_ORDER[0]); focusPanelTitle(); });
   on("predictFirst", function () { startPending(PRED_ORDER[0]); focusPanelTitle(); });
-  on("noteBack", function () { var c = A.note.back; A.note = null; A.cell = c; A.phase = null; renderAll(); });
+  on("noteBack", function () { var c = A.note.back; A.note = null; A.autoCell = null; A.cell = c; A.phase = null; announce("Showing the " + cellName(c) + " for comparison."); renderAll(); });
   on("phaseClose", function () { A.phase = null; renderAll(); });
 }
 function focusEl(id) { var e = $(id); if (e) e.focus(); }
@@ -1482,26 +1586,27 @@ function updateStatus() {
     el.hidden = false;
     el.textContent = A.shown ? "Showing " + MODS[A.pending].label.toLowerCase() + " against the dashed normal." : "Showing the normal trace. The questions are about " + MODS[A.pending].label.toLowerCase() + ".";
   } else if (!A.predictOn && A.note) {
-    el.hidden = false; el.textContent = A.note.text;
+    el.hidden = false; el.textContent = noteLead() + " for " + MODS[A.note.mod].label + ".";
   } else { el.hidden = true; el.textContent = ""; }
 }
 function renderGraph() {
   var id = shownMod(), g = gradeFor(id);
   var st = buildState(id, g, A.cell), base = buildState("normal", 0, A.cell);
   var ghost = id === "normal" ? null : base;
-  lastRender = drawAll($("apSvg"), { state: st, cell: A.cell, ghost: ghost, mod: id, phase: A.phase });
+  lastRender = drawAll($("apSvg"), { state: st, cell: A.cell, ghost: ghost, mod: id, phase: A.phase, switched: !!A.flash && A.flash === A.cell });
   renderStats(st, base);
   renderKey(!!ghost, id !== "normal" && (MODS[id].target || []).some(function (t) { return t.indexOf(CELLS[A.cell].kind + ":") === 0; }));
   window.__ap.state = st;
 }
 function renderAll() {
-  renderScenarios(); renderCells(); renderGrades(); renderPhaseButtons();
+  A.flash = A.note ? A.note.to : (A.autoCell || null);
+  renderScenarios(); renderGlance(); renderCells(); renderGrades(); renderPhaseButtons();
   renderGraph(); renderPanel(); syncBanner(); updateStatus();
 }
 function wire() {
   $("predictToggle").addEventListener("click", function () {
     A.predictOn = !A.predictOn;
-    A.pending = null; A.revealed = false; A.shown = false; A.choices = {}; A.complete = false; A.phase = null; A.note = null;
+    A.pending = null; A.revealed = false; A.shown = false; A.choices = {}; A.complete = false; A.phase = null; A.note = null; A.autoCell = null;
     if (A.predictOn) { A.asked = 0; A.correct = 0; A.scored = {}; startPending(PRED_ORDER[0]); }
     else { A.mod = "normal"; announce("Test yourself closed."); renderAll(); }
   });
