@@ -296,7 +296,7 @@ a.jcard .jcard-open.is-off { min-height: 24px; text-decoration: underline; text-
 @media (prefers-reduced-motion: reduce) { .jcard, .jcard-open .arrow { transition: none; } a.jcard:hover, a.jcard:hover .jcard-open .arrow { transform: none; } }
 
 /* Header: About link beside the colour-blind toggle */
-.header-actions { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; margin-left: auto; }
+.header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: nowrap; margin-left: auto; }
 .header-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--text); text-decoration: underline; text-decoration-color: var(--border); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .header-link:hover { text-decoration-color: currentColor; }
 .header-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
@@ -322,3 +322,4 @@ footer .footer-left { margin: 0; gap: 4px 0; line-height: 1.5; }
 .about-note a { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .about-note a:hover { text-decoration-thickness: 2px; }
 .about-note a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (max-width: 640px) { .site-header-top > .crumb { flex: 1 1 100%; } }

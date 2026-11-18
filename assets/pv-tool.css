@@ -621,3 +621,8 @@ html { scroll-padding-top: 8px; }
 
 .tool-side, .guide-panel, .scen-panel, .predict-actions { min-width: 0; max-width: 100%; }
 .predict-actions { overflow-wrap: break-word; }
+/* Header with the About link: on phones the breadcrumb gets its own line instead of being cut off */
+@media (max-width: 640px) {
+  .page-tool .site-header-top { flex-wrap: wrap; }
+  .page-tool .crumb { flex: 1 1 100%; }
+}
