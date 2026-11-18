@@ -5,24 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECG Basics in 3D (prototype) · The Physio Lab</title>
 <meta name="robots" content="noindex">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118d">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118d">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118d">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118e">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118e">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=20261118d">
-<link rel="stylesheet" href="assets/layout.css?v=20261118d">
-<link rel="stylesheet" href="assets/ecg3d.css?v=20261118d">
-<script src="assets/theme.js?v=20261118d"></script>
+<link rel="stylesheet" href="assets/site.css?v=20261118e">
+<link rel="stylesheet" href="assets/layout.css?v=20261118e">
+<link rel="stylesheet" href="assets/ecg3d.css?v=20261118e">
+<script src="assets/theme.js?v=20261118e"></script>
 </head>
 <body>
 <a class="skip-link" href="#tool">Skip to the 3D model</a>
-<div class="page page-wide page-tool">
+<div class="page page-wide page-tool page-ecg3d">
   <header class="site-header tool-view-header">
     <div class="site-header-top">
       <a class="site-mark" href="index.html">
-        <img class="site-logo" src="assets/logo.svg?v=20261118d" width="20" height="20" alt="">
+        <img class="site-logo" src="assets/logo.svg?v=20261118e" width="20" height="20" alt="">
         <span class="site-mark-name">The Physio Lab</span>
       </a>
       <div class="header-actions">
@@ -51,22 +51,30 @@
         <div class="tool-stage">
           <div class="graph-card stage-card">
             <div class="view-btns" role="group" aria-label="Camera view">
-              <button type="button" class="t-btn view-btn" data-view="oblique" aria-pressed="true">3D view</button>
-              <button type="button" class="t-btn view-btn" data-view="frontal" aria-pressed="false">Frontal: limb leads</button>
+              <button type="button" class="t-btn view-btn" data-view="frontal" aria-pressed="true">Frontal: limb leads</button>
+              <button type="button" class="t-btn view-btn" data-view="section" aria-pressed="false">Face-on to the cut</button>
+              <button type="button" class="t-btn view-btn" data-view="oblique" aria-pressed="false">3D view</button>
               <button type="button" class="t-btn view-btn" data-view="transverse" aria-pressed="false">Transverse: chest leads</button>
               <button type="button" class="t-btn" id="resetView">Reset view</button>
             </div>
+            <div class="view-btns toggle-btns" role="group" aria-label="Show or hide">
+              <button type="button" class="t-btn toggle-btn" id="toggleCut" aria-pressed="true">Cut-away section</button>
+              <button type="button" class="t-btn toggle-btn" id="toggleLabels" aria-pressed="true">Conduction labels</button>
+            </div>
             <div class="stage" id="stage">
-              <canvas id="scene" tabindex="0" role="img" aria-label="3D model of a torso and heart, with lead lines and the mean electrical vector arrow" aria-describedby="sceneHelp"></canvas>
+              <canvas id="scene" tabindex="0" role="img" aria-label="3D model of a torso and heart with the conduction system, lead lines and the mean electrical vector arrow" aria-describedby="sceneHelp"></canvas>
               <div class="labels" id="labels" aria-hidden="true"></div>
               <p class="view-note" id="viewNote" aria-hidden="true"></p>
               <div class="fallback" id="fallback" hidden>
                 <p><strong>3D graphics are not available in this browser.</strong></p>
-                <p>WebGL could not start, so the 3D model cannot be shown. The traces, timeline and phase descriptions still work.</p>
+                <p>WebGL could not start, so the 3D model cannot be shown. The 12-lead ECG, timeline and phase descriptions still work.</p>
               </div>
             </div>
             <p id="sceneHelp" class="stage-help">Drag to rotate, scroll or pinch to zoom, click a lead line to select it. Keyboard: focus the model, then arrow keys rotate, + and - zoom, R resets.</p>
-
+            <div class="mini-wrap">
+              <p class="mini-label" id="miniLabel">Lead II, 5 s at 25 mm/s</p>
+              <div class="mini-frame"><canvas id="miniStrip" role="img" aria-label="ECG strip of the selected lead"></canvas></div>
+            </div>
             <div class="timeline">
               <button type="button" class="t-btn play-btn" id="playBtn" aria-pressed="false"><span class="play-icon" aria-hidden="true"></span><span class="play-label">Play</span></button>
               <div class="scrub-wrap">
@@ -77,6 +85,7 @@
               <output id="timeOut" for="scrub">250 ms</output>
               <label class="speed-label" for="speed">Speed
                 <select id="speed">
+                  <option value="0.05">0.05×</option>
                   <option value="0.1">0.1×</option>
                   <option value="0.25" selected>0.25×</option>
                   <option value="0.5">0.5×</option>
@@ -84,32 +93,26 @@
                 </select>
               </label>
             </div>
-            <div class="phase-jumps" role="group" aria-label="Jump to a moment in the beat">
-              <button type="button" class="t-btn" data-jump="110">P wave</button>
-              <button type="button" class="t-btn" data-jump="190">PR segment</button>
-              <button type="button" class="t-btn" data-jump="222">Septal</button>
-              <button type="button" class="t-btn" data-jump="250">Main QRS</button>
-              <button type="button" class="t-btn" data-jump="281">Late QRS</button>
-              <button type="button" class="t-btn" data-jump="340">ST segment</button>
-              <button type="button" class="t-btn" data-jump="490">T wave</button>
-            </div>
+            <div class="phase-jumps" id="phaseJumps" role="group" aria-label="Jump to a moment in the beat"></div>
             <ul class="key" aria-label="Key">
-              <li><span class="sw sw-arrow" aria-hidden="true"></span>Black arrow: mean electrical vector</li>
-              <li><span class="sw sw-lead" aria-hidden="true"></span>Blue rod, solid to the + ball: lead axis (dashed half is negative)</li>
-              <li><span class="sw sw-sel" aria-hidden="true"></span>Thick magenta: selected lead and the arrow's shadow on it</li>
-              <li><span class="sw sw-depol" aria-hidden="true"></span>Orange muscle: depolarised (grey: resting)</li>
-              <li><span class="sw sw-mesh" aria-hidden="true"></span>Magenta mesh: wall the selected lead faces</li>
+              <li><span class="sw sw-rest" aria-hidden="true"></span>Flat grey: resting muscle</li>
+              <li><span class="sw sw-front" aria-hidden="true"></span>Orange band with black edges: depolarisation front</li>
+              <li><span class="sw sw-depol" aria-hidden="true"></span>Dotted magenta: depolarised</li>
+              <li><span class="sw sw-repol" aria-hidden="true"></span>Hatched magenta and grey: repolarising</li>
+              <li><span class="sw sw-cond" aria-hidden="true"></span>Thick blue tubes with black edges: conduction system (pale before, dark once conducted)</li>
+              <li><span class="sw sw-pulse" aria-hidden="true"></span>White bead and bulge: the impulse travelling</li>
+              <li><span class="sw sw-nodes" aria-hidden="true"></span>Diamond: SA node. Cube with filling ring: AV node delay</li>
+              <li><span class="sw sw-arrow" aria-hidden="true"></span>Solid black arrow: mean electrical vector</li>
+              <li><span class="sw sw-lead" aria-hidden="true"></span>Thin grey rod to the ball or box (+ pole): lead axis; dashed half is negative</li>
+              <li><span class="sw sw-sel" aria-hidden="true"></span>Extra-thick black rod, black label: selected lead</li>
+              <li><span class="sw sw-proj" aria-hidden="true"></span>Black and white striped bar: the arrow's shadow on the selected lead</li>
+              <li><span class="sw sw-mesh" aria-hidden="true"></span>Black wire mesh, dashed label: wall the selected lead faces</li>
               <li><span class="sw sw-trail" aria-hidden="true"></span>Dotted grey: path of the arrow tip (vector loop)</li>
             </ul>
           </div>
         </div>
 
         <aside class="tool-side">
-          <div class="card traces-card">
-            <h2 class="tool-section-title" id="leadsHeading">Leads</h2>
-            <p class="side-note">Choose a lead to highlight it. Each trace is computed live as the arrow's length times how closely it points at the lead's + pole.</p>
-            <div class="lead-rows" id="leadRows" role="group" aria-labelledby="leadsHeading"></div>
-          </div>
           <div class="card explain-card">
             <p class="phase-kicker" id="phaseKicker">Now</p>
             <h2 class="phase-title" id="phaseTitle">Main ventricular depolarisation</h2>
@@ -119,16 +122,36 @@
           </div>
         </aside>
       </div>
+
+      <div class="card ecg12-card">
+        <div class="ecg12-head">
+          <h2 class="tool-section-title" id="ecgHeading">Standard 12-lead ECG</h2>
+          <div class="lead-btns" id="leadBtns" role="group" aria-label="Select a lead"></div>
+        </div>
+        <p class="ecg12-caption" id="ecgCaption" aria-live="off"></p>
+        <div class="ecg12-frame" tabindex="0" role="region" aria-labelledby="ecgHeading">
+          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model: three rows of four leads, 2.5 seconds each, and a 10 second lead II rhythm strip. Click a lead to select it."></canvas>
+        </div>
+        <p class="side-note">25 mm/s, 10 mm/mV: one small square is 40 ms and 0.1 mV; one large square is 200 ms and 0.5 mV. Each row starts with a 1 mV calibration pulse. Click any lead to select it.</p>
+      </div>
+
+      <div class="card zoom-card">
+        <h2 class="tool-section-title" id="zoomHeading">Close-up: lead <span id="zoomLead">II</span>, two beats</h2>
+        <div class="zoom-frame" tabindex="0" role="region" aria-labelledby="zoomHeading">
+          <canvas id="zoomECG" role="img" aria-label="Close-up of two beats of the selected lead on standard ECG paper, with the P wave, QRS complex and T wave labelled and the PR, QRS, QT and P durations marked"></canvas>
+        </div>
+        <p class="side-note">The same paper speed and gain as the 12-lead (25 mm/s, 10 mm/mV), drawn larger so the shape of each wave is visible. A normal QRS is narrow: under 120 ms is only 3 small squares. Intervals are measured from the model across all 12 leads.</p>
+      </div>
     </section>
 
     <section class="card model-notes" aria-labelledby="notes-heading">
       <h2 id="notes-heading" class="tool-section-title">About this model</h2>
       <ul>
-        <li><strong>This is a simplified teaching model.</strong> At any instant many depolarisation waves spread through the heart at once; their sum is the mean electrical vector, shown here as one arrow that changes size and direction through the beat. The traces are computed from that arrow, not recorded from a patient.</li>
-        <li>Each lead records the arrow's component along its own line: upright when the arrow points towards the + pole, downward when it points away, and no net deflection when it is at right angles to the lead.</li>
-        <li>The limb leads use the hexaxial angles: I 0°, II +60°, aVF +90°, aVR -150° (positive angles point downwards). In this model the augmented leads (aVR, aVF) are drawn at 0.87 times the size of I and II.</li>
-        <li>In this model the chest leads lie in a horizontal plane through the heart, with V6 pointing to the patient's left and V1 forwards and slightly to the right. Their exact angles here are schematic.</li>
-        <li>The heart shape, arrow directions, timings and sizes are stylised and were chosen for teaching. The model beat runs at 75 per minute.</li>
+        <li><strong>This is a simplified teaching model, not a patient recording.</strong> The heart is made of about 10,000 small muscle elements. The impulse starts at the SA node, spreads through the atria cell to cell, is held in the AV node, races down the His bundle, bundle branches and Purkinje fibres, then spreads through the ventricular wall from the inside (endocardium) outwards.</li>
+        <li>Each element adds a small dipole as its wavefront passes. Their sum at each moment is the mean electrical vector (the black arrow). The limb leads record the arrow's component along their own line; the chest leads are computed from the nearby muscle, because they sit close to the heart.</li>
+        <li>Conduction speeds follow published values for a real heart (atrial muscle about 0.5 m/s, AV node about 0.05 m/s, His and bundle branches about 2 m/s, Purkinje fibres about 4 m/s), scaled to the model. Shapes, sizes, the ventricular muscle speed and a slower His bundle (because the model heart is small, this gives a normal His-to-ventricle time of about 40 ms) are model choices, tuned so that the normal 12-lead falls within normal limits.</li>
+        <li>The limb leads use the hexaxial angles: I 0°, II +60°, aVF +90°, aVR -150° (positive angles point downwards). The augmented leads are drawn at 0.87 times the size of I and II. Chest electrode positions are schematic.</li>
+        <li>The model beat runs at 75 per minute.</li>
       </ul>
     </section>
 
@@ -142,6 +165,7 @@
         <li>LITFL. <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a> (upright in all leads except aVR and V1).</li>
         <li>LITFL. <a href="https://litfl.com/anterior-myocardial-infarction-ecg-library/" target="_blank" rel="noopener">Anterior myocardial infarction</a> (septal leads V1 and V2).</li>
         <li>LITFL. <a href="https://litfl.com/lateral-stemi-ecg-library/" target="_blank" rel="noopener">Lateral STEMI</a> (lateral wall of the left ventricle).</li>
+        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a003" target="_blank" rel="noopener">Normal and abnormal electrical conduction</a> (SA node, AV node in the inferior-posterior interatrial septum, His bundle, bundle branches and Purkinje fibres; conduction velocities).</li>
         <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Electrocardiogram</a> (P wave from the SA node; PR segment and AV node delay; ST segment; T wave and the direction of repolarisation).</li>
         <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a014" target="_blank" rel="noopener">Volume conductor principles and ECG rules of interpretation</a> (towards, away and at right angles; amplitude and muscle mass; repolarisation direction).</li>
         <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a015" target="_blank" rel="noopener">Mean electrical vector</a>.</li>
@@ -162,6 +186,6 @@
     </p>
   </footer>
 </div>
-<script type="module" src="assets/ecg3d.js?v=20261118d"></script>
+<script type="module" src="assets/ecg3d.js?v=20261118e"></script>
 </body>
 </html>
