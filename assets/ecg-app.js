@@ -799,7 +799,7 @@ var RHYTHMS = {
     name: "Complete (third degree) heart block", gen: "chb",
     features: ["Regular P waves and regular QRS complexes with no relationship between them (AV dissociation)", "Atrial rate faster than ventricular rate", "Escape: narrow junctional about 40 to 60 /min, or broad ventricular about 20 to 40 /min", "PR interval varies randomly; P waves 'march through' the QRS and T waves"],
     mechanism: "Complete failure of AV conduction. A pacemaker below the block takes over.",
-    management: ["With a broad QRS it is a risk of asystole: the bradyarrhythmia algorithm lists interim measures (atropine 500 mcg IV, repeated to a maximum of 3 mg, isoprenaline, adrenaline, transcutaneous pacing) and prompts expert help and transvenous pacing. Teaching note: the 2025 Adult ALS guideline says not to give atropine in high-degree AV block with wide QRS, because it is ineffective and may worsen the block; the scenarios mark against the algorithm."],
+    management: ["With a broad QRS it is a risk of asystole: seek expert help and consider transvenous pacing, with transcutaneous pacing or an isoprenaline or adrenaline infusion as a bridge. Teaching note: the 2025 Adult ALS guideline says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' In the Resus Scenarios broad-complex complete heart block case, atropine is marked Partly right against that sentence."],
     trap: "Some P waves are hidden inside QRS complexes or T waves. Map the P waves with callipers: the P-P interval stays constant.",
     distract: ["mobitz2", "mobitz1", "junctional", "sinus_brady"]
   },
@@ -1126,10 +1126,10 @@ var VER = {
   s3_adr: ["V", ["gSecond", "bInterim", "nAdrInf"]],
   s3_aden: ["V", ["nAdenCI"]],
   s3_observe: ["V", ["bLTF", "bRisk"]],
-  s3_widePoint: ["V", ["bInterim", "bRisk", "gWide"], "The scenarios mark against the bradyarrhythmia algorithm; the ALS guideline caution is a teaching note."],
-  h8_atro1: ["V", ["bInterim", "bRisk"]],
-  h8_atroRepeat: ["V", ["bInterim", "gAtro"], "The 3 to 5 minute interval is in the ALS guideline; the algorithm states the 3 mg maximum but does not print an interval."],
-  h8_guideNote: ["V", ["bInterim", "gWide"], "The scenario marks against the bradyarrhythmia algorithm; the ALS guideline caution is a teaching note."],
+  s3_widePoint: ["V", ["bInterim", "bRisk", "gWide"], "This narrow-complex case still marks atropine as first-line. The broad-complex complete heart block case marks atropine as Partly right against the ALS guideline caution."],
+  h8_atro1: ["V", ["gWide", "bRisk"], "Atropine in broad-complex complete heart block is marked Partly right against the 2025 Adult ALS guideline."],
+  h8_atroRepeat: ["V", ["gWide"], "Repeat atropine in this broad-complex complete heart block case remains Partly right."],
+  h8_guideNote: ["V", ["gWide", "bRisk"], "Atropine in broad-complex complete heart block is marked Partly right against the 2025 Adult ALS guideline."],
   h3_amio150Note: ["V", ["gAmio300", "gAmio150"], "The algorithm poster says amiodarone after 3 shocks; 150 mg after five shocks is guideline text only."],
   /* Scenario 4 */
   s4_assess: ["V", ["tNarrow"]],
@@ -2799,7 +2799,7 @@ var TXT = {
     nextStep: "Observation is only for patients without life-threatening features and without a risk of asystole."
   },
   s3_widePoint: {
-    full: "Teaching note: complete heart block with a broad QRS is a risk of asystole. The bradyarrhythmia algorithm still lists atropine 500 mcg IV, repeated to a maximum of 3 mg, as an interim measure on that path. The 2025 Adult ALS guideline text says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' The scenarios mark against the algorithm.",
+    full: "Teaching note: complete heart block with a broad QRS is a risk of asystole. The 2025 Adult ALS guideline text says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' In the broad-complex complete heart block case, atropine is marked Partly right against that sentence. This case is narrow-complex complete heart block, so atropine remains the first-line interim measure on the bradyarrhythmia algorithm.",
     guideline: "Bradyarrhythmia algorithm; RCUK 2025 Adult ALS guideline",
     src: "bradyWide",
     flag: 1,
@@ -3257,10 +3257,10 @@ Object.assign(TXT, {
   h7_sync: T("Synchronised cardioversion is an accepted treatment for monomorphic VT, including in some stable patients, with careful sedation or anaesthesia if the patient is conscious.", "Tachyarrhythmia: broad and regular, synchronised shock", "broadStable", { outcome: "Synchronised cardioversion. Sinus rhythm is restored." }),
   h7_aden: T("IV adenosine is only for suspected SVT with aberrant conduction in a stable patient. This case should be treated as VT.", "Tachyarrhythmia: suspected SVT with aberrant conduction", "broad", { whyWrong: "Adenosine is only for suspected SVT with aberrancy. This case should be treated as VT." }),
   h8_assess: T("Complete heart block with a broad QRS. There are no current life-threatening features, but this is a risk of asystole on the bradyarrhythmia algorithm (complete heart block with broad QRS).", "Bradyarrhythmia: risk of asystole", "bradyRisk", { outcome: "Complete heart block with a broad QRS. There are no current life-threatening features, but this is a risk of asystole." }),
-  h8_atro1: T("Atropine 500 micrograms IV given. The ventricular rate has barely changed, so the response is unsatisfactory. On the risk-of-asystole path the bradyarrhythmia algorithm lists atropine 500 micrograms IV, repeated to a maximum of 3 mg, as an interim measure, and also prompts other interim measures and transvenous pacing. In complete heart block atropine often fails, so starting or preparing pacing early alongside atropine is reasonable.", "Bradyarrhythmia: interim measures, atropine to a maximum of 3 mg", "brady", { outcome: "Atropine 500 micrograms IV given. The ventricular rate has barely changed, so the response is unsatisfactory.", nextStep: "" }),
-  h8_atroRepeat: T("Further atropine 500 micrograms given. The RCUK 2025 Adult ALS guideline allows a repeat every 3 to 5 minutes, if necessary, to a total of 3 mg (the bradyarrhythmia algorithm states the 3 mg maximum but does not print an interval). There is still no response.", "Bradyarrhythmia: atropine to a maximum of 3 mg", "brady", { outcome: "Further atropine 500 micrograms given (it can be repeated to a total of 3 mg). There is still no response.", nextStep: "" }),
-  h8_pace: T("Transcutaneous pacing started as a bridge to transvenous pacing. On the risk-of-asystole path the algorithm lists transcutaneous pacing, repeat atropine to 3 mg, isoprenaline and adrenaline as interim measures, and prompts expert help and transvenous pacing.", "Bradyarrhythmia: interim measures, transcutaneous pacing", "pacing", { outcome: "Transcutaneous pacing started as a bridge to transvenous pacing.", nextStep: "Seek expert help and consider transvenous pacing." }),
-  h8_guideNote: T("Teaching note: this scenario marks against the bradyarrhythmia algorithm, which lists atropine 500 mcg IV, repeated to a maximum of 3 mg, as an interim measure. The 2025 Adult ALS guideline text says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.'", "Bradyarrhythmia algorithm; RCUK 2025 Adult ALS guideline", "bradyWide", { outcome: "", nextStep: "" }),
+  h8_atro1: T("Atropine 500 micrograms IV given. The ventricular rate has barely changed. This is marked Partly right. The RCUK 2025 Adult ALS guideline says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' Seek expert help and start transcutaneous pacing, or an adrenaline or isoprenaline infusion.", "Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.", "bradyWide", { outcome: "Atropine 500 micrograms IV given. The ventricular rate has barely changed.", whyWrong: "Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.", nextStep: "Seek expert help and start transcutaneous pacing, or an adrenaline or isoprenaline infusion." }),
+  h8_atroRepeat: T("Further atropine 500 micrograms given. This is still marked Partly right. The RCUK 2025 Adult ALS guideline says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' Seek expert help and start transcutaneous pacing, or an adrenaline or isoprenaline infusion.", "Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.", "bradyWide", { outcome: "Further atropine 500 micrograms given. There is still no useful response.", whyWrong: "Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.", nextStep: "Seek expert help and start transcutaneous pacing, or an adrenaline or isoprenaline infusion." }),
+  h8_pace: T("Transcutaneous pacing started as a bridge to transvenous pacing. Seek expert help and consider transvenous pacing.", "Bradyarrhythmia: interim measures, transcutaneous pacing", "pacing", { outcome: "Transcutaneous pacing started as a bridge to transvenous pacing.", nextStep: "Seek expert help and consider transvenous pacing." }),
+  h8_guideNote: T("Atropine in broad-complex complete heart block is marked Partly right. The RCUK 2025 Adult ALS guideline says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' Pacing (or an adrenaline or isoprenaline infusion) and expert help are the required steps. The bradyarrhythmia algorithm still lists atropine as an interim measure, but this case follows the guideline when the two differ.", "RCUK 2025 Adult ALS guideline", "bradyWide", { outcome: "", nextStep: "" }),
   h8_adrInf: T("Adrenaline infusion 2 to 10 mcg/min started as an interim measure. Seek expert help and arrange pacing.", "Bradyarrhythmia: interim measures, adrenaline 2 to 10 mcg/min", "brady", { outcome: "Adrenaline infusion 2 to 10 mcg/min started as an interim measure.", nextStep: "Seek expert help and arrange pacing." }),
   h8_iso: T("Isoprenaline infusion 5 mcg/min started as an interim measure. Seek expert help and arrange pacing.", "Bradyarrhythmia: interim measures, isoprenaline 5 mcg/min", "brady", { outcome: "Isoprenaline infusion 5 mcg/min started as an interim measure.", nextStep: "Seek expert help and arrange pacing." }),
   h8_expert: T("Expert help sought. In a patient at risk of asystole, consider transvenous pacing and treat the underlying cause.", "Bradyarrhythmia: risk of asystole, seek expert help", "bradyRisk", { outcome: "Expert help sought.", nextStep: "Consider transvenous pacing and treat the underlying cause." }),
@@ -3698,7 +3698,7 @@ HIDDEN_SCENARIOS.push(
       if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "h8_assess"); }
       if (a === "atro") {
         if (interim()) return O("info", "s3_atroPaced");
-        return takeAtro(st, "h8_atro1", "h8_atroRepeat", { phys: "atroCHB" });
+        return takeAtro(st, "h8_atro1", "h8_atroRepeat", { phys: "atroCHB", verdict: "part" });
       }
       if (a === "pace") {
         if (st.paced) return O("info", "s3_paceAgain");
@@ -4800,6 +4800,7 @@ function takeAtro(st, firstKey, repeatKey, extra) {
   var o = Object.assign({}, extra.o || {});
   if (extra.phys) o.phys = extra.phys;
   if (extra.rhythm && (st.atro || 0) === 0) o.rhythm = extra.rhythm;
+  var forced = extra.verdict;
   if ((st.atro || 0) >= 6) return O("bad", extra.maxKey || "s3_atroMax");
   if (st.lastAtroT != null) {
     var rep = repeatIntervalWindow(st.clock - st.lastAtroT);
@@ -4809,6 +4810,7 @@ function takeAtro(st, firstKey, repeatKey, extra) {
     st.atroT = st.atroT || [];
     st.atroT.push(st.clock);
     st.did.atro = 1;
+    if (forced) return O(forced, repeatKey, o);
     if (rep === "late" || rep === "missed") {
       o.lateNote = "This atropine dose still scores full marks. Repeat doses are usually 3 to 5 minutes apart, to a total of 3 mg. The case does not end while that titration is still under way.";
     }
@@ -4819,6 +4821,7 @@ function takeAtro(st, firstKey, repeatKey, extra) {
   st.atroT = st.atroT || [];
   st.atroT.push(st.clock);
   st.did.atro = 1;
+  if (forced) return O(forced, firstKey, o);
   return O("ok", firstKey, o);
 }
 function isTimeCriticalDue(d) {
@@ -6058,10 +6061,18 @@ function needsCorrectAnswer(l) {
 function correctAnswerForLog(l, log, idx, scn) {
   if (!needsCorrectAnswer(l)) return null;
   var o = l.o || {};
+  var keys = o.keys || [];
+  if (keys.some(function (k) { return k === "h8_atro1" || k === "h8_atroRepeat"; })) {
+    var fromTxt = answerFromTxt(keys);
+    if (fromTxt && fromTxt.action) {
+      fromTxt.why = reasonWhy(fromTxt.action, fromTxt.why, fromTxt.id, scn);
+      return fromTxt;
+    }
+  }
   var due = o.dueAt || [];
   var unmatched = due.filter(function (d) { return !actionMatchesDue(l.act, d.id); });
   var ans = unmatched.length ? answerFromDue(unmatched, scn) : null;
-  if (!ans) ans = answerFromTxt(o.keys || []);
+  if (!ans) ans = answerFromTxt(keys);
   if (!ans) ans = fallbackExpected(scn, (log || []).slice(0, idx));
   if (!ans || !ans.action) {
     ans = { action: "Continue with the next step on the RCUK 2025 algorithm for this rhythm", why: "Reassess the patient and treat according to the algorithm.", src: "RCUK 2025 Adult ALS guideline" };
@@ -6392,7 +6403,7 @@ var IDEAL_PATHS = {
   h8: [
     IP("assess", "Check rhythm and pulse", "Confirm broad-complex complete heart block. There are no current life-threatening features, but there is a risk of asystole.", SRC_BRADY),
     IP("expert", "Seek expert help", "When there is a risk of asystole, the algorithm prompts you to seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true }),
-    IP("pace", "Transcutaneous pacing, or an adrenaline or isoprenaline infusion", "On the risk-of-asystole path the bradyarrhythmia algorithm lists transcutaneous pacing, repeat atropine to a maximum of 3 mg, isoprenaline and adrenaline as interim measures. Use pacing, isoprenaline or adrenaline as a bridge if transvenous pacing is not immediately available. Atropine often fails in complete heart block, so starting or preparing pacing early is reasonable.", SRC_BRADY, ["adrInf", "iso"])
+    IP("pace", "Transcutaneous pacing, or an adrenaline or isoprenaline infusion", "Use transcutaneous pacing, or an adrenaline or isoprenaline infusion, as a bridge if transvenous pacing is not immediately available, and seek expert help.", SRC_BRADY, ["adrInf", "iso"])
   ],
   h9: [
     IP("assess", "Check rhythm and pulse", "Confirm pulseless polymorphic VT and treat it as a shockable arrest.", SRC_ALS_A),
@@ -6487,7 +6498,7 @@ var MODEL_ACTS = {
   h5: ["assess","ask:ecg12","nibp","vagal","aden","aden","aden"],
   h6: ["assess","ask:ecg12","nibp","expert","sync","sync"],
   h7: ["assess","ask:ecg12","nibp","amioInf"],
-  h8: ["assess","expert","ask:ecg12","nibp","atro","pace"],
+  h8: ["assess","expert","ask:ecg12","nibp","pace"],
   h9: ["assess","shock","cpr","mg","ff","assess"],
   h10: ["assess","ask:ecg12","nibp","expert","sync"]
 };
