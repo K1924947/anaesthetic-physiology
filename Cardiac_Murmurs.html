@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cardiac Murmurs · The Physio Lab</title>
-<meta name="description" content="Interactive cardiac murmurs: see the pressure gradient behind each murmur, its timing, shape and where to listen, with a simplified synthesised sound and a Test yourself quiz.">
+<meta name="description" content="Interactive cardiac murmurs: see the pressure gradient behind each murmur, its timing, shape and where to listen, with a Test yourself quiz.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
@@ -45,7 +45,7 @@
         <span class="test-banner-icon" aria-hidden="true">?</span>
         <div class="test-banner-copy">
           <h2 class="test-banner-title">Test yourself!</h2>
-          <p class="test-banner-tag">See the phonocardiogram (and hear it if you like), then name the murmur.</p>
+          <p class="test-banner-tag">See the phonocardiogram, then name the murmur.</p>
         </div>
         <p class="test-banner-score" id="testBannerScore" hidden></p>
         <button type="button" class="test-banner-cta" id="testToggle" aria-pressed="false">
@@ -53,39 +53,36 @@
         </button>
       </div>
 
-      <div class="tool-controls" id="toolControls">
-        <div class="tool-block">
-          <h2 class="tool-section-title" id="murmur-heading">Murmurs</h2>
-          <div class="scen-panel">
+      <div class="tool-controls mm-strip" id="toolControls">
+        <div class="mm-strip-card">
+          <div class="mm-strip-murmurs">
+            <h2 class="tool-section-title" id="murmur-heading">Murmurs</h2>
             <div class="mm-groups" id="murmurGroups" role="group" aria-labelledby="murmur-heading"></div>
-            <details class="mm-try">
-              <summary>Try this</summary>
-              <ol class="try-list">
-                <li><button type="button" class="try-btn" data-murmur="as" data-man="rest">Aortic stenosis: find the gap between LV and aortic pressure</button></li>
-                <li><button type="button" class="try-btn" data-murmur="ms" data-man="rest">Mitral stenosis: spot the opening snap, then the rumble</button></li>
-                <li><button type="button" class="try-btn" data-murmur="tr" data-man="insp">Tricuspid regurgitation: breathe in and it gets louder</button></li>
-                <li><button type="button" class="try-btn" data-murmur="hocm" data-man="valsalva">HOCM: Valsalva makes the obstruction worse</button></li>
-                <li><button type="button" class="try-btn" data-murmur="normal" data-man="insp">Normal heart: breathe in and S2 splits</button></li>
-              </ol>
-            </details>
           </div>
-        </div>
-        <div class="tool-block">
-          <h2 class="tool-section-title" id="man-heading">Manoeuvres and sound</h2>
-          <div class="guide-panel">
+          <div class="mm-strip-mans">
+            <h2 class="tool-section-title" id="man-heading">Manoeuvres</h2>
             <div class="mm-mans" id="manButtons" role="group" aria-labelledby="man-heading"></div>
-            <p class="mm-man-note" id="manNote"></p>
-            <div class="mm-sound">
-              <button type="button" class="mm-play" id="playBtn" aria-pressed="false">
-                <span class="mm-play-icon" aria-hidden="true"></span><span class="mm-play-text">Play sound</span>
-              </button>
+            <div class="mm-man-row">
+              <p class="mm-man-note" id="manNote"></p>
               <button type="button" class="mode-switch" id="animSwitch" role="switch" aria-checked="false">
                 <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
                 <span>Animation <span class="switch-state" id="animState">off</span></span>
               </button>
             </div>
-            <p class="mm-sound-note">Simplified synthesised teaching sound, not a real recording. Low-pitched sounds are hard to hear on phone or laptop speakers; headphones help.</p>
           </div>
+          <details class="mm-try">
+            <summary>Try this</summary>
+            <ol class="try-list">
+              <li><button type="button" class="try-btn" data-murmur="as" data-man="rest">Aortic stenosis: find the gap between LV and aortic pressure</button></li>
+              <li><button type="button" class="try-btn" data-murmur="ms" data-man="rest">Mitral stenosis: spot the opening snap, then the rumble</button></li>
+              <li><button type="button" class="try-btn" data-murmur="tr" data-man="insp">Tricuspid regurgitation: breathe in and it gets louder</button></li>
+              <li><button type="button" class="try-btn" data-murmur="hocm" data-man="valsalva">HOCM: Valsalva makes the obstruction worse</button></li>
+              <li><button type="button" class="try-btn" data-murmur="normal" data-man="insp">Normal heart: breathe in and S2 splits</button></li>
+              <li><button type="button" class="try-btn" data-murmur="asd" data-man="rest">Atrial septal defect: S2 stays split at rest</button></li>
+              <li><button type="button" class="try-btn" data-murmur="pda" data-man="rest">Patent ductus arteriosus: a murmur that runs through S2</button></li>
+              <li><button type="button" class="try-btn" data-murmur="tof" data-man="rest">Tetralogy of Fallot: the murmur is from the outflow obstruction, not the VSD</button></li>
+            </ol>
+          </details>
         </div>
       </div>
 
@@ -96,6 +93,7 @@
             <div class="mm-svg-box" id="mmSvgBox">
               <svg id="mmSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mm-svg-title mm-svg-desc"></svg>
             </div>
+            <p class="mm-trace-key" id="mmTraceKey">Solid black: heart sounds (S1, S2). Hatched: murmur.</p>
             <p id="mm-svg-title" class="visually-hidden">Pressure traces and phonocardiogram over one heartbeat</p>
             <p id="mm-svg-desc" class="visually-hidden"></p>
             <p class="mm-status" id="mmStatus" hidden></p>
@@ -129,7 +127,7 @@
             <article class="card summary-card">
               <h3 class="card-title">Systolic murmurs</h3>
               <ul>
-                <li><strong>Ejection systolic</strong> (crescendo-decrescendo): aortic stenosis, HOCM, innocent flow murmur.</li>
+                <li><strong>Ejection systolic</strong> (crescendo-decrescendo): aortic stenosis, HOCM, pulmonary stenosis, innocent flow murmur.</li>
                 <li><strong>Pansystolic</strong> (S1 to S2): mitral regurgitation, tricuspid regurgitation, VSD.</li>
                 <li>AS radiates to the <strong>carotids</strong>; MR to the <strong>axilla</strong>.</li>
               </ul>
@@ -140,6 +138,17 @@
                 <li><strong>Aortic regurgitation:</strong> early diastolic, decrescendo, high pitched; left sternal edge, sitting forward, breath held out.</li>
                 <li><strong>Mitral stenosis:</strong> loud S1, opening snap, low-pitched mid-diastolic rumble at the apex; left lateral position, bell.</li>
                 <li>Diastolic murmurs are <strong>almost always pathological</strong> and need investigating.</li>
+              </ul>
+            </article>
+            <article class="card summary-card">
+              <h3 class="card-title">Congenital murmurs</h3>
+              <ul>
+                <li><strong>ASD:</strong> pulmonary flow (ejection systolic) murmur at the upper left sternal edge, with a <strong>fixed split S2</strong>.</li>
+                <li><strong>VSD:</strong> harsh pansystolic murmur at the left sternal edge, often with a thrill.</li>
+                <li><strong>PDA:</strong> continuous machinery murmur under the left clavicle, often loudest around S2.</li>
+                <li><strong>Coarctation:</strong> systolic murmur at the left infraclavicular area or between the scapulae, with radio-femoral delay and upper-limb hypertension. Collaterals may add a continuous murmur.</li>
+                <li><strong>Pulmonary stenosis:</strong> ejection systolic murmur at the upper left sternal edge, often with an ejection click and a wide split S2; louder on inspiration.</li>
+                <li><strong>Tetralogy of Fallot:</strong> the murmur is an ejection systolic sound from right ventricular outflow obstruction, not from the VSD. S2 is single.</li>
               </ul>
             </article>
             <article class="card summary-card">
@@ -160,19 +169,29 @@
           <div class="nums-table-wrap" id="numsWrap"></div>
         </div>
       </div>
+      <div class="mm-listen">
+        <h3 class="mm-listen-title">Listen to real recordings (external sites, check their terms)</h3>
+        <p>This page does not play sounds. These libraries let you listen on their own sites. We do not embed the audio, and you should check each site's terms before use.</p>
+        <ul>
+          <li><a href="https://teachingheartauscultation.com/heart-sounds-mp3-downloads" target="_blank" rel="noopener">Teaching Heart Auscultation: heart sound MP3 downloads</a></li>
+          <li><a href="https://depts.washington.edu/physdx/heart/demo.html" target="_blank" rel="noopener">University of Washington: heart sounds and murmurs demonstration</a></li>
+          <li><a href="https://www.littmann.com/en-us/home/education/" target="_blank" rel="noopener">3M Littmann education (Littmann Learning)</a></li>
+        </ul>
+      </div>
       <details class="revise-sources">
         <summary>Sources</summary>
         <div class="details-body">
           <ul class="source-list">
-            <li>Hall JE. <cite>Guyton and Hall Textbook of Medical Physiology</cite>. Cardiac cycle (Ch. 9) and heart sounds and valve lesions (Ch. 23), 12th ed. numbering.</li>
+            <li>Hall JE, Hall ME. <cite>Guyton and Hall Textbook of Medical Physiology</cite>. The heart as a pump (Ch. 9) and heart valves and heart sounds (Ch. 23). This chapter numbering is the same in the 14th and 15th editions.</li>
             <li>Innes JA, Dover AR, Fairhurst K, eds. <cite>Macleod's Clinical Examination</cite>. Cardiovascular system chapter.</li>
-            <li>Wilkinson IB, Raine T, Wiles K, et al. <cite>Oxford Handbook of Clinical Medicine</cite>. Cardiovascular medicine chapter (heart sounds and murmurs).</li>
+            <li>Wilkinson IB, Raine T, Wiles K, et al., eds. <cite>Oxford Handbook of Clinical Medicine</cite>. Cardiovascular medicine chapter (heart sounds and murmurs).</li>
             <li>Lembo NJ, Dell'Italia LJ, Crawford MH, O'Rourke RA. Bedside diagnosis of systolic murmurs. <cite>N Engl J Med</cite> 1988;318:1572-1578.</li>
             <li>Vahanian A, Beyersdorf F, Praz F, et al. 2021 ESC/EACTS Guidelines for the management of valvular heart disease. <cite>Eur Heart J</cite> 2022;43:561-632.</li>
             <li>Arbelo E, Protonotarios A, Gimeno JR, et al. 2023 ESC Guidelines for the management of cardiomyopathies. <cite>Eur Heart J</cite> 2023;44:3503-3626.</li>
+            <li>Baumgartner H, De Backer J, Babu-Narayan SV, et al. 2020 ESC Guidelines for the management of adult congenital heart disease. <cite>Eur Heart J</cite> 2021;42:563-645.</li>
             <li>NICE guideline NG208. Heart valve disease presenting in adults: investigation and management. 2021.</li>
           </ul>
-          <p class="caveat">Pressure traces are schematics shaped from the textbook cardiac cycle, not recordings. The synthesised sounds are simplified and are not a substitute for listening to real patients or validated recordings.</p>
+          <p class="caveat">Pressure traces are schematics shaped from the textbook cardiac cycle, not recordings. A 2025 update of the ESC/EACTS valvular guidelines has been published; the numbers on this page still follow the 2021 document and should be checked against the newer text.</p>
         </div>
       </details>
     </section>
