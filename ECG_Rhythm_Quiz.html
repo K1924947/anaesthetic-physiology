@@ -1796,7 +1796,8 @@ var SOURCES = {
   bnfAden: { name: "BNF: adenosine", url: "https://bnf.nice.org.uk/drugs/adenosine/", file: "bnf-adenosine.txt" },
   bnfMg: { name: "BNF: magnesium sulfate", url: "https://bnf.nice.org.uk/drugs/magnesium-sulfate/", file: "bnf-magnesium-sulfate.txt" },
   bnfVera: { name: "BNF: verapamil hydrochloride", url: "https://bnf.nice.org.uk/drugs/verapamil-hydrochloride/", file: "bnf-verapamil-hydrochloride.txt" },
-  bnfDig: { name: "BNF: digoxin", url: "https://bnf.nice.org.uk/drugs/digoxin/", file: "bnf-digoxin.txt" }
+  bnfDig: { name: "BNF: digoxin", url: "https://bnf.nice.org.uk/drugs/digoxin/", file: "bnf-digoxin.txt" },
+  specG: { name: "RCUK 2025 Special circumstances guidelines", url: "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/special-circumstances-guidelines", file: "rcuk-special-circumstances-2025.txt" }
 };
 var VQ = {
   /* ALS guideline */
@@ -1862,7 +1863,10 @@ var VQ = {
   nAdenCI: ["bnfAden", "Contra-indications: ... second- or third-degree AV block and sick sinus syndrome (unless pacemaker fitted)"],
   nMg: ["bnfMg", "Emergency treatment of serious arrhythmias ... Adult 2 g, to be given over 10-15 minutes, dose may be repeated once if necessary. ... Magnesium sulfate heptahydrate 1 g equivalent to Mg2+ approx. 4 mmol."],
   nVera: ["bnfVera", "Contra-indications: ... atrial flutter or fibrillation associated with accessory conducting pathways (e.g. Wolff-Parkinson-White-syndrome)"],
-  nDig: ["bnfDig", "Contra-indications: ... supraventricular arrhythmias associated with accessory conducting pathways e.g. Wolff-Parkinson-White syndrome"]
+  nDig: ["bnfDig", "Contra-indications: ... supraventricular arrhythmias associated with accessory conducting pathways e.g. Wolff-Parkinson-White syndrome"],
+  /* Special circumstances (checked in rcuk-special-circumstances-2025.txt) */
+  gHyperkArrest: ["specG", "hyperkalaemic cardiac arrest: administer 10 mL 10% calcium chloride IV and 50 mmol sodium bicarbonate IV, through separate lines or with a flush in between."],
+  gDecomp: ["specG", "Early and aggressive management of reversible causes (e.g. haemorrhage control, airway management, chest decompression) is essential for survival."]
 };
 var VER = {
   /* Learn and Test: one management line per rhythm */
@@ -2014,12 +2018,12 @@ var VER = {
   /* Debrief key steps */
   "req:s1:0": ["V", ["gAsap"]], "req:s1:1": ["V", ["gResume"]], "req:s1:2": ["V", ["gAdrSh"]], "req:s1:3": ["V", ["gAmio300"]],
   "req:s2:0": ["V", ["aStart"]], "req:s2:1": ["V", ["gAdrNon"]], "req:s2:2": ["V", ["aCauses"]], "req:s2:3": ["V", ["gFluid"]],
-  "req:s3:0": ["V", ["bLTF"]], "req:s3:1": ["V", ["bInterim"]], "req:s3:2": ["V", ["bInterim", "gTV"]],
+  "req:s3:0": ["V", ["bLTF"]], "req:s3:1": ["V", ["bInterim", "gTC"]], "req:s3:2": ["V", ["bInterim", "gTV"]],
   "req:s4:0": ["V", ["tNarrow"]], "req:s4:1": ["V", ["tNarrow", "nAden"]],
   "req:s5:0": ["V", ["gSed"]], "req:s5:1": ["V", ["tUnstable"]],
   "req:s6:0": ["V", ["tPoly", "nMg"]], "req:s6:1": ["V", ["tABCDE", "aCauses"]],
-  "req:h1:0": ["V", ["aStart"]], "req:h1:1": ["V", ["gAdrNon"]], "req:h1:2": ["V", ["aCauses"]], "req:h1:3": ["V", ["aCauses"]],
-  "req:h2:0": ["V", ["aStart"]], "req:h2:1": ["V", ["gAdrNon"]], "req:h2:2": ["V", ["aCauses"]], "req:h2:3": ["V", ["aCauses"]],
+  "req:h1:0": ["V", ["aStart"]], "req:h1:1": ["V", ["gAdrNon"]], "req:h1:2": ["V", ["aCauses"]], "req:h1:3": ["V", ["gHyperkArrest"]],
+  "req:h2:0": ["V", ["aStart"]], "req:h2:1": ["V", ["gAdrNon"]], "req:h2:2": ["V", ["aCauses"]], "req:h2:3": ["V", ["gDecomp"]],
   "req:h3:0": ["V", ["gAsap"]], "req:h3:1": ["V", ["gResume"]], "req:h3:2": ["V", ["gAdrSh"]], "req:h3:3": ["V", ["gAmio300"]], "req:h3:4": ["V", ["gAmio150", "nAmio"]],
   "req:h4:0": ["V", ["gAsap"]], "req:h4:1": ["V", ["gResume"]], "req:h4:2": ["V", ["gAdrNon"]],
   "req:h5:0": ["V", ["tNarrow"]], "req:h5:1": ["V", ["tNarrow", "nAden"]],
@@ -6423,6 +6427,72 @@ function sourceTagFor(srcKey, guideline) {
   }
   return guideline && /RCUK|BNF|ALS|Brady|Tachy|Special/.test(guideline) ? guideline : (guideline ? "RCUK 2025 Adult ALS guideline" : "RCUK 2025 Adult ALS guideline");
 }
+function contentWords(s) {
+  return normLine(s).replace(/^(give|use|start|resume|continue|do|perform|treat)\s+/, "").split(/[^a-z0-9+]+/).filter(function (w) {
+    return w && "the a an and or of to for in on as is it at by with from after then this that than only if over".split(" ").indexOf(w) < 0;
+  });
+}
+function restatesAction(why, action) {
+  if (!why) return true;
+  if (!action) return false;
+  var a = contentWords(action), w = contentWords(why);
+  if (!a.length) return false;
+  if (normLine(why) === normLine(action)) return true;
+  var hit = 0, i;
+  for (i = 0; i < a.length; i++) if (w.indexOf(a[i]) >= 0) hit++;
+  /* A why that starts with the action but then gives a real reason is not a restatement. */
+  if (hit >= Math.max(3, a.length - 1) && w.length <= a.length + 5) return true;
+  if (w.join(" ").indexOf(a.join(" ")) >= 0 && w.length <= a.length + 5) return true;
+  return false;
+}
+function physWhyFor(id, scn) {
+  var key = ({
+    calcium: "hyperk",
+    adr: "adr",
+    adrRepeat: "adr",
+    amio300: "amio",
+    amio150: "amio",
+    decompress: "roscTension",
+    fluid: "roscHypovol",
+    mg: "mg"
+  })[id];
+  if (id === "shock") key = (scn && scn.id === "h9") ? "tdpArrest" : "shockVF";
+  if (!key || typeof PHYS === "undefined" || !PHYS[key]) return "";
+  if (key === "hyperk") return "Calcium antagonises the membrane effect of high potassium without immediately lowering the serum potassium";
+  return PHYS[key];
+}
+function reasonWhy(action, why, id, scn) {
+  if (why && !restatesAction(why, action)) return why;
+  var phys = physWhyFor(id, scn);
+  if (phys && !restatesAction(phys, action)) return phys;
+  return why || phys || "";
+}
+function dueRank(d, scn) {
+  var id = d && d.id;
+  if (id === "shock" || id === "sync" || id === "sync2") return 0;
+  if (id === "cpr") return 1;
+  if (id === "expert") {
+    var sid = (scn && scn.id) || "";
+    if (sid === "s5" || sid === "h6" || sid === "h10") return 1;
+    return 6;
+  }
+  if (id === "adr" || id === "atro" || id === "vagal" || id === "mg" || id === "amio300") return 2;
+  if (id === "aden" || id === "aden2" || id === "adenNext" || id === "amio150" || id === "adrRepeat" || id === "pace" || id === "amioInf") return 3;
+  if (id === "calcium" || id === "fluid" || id === "decompress") return 4;
+  if (id === "causes") return 6;
+  if (id === "ff" || id === "assess") return 7;
+  return 5;
+}
+function pickDue(due, scn) {
+  if (!due || !due.length) return [];
+  var best = 99, i, r, out = [];
+  for (i = 0; i < due.length; i++) {
+    r = dueRank(due[i], scn);
+    if (r < best) { best = r; out = [due[i]]; }
+    else if (r === best) out.push(due[i]);
+  }
+  return out;
+}
 function idealWhyFor(scn, id) {
   var ideal = (typeof IDEAL_PATHS !== "undefined" && scn && IDEAL_PATHS[scn.id]) || [];
   var aliases = { aden2: "aden", adenNext: "aden", adrRepeat: "adr", sync2: "sync" };
@@ -6437,13 +6507,16 @@ function idealWhyFor(scn, id) {
 }
 function answerFromDue(due, scn) {
   if (!due || !due.length) return null;
-  var names = due.map(function (d) { return d.name; }).filter(Boolean);
+  var picked = pickDue(due, scn);
+  var names = picked.map(function (d) { return d.name; }).filter(Boolean);
   if (!names.length) return null;
+  var top = picked[0];
   var action = names.join("; ");
-  var meta = idealWhyFor(scn, due[0].id);
-  var why = (meta && meta.why) || due[0].guideline || due[0].category || "This was the algorithm step that was due at that moment.";
-  var src = (meta && meta.src) || sourceTagFor(due[0].src, due[0].guideline);
-  return { action: action, why: why, src: src };
+  var meta = idealWhyFor(scn, top.id);
+  var why = reasonWhy(action, (meta && meta.why) || top.guideline || "", top.id, scn);
+  if (!why) why = "This was the most important algorithm step that was due at that moment.";
+  var src = (meta && meta.src) || sourceTagFor(top.src, top.guideline);
+  return { action: action, why: why, src: src, id: top.id };
 }
 function answerFromTxt(keys) {
   var i, k, t;
@@ -6472,11 +6545,11 @@ function fallbackExpected(scn, logBefore) {
   for (i = 0; i < ideal.length; i++) {
     step = ideal[i];
     if (step.orderFree) continue;
-    if (unused(step)) return { action: step.label, why: step.why, src: step.src };
+    if (unused(step)) return { action: step.label, why: reasonWhy(step.label, step.why, step.id, scn), src: step.src };
   }
   for (i = 0; i < ideal.length; i++) {
     step = ideal[i];
-    if (unused(step)) return { action: step.label, why: step.why, src: step.src };
+    if (unused(step)) return { action: step.label, why: reasonWhy(step.label, step.why, step.id, scn), src: step.src };
   }
   return { action: "Continue with the next step on the RCUK 2025 algorithm for this rhythm", why: "Reassess the patient and treat according to the algorithm.", src: "RCUK 2025 Adult ALS guideline" };
 }
@@ -6497,22 +6570,25 @@ function correctAnswerForLog(l, log, idx, scn) {
   if (!ans) ans = fallbackExpected(scn, (log || []).slice(0, idx));
   if (!ans || !ans.action) {
     ans = { action: "Continue with the next step on the RCUK 2025 algorithm for this rhythm", why: "Reassess the patient and treat according to the algorithm.", src: "RCUK 2025 Adult ALS guideline" };
+  } else {
+    ans.why = reasonWhy(ans.action, ans.why, ans.id, scn);
   }
   return ans;
 }
 function correctAnswerForMissed(s, r) {
   var id = r && r[0], name = r && r[1], srcKey = r && r[2], guideline = r && r[3];
   var meta = idealWhyFor(s, id);
+  var action = (meta && meta.label) || name || "The missed algorithm step";
   return {
-    action: (meta && meta.label) || name || "The missed algorithm step",
-    why: (meta && meta.why) || guideline || "This required step was due and was not done.",
+    action: action,
+    why: reasonWhy(action, (meta && meta.why) || guideline || "", id, s) || "This required step was due and was not done.",
     src: (meta && meta.src) || sourceTagFor(srcKey, guideline)
   };
 }
 function renderCorrectAnswer(ans) {
   if (!ans || !ans.action) return "";
   var html = "<p class='correct-ans'><strong>Correct answer:</strong> " + esc(withPeriod(ans.action));
-  if (ans.why && !sameLine(ans.why, ans.action)) html += " " + esc(withPeriod(ans.why));
+  if (ans.why && !restatesAction(ans.why, ans.action)) html += " " + esc(withPeriod(ans.why));
   if (ans.src) html += " <span class='correct-ans-src'>Source: " + esc(ans.src) + "</span>";
   html += "</p>";
   return html;
@@ -6703,17 +6779,17 @@ var IDEAL_PATHS = {
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("shock", "Third shock", "A third shock is followed by adrenaline and amiodarone during CPR.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("adr", "Adrenaline 1 mg after the third shock", "Give adrenaline 1 mg after the third shock in a shockable arrest.", SRC_ALS),
-    IP("amio300", "Amiodarone 300 mg after the third shock", "Give amiodarone 300 mg IV after a total of three shocks in VF or pulseless VT.", SRC_BNF_AMIO),
+    IP("adr", "Adrenaline 1 mg after the third shock", "Adrenaline's alpha-1 vasoconstriction raises aortic diastolic pressure during CPR, and so coronary and cerebral perfusion pressure.", SRC_ALS),
+    IP("amio300", "Amiodarone 300 mg after the third shock", "Amiodarone mainly blocks K+ channels, prolonging the action potential and refractory period, which makes re-entry harder to sustain.", SRC_BNF_AMIO),
     IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess the rhythm and pulse.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Look for ROSC after the cycle of CPR.", SRC_ALS_A)
   ],
   s2: [
     IP("assess", "Check rhythm and pulse", "Confirm a non-shockable arrest before you treat.", SRC_ALS_A),
     IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
-    IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg as soon as possible", "Adrenaline's alpha-1 vasoconstriction raises aortic diastolic pressure during CPR, and so coronary and cerebral perfusion pressure.", SRC_ALS),
     IP("causes", "Identify the reversible cause (hypovolaemia)", "Identify and treat reversible causes early. This can be done at any time once the arrest is recognised.", SRC_ALS_A, { orderFree: true }),
-    IP("fluid", "Give IV fluid for hypovolaemia", "Give fluids during CPR only if the arrest is caused by hypovolaemia.", SRC_ALS, { after: ["causes"] }),
+    IP("fluid", "Give IV fluid for hypovolaemia", "Restoring circulating volume raises preload, so each beat can eject a palpable stroke volume again. Fluids during CPR are given only if the arrest is caused by hypovolaemia.", SRC_ALS, { after: ["causes"] }),
     IP("ff", "CPR for 2 minutes", "Resume CPR for 2 minutes and then reassess.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Look for ROSC after treating the cause.", SRC_ALS_A)
   ],
@@ -6737,24 +6813,24 @@ var IDEAL_PATHS = {
   ],
   s6: [
     IP("assess", "Check rhythm and pulse", "Confirm self-terminating polymorphic VT (torsades de pointes).", SRC_TACHY),
-    IP("mg", "Magnesium 8 mmol IV over 10 min", "Give magnesium 8 mmol IV over 10 minutes for polymorphic VT with QT prolongation.", SRC_TACHY),
+    IP("mg", "Magnesium 8 mmol IV over 10 min", "Torsades is triggered activity from early afterdepolarisations during a prolonged plateau. Magnesium is thought to suppress them, so the runs stop.", SRC_TACHY),
     IP("causes", "Identify and treat reversible causes", "Look for low potassium and QT-prolonging drugs, and treat the cause. This can be done at any time once the rhythm is recognised.", SRC_TACHY, { orderFree: true })
   ],
   h1: [
     IP("assess", "Check rhythm and pulse", "Confirm asystole before you treat.", SRC_ALS_A),
     IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
-    IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg as soon as possible", "Adrenaline's alpha-1 vasoconstriction raises aortic diastolic pressure during CPR, and so coronary and cerebral perfusion pressure.", SRC_ALS),
     IP("causes", "Identify the reversible cause (hyperkalaemia)", "Name and treat reversible causes early. In this case the reversible cause is hyperkalaemia. Naming the cause can be done at any time once the arrest is recognised.", SRC_ALS_A, { orderFree: true }),
-    IP("calcium", "Calcium chloride 10 mL of 10% IV", "Give calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest.", SRC_SPEC, { after: ["causes"] }),
+    IP("calcium", "Calcium chloride 10 mL of 10% IV", "Calcium antagonises the membrane effect of high potassium without immediately lowering the serum potassium.", SRC_SPEC, { after: ["causes"] }),
     IP("ff", "Continue CPR cycles, with adrenaline every 3 to 5 minutes", "After treating the cause, continue 2-minute cycles of CPR and repeat adrenaline every 3 to 5 minutes until there is a return of spontaneous circulation.", SRC_ALS),
     IP("assess", "Check rhythm and pulse (ROSC)", "Reassess the rhythm and pulse after treating the cause; a return of spontaneous circulation is the aim.", SRC_ALS_A)
   ],
   h2: [
     IP("assess", "Check rhythm and pulse", "Confirm PEA before you treat.", SRC_ALS_A),
     IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
-    IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg as soon as possible", "Adrenaline's alpha-1 vasoconstriction raises aortic diastolic pressure during CPR, and so coronary and cerebral perfusion pressure.", SRC_ALS),
     IP("causes", "Identify the reversible cause (tension pneumothorax)", "Identify and treat reversible causes early. Naming the cause can be done at any time once the arrest is recognised.", SRC_ALS_A, { orderFree: true }),
-    IP("decompress", "Chest decompression", "Treat tension pneumothorax with immediate chest decompression.", SRC_SPEC, { after: ["causes"] }),
+    IP("decompress", "Chest decompression", "Decompressing the chest lets the lung re-expand, intrathoracic pressure falls and venous return is restored, so each beat again ejects a palpable stroke volume.", SRC_SPEC, { after: ["causes"] }),
     IP("ff", "CPR for 2 minutes", "Resume CPR for 2 minutes and then reassess.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Look for ROSC after treating the cause.", SRC_ALS_A)
   ],
@@ -6768,15 +6844,15 @@ var IDEAL_PATHS = {
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("shock", "Third shock", "After a total of three shocks, give adrenaline and amiodarone 300 mg.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("adr", "Adrenaline 1 mg after the third shock", "Give adrenaline 1 mg after the third shock in a shockable arrest.", SRC_ALS),
-    IP("amio300", "Amiodarone 300 mg after the third shock", "Give amiodarone 300 mg IV after a total of three shocks.", SRC_BNF_AMIO),
+    IP("adr", "Adrenaline 1 mg after the third shock", "Adrenaline's alpha-1 vasoconstriction raises aortic diastolic pressure during CPR, and so coronary and cerebral perfusion pressure.", SRC_ALS),
+    IP("amio300", "Amiodarone 300 mg after the third shock", "Amiodarone mainly blocks K+ channels, prolonging the action potential and refractory period, which makes re-entry harder to sustain.", SRC_BNF_AMIO),
     IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess.", SRC_ALS),
     IP("shock", "Fourth shock", "If VF persists, continue the shockable algorithm.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("shock", "Fifth shock", "A further 150 mg of amiodarone is due after a total of five shocks.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("amio150", "Amiodarone 150 mg after a total of five shocks", "Give a further 150 mg of amiodarone IV after a total of five shocks in VF or pulseless VT.", SRC_BNF_AMIO),
+    IP("amio150", "Amiodarone 150 mg after a total of five shocks", "Amiodarone mainly blocks K+ channels, prolonging the action potential and refractory period, which makes re-entry harder to sustain.", SRC_BNF_AMIO),
     IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess the rhythm and pulse.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Look for ROSC after the cycle of CPR.", SRC_ALS_A)
   ],
@@ -6787,7 +6863,7 @@ var IDEAL_PATHS = {
     IP("ff", "CPR for 2 minutes", "Reassess after 2 minutes of CPR.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "The rhythm may no longer be shockable; treat what you see.", SRC_ALS_A),
     IP("cpr", "Resume CPR", "If the rhythm is now asystole, continue CPR.", SRC_ALS),
-    IP("adr", "Adrenaline 1 mg as soon as possible", "Once the rhythm is asystole, give adrenaline 1 mg as soon as possible.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg as soon as possible", "Once the rhythm is asystole, adrenaline is due as soon as possible. Adrenaline's alpha-1 vasoconstriction raises aortic diastolic pressure during CPR, and so coronary and cerebral perfusion pressure.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Reassess the rhythm and pulse after the cycle of CPR.", SRC_ALS_A)
   ],
@@ -6815,9 +6891,9 @@ var IDEAL_PATHS = {
   ],
   h9: [
     IP("assess", "Check rhythm and pulse", "Confirm pulseless polymorphic VT and treat it as a shockable arrest.", SRC_ALS_A),
-    IP("shock", "Unsynchronised shock", "Give an unsynchronised shock for pulseless polymorphic VT.", SRC_ALS),
+    IP("shock", "Unsynchronised shock", "Sustained polymorphic VT at this rate gives too little filling time for any useful output: functionally a cardiac arrest, treated like VF.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after the shock.", SRC_ALS),
-    IP("mg", "Magnesium 8 mmol (2 g) IV", "Give magnesium for polymorphic VT with QT prolongation.", SRC_TACHY),
+    IP("mg", "Magnesium 8 mmol (2 g) IV", "Torsades is triggered activity from early afterdepolarisations during a prolonged plateau. Magnesium is thought to suppress them, so the runs stop.", SRC_TACHY),
     IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Look for ROSC after the cycle of CPR.", SRC_ALS_A)
   ],
