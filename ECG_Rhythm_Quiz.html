@@ -545,6 +545,18 @@ body.scn-popup-open { overflow: hidden; }
   max-width: none;
 }
 .scn-ack strong { font-weight: 800; color: var(--text); }
+
+.ideal-lead { margin: 0 0 10px; font-size: 15px; }
+.ideal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ideal-item { margin: 0; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); }
+.ideal-matched { border-style: solid; border-color: var(--text); }
+.ideal-late { border-style: dashed; border-color: var(--text); }
+.ideal-missed { border-style: solid; border-width: 2px; border-color: var(--text); background: var(--surface-2); }
+.ideal-head { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 4px; font-family: var(--font-sans); }
+.ideal-n { flex: none; width: 24px; height: 24px; border: 1.5px solid var(--text); border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.ideal-mark { flex: none; font-weight: 700; line-height: 24px; }
+.ideal-flag { font-family: var(--font-sans); font-weight: 700; font-size: 13px; margin-left: 6px; }
+.ideal-why { margin: 0; font-size: 15px; }
 </style>
 </head>
 <body>
@@ -4997,6 +5009,7 @@ function openScnMenu(id, opener) {
 
 function pickCause(cid) {
   if (!SIM || SIM.done) return;
+  if (typeof snapshotDue === "function") snapshotDue();
   closeScnMenu("scnCauseList");
   var set = causeSetFor(SIM), item = null;
   set.forEach(function (c) { if (c.id === cid) item = c; });
@@ -5740,18 +5753,30 @@ function liveFbParts(o) {
   return parts;
 }
 function announceFeedback(o) {
-  var bits = [o.verdictText ? o.verdictText + "." : (o.label + ": " + VERD[o.v][1] + ".")];
-  if (o.regLine) bits.push(o.regLine);
-  else if (o.nudgeText) bits.push(o.nudgeText);
-  if (hintsOn()) {
-    if (o.changeAnnounce) bits.push(o.changeAnnounce + ".");
-    var k = o.keys[o.keys.length - 1], i;
-    for (i = o.keys.length - 1; i >= 0; i--) if (TXT[o.keys[i]] && TXT[o.keys[i]].full && o.keys[i].indexOf("n_due") !== 0 && o.keys[i] !== "n_capEnd" && o.keys[i] !== "n_reg") { k = o.keys[i]; break; }
-    if (TXT[k] && TXT[k].full) bits.push(TXT[k].full);
-  } else {
-    bits = bits.concat(liveFbParts(o));
+  var bits = [];
+  function push(s) {
+    if (!s) return;
+    var raw = String(s).trim();
+    if (!raw) return;
+    if (bits.some(function (b) { return sameLine(b, raw); })) return;
+    bits.push(raw);
   }
-  $("scnLive").textContent = bits.filter(Boolean).join(" ");
+  push(o.verdictText ? o.verdictText + "." : (o.label + ": " + VERD[o.v][1] + "."));
+  if (o.regLine) push(o.regLine);
+  else if (o.nudgeText) push(o.nudgeText);
+  if (hintsOn()) {
+    if (o.changeAnnounce) push(o.changeAnnounce + ".");
+    var k = o.keys && o.keys[o.keys.length - 1], i;
+    if (o.keys) {
+      for (i = o.keys.length - 1; i >= 0; i--) {
+        if (TXT[o.keys[i]] && TXT[o.keys[i]].full && !isNudgeKey(o.keys[i]) && o.keys[i] !== "n_reg") { k = o.keys[i]; break; }
+      }
+    }
+    if (k && TXT[k] && TXT[k].full && !isNudgeKey(k) && k !== "n_reg") push(TXT[k].full);
+  } else {
+    liveFbParts(o).forEach(push);
+  }
+  $("scnLive").textContent = bits.join(" ");
 }
 /* ===== Overdue key steps, escalating nudges, and Call the reg ===== */
 var MAX_REVIEWS = 8, MAX_ACTIONS = 24, REG_PENALTY = 0.5;
@@ -5911,47 +5936,93 @@ function uniqueField(due, field) {
 function isCycleCheck(o) {
   return !!(o && (o.cycleCheck || (o.keys && o.keys.some(function (k) { return CYCLE_CHECK[k] || k === "n_skip"; }))));
 }
+function snapshotDue() {
+  if (!SIM) return;
+  SIM.dueBeforeAction = (outstandingSteps(SIM) || []).map(function (d) { return d.id; });
+}
+function stillDueSteps(due) {
+  var before = (SIM && SIM.dueBeforeAction) || [];
+  return (due || []).filter(function (d) { return before.indexOf(d.id) >= 0; });
+}
+function isNudgeKey(k) {
+  return !!(k && (k.indexOf("n_due") === 0 || k === "n_capEnd"));
+}
+function overdueNudgeCopy(n, cats) {
+  if (n >= 3) {
+    return {
+      key: "n_dueEnd",
+      verdict: "Scenario ended: key step missed",
+      text: (TXT.n_dueEnd && TXT.n_dueEnd.full) || "Scenario ended: key step missed."
+    };
+  }
+  if (n === 2) {
+    var full = (TXT.n_due2 && TXT.n_due2.full) || "Something in the algorithm is still overdue. Review the category below, then act.";
+    var cat = (cats || []).filter(Boolean).join(" ");
+    if (cat && !sameLine(full, cat) && normLine(full).indexOf(normLine(cat)) < 0) {
+      full = full + (/\.$/.test(full) ? " " : ". ") + cat;
+    }
+    return { key: "n_due2", verdict: "Something in the algorithm is overdue", text: full, cats: cats };
+  }
+  return {
+    key: "n_due1",
+    verdict: "Something in the algorithm is overdue",
+    text: (TXT.n_due1 && TXT.n_due1.full) || "Something in the algorithm is overdue. A key step has not been done yet."
+  };
+}
+function actionMatchesDue(a, id) {
+  if (!a || !id) return false;
+  if (a === id) return true;
+  if (a === "aden" && (id === "aden2" || id === "adenNext")) return true;
+  if (a === "adr" && id === "adrRepeat") return true;
+  if (a === "sync" && id === "sync2") return true;
+  if ((a === "adrInf" || a === "iso") && id === "pace") return true;
+  if (a === "sync" && id === "amioInf") return true;
+  if (a.indexOf("cause:") === 0 && id === "causes") return true;
+  return false;
+}
+function actionClearsDue(a) {
+  return ((SIM && SIM.dueBeforeAction) || []).some(function (id) { return actionMatchesDue(a, id); });
+}
+function isZeroTimeRequest(a, o) {
+  if (!a) return false;
+  if (o && o.notAction) return true;
+  if (a === "nibp" || a === "ask" || a.indexOf("ask:") === 0) return true;
+  return false;
+}
 function applyReview(a, o) {
   if (!SIM || o.end) return o;
-  if (a !== "skip" && !o.notAction) SIM.actionN = (SIM.actionN || 0) + 1;
+  if (a !== "skip" && !o.notAction && !isZeroTimeRequest(a, o)) SIM.actionN = (SIM.actionN || 0) + 1;
   else if (o.forceReview) { /* skip time can trigger an overdue review without counting as an action */ }
   else return o;
   var due = outstandingSteps(SIM);
   noteDueSteps(SIM);
+  var stillDue = stillDueSteps(due);
+  var didDueStep = actionClearsDue(a);
+  if (didDueStep || !stillDue.length) SIM.idleSinceDue = 0;
   var review = isCycleCheck(o) || !!o.forceReview || (a === "assess" && o.keys && o.keys[0] === "a_assessAgain");
-  if (!review && due.length && SIM.scn.idleNudge) {
+  if (!review && stillDue.length && !didDueStep && !isZeroTimeRequest(a, o) && SIM.scn.idleNudge) {
     SIM.idleSinceDue = (SIM.idleSinceDue || 0) + 1;
     if (SIM.idleSinceDue >= 3) { review = true; SIM.idleSinceDue = 0; }
-  } else if (!due.length) {
+  } else if (!stillDue.length || didDueStep) {
     SIM.idleSinceDue = 0;
   }
   if (review) {
     SIM.reviews = (SIM.reviews || 0) + 1;
-    if (!due.length) {
+    if (!stillDue.length || didDueStep) {
       SIM.nudgeStreak = 0;
     } else {
       SIM.nudgeStreak = (SIM.nudgeStreak || 0) + 1;
-      SIM.endedDue = due;
-      o.nudge = SIM.nudgeStreak >= 3 ? 3 : SIM.nudgeStreak;
-      if (o.nudge === 1) {
-        o.v = "part";
-        o.keys = o.keys.concat("n_due1");
-        o.nudgeText = "Something in the algorithm is overdue.";
-        o.verdictText = "Something in the algorithm is overdue";
-      } else if (o.nudge === 2) {
-        o.v = "part";
-        o.keys = o.keys.concat("n_due2");
-        o.nudgeCats = uniqueField(due, "category");
-        o.nudgeText = o.nudgeCats.join(" ");
-        o.verdictText = "Something in the algorithm is overdue";
-      } else {
-        o.v = "bad";
-        o.keys = o.keys.concat("n_dueEnd");
-        o.nudgeText = "Scenario ended: key step missed.";
-        o.verdictText = "Scenario ended: key step missed";
+      SIM.endedDue = stillDue;
+      due = stillDue;
+      var n = SIM.nudgeStreak >= 3 ? 3 : SIM.nudgeStreak;
+      var copy = overdueNudgeCopy(n, n === 2 ? uniqueField(stillDue, "category") : []);
+      o.nudge = n;
+      o.nudgeText = copy.text;
+      o.nudgeCats = copy.cats || o.nudgeCats;
+      o.separateNudge = { n: n, text: copy.text, key: copy.key, verdict: copy.verdict };
+      if (n >= 3) {
         o.end = true;
         o.endReason = "missed";
-        return o;
       }
     }
     noteDueSteps(SIM);
@@ -6093,6 +6164,15 @@ function renderClock() {
   txt += " · Shocks delivered " + SIM.nShocks;
   $("scnClock").textContent = txt;
 }
+function logSeparateNudge(o) {
+  var n = o.separateNudge;
+  if (!n || !SIM || n.n >= 3) return;
+  var no = {
+    v: "info", keys: [n.key], isNudge: true, notAction: true, nudge: n.n,
+    nudgeText: n.text, event: n.text, label: "Algorithm check", t: SIM.clock
+  };
+  logEvent(no, n.text);
+}
 function logEvent(o, text, act) {
   var li = { t: SIM.clock, text: text, o: o, act: act };
   SIM.log.push(li);
@@ -6105,6 +6185,7 @@ function logEvent(o, text, act) {
 }
 function doAction(a) {
   if (!SIM || SIM.done) return;
+  snapshotDue();
   if (a && a.indexOf("cause:") === 0) { pickCause(a.slice(6)); return; }
   if (a && a.indexOf("ask:") === 0) { doAsk(a.slice(4)); return; }
   if (a === "causes") { fillCauseList(); openScnMenu("scnCauseList", document.querySelector("[data-a='causes']")); return; }
@@ -6114,12 +6195,14 @@ function doAction(a) {
     so.label = "Skip time";
     SIM.clock += 60;
     noteDueSteps(SIM);
-    if (outstandingSteps(SIM).length) {
+    if (stillDueSteps(outstandingSteps(SIM)).length) {
       SIM.idleSinceDue = (SIM.idleSinceDue || 0) + 1;
       if (SIM.idleSinceDue >= 3) {
         so.forceReview = true;
         applyReview("skip", so);
       }
+    } else {
+      SIM.idleSinceDue = 0;
     }
     doActionFinish("skip", so, 0);
     return;
@@ -6178,6 +6261,7 @@ function doActionFinish(a, o, timeCost) {
   if ((a === "shock" || a === "sync") && o.keys && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync", "h1_shock", "h2_shock", "h4_shockAsys", "h9_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
   if (a !== "skip") applyReview(a, o);
   logEvent(o, label, a);
+  if (o.separateNudge) logSeparateNudge(o);
   var changed = false;
   if (o.rhythm) { changed = o.rhythm.gen !== SIM.rhythm.gen || JSON.stringify(o.rhythm.opts || {}) !== JSON.stringify(SIM.rhythm.opts || {}); SIM.rhythm = o.rhythm; }
   if (o.rhythm || o.cprStart || o.cprStop) SIM.sig = monitor.set(SIM.rhythm, SIM.cpr, true);
@@ -6192,9 +6276,19 @@ function doActionFinish(a, o, timeCost) {
   if (window.innerWidth < 900) $("scnFeedback").scrollIntoView({ block: "start", behavior: prefersReduced() ? "auto" : "smooth" });
 }
 
+function rhythmLabel(gen) {
+  var names = {
+    vf: "VF", vt: "VT", torsades: "torsades de pointes", asystole: "asystole", pea: "PEA",
+    sinus: "sinus rhythm", sinus_tachy: "sinus tachycardia", sinus_brady: "sinus bradycardia",
+    chb: "complete heart block", pace_v: "ventricular paced rhythm", pace_a: "atrial paced rhythm",
+    pace_dual: "dual-chamber paced rhythm", af: "atrial fibrillation", flutter21: "atrial flutter",
+    flutter_var: "atrial flutter", svt: "narrow complex tachycardia", hyperk: "wide-complex rhythm",
+    pre_af: "pre-excited atrial fibrillation", wpw: "WPW pattern", junctional: "junctional rhythm"
+  };
+  return names[gen] || String(gen || "").replace(/_/g, " ");
+}
 function rhythmAnnounce(o) {
-  var names = { vf: "VF", vt: "VT", torsades: "torsades de pointes", asystole: "asystole", pea: "PEA", sinus: "sinus rhythm", sinus_tachy: "sinus tachycardia", sinus_brady: "sinus bradycardia" };
-  var name = names[o.rhythm.gen] || o.rhythm.gen;
+  var name = rhythmLabel(o.rhythm.gen);
   if (o.pulse === false) return "Rhythm change: " + name + ", pulse lost";
   if (o.pulse === true) return "Rhythm change: " + name + ", pulse returned";
   return "Rhythm change: " + name;
@@ -6209,23 +6303,28 @@ function renderFeedback(o, changed) {
     return;
   }
   var on = hintsOn();
-  if (on && o.changeAnnounce) html += "<p class='scn-change'><strong>" + esc(o.changeAnnounce) + "</strong></p>";
-  if (o.regLine) html += "<p class='scn-nudge'><strong>" + esc(o.regLine) + "</strong></p>";
-  else if (o.nudge === 2 && o.nudgeText) html += "<p class='scn-nudge'>" + esc(o.nudgeText) + "</p>";
+  function addFb(inner, cls) {
+    if (!inner) return;
+    var n = normLine(inner);
+    if (!n || sameLine(n, verdict) || normLine(html).indexOf(n) >= 0) return;
+    html += "<p class='" + cls + "'>" + inner + "</p>";
+  }
+  if (on && o.changeAnnounce) addFb("<strong>" + esc(o.changeAnnounce) + "</strong>", "scn-change");
+  if (o.regLine) addFb("<strong>" + esc(o.regLine) + "</strong>", "scn-nudge");
   if (!on) {
     var ev = o.event || (o.keys && TXT[o.keys[0]] && TXT[o.keys[0]].event) || "";
     if (!ev && typeof defaultEvent === "function") ev = defaultEvent("", o.label);
-    if (ev) html += "<p class='scn-fb'>" + esc(ev) + "</p>";
+    if (ev) addFb(esc(ev), "scn-fb");
     if (o.v === "part") {
       (o.keys || []).forEach(function (k) {
         var tx = TXT[k];
-        if (tx && tx.whyWrong) html += "<p class='scn-fb'>" + esc(tx.whyWrong) + "</p>";
+        if (tx && tx.whyWrong && !isNudgeKey(k)) addFb(esc(tx.whyWrong), "scn-fb");
       });
     }
   } else {
-    o.keys.forEach(function (k) {
-      var t = TXT[k]; if (!t) return;
-      html += "<p class='scn-fb'>" + txtHTML(k) + "</p>";
+    (o.keys || []).forEach(function (k) {
+      if (!TXT[k] || isNudgeKey(k) || k === "n_reg") return;
+      addFb(txtHTML(k), "scn-fb");
     });
     var phys = physForLive(o.phys);
     if (phys) html += "<div class='panel-block'><h3>" + (changed ? "Why the rhythm changed" : "Physiology") + "</h3><p>" + esc(phys) + "</p></div>";
@@ -6235,6 +6334,7 @@ function renderFeedback(o, changed) {
     if (typeof algLinkHTML === "function") html += algLinkHTML(k);
     else if (TXT[k] && TXT[k].guideline) html += "<p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(k) + "</p>";
   }
+  if (!o.regLine && o.nudge && o.nudgeText && o.nudge !== "cap") addFb(esc(o.nudgeText), "scn-nudge");
   $("scnFeedback").innerHTML = html;
 }
 function finishScenario(completed, reason) {
@@ -6277,11 +6377,13 @@ function debriefReqItem(s, r, kind) {
 }
 function debriefEntryBody(l) {
   var k = l.o.keys || [];
-  var parts = [], seen = {}, verdict = l.o.verdictText || "";
+  var parts = [], seen = {}, verdict = l.o.verdictText || "", label = l.text || "";
   function add(html) {
     if (!html) return;
     var n = normLine(html);
-    if (!n || seen[n] || sameLine(n, verdict)) return;
+    if (!n || seen[n] || sameLine(n, verdict) || sameLine(n, label)) return;
+    Object.keys(seen).forEach(function (s) { if (sameLine(s, n)) n = ""; });
+    if (!n) return;
     seen[n] = 1;
     parts.push(html);
   }
@@ -6290,10 +6392,10 @@ function debriefEntryBody(l) {
     return parts.join("");
   }
   k.forEach(function (kk) {
-    if (kk === "n_capEnd" || kk === "n_dueEnd" || kk === "n_due1" || kk === "n_due2") return;
+    if (isNudgeKey(kk) || kk === "n_reg") return;
     if (TXT[kk]) add("<p>" + txtHTML(kk) + "</p>");
   });
-  if (l.o.nudgeText && l.o.nudge) add("<p>" + esc(l.o.nudgeText) + "</p>");
+  if (l.o.nudgeText && l.o.nudge && !l.o.separateNudge) add("<p>" + esc(l.o.nudgeText) + "</p>");
   return parts.join("");
 }
 function showDebrief() {
@@ -6315,7 +6417,7 @@ function showDebrief() {
     var srcBlock = "";
     if (!l.o.isReg && gk && TXT[gk] && TXT[gk].guideline) {
       srcBlock = "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[gk].guideline) + "</p>" + sourceLinesBlock(srcHTML(gk));
-    } else if (!l.o.isReg && gk) {
+    } else if (!l.o.isReg && !l.o.isNudge && gk && TXT[gk]) {
       srcBlock = sourceLinesBlock(srcHTML(gk));
     }
     return "<li class='db-item db-" + l.o.v + "'><p class='db-head'><span class='predict-mark' aria-hidden='true'>" + VERD[l.o.v][0] + "</span><span><strong>" + (l.o.verdictText || VERD[l.o.v][1]) + "</strong> · " + mmss(l.t) + " · " + esc(l.text) + "</span></p>" +
@@ -6325,6 +6427,7 @@ function showDebrief() {
   }).join("") + "</ol>";
   if (missed.length) html += "<h3 class='viva-group'>Missed steps</h3><ul class='debrief-list'>" + missed.map(function (r) { return debriefReqItem(s, r, "missed"); }).join("") + "</ul>";
   if (notReached.length) html += "<h3 class='viva-group'>Not reached</h3><ul class='debrief-list'>" + notReached.map(function (r) { return debriefReqItem(s, r, "notReached"); }).join("") + "</ul>";
+  html += renderIdealPath(s, SIM.log);
   if (s.extra) html += "<div class='panel-block trap'><h3>Teaching point</h3><p>" + txtHTML(s.extra) + "</p><p class='scn-src'><strong>Source:</strong> " + esc(srcOf(s.extra)) + "</p></div>";
   html += "<div class='predict-actions'>" + (SIM.random ? "<button type='button' id='scnAnother'>Another random scenario</button>" : "") + "<button type='button' id='scnRetry'" + (SIM.random ? " class='secondary'" : "") + ">Try this scenario again</button><button type='button' class='secondary' id='scnOther'>Choose another scenario</button></div>";
   $("scnDebrief").innerHTML = html;
@@ -6405,5 +6508,209 @@ $("scnReg").addEventListener("click", callReg);
 })();
 syncHintsToggle();
 window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; } };
+/* ===== Ideal pathway for each scenario (shown only in the debrief) ===== */
+var SRC_ALS = "RCUK 2025 Adult ALS guideline";
+var SRC_ALS_A = "RCUK 2025 Adult ALS algorithm";
+var SRC_BRADY = "RCUK 2025 Adult bradyarrhythmia algorithm";
+var SRC_TACHY = "RCUK 2025 Adult tachyarrhythmia algorithm";
+var SRC_SPEC = "RCUK 2025 Special circumstances guidelines";
+var SRC_BNF_ADR = "BNF: adrenaline";
+var SRC_BNF_AMIO = "BNF: amiodarone hydrochloride";
+var SRC_BNF_ATRO = "BNF: atropine sulfate";
+var SRC_BNF_ADEN = "BNF: adenosine";
+var SRC_BNF_MG = "BNF: magnesium sulfate";
+
+function IP(id, label, why, src, alts) { return { id: id, label: label, why: why, src: src, alts: alts || [] }; }
+
+var IDEAL_PATHS = {
+  s1: [
+    IP("assess", "Check rhythm and pulse", "Confirm a shockable arrest before you treat.", SRC_ALS_A),
+    IP("shock", "First shock", "Give a shock as early as possible for VF or pulseless VT.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
+    IP("ff", "CPR for 2 minutes", "Use single shocks, each followed by a 2-minute cycle of CPR.", SRC_ALS),
+    IP("shock", "Second shock", "If VF or pulseless VT persists, shock again and resume CPR.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
+    IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
+    IP("shock", "Third shock", "A third shock is followed by adrenaline and amiodarone during CPR.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg after the third shock", "Give adrenaline 1 mg after the third shock in a shockable arrest.", SRC_ALS),
+    IP("amio300", "Amiodarone 300 mg after the third shock", "Give amiodarone 300 mg IV after a total of three shocks in VF or pulseless VT.", SRC_BNF_AMIO),
+    IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess the rhythm and pulse.", SRC_ALS),
+    IP("assess", "Check rhythm and pulse", "Look for ROSC after the cycle of CPR.", SRC_ALS_A)
+  ],
+  s2: [
+    IP("assess", "Check rhythm and pulse", "Confirm a non-shockable arrest before you treat.", SRC_ALS_A),
+    IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
+    IP("causes", "Identify the reversible cause (hypovolaemia)", "Identify and treat reversible causes early.", SRC_ALS_A),
+    IP("fluid", "Give IV fluid for hypovolaemia", "Give fluids during CPR only if the arrest is caused by hypovolaemia.", SRC_ALS),
+    IP("ff", "CPR for 2 minutes", "Resume CPR for 2 minutes and then reassess.", SRC_ALS),
+    IP("assess", "Check rhythm and pulse", "Look for ROSC after treating the cause.", SRC_ALS_A)
+  ],
+  s3: [
+    IP("assess", "Check rhythm and pulse", "Confirm the bradycardia and the life-threatening features. Monitoring and IV access are already in place.", SRC_BRADY),
+    IP("atro", "Atropine 500 micrograms IV", "Atropine 500 micrograms IV is first-line when life-threatening features are present. Assess the response.", SRC_BRADY),
+    IP("pace", "Transcutaneous pacing", "If the response to atropine is unsatisfactory, start transcutaneous pacing as an interim measure.", SRC_BRADY),
+    IP("expert", "Seek expert help", "Seek expert help and consider transvenous pacing.", SRC_BRADY)
+  ],
+  s4: [
+    IP("assess", "Check rhythm and pulse", "Confirm a stable narrow complex tachycardia, with no life-threatening features.", SRC_TACHY),
+    IP("vagal", "Vagal manoeuvres first", "Start with vagal manoeuvres when the patient is stable.", SRC_TACHY),
+    IP("aden", "Adenosine 6 mg", "If vagal manoeuvres are ineffective, give adenosine 6 mg as a rapid IV bolus.", SRC_BNF_ADEN),
+    IP("aden", "Adenosine 12 mg", "If the first dose is unsuccessful, give adenosine 12 mg.", SRC_TACHY)
+  ],
+  s5: [
+    IP("assess", "Check rhythm and pulse", "Confirm an unstable broad complex tachycardia with life-threatening features.", SRC_TACHY),
+    IP("expert", "Careful sedation or anaesthesia", "A conscious patient needs careful sedation or anaesthesia before synchronised cardioversion.", SRC_ALS),
+    IP("sync", "First synchronised shock", "Electrical cardioversion is the preferred treatment in the unstable patient.", SRC_ALS),
+    IP("sync", "Further synchronised shock if needed", "Up to three synchronised shocks may be used if the rhythm persists.", SRC_TACHY)
+  ],
+  s6: [
+    IP("assess", "Check rhythm and pulse", "Confirm self-terminating polymorphic VT (torsades de pointes).", SRC_TACHY),
+    IP("mg", "Magnesium 8 mmol IV over 10 min", "Give magnesium 8 mmol IV over 10 minutes for polymorphic VT with QT prolongation.", SRC_TACHY),
+    IP("causes", "Identify and treat reversible causes", "Look for low potassium and QT-prolonging drugs, and treat the cause.", SRC_TACHY)
+  ],
+  h1: [
+    IP("assess", "Check rhythm and pulse", "Confirm asystole before you treat.", SRC_ALS_A),
+    IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
+    IP("causes", "Identify the reversible cause (hyperkalaemia)", "Name and treat reversible causes early. In this case the reversible cause is hyperkalaemia.", SRC_ALS_A),
+    IP("calcium", "Calcium chloride 10 mL of 10% IV", "Give calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest.", SRC_SPEC),
+    IP("ff", "Continue CPR cycles, with adrenaline every 3 to 5 minutes", "After treating the cause, continue 2-minute cycles of CPR and repeat adrenaline every 3 to 5 minutes until there is a return of spontaneous circulation.", SRC_ALS),
+    IP("assess", "Check rhythm and pulse (ROSC)", "Reassess the rhythm and pulse after treating the cause; a return of spontaneous circulation is the aim.", SRC_ALS_A)
+  ],
+  h2: [
+    IP("assess", "Check rhythm and pulse", "Confirm PEA before you treat.", SRC_ALS_A),
+    IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
+    IP("causes", "Identify the reversible cause (tension pneumothorax)", "Identify and treat reversible causes early.", SRC_ALS_A),
+    IP("decompress", "Chest decompression", "Treat tension pneumothorax with immediate chest decompression.", SRC_SPEC),
+    IP("ff", "CPR for 2 minutes", "Resume CPR for 2 minutes and then reassess.", SRC_ALS),
+    IP("assess", "Check rhythm and pulse", "Look for ROSC after treating the cause.", SRC_ALS_A)
+  ],
+  h3: [
+    IP("assess", "Check rhythm and pulse", "Confirm a shockable arrest before you treat.", SRC_ALS_A),
+    IP("shock", "First shock", "Give a shock as early as possible for VF or pulseless VT.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
+    IP("ff", "CPR for 2 minutes", "Use single shocks, each followed by a 2-minute cycle of CPR.", SRC_ALS),
+    IP("shock", "Second shock", "If VF persists, shock again and resume CPR.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
+    IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
+    IP("shock", "Third shock", "After a total of three shocks, give adrenaline and amiodarone 300 mg.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg after the third shock", "Give adrenaline 1 mg after the third shock in a shockable arrest.", SRC_ALS),
+    IP("amio300", "Amiodarone 300 mg after the third shock", "Give amiodarone 300 mg IV after a total of three shocks.", SRC_BNF_AMIO),
+    IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess.", SRC_ALS),
+    IP("shock", "Fourth shock", "If VF persists, continue the shockable algorithm.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
+    IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
+    IP("shock", "Fifth shock", "A further 150 mg of amiodarone is due after a total of five shocks.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
+    IP("amio150", "Amiodarone 150 mg after a total of five shocks", "Give a further 150 mg of amiodarone IV after a total of five shocks in VF or pulseless VT.", SRC_BNF_AMIO),
+    IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess the rhythm and pulse.", SRC_ALS),
+    IP("assess", "Check rhythm and pulse", "Look for ROSC after the cycle of CPR.", SRC_ALS_A)
+  ],
+  h4: [
+    IP("assess", "Check rhythm and pulse", "Confirm the first rhythm and treat it on its merits. The rhythm may change.", SRC_ALS_A),
+    IP("shock", "Shock VF without delay", "Give a shock as early as possible while the rhythm is VF.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after the shock.", SRC_ALS),
+    IP("ff", "CPR for 2 minutes", "Reassess after 2 minutes of CPR.", SRC_ALS),
+    IP("assess", "Check rhythm and pulse", "The rhythm may no longer be shockable; treat what you see.", SRC_ALS_A),
+    IP("cpr", "Resume CPR", "If the rhythm is now asystole, continue CPR.", SRC_ALS),
+    IP("adr", "Adrenaline 1 mg as soon as possible", "Once the rhythm is asystole, give adrenaline 1 mg as soon as possible.", SRC_ALS),
+    IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess.", SRC_ALS),
+    IP("assess", "Check rhythm and pulse", "Reassess the rhythm and pulse after the cycle of CPR.", SRC_ALS_A)
+  ],
+  h5: [
+    IP("assess", "Check rhythm and pulse", "Confirm a stable narrow complex tachycardia, with no life-threatening features.", SRC_TACHY),
+    IP("vagal", "Vagal manoeuvres first", "Start with vagal manoeuvres when the patient is stable.", SRC_TACHY),
+    IP("aden", "Adenosine 6 mg", "If vagal manoeuvres are ineffective, give adenosine 6 mg as a rapid IV bolus.", SRC_BNF_ADEN),
+    IP("aden", "Adenosine 12 mg", "If the first dose is unsuccessful, give adenosine 12 mg.", SRC_TACHY),
+    IP("aden", "Adenosine 18 mg", "RCUK allows a third dose of 18 mg if 6 mg and 12 mg have not worked.", SRC_TACHY)
+  ],
+  h6: [
+    IP("assess", "Check rhythm and pulse", "Confirm unstable tachycardia with life-threatening features.", SRC_TACHY),
+    IP("expert", "Careful sedation or anaesthesia", "A conscious patient needs careful sedation or anaesthesia before synchronised cardioversion.", SRC_ALS),
+    IP("sync", "First synchronised shock", "Electrical cardioversion is the preferred treatment in unstable atrial fibrillation.", SRC_ALS),
+    IP("sync", "Further synchronised shock if needed", "Up to three synchronised shocks may be used if the rhythm persists.", SRC_TACHY)
+  ],
+  h7: [
+    IP("assess", "Check rhythm and pulse", "Confirm a stable regular broad complex tachycardia, with no life-threatening features.", SRC_TACHY),
+    IP("amioInf", "Amiodarone 300 mg IV over 10 to 60 min, or synchronised cardioversion", "If the patient is stable, treat as VT with an amiodarone infusion, or cardiovert if that is the safer choice.", SRC_TACHY, ["sync"])
+  ],
+  h8: [
+    IP("assess", "Check rhythm and pulse", "Confirm broad-complex complete heart block. There are no current life-threatening features, but there is a risk of asystole.", SRC_BRADY),
+    IP("expert", "Seek expert help", "When there is a risk of asystole, seek expert help and consider transvenous pacing.", SRC_BRADY),
+    IP("pace", "Transcutaneous pacing, or an adrenaline or isoprenaline infusion", "Use transcutaneous pacing, or an adrenaline or isoprenaline infusion, as a bridge if transvenous pacing is not immediately available.", SRC_BRADY, ["adrInf", "iso"])
+  ],
+  h9: [
+    IP("assess", "Check rhythm and pulse", "Confirm pulseless polymorphic VT and treat it as a shockable arrest.", SRC_ALS_A),
+    IP("shock", "Unsynchronised shock", "Give an unsynchronised shock for pulseless polymorphic VT.", SRC_ALS),
+    IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after the shock.", SRC_ALS),
+    IP("mg", "Magnesium 8 mmol (2 g) IV", "Give magnesium for polymorphic VT with QT prolongation.", SRC_TACHY),
+    IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess.", SRC_ALS),
+    IP("assess", "Check rhythm and pulse", "Look for ROSC after the cycle of CPR.", SRC_ALS_A)
+  ],
+  h10: [
+    IP("assess", "Check rhythm and pulse", "The patient has just had ROSC; confirm the new unstable rhythm.", SRC_TACHY),
+    IP("expert", "Careful sedation or anaesthesia if needed", "A conscious or rousable patient may need sedation or anaesthesia before cardioversion.", SRC_ALS),
+    IP("sync", "Synchronised shock", "Electrical cardioversion is the preferred treatment for unstable VT immediately after ROSC.", SRC_ALS)
+  ]
+};
+
+function idealActId(act) {
+  if (!act) return "";
+  if (act.indexOf("cause:") === 0) return "causes";
+  if (act.indexOf("ask:") === 0) return act;
+  return act;
+}
+
+function markIdealPath(ideal, log) {
+  var acts = (log || []).filter(function (l) { return l.o && l.act && !l.o.isNudge && !l.o.isReg; }).map(function (l) {
+    return { id: idealActId(l.act), t: l.t };
+  });
+  var used = {};
+  var assigned = ideal.map(function (step) {
+    var hit = -1, u;
+    for (u = 0; u < acts.length; u++) {
+      if (used[u]) continue;
+      if (acts[u].id === step.id || (step.alts && step.alts.indexOf(acts[u].id) >= 0)) { hit = u; break; }
+    }
+    if (hit >= 0) used[hit] = 1;
+    return { step: step, userIndex: hit };
+  });
+  return assigned.map(function (row, si) {
+    var mark = "missed";
+    if (row.userIndex >= 0) {
+      var late = assigned.some(function (other, sj) {
+        return sj > si && other.userIndex >= 0 && other.userIndex < row.userIndex;
+      });
+      mark = late ? "late" : "matched";
+    }
+    return { id: row.step.id, label: row.step.label, why: row.step.why, src: row.step.src, mark: mark };
+  });
+}
+
+function renderIdealPath(s, log) {
+  var ideal = (typeof IDEAL_PATHS !== "undefined" && IDEAL_PATHS[s.id]) || [];
+  if (!ideal.length) return "";
+  var rows = markIdealPath(ideal, log);
+  var html = "<h3 class='viva-group' id='scnIdealTitle'>Ideal pathway</h3>";
+  html += "<p class='ideal-lead'>The sequence below is the model path for this case. Your actions are marked as matched (done in a sensible order), late (done after a later step), or missed. Requests that are not scored, such as Cycle NIBP, are not required here unless listed.</p>";
+  html += "<ol class='ideal-list'>";
+  rows.forEach(function (r, i) {
+    var markLabel = r.mark === "matched" ? "Matched" : r.mark === "late" ? "Late" : "Missed";
+    var glyph = r.mark === "matched" ? "\u2713" : r.mark === "late" ? "\u25D0" : "\u2717";
+    html += "<li class='ideal-item ideal-" + r.mark + "'>";
+    html += "<p class='ideal-head'><span class='ideal-n' aria-hidden='true'>" + (i + 1) + "</span><span class='ideal-mark' aria-hidden='true'>" + glyph + "</span><span><strong>" + esc(r.label) + "</strong> <span class='ideal-flag'>" + markLabel + "</span></span></p>";
+    html += "<p class='ideal-why'>" + esc(r.why) + "</p>";
+    if (r.src) html += "<p class='scn-src'><strong>Source:</strong> " + esc(r.src) + "</p>";
+    html += "</li>";
+  });
+  html += "</ol>";
+  return html;
+}
+
+window.__scnIdeal = { paths: IDEAL_PATHS, mark: markIdealPath, render: renderIdealPath };
 </script>
 </body></html>
