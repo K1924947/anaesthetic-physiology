@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resus Scenarios · The Physio Lab</title>
+<meta name="description" content="Cardiac arrest and peri-arrest cases based on the RCUK algorithms. Simulation for teaching, not clinical guidance.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118f">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118f">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css?v=20261118f">
+<link rel="stylesheet" href="assets/layout.css?v=20261118f">
+<link rel="stylesheet" href="assets/pv-core.css?v=20261118f">
+<link rel="stylesheet" href="assets/pv-tool.css?v=20261118f">
+<script src="assets/theme.js?v=20261118f"></script>
+
+
+<style>
+/* ECG tool. Layout conventions and type scale come from pv-tool.css; only ECG-specific parts live here. */
+:root {
+  --ecg-paper: #FFFDFC;
+  --ecg-minor: #F3CDD0;
+  --ecg-major: #DE9AA1;
+  --ecg-ink: #111111;
+  --flag-bg: #FFF8E6;
+  --flag-text: #5A3D00;
+}
+html[data-theme="colour-blind"] {
+  --ecg-paper: #FFFFFF;
+  --ecg-minor: #DEDEDE;
+  --ecg-major: #A8A8A8;
+  --ecg-ink: #000000;
+  --flag-bg: #F2F2F2;
+  --flag-text: #111111;
+}
+.hidden { display: none !important; }
+
+/* Test banner extras */
+.test-setup { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 0; }
+.test-setup label { font-family: var(--font-sans); font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.test-setup select {
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600; min-height: 40px; padding: 4px 8px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text);
+}
+.test-banner.is-on .test-setup { display: none; }
+
+/* Rhythm picker */
+.tool-controls.ecg-controls { grid-template-columns: 1fr; }
+.rhythm-picker { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 900px) { .rhythm-picker { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.rhythm-picker.is-locked { display: none; }
+.rp-set-title { font-family: var(--font-serif); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 6px; line-height: 1.25; }
+.rp-set { min-width: 0; }
+.rp-sub { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 0 0 8px; }
+.rp-sub:last-child { margin-bottom: 0; }
+.rp-sub .scen-group-label { margin: 0 0 2px; font-size: 15px; }
+.rp-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rp-row .scen-btn { min-height: 40px; font-size: 13px; font-weight: 600; padding: 4px 6px; line-height: 1.2; hyphens: auto; -webkit-hyphens: auto; }
+.scen-btn[aria-pressed="true"]::before { content: "\2713\00a0"; font-weight: 700; }
+@media (min-width: 900px) {
+  .rp-sub { grid-template-columns: 104px minmax(0, 1fr); align-items: center; gap: 6px; margin-bottom: 6px; }
+  .rp-sub .scen-group-label { margin: 0; font-size: 14px; line-height: 1.2; }
+  .rp-row .scen-btn { min-height: 38px; }
+}
+@media (max-width: 899px) {
+  .rp-sub { grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 6px; margin-bottom: 6px; }
+  .rp-sub .scen-group-label { margin: 0; font-size: 14px; line-height: 1.2; padding-left: 6px; }
+  .rp-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .rp-row .scen-btn { min-height: 40px; font-size: 13px; }
+}
+
+/* Strip stage */
+.ecg-stage { min-width: 0; }
+.strip-card { gap: 6px; }
+.strip-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 2px 2px 0; }
+.strip-title { font-family: var(--font-serif); font-size: 19px; font-weight: 600; letter-spacing: -0.02em; margin: 0; line-height: 1.25; min-width: 0; }
+.strip-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.tool-btn {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700; min-height: 40px; padding: 6px 12px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); cursor: pointer;
+}
+.tool-btn:hover:not([disabled]) { border-color: var(--text); }
+.tool-btn[aria-pressed="true"] { border-color: var(--text); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--text); }
+.tool-btn[aria-pressed="true"]::before { content: "\2713\00a0"; }
+.tool-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.strip-meta { font-family: var(--font-sans); font-size: 13px; color: var(--muted); margin: 0; }
+.strip-scroll { overflow-x: auto; overflow-y: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--ecg-paper); }
+.strip-scroll:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.strip-scroll svg { display: block; width: 100%; min-width: 860px; height: auto; max-width: none; }
+.scroll-hint { font-family: var(--font-sans); font-size: 12px; color: var(--muted); margin: 2px 0 0; display: none; }
+@media (max-width: 900px) { .scroll-hint { display: block; } }
+.mini-row { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 6px 12px; margin-top: 4px; align-items: end; }
+.mini-label { font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: var(--text); margin: 0 0 2px; }
+.strip-scroll.mini svg { min-width: 0; width: 100%; }
+@media (max-width: 699px) { .mini-label { font-size: 12px; } }
+.ecg-trace { fill: none; stroke: var(--ecg-ink); stroke-width: 0.32; stroke-linejoin: round; stroke-linecap: round; }
+.ecg-cal { fill: none; stroke: var(--ecg-ink); stroke-width: 0.32; }
+.ann-text { font-family: var(--font-sans); font-size: 2.9px; font-weight: 700; fill: var(--primary); paint-order: stroke; stroke: var(--ecg-paper); stroke-width: 0.9px; stroke-linejoin: round; }
+.ann-mark { fill: var(--primary); }
+.ann-line { stroke: var(--primary); stroke-width: 0.18; stroke-dasharray: 0.6 0.6; }
+.span-line { stroke: var(--primary); stroke-width: 0.3; fill: none; }
+.cal-line { stroke: var(--series-c); stroke-width: 0.3; stroke-dasharray: 1 0.6; }
+.cal-handle { cursor: ew-resize; }
+.cal-handle .knob { fill: var(--surface); stroke: var(--series-c); stroke-width: 0.4; }
+.cal-handle:focus { outline: none; }
+.cal-handle:focus-visible .knob, .cal-handle.active .knob { stroke-width: 0.9; fill: var(--chip-bg); }
+.cal-text { font-family: var(--font-sans); font-size: 2.6px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--ecg-paper); stroke-width: 1px; }
+.cal-readout { font-family: var(--font-sans); font-size: 14px; font-weight: 600; margin: 0; padding: 6px 8px 6px 10px; border-left: 3px solid var(--text); background: var(--surface-2); border-radius: 0 8px 8px 0; }
+svg.calipers-on { touch-action: none; cursor: crosshair; }
+.ecg-readout { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.ecg-readout .stat-val { font-size: 16px; overflow-wrap: anywhere; }
+.ecg-readout .stat-label { font-size: 13px; }
+@media (max-width: 699px) { .ecg-readout { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.stem { font-size: 15px; margin: 0; padding: 6px 10px; border-left: 3px solid var(--text); background: var(--surface-2); border-radius: 0 8px 8px 0; }
+.stem strong { font-family: var(--font-sans); font-weight: 700; margin-right: 6px; }
+
+/* Lower panels */
+.ecg-panels { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; align-items: start; }
+@media (min-width: 900px) { .ecg-panels { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.ecg-panels .explain-panel { min-height: 0; max-height: none; }
+.explain-title { font-family: var(--font-serif); font-size: 19px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 6px; line-height: 1.25; }
+.measured { font-family: var(--font-sans); font-size: 14px; margin: 0 0 8px; }
+.chip { display: inline-block; font-family: var(--font-sans); font-size: 12px; font-weight: 700; border: 1px solid var(--text); background: var(--surface); color: var(--text); border-radius: var(--radius-pill); padding: 1px 8px; vertical-align: 2px; }
+.chip.adj { border-style: dashed; }
+.flag { display: inline-block; font-family: var(--font-sans); font-size: 11px; font-weight: 700; color: var(--flag-text); background: var(--flag-bg); border: 1.5px dashed var(--flag-text); border-radius: 6px; padding: 0 6px; margin-left: 4px; white-space: nowrap; vertical-align: 1px; }
+.trap { border: 2px solid var(--text); border-radius: 10px; padding: 8px 10px; }
+.panel-block.trap { margin-top: 10px; }
+.panel-block + .panel-block.trap { border-top: 2px solid var(--text); padding-top: 8px; }
+.ap-link { font-size: 14px; padding: 4px 0 4px 10px; margin: 8px 0 0; border-left: 3px solid var(--text); }
+.ep-points { margin: 0; padding-left: 1.1em; }
+.ep-wait { font-size: 14px; color: var(--muted); margin: 0; }
+.predict-opts .predict-key { flex: none; width: 1.5em; height: 1.5em; border: 1px solid var(--text); border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; line-height: 1; margin-top: 1px; }
+.predict-opts button[disabled] { cursor: default; color: var(--text); }
+.predict-opts button.is-wrong { border-style: dashed; border-color: var(--text); }
+.verdict-line { display: flex; align-items: center; gap: 8px; font-family: var(--font-sans); font-size: 16px; font-weight: 700; margin: 10px 0 0; }
+.verdict-line .icon { width: 24px; height: 24px; flex: none; }
+.kbd-hint { font-family: var(--font-sans); font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+.kbd { font-family: var(--font-sans); font-size: 12px; border: 1px solid var(--text); border-radius: 4px; padding: 0 5px; color: var(--text); }
+.review-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.review-list button { width: 100%; text-align: left; white-space: normal; }
+.big-score { font-family: var(--font-sans); font-size: 32px; font-weight: 700; margin: 0 0 4px; }
+
+/* Conduction diagram */
+.cd-fig { margin: 0; }
+.cd-fig figcaption { font-family: var(--font-sans); font-size: 12px; color: var(--muted); margin: 2px 0 4px; }
+.cd-none p { font-size: 14px; margin: 0; }
+.cd-svg { display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto; }
+.cd-heart { fill: var(--surface); stroke: var(--text); stroke-width: 1.2; }
+.cd-ring { stroke: var(--muted); stroke-width: 1; fill: none; }
+.cd-on { fill: none; stroke: var(--primary); stroke-width: 3.6; stroke-linecap: round; }
+.cd-off { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 1.5 3.5; stroke-linecap: round; }
+.cd-spread { fill: none; stroke: var(--text); stroke-width: 2.4; stroke-dasharray: 9 3 2 3; }
+.cd-loop, .cd-wave { fill: none; stroke: var(--text); stroke-width: 2.4; }
+.cd-slow { fill: none; stroke: var(--text); stroke-width: 2; stroke-dasharray: 5 3; }
+.cd-block { stroke: var(--text); stroke-width: 3.6; stroke-linecap: round; fill: none; }
+.cd-lead { fill: none; stroke: var(--muted); stroke-width: 1.6; }
+.cd-twig { fill: none; stroke: var(--muted); stroke-width: 1; }
+.cd-leader { stroke: var(--muted); stroke-width: 0.8; fill: none; }
+.cd-node { fill: var(--surface); stroke: var(--text); stroke-width: 1.6; }
+.cd-origin { fill: var(--accent); stroke: var(--text); stroke-width: 1; }
+.cd-arrowhead { fill: var(--text); }
+.cd-label { font-family: var(--font-sans); font-size: 10px; font-weight: 600; fill: var(--text); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.cd-note { font-family: var(--font-sans); font-size: 10px; font-weight: 700; fill: var(--text); font-style: italic; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.cd-small { font-family: var(--font-sans); font-size: 8px; fill: var(--muted); }
+.cd-chamber { font-family: var(--font-sans); font-size: 11px; font-weight: 700; fill: var(--muted); letter-spacing: 0.05em; }
+.cd-legend { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-family: var(--font-sans); font-size: 12px; }
+.cd-legend li { display: flex; align-items: center; gap: 6px; }
+.cd-sw { width: 36px; height: 12px; flex: none; }
+.cd-legend { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-family: var(--font-sans); font-size: 12px; }
+@media (max-width: 420px) { .cd-legend { grid-template-columns: 1fr; } }
+
+/* Revise */
+.summary-grid .card-title { font-family: var(--font-serif); font-size: 17px; font-weight: 600; margin: 0 0 6px; }
+.summary-card { padding: 14px 16px; }
+.summary-card li { font-size: 15px; }
+.viva-group { font-family: var(--font-sans); font-size: 15px; font-weight: 600; margin: 14px 0 8px; padding-left: 8px; border-left: 3px solid var(--text); }
+.viva-group:first-child { margin-top: 0; }
+.nums-table td.rh { font-size: 14px; }
+.flag-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.flag-table th, .flag-table td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); padding: 6px 8px; }
+.flag-table th { font-family: var(--font-sans); font-size: 14px; font-weight: 600; }
+.details-body h3 { font-family: var(--font-sans); font-size: 15px; font-weight: 600; margin: 12px 0 6px; padding-left: 8px; border-left: 3px solid var(--text); }
+
+/* ===== Scenarios ===== */
+.mode-banners { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
+@media (min-width: 1000px) { .mode-banners { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .mode-banners .test-banner { margin-bottom: 12px; } }
+.mode-banners .test-banner { margin-top: 0; margin-bottom: 10px; }
+.mode-banners .test-banner:first-child { margin-top: 8px; }
+@media (min-width: 1000px) { .mode-banners .test-banner { margin-top: 8px; } }
+.scn-icon svg { display: block; }
+.scn-disclaimer { margin: 0 0 12px; font-size: 15px; padding: 8px 12px; border: 2px solid var(--text); border-radius: 10px; background: var(--surface); }
+.scn-chooser { margin: 0; }
+#scnGrid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.scn-group { margin-top: 20px; }
+.scn-group:first-of-type { margin-top: 2px; }
+.scn-group .scen-group-label { margin: 0 0 8px; }
+.scn-row { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 700px) { .scn-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .scn-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.scn-card { display: flex; gap: 10px; align-items: flex-start; text-align: left; min-height: 44px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; min-width: 0; }
+.scn-card:hover { border-color: var(--text); }
+.scn-card:focus-visible, .act-btn:focus-visible, .scn-log-scroll:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.scn-num { flex: none; box-sizing: border-box; width: 32px; height: 32px; border: 2px solid var(--text); border-radius: 50%; display: grid; place-items: center; font-family: var(--font-sans); font-weight: 700; font-size: 14px; line-height: 1; }
+.scn-card-text { min-width: 0; display: block; }
+.scn-card-title { display: block; font-family: var(--font-sans); font-weight: 700; font-size: 15px; line-height: 1.3; }
+.scn-card-blurb { display: block; font-size: 14px; line-height: 1.35; margin-top: 2px; }
+.scn-card-main { display: grid; gap: 8px; min-width: 0; }
+.scn-clock { margin: 0; font-family: var(--font-sans); font-weight: 700; font-size: 15px; padding: 4px 10px; border: 2px solid var(--text); border-radius: var(--radius-pill); justify-self: start; font-variant-numeric: tabular-nums; max-width: 100%; }
+.scn-monitor { min-width: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.mon-svg { display: block; width: 100%; height: auto; }
+.mon-head { fill: var(--primary); }
+.mon-tag { font-size: 2.6px; }
+.scn-vitals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 900px) { .scn-vitals { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.scn-vitals .stat-val { font-size: 15px; overflow-wrap: anywhere; }
+.scn-vitals .stat-label { font-size: 13px; }
+.scn-panels { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; align-items: start; }
+@media (min-width: 900px) { .scn-panels { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); } }
+.scn-panels .explain-panel, .scn-debrief { min-height: 0; max-height: none; }
+.scn-right { display: grid; gap: 12px; min-width: 0; }
+.act-group { margin: 0 0 10px; padding-left: 10px; border-left: 4px solid var(--text); }
+.act-group:nth-child(2) { border-left-style: double; border-left-width: 5px; }
+.act-group:nth-child(3) { border-left-style: dashed; }
+.act-group:nth-child(4) { border-left-style: dotted; }
+.act-group .scen-group-label { margin: 0 0 6px; border-left: 0; padding-left: 0; }
+.act-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.act-btn { min-height: 44px; padding: 6px 8px; font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.25; text-align: left; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); cursor: pointer; min-width: 0; overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }
+.act-btn:hover:not(:disabled) { border-color: var(--text); }
+.act-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.act-ff { grid-column: 1 / -1; border-style: dashed; }
+.verdict-glyph { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 2px solid currentColor; border-radius: 50%; font-size: 13px; font-weight: 700; margin-right: 6px; vertical-align: -4px; }
+.scn-hints {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.scn-hints:hover { border-color: var(--text); }
+.scn-hints:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.scn-hints-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border: 2px solid var(--text);
+  background: var(--surface);
+  border-radius: 999px;
+  flex: none;
+}
+.scn-hints-knob {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 3px;
+  left: 3px;
+  background: var(--text);
+  border-radius: 50%;
+}
+.scn-hints.is-on .scn-hints-track { background: var(--text); }
+.scn-hints.is-on .scn-hints-knob { left: 19px; background: var(--surface); }
+.scn-hints-state { font-variant-numeric: tabular-nums; min-width: 1.6em; }
+.scn-actions-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+.scn-actions-heading { min-width: 0; flex: 1 1 12rem; }
+.scn-actions-heading .explain-kicker { margin-bottom: 4px; }
+.scn-actions-heading .explain-title { margin: 0; }
+.scn-reg {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin: 0 0 0 auto;
+  min-height: 44px;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--text);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.scn-reg:hover:not(:disabled) { background: var(--surface-2, var(--bg)); }
+.scn-reg:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.scn-reg:disabled { opacity: 0.55; cursor: not-allowed; }
+.scn-reg-icon { display: block; flex: none; }
+.scn-nudge { margin: 8px 0; padding: 8px 10px 8px 12px; border-left: 3px solid var(--text); background: var(--surface-2, var(--bg)); font-family: var(--font-sans); font-size: 15px; }
+.scn-fb { margin: 6px 0; }
+
+.scn-change { margin: 8px 0; padding: 8px 10px 8px 12px; border-left: 3px solid var(--text); background: var(--surface-2, var(--bg)); font-family: var(--font-sans); font-size: 15px; }
+.scn-src { font-size: 13px; margin: 8px 0 0; padding-left: 8px; border-left: 2px solid var(--border); overflow-wrap: anywhere; }
+.scn-log-scroll { max-height: 260px; overflow-y: auto; }
+.scn-log { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.scn-log li { display: grid; grid-template-columns: 46px 18px minmax(0, 1fr); gap: 4px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.log-t { font-family: var(--font-sans); font-weight: 700; font-variant-numeric: tabular-nums; }
+.log-mark { font-weight: 700; text-align: center; }
+.log-text { min-width: 0; overflow-wrap: anywhere; }
+.log-verdict { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.scn-debrief { margin-top: 12px; }
+.debrief-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+#scnTitle, .scn-card-main { scroll-margin-top: 16px; }
+.scn-debrief-fold {
+  margin: 16px 0 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  min-width: 0;
+}
+.scn-debrief-fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--text);
+}
+.scn-debrief-fold > summary::-webkit-details-marker,
+.scn-debrief-fold > summary::marker { display: none; content: none; }
+.scn-debrief-fold > summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+.scn-debrief-fold .viva-group {
+  margin: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+.scn-debrief-chevron {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--text);
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+}
+.scn-debrief-chevron::before { content: "+"; }
+.scn-debrief-fold[open] > summary { border-bottom: 1px solid var(--border); }
+.scn-debrief-fold[open] > summary .scn-debrief-chevron::before { content: "\2212"; }
+.scn-debrief-fold-body { padding: 10px 12px 14px; }
+.scn-debrief-fold-body .log-compare-card { margin: 0 0 14px; }
+.scn-debrief-fold-body .ideal-path { margin: 0; }
+.scn-debrief-fold-body .debrief-list { margin-top: 8px; }
+.db-item { border: 1px solid var(--border); border-left: 4px solid var(--text); border-radius: 0 10px 10px 0; padding: 8px 12px; min-width: 0; }
+.db-item p { margin: 4px 0; }
+.db-bad { border-left-style: dashed; }
+.db-part { border-left-style: double; border-left-width: 5px; }
+.db-info { border-left-style: dotted; }
+
+.db-late { border-left-width: 8px; border-left-style: solid; }
+.scn-poster-line { margin: 12px 0 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; }
+.scn-source-box { margin: 16px 0 22px; padding: 16px 18px; border: 3px solid var(--text); border-radius: 10px; background: var(--card, transparent); }
+.scn-source-box h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.scn-source-box p { margin: 0 0 10px; }
+.scn-source-disclaimer { font-size: 0.95rem; }
+.scn-source-list { margin: 0; padding-left: 1.2em; }
+.scn-source-list li { margin: 0 0 6px; }
+.scn-source-list a { text-decoration: underline; }
+.scn-banner-link { text-decoration: none; color: inherit; }
+.scn-banner-link .test-banner-title { text-decoration: underline; }
+.scn-banner-link .test-banner-cta { display: inline-flex; align-items: center; justify-content: center; }
+.verdict-late-mark { display: inline-flex; }
+
+.db-head { display: flex; gap: 6px; align-items: flex-start; }
+.db-head > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.db-phys { font-size: 14px; }
+@media (max-width: 899px) { .scn-right { display: contents; } #scnFeedback { order: 1; } .scn-actions-card { order: 2; } .scn-log-card { order: 3; } }
+@media (max-width: 480px) { .act-btn { font-size: 13px; padding: 6px; } .scn-log li { grid-template-columns: 42px 16px minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .mon-head { display: none; } }
+
+/* Random scenario */
+.scn-random-wrap { margin: 0 0 14px; }
+.scn-random { display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left; min-height: 64px; padding: 14px 16px; border: 2px solid var(--text); border-radius: 14px; background: var(--text); color: var(--surface); cursor: pointer; font: inherit; }
+.scn-random:hover { box-shadow: var(--shadow); }
+.scn-random:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.scn-random .dice { flex: none; margin-top: 2px; }
+.scn-random-title { display: block; font-family: var(--font-sans); font-weight: 700; font-size: 16px; line-height: 1.3; }
+.scn-random-sub { display: block; font-size: 14px; line-height: 1.4; margin-top: 4px; }
+
+/* How scenarios work: card title (the summary) sits fully inside the padded card. */
+.scn-guide {
+  margin: 0 0 20px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  min-width: 0;
+  max-width: 100%;
+}
+.scn-guide > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text);
+}
+.scn-guide > summary::-webkit-details-marker,
+.scn-guide > summary::marker { display: none; content: none; }
+.scn-guide-chevron {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--text);
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+}
+.scn-guide-chevron::before { content: "+"; }
+.scn-guide[open] > summary .scn-guide-chevron::before { content: "\2212"; }
+.scn-guide-steps {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.scn-guide-steps li {
+  display: grid;
+  grid-template-columns: 28px 1.4em minmax(0, 1fr);
+  gap: 8px 10px;
+  align-items: start;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.scn-guide-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--text);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.scn-guide-icon svg { display: block; }
+.scn-guide-n {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  padding-top: 4px;
+}
+@media (max-width: 480px) {
+  .scn-guide-steps li { padding: 10px; gap: 6px 8px; }
+}
+/* Source labels (shape and text, not colour) */
+.vtag { display: inline-block; max-width: 100%; box-sizing: border-box; vertical-align: baseline; font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--text); background: var(--surface-2); border: 1.5px solid var(--text); border-radius: 6px; padding: 0 5px; margin-left: 4px; line-height: 1.6; overflow-wrap: anywhere; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.vtag a { color: var(--primary); }
+.vtag-k { font-weight: 700; }
+.tag-phys { border-style: dotted; border-radius: 999px; }
+.tag-sim { border-style: dashed; border-radius: 0; }
+.vq { display: block; margin-top: 3px; }
+.vq-note { font-style: italic; }
+.vq-cell { font-size: 13px; min-width: 220px; }
+.footer-disc { flex-basis: 100%; margin: 8px 0 0; font-size: 13px; }
+.footer-feedback { color: var(--text); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.footer-feedback:hover { text-decoration-thickness: 2px; }
+.footer-feedback:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.footer-disc a { color: inherit; }
+.scn-note { margin: 0 0 16px; font-size: 15px; }
+.scn-sources-btn {
+  font-family: var(--font-sans); font-size: 15px; font-weight: 700;
+  min-height: 44px; padding: 6px 12px; margin-left: 8px;
+  border: 2px solid var(--text); border-radius: 999px;
+  background: var(--surface); color: var(--text); cursor: pointer;
+}
+.scn-sources-btn:hover { background: var(--surface-2, var(--bg)); }
+.scn-sources-btn:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.scn-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; }
+.scn-modal[hidden] { display: none !important; }
+.scn-modal-backdrop { position: absolute; inset: 0; background: rgba(17, 17, 17, 0.45); }
+.scn-modal-panel {
+  position: relative; z-index: 1; max-width: 36rem; width: 100%; max-height: min(80vh, 40rem);
+  overflow: auto; padding: 16px 18px; background: var(--surface); color: var(--text);
+  border: 2px solid var(--text); border-radius: var(--radius-card); box-shadow: var(--shadow);
+}
+.scn-modal-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.scn-source-links { margin: 0; padding-left: 1.1em; }
+.scn-source-links a { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.scn-source-links a:hover { text-decoration-thickness: 2px; }
+.scn-clock-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 8px; }
+.scn-clock-row .scn-clock { margin: 0; }
+.scn-skip {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700; min-height: 44px; padding: 6px 12px;
+  border: 2px dashed var(--text); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer;
+}
+.scn-skip:hover:not(:disabled) { background: var(--surface-2, var(--bg)); }
+.scn-skip:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.scn-skip:disabled { opacity: 0.55; cursor: not-allowed; }
+.scn-sub-btn { width: 100%; text-align: left; }
+.scn-popup { position: fixed; inset: 0; z-index: 70; }
+.scn-popup[hidden] { display: none !important; }
+.scn-popup-backdrop { position: absolute; inset: 0; background: rgba(17, 17, 17, 0.45); }
+.scn-popup-panel {
+  position: absolute; z-index: 1; box-sizing: border-box;
+  padding: 16px; background: var(--surface); color: var(--text);
+  border: 2px solid var(--text); box-shadow: var(--shadow);
+  overflow: auto;
+}
+.scn-popup-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+.scn-popup-title { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 700; margin: 0; line-height: 1.25; }
+.scn-popup-lead { margin: 0 0 10px; font-size: 15px; }
+.scn-popup-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.scn-popup-close {
+  flex: none; box-sizing: border-box; width: 44px; height: 44px; padding: 0;
+  border: 2px solid var(--text); border-radius: 999px;
+  background: var(--surface); color: var(--text); cursor: pointer;
+  font-size: 28px; line-height: 1; font-weight: 700;
+}
+.scn-popup-close:hover { background: var(--surface-2, var(--bg)); }
+.scn-popup-close:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+/* Desktop: floating panel, position set in JS near the actions button. */
+@media (min-width: 700px) {
+  .scn-popup-panel {
+    width: min(28rem, calc(100vw - 32px));
+    max-height: min(70vh, 36rem);
+    border-radius: 16px;
+  }
+}
+/* Mobile: bottom sheet. */
+@media (max-width: 699px) {
+  .scn-popup-panel {
+    left: 0; right: 0; bottom: 0; top: auto; width: 100%;
+    max-height: 70vh;
+    border-radius: 16px 16px 0 0;
+    border-left: 0; border-right: 0; border-bottom: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scn-popup-panel { transition: none; }
+}
+.graph-card.scn-card-main .scn-pending { margin: 12px 0 0; }
+body.scn-popup-open { overflow: hidden; }
+.scn-alg-link { margin: 10px 0 0; }
+.scn-alg-link a { color: var(--text); font-weight: 700; font-size: 16px; text-decoration: underline; text-underline-offset: 3px; }
+.scn-alg-link a:hover { text-decoration-thickness: 2px; }
+.scn-alg-link a:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.stat-note { display: block; font-size: 12px; font-weight: 600; margin-top: 2px; }
+@media (max-width: 480px) {
+  .scn-sources-btn { margin-left: 0; margin-top: 8px; display: inline-flex; }
+}
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.scn-pending { margin: 0 0 12px; padding: 12px; border: 2px solid var(--text); border-radius: 12px; background: var(--surface); }
+.scn-pending[hidden] { display: none !important; }
+.scn-pending-title { font-family: var(--font-serif); font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+.scn-pending-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.scn-pending-list li { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
+.scn-pending-spin {
+  flex: none; width: 1.1em; height: 1.1em; box-sizing: border-box;
+  border: 2px solid var(--text); border-right-color: transparent; border-radius: 50%;
+  animation: scn-spin 0.8s linear infinite;
+}
+@keyframes scn-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .scn-pending-spin { animation: none; border-right-color: var(--text); }
+}
+
+.scn-ack {
+  font-family: var(--font-sans);
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 20px 0 0;
+  max-width: none;
+}
+.scn-ack strong { font-weight: 800; color: var(--text); }
+
+.ideal-lead { margin: 0 0 10px; font-size: 15px; }
+.ideal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ideal-item { margin: 0; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); }
+.ideal-matched { border-style: solid; border-color: var(--text); }
+.ideal-late { border-style: dashed; border-color: var(--text); }
+.ideal-missed { border-style: solid; border-width: 2px; border-color: var(--text); background: var(--surface-2); }
+.ideal-head { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 4px; font-family: var(--font-sans); }
+.ideal-n { flex: none; width: 24px; height: 24px; border: 1.5px solid var(--text); border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.ideal-mark { flex: none; font-weight: 700; line-height: 24px; }
+.ideal-flag { font-family: var(--font-sans); font-weight: 700; font-size: 13px; margin-left: 6px; }
+.ideal-why { margin: 0; font-size: 15px; }
+
+.log-compare { display: grid; gap: 14px; margin: 14px 0 18px; }
+.log-compare-card { margin: 0; padding: 10px 12px 12px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); min-width: 0; }
+.log-compare-model { border-color: var(--text); }
+.log-compare .viva-group { margin-top: 0; }
+.log-compare .scn-log-scroll { max-height: 480px; }
+@media (min-width: 900px) {
+  .log-compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
+
+.correct-ans { margin: 8px 0 0; padding: 8px 10px; border: 1.5px solid var(--text); border-radius: 8px; background: var(--surface-2); font-size: 15px; }
+.correct-ans-src { display: inline; font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#tool">Skip to the scenarios</a>
+<div class="page page-wide page-tool">
+  <header class="site-header tool-view-header">
+    <div class="site-header-top">
+      <a class="site-mark" href="index.html">
+        <img class="site-logo" src="assets/logo.svg?v=20261118f" width="20" height="20" alt="">
+        <span class="site-mark-name">The Physio Lab</span>
+      </a>
+      <div class="header-actions">
+        <a class="header-link" href="index.html#about">About</a>
+        <button type="button" id="colour-blind-toggle" class="cb-toggle" aria-pressed="false">
+          <span class="cb-switch" aria-hidden="true"></span>
+          <span class="cb-toggle-text">Colour-blind mode</span>
+        </button>
+      </div>
+    </div>
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="index.html">Home</a>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <a href="cardiac.html">Cardiac</a>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <span aria-current="page">Resus Scenarios</span>
+    </nav>
+
+    <h1>Resus Scenarios</h1>
+    <p class="subtitle">Cardiac arrest and peri-arrest cases based on the RCUK algorithms.</p>
+    <p class="scn-source-disclaimer">Not affiliated with or endorsed by Resuscitation Council UK. Rhythm recognition practice is on the <a href="ECG_Rhythm_Quiz.html">ECG Rhythm Quiz</a>.</p>
+  </header>
+
+  <main id="main">
+    <section id="tool" aria-label="Resuscitation scenarios">
+
+      <aside class="scn-source-box" aria-labelledby="scnSourceHeading">
+        <h2 id="scnSourceHeading">Learn from the source</h2>
+        <p>These cases are marked against the Resuscitation Council UK algorithm posters. Visit the official RCUK website at least once and read those posters, plus the ALS course information, rather than practising only on this page.</p>
+        <p class="scn-source-disclaimer">Not affiliated with or endorsed by Resuscitation Council UK.</p>
+        <ul class="scn-source-list">
+          <li><a href="https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-advanced-life-support-guidelines" target="_blank" rel="noopener noreferrer">RCUK 2025 Adult Advanced Life Support guidelines (opens in a new tab)</a></li>
+          <li><a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf" target="_blank" rel="noopener noreferrer">RCUK 2025 Adult ALS algorithm poster (PDF, opens in a new tab)</a></li>
+          <li><a href="https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf" target="_blank" rel="noopener noreferrer">RCUK Adult tachyarrhythmia algorithm V3 March 2026 (PDF, opens in a new tab)</a></li>
+          <li><a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20bradyarrhythmia%202025.pdf" target="_blank" rel="noopener noreferrer">RCUK 2025 Adult bradyarrhythmia algorithm poster (PDF, opens in a new tab)</a></li>
+          <li><a href="https://www.resus.org.uk/training-courses/adult-life-support/als-2-day-course-advanced-life-support" target="_blank" rel="noopener noreferrer">RCUK ALS 2-day course: what the course and assessment look for (opens in a new tab)</a></li>
+          <li><a href="https://www.resus.org.uk/library/additional-guidance/guidance-anaphylaxis" target="_blank" rel="noopener noreferrer">RCUK official guidance on anaphylaxis (opens in a new tab)</a>. None of the cases on this page is an anaphylaxis scenario. The algorithm poster published on the RCUK site is still the 2021 version: <a href="https://www.resus.org.uk/sites/default/files/2021-04/Anaphylaxis%20algorithm%202021.pdf" target="_blank" rel="noopener noreferrer">RCUK anaphylaxis algorithm 2021 (PDF, opens in a new tab)</a>.</li>
+        </ul>
+      </aside>
+
+<div id="scnWrap">
+                <p class="scn-note">Simulation for teaching, not clinical guidance. <button type="button" class="scn-sources-btn" id="scnSourcesBtn">Sources and disclaimer</button></p>
+        <div class="scn-modal" id="scnSourcesModal" hidden aria-hidden="true">
+          <div class="scn-modal-backdrop" id="scnSourcesBackdrop" tabindex="-1"></div>
+          <div class="scn-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scnSourcesTitle">
+            <div class="scn-modal-head">
+              <h2 class="explain-title" id="scnSourcesTitle" tabindex="-1">Sources and disclaimer</h2>
+              <button type="button" class="tool-btn" id="scnSourcesClose">Close</button>
+            </div>
+            <p>Teaching simulation based on Resus Council UK 2025 adult ALS algorithms and the BNF. Not clinical guidance; follow local protocols and current guidelines. Scenarios are scripted and simplified; each statement is labelled Source, Physiology or Simulation simplification.</p>
+            <ul class="scn-source-links">
+              <li><a href="https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-advanced-life-support-guidelines" target="_blank" rel="noopener" aria-label="RCUK 2025 Adult ALS guideline, opens in a new tab">RCUK 2025 Adult ALS guideline</a></li>
+              <li><a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20ALS%20algorithm%202025.pdf" target="_blank" rel="noopener" aria-label="RCUK 2025 Adult ALS algorithm, opens a PDF in a new tab">RCUK 2025 Adult ALS algorithm</a></li>
+              <li><a href="https://www.resus.org.uk/sites/default/files/2025-10/Adult%20bradyarrhythmia%202025.pdf" target="_blank" rel="noopener" aria-label="RCUK 2025 Adult bradycardia algorithm, opens a PDF in a new tab">RCUK 2025 Adult bradycardia algorithm</a></li>
+              <li><a href="https://www.resus.org.uk/sites/default/files/2026-03/Adult%20tachyarrhythmia%20algorithm%20V3%20March%202026.pdf" target="_blank" rel="noopener" aria-label="RCUK 2025 Adult tachyarrhythmia algorithm, opens a PDF in a new tab">RCUK 2025 Adult tachyarrhythmia algorithm</a></li>
+              <li><a href="https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/special-circumstances-guidelines" target="_blank" rel="noopener" aria-label="RCUK 2025 Special circumstances guidelines, opens in a new tab">RCUK 2025 Special circumstances guidelines</a></li>
+              <li><a href="https://bnf.nice.org.uk/" target="_blank" rel="noopener" aria-label="BNF, opens in a new tab">BNF</a></li>
+            </ul>
+          </div>
+        </div>
+        <div id="scnChooserWrap">
+          <details class="scn-guide" id="scnGuide">
+            <summary>
+              <span class="scn-guide-chevron" aria-hidden="true"></span>
+              How scenarios work
+            </summary>
+            <ol class="scn-guide-steps">
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random picks from all of the cases in the list. The name of a random case is revealed in the debrief, not while you are playing.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Each opens as a pop-up, so you do not have to scroll the actions list. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. After the first Cycle NIBP, the cuff then repeats every 2 minutes of simulated time; a further Cycle NIBP now resets that interval. Nothing you should have to request is shown up front.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>CPR for 2 minutes performs two minutes of CPR and shows the rhythm on the monitor. Skip time only advances the clock and does not count as an action. Check rhythm and pulse is a separate step.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback states only what was done and the objective event. It will not interpret the monitor or tell you what to do next.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends. The debrief names the missed step and the correct action; the live nudges stay vague.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><span class="scn-guide-n" aria-hidden="true">6</span><span>Call the reg gives a hint. Each call deducts 0.5 from the decision score, with a minimum of 0.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 8 h10 a4 4 0 0 1 0 8 H7 a4 4 0 0 1 0-8 z M17 12 a2 2 0 1 1 0 0.01"/></svg></span><span class="scn-guide-n" aria-hidden="true">7</span><span>Show solution is off by default. Turn it on for more guidance, including why the rhythm changed and the guideline link.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 4 h8 l2 3 v13 H6 V7 z M8 4 V7 h8 V4"/></svg></span><span class="scn-guide-n" aria-hidden="true">8</span><span>The debrief shows your score, what you missed, and the guideline for each decision.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3 l2 4 5 .5-3.5 3 1 5L12 13.5 7.5 15.5l1-5L5 7.5 10 7z"/></svg></span><span class="scn-guide-n" aria-hidden="true">9</span><span>A dangerous error (for example CPR or an unsynchronised shock in a patient with a pulse, or shocking asystole) ends the case immediately when Show solution is off, with the words Patient harmed: scenario ended. The debrief explains why. With Show solution on, it is marked Not quite and the case continues.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6 h16 v12 H4 z M8 6 V4 h8 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">10</span><span>Restart starts the same case again.</span></li>
+            </ol>
+          </details>
+          <script>
+          (function () {
+            try {
+              if (localStorage.getItem("anaesthetic-physiology-scn-guide") === "open") {
+                var g = document.getElementById("scnGuide");
+                if (g) g.open = true;
+              }
+            } catch (e) {}
+          })();
+          </script>
+          <div class="tool-block">
+            <h2 class="tool-section-title" id="scnChooserTitle">Choose a scenario</h2>
+            <div class="scen-panel scn-chooser" role="group" aria-labelledby="scnChooserTitle">
+              <div id="scnGrid"></div>
+            </div>
+          </div>
+          <p class="scn-ack"><strong>Acknowledgements:</strong> Scenario design informed by testing and feedback from Inchan Cho (Medical Student, GKT School of Medicine).</p>
+        </div>
+        <div id="scnStage" class="hidden">
+          <div class="graph-card scn-card-main">
+            <div class="strip-head">
+              <h2 class="strip-title" id="scnTitle" tabindex="-1">Scenario</h2>
+              <div class="strip-tools">
+                <button type="button" class="scn-hints" id="scnHints" role="switch" aria-checked="false" aria-labelledby="scnHintsLabel scnHintsState">
+                  <span id="scnHintsLabel" class="scn-hints-name">Show solution</span>
+                  <span class="scn-hints-track" aria-hidden="true"><span class="scn-hints-knob"></span></span>
+                  <span class="scn-hints-state" id="scnHintsState">Off</span>
+                </button>
+                <button type="button" class="tool-btn" id="scnRestart">Restart</button>
+                <button type="button" class="tool-btn" id="scnEnd">End scenario</button>
+                <button type="button" class="tool-btn" id="scnBack">All scenarios</button>
+              </div>
+            </div>
+            <div class="scn-clock-row"><p class="scn-clock" id="scnClock" aria-label="Simulated time, CPR cycle and shocks">Time 00:00</p><span id="scnSkipHost"></span></div>
+            <p class="stem" id="scnScene"></p>
+            <div class="scn-monitor" id="scnMonitor"></div>
+            <p class="strip-meta">Monitor lead II, sweeping in real time; 1 s per large block of 5. The rhythm is not named until you assess it.</p>
+            <div class="live-readout scn-vitals" id="scnVitals" aria-label="Monitor values: heart rate, SpO2, respiratory rate and NIBP"></div>
+              <div class="scn-pending" id="scnPending" hidden>
+                <h2 class="scn-pending-title" id="scnPendingTitle">Pending results</h2>
+                <ul class="scn-pending-list" id="scnPendingList"></ul>
+              </div>
+          </div>
+          <div class="scn-panels" id="scnPanels">
+            <div class="card explain-panel scn-actions-card">
+              <div class="scn-actions-head">
+                <div class="scn-actions-heading">
+                  <p class="explain-kicker">Actions</p>
+                  <h2 class="explain-title">What do you do next?</h2>
+                </div>
+                <button type="button" class="scn-reg" id="scnReg" aria-label="Call the reg, ask for a registrar hint">
+                  <svg class="scn-reg-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  <span class="scn-reg-label">Call the reg</span>
+                </button>
+              </div>
+              <div id="scnActions"></div>
+            </div>
+            <div class="scn-right">
+              <div class="card explain-panel" id="scnFeedback"></div>
+              <div class="card explain-panel scn-log-card">
+                <h2 class="explain-title">Event log</h2>
+                <div class="scn-log-scroll" tabindex="0" aria-label="Event log, newest at the bottom"><ol class="scn-log" id="scnLog"></ol></div>
+              </div>
+            </div>
+          </div>
+
+        <div class="scn-popup" id="scnCausePopup" hidden>
+          <div class="scn-popup-backdrop" id="scnCauseBackdrop" tabindex="-1"></div>
+          <div class="scn-popup-panel" id="scnCauseList" role="dialog" aria-modal="true" aria-labelledby="scnCauseTitle">
+            <div class="scn-popup-head">
+              <h2 class="scn-popup-title" id="scnCauseTitle">Identify and treat reversible causes</h2>
+              <button type="button" class="scn-popup-close" id="scnCauseClose" aria-label="Close Identify and treat reversible causes">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <p class="scn-popup-lead">Pick the cause that fits this case. Wrong picks are marked Not quite.</p>
+            <ul class="scn-popup-list" id="scnCauseButtons"></ul>
+          </div>
+        </div>
+        <div class="scn-popup" id="scnAskPopup" hidden>
+          <div class="scn-popup-backdrop" id="scnAskBackdrop" tabindex="-1"></div>
+          <div class="scn-popup-panel" id="scnAskList" role="dialog" aria-modal="true" aria-labelledby="scnAskTitle">
+            <div class="scn-popup-head">
+              <h2 class="scn-popup-title" id="scnAskTitle">Ask for / check</h2>
+              <button type="button" class="scn-popup-close" id="scnAskClose" aria-label="Close Ask for / check">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <p class="scn-popup-lead">Values appear only when you request them. Results, and Cycle NIBP now, take a few seconds of real time and do not advance the simulated clock, so requesting a test will not run the case out of time. You can keep treating while they are pending, and more than one request can be pending at once. The NIBP starts blank until the first cycle; after that it auto-cycles every 2 minutes of simulated time, and a further Cycle NIBP now resets the interval.</p>
+            <ul class="scn-popup-list" id="scnAskButtons"></ul>
+          </div>
+        </div>
+
+          <div class="card explain-panel scn-debrief hidden" id="scnDebrief"></div>
+        </div>
+        <div class="visually-hidden" aria-live="polite" id="scnLive"></div>
+      </div>
+      
+      <p class="disclaimer">Teaching tool, not clinical guidance. Management is marked against the RCUK algorithm posters. Guideline and BNF prose is used only as debrief teaching notes and is labelled as such.</p>
+      <div class="visually-hidden" aria-live="assertive" id="live"></div>
+    </section>
+  </main>
+</div>
+<script src="assets/ecg-app.js?v=20261118f"></script>
+</body>
+</html>
