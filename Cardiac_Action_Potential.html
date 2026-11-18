@@ -370,6 +370,7 @@
     </p>
   </footer>
 </div>
+<script src="assets/graph-tween.js"></script>
 <script>
 "use strict";
 /* Cardiac Action Potential: teaching data.
@@ -1002,7 +1003,7 @@ function drawAll(svg, S) {
   sv("text", { x: G.x0, y: G.ecgTop - 12, "font-size": 14, "font-weight": 700, fill: COL.text }, g, FS > 1 ? "ECG (schematic)" : "Linked ECG (schematic lead II)");
   var e = st.ecg;
   var qtc = Math.round(e.qt / Math.sqrt(st.rr / 1000));
-  var ecgSum = (e.block ? "AV block: P not conducted" : "PR " + Math.round(e.pr) + " \u00B7 QRS " + Math.round(e.qrs) + " \u00B7 QT " + e.qt + " ms (QTc " + qtc + ")");
+  var ecgSum = (e.block ? "AV block: P not conducted" : "PR " + Math.round(e.pr) + " \u00B7 QRS " + Math.round(e.qrs) + " \u00B7 QT " + Math.round(e.qt) + " ms (QTc " + qtc + ")");
   sv("text", { x: G.x1, y: G.ecgTop - 12, "text-anchor": "end", "font-size": 13, fill: COL.text }, g, ecgSum);
   pl.block({ x: G.x0, y: G.apTop - 28, w: G.x1 - G.x0, h: 22 });
   pl.block({ x: G.x0, y: G.ecgTop - 28, w: G.x1 - G.x0, h: 22 });
@@ -1040,10 +1041,10 @@ function drawAll(svg, S) {
   sv("line", { x1: G.x0, x2: G.x1, y1: Y(thr), y2: Y(thr), stroke: COL.thr, "stroke-width": 1.6, "stroke-dasharray": "10 3 2 3", "pointer-events": "none" }, g);
 
   /* traces */
-  var apPts = apTrace(st, cell), gPts = ghost ? apTrace(ghost, cell) : null;
+  var apPts = S.apPts || apTrace(st, cell), gPts = S.gPts || (ghost ? apTrace(ghost, cell) : null);
   if (gPts) sv("path", { d: pathOf(gPts, X, Y), fill: "none", stroke: COL.ghost, "stroke-width": 2, "stroke-dasharray": "7 5", "pointer-events": "none" }, g);
   sv("path", { d: pathOf(apPts, X, Y), fill: "none", stroke: COL.trace, "stroke-width": 3, "stroke-linejoin": "round", "pointer-events": "none" }, g);
-  var ePts = ecgTrace(st), egPts = ghost ? ecgTrace(ghost) : null;
+  var ePts = S.ePts || ecgTrace(st), egPts = S.egPts || (ghost ? ecgTrace(ghost) : null);
   sv("line", { x1: G.x0, x2: G.x1, y1: YE(0), y2: YE(0), stroke: COL.grid, "stroke-width": 1 }, g);
   if (egPts) sv("path", { d: pathOf(egPts, X, YE), fill: "none", stroke: COL.ghost, "stroke-width": 1.8, "stroke-dasharray": "7 5", "pointer-events": "none" }, g);
   sv("path", { d: pathOf(ePts, X, YE), fill: "none", stroke: COL.ecg, "stroke-width": 2.4, "stroke-linejoin": "round", "pointer-events": "none" }, g);
@@ -1589,19 +1590,142 @@ function updateStatus() {
     el.hidden = false; el.textContent = noteLead() + " for " + MODS[A.note.mod].label + ".";
   } else { el.hidden = true; el.textContent = ""; }
 }
-function renderGraph() {
+function makeBeats(rr, e) {
+  var beats = [];
+  for (var k = -1; k < 6; k++) {
+    var tS = T_S0 + k * rr, tP = tS + 20, tQ = tP + e.pr;
+    beats.push({ k: k, tS: tS, tP: tP, tQ: tQ, conducted: !(e.block && k >= 0) });
+  }
+  return beats;
+}
+function lerpProps(a, b, e) {
+  var o = {}, keys = {}, k, va, vb;
+  if (a) for (k in a) keys[k] = 1;
+  if (b) for (k in b) keys[k] = 1;
+  for (k in keys) {
+    va = a ? a[k] : undefined;
+    vb = b ? b[k] : undefined;
+    if (typeof va === "number" && typeof vb === "number") o[k] = va + (vb - va) * e;
+    else o[k] = e < 0.5 ? (va !== undefined ? va : vb) : (vb !== undefined ? vb : va);
+  }
+  return o;
+}
+function lerpState(a, b, e) {
+  var sa = lerpProps(a.sa, b.sa, e);
+  sa.cycle = sa.t4 + sa.d0 + sa.drep;
+  sa.rate = 60000 / sa.cycle;
+  sa.slope4 = (sa.thr - sa.mdp) / sa.t4 * 1000;
+  sa.slope0 = (sa.peak - sa.thr) / sa.d0;
+  var ecg = lerpProps(a.ecg, b.ecg, e);
+  var st = {
+    id: b.id, g: b.g, cell: b.cell, D: b.D, k: (typeof a.k === "number" && typeof b.k === "number") ? a.k + (b.k - a.k) * e : b.k,
+    sa: sa, ecg: ecg, rr: sa.cycle, vent: lerpProps(a.vent, b.vent, e)
+  };
+  if (a.fast && b.fast) {
+    st.fast = lerpProps(a.fast, b.fast, e);
+    st.fast.slope0 = (st.fast.peak - st.fast.rmp) / st.fast.d0;
+  } else st.fast = b.fast;
+  st.beats = makeBeats(st.rr, st.ecg);
+  return st;
+}
+function traceTimes(aPts, bPts) {
+  var set = {}, t, i;
+  for (t = 0; t <= WIN; t += 1) set[t] = 1;
+  function add(pts) {
+    if (!pts) return;
+    for (i = 0; i < pts.length; i++) set[Math.round(pts[i][0] * 4) / 4] = 1;
+  }
+  add(aPts); add(bPts);
+  return Object.keys(set).map(Number).sort(function (x, y) { return x - y; }).filter(function (t) { return t >= 0 && t <= WIN; });
+}
+function resampleTrace(pts, times) {
+  var out = [], i = 0, j, t, x0, y0, x1, y1, u, last = pts.length - 1;
+  for (j = 0; j < times.length; j++) {
+    t = times[j];
+    while (i < last - 1 && pts[i + 1][0] < t) i++;
+    x0 = pts[i][0]; y0 = pts[i][1];
+    x1 = pts[Math.min(i + 1, last)][0]; y1 = pts[Math.min(i + 1, last)][1];
+    u = (x1 === x0) ? 1 : (t - x0) / (x1 - x0);
+    if (u < 0) u = 0; if (u > 1) u = 1;
+    out.push(y0 + (y1 - y0) * u);
+  }
+  return out;
+}
+function lerpTraces(aPts, bPts, e) {
+  var times = traceTimes(aPts, bPts);
+  var A = resampleTrace(aPts, times), B = resampleTrace(bPts, times), i, pts = [];
+  for (i = 0; i < times.length; i++) pts.push([times[i], A[i] + (B[i] - A[i]) * e]);
+  return pts;
+}
+function flagsDiffer(a, b) {
+  if (!a || !b || a.cell !== b.cell) return true;
+  var ae = a.state.ecg || {}, be = b.state.ecg || {};
+  return !!ae.block !== !!be.block || !!ae.sag !== !!be.sag;
+}
+function mixView(from, to, e) {
+  if (!flagsDiffer(from, to)) {
+    return {
+      state: lerpState(from.state, to.state, e),
+      cell: to.cell,
+      ghost: to.ghost && from.ghost ? lerpState(from.ghost, to.ghost, e) : to.ghost,
+      mod: to.mod, phase: to.phase, switched: to.switched
+    };
+  }
+  var view = {
+    state: to.state, cell: to.cell, ghost: to.ghost,
+    mod: to.mod, phase: to.phase, switched: to.switched,
+    apPts: lerpTraces(apTrace(from.state, from.cell), apTrace(to.state, to.cell), e),
+    ePts: lerpTraces(ecgTrace(from.state), ecgTrace(to.state), e)
+  };
+  if (from.ghost && to.ghost) {
+    view.gPts = lerpTraces(apTrace(from.ghost, from.cell), apTrace(to.ghost, to.cell), e);
+    view.egPts = lerpTraces(ecgTrace(from.ghost), ecgTrace(to.ghost), e);
+  }
+  return view;
+}
+function viewTarget() {
   var id = shownMod(), g = gradeFor(id);
   var st = buildState(id, g, A.cell), base = buildState("normal", 0, A.cell);
-  var ghost = id === "normal" ? null : base;
-  lastRender = drawAll($("apSvg"), { state: st, cell: A.cell, ghost: ghost, mod: id, phase: A.phase, switched: !!A.flash && A.flash === A.cell });
-  renderStats(st, base);
-  renderKey(!!ghost, id !== "normal" && (MODS[id].target || []).some(function (t) { return t.indexOf(CELLS[A.cell].kind + ":") === 0; }));
-  window.__ap.state = st;
+  return { state: st, cell: A.cell, ghost: id === "normal" ? null : base, mod: id, phase: A.phase, switched: !!A.flash && A.flash === A.cell };
 }
-function renderAll() {
+function curveKey(v) { return v ? (v.cell + "|" + v.state.id + "|" + v.state.g) : ""; }
+function paintGraph(view) {
+  lastRender = drawAll($("apSvg"), view);
+  var base = buildState("normal", 0, view.cell);
+  renderStats(view.state, base);
+  renderKey(!!view.ghost, view.mod !== "normal" && (MODS[view.mod].target || []).some(function (t) { return t.indexOf(CELLS[view.cell].kind + ":") === 0; }));
+  window.__ap.state = view.state;
+}
+var graphTw = null, lastGraphTarget = null;
+function renderGraph(instant) {
+  var target = viewTarget();
+  if (!window.GraphTween) { paintGraph(target); lastGraphTarget = target; return; }
+  if (!graphTw) {
+    graphTw = GraphTween.create({ mix: mixView, render: paintGraph });
+    lastGraphTarget = target;
+    graphTw.jump(target);
+    return;
+  }
+  var same = lastGraphTarget && curveKey(lastGraphTarget) === curveKey(target);
+  lastGraphTarget = target;
+  if (instant || same) {
+    if (same && graphTw.animating()) {
+      /* Keep the mid-transition curve; only the phase highlight should update. */
+      var mid = graphTw.state();
+      mid.phase = target.phase;
+      mid.switched = target.switched;
+      paintGraph(mid);
+      return;
+    }
+    graphTw.jump(target);
+    return;
+  }
+  graphTw.go(target);
+}
+function renderAll(instant) {
   A.flash = A.note ? A.note.to : (A.autoCell || null);
   renderScenarios(); renderGlance(); renderCells(); renderGrades(); renderPhaseButtons();
-  renderGraph(); renderPanel(); syncBanner(); updateStatus();
+  renderGraph(instant); renderPanel(); syncBanner(); updateStatus();
 }
 function wire() {
   $("predictToggle").addEventListener("click", function () {
@@ -1625,13 +1749,13 @@ function wire() {
     var t = e.target.closest ? e.target.closest("[data-phase]") : null;
     if (t) togglePhase(t.getAttribute("data-phase"));
   });
-  window.addEventListener("themechange", function () { renderAll(); });
+  window.addEventListener("themechange", function () { renderAll(true); });
   var lastNarrow = null, rt = null;
   window.addEventListener("resize", function () {
     clearTimeout(rt);
     rt = setTimeout(function () {
       var n = $("apSvg").getBoundingClientRect().width < 560;
-      if (n !== lastNarrow) { lastNarrow = n; renderGraph(); }
+      if (n !== lastNarrow) { lastNarrow = n; if (graphTw) paintGraph(graphTw.state()); else renderGraph(true); }
     }, 120);
   });
   var tabs = Array.prototype.slice.call(document.querySelectorAll('.revise-tabs [role="tab"]'));
@@ -1658,14 +1782,14 @@ function wire() {
 }
 window.__ap = {
   A: A, state: null,
-  set: function (o) { Object.assign(A, o); renderAll(); },
+  set: function (o) { Object.assign(A, o); renderAll(true); },
   apply: function (id) { requestScenario(id); },
   cell: function (c) { chooseCell(c); },
   phase: function (p) { A.phase = p; renderAll(); },
   wins: function () { return lastRender && lastRender.wins; }
 };
 wire();
-renderAll();
+renderAll(true);
 </script>
 </body>
 </html>

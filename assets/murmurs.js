@@ -386,7 +386,7 @@
       (cx - hw).toFixed(1) + " " + base.toFixed(1) + " Z";
     el("path", { d: d, fill: fill, stroke: "none" }, svg);
   }
-  function render() {
+  function render(md) {
     var box = $("mmSvgBox"), svg = $("mmSvg");
     var W = Math.max(320, Math.min(760, Math.round(box.clientWidth || 700)));
     var narrow = W < 560;
@@ -396,7 +396,9 @@
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.setAttribute("width", W); svg.setAttribute("height", H);
     svg.innerHTML = "";
-    var c = tok(), md = model(S.id, S.man), m = md.m, masked = S.test && !S.test.answered;
+    var c = tok();
+    if (!md) md = model(S.id, S.man);
+    var m = md.m, masked = S.test && !S.test.answered;
     var fs = narrow ? 12 : 13;
     var x = function (t) { return L + (t / T) * (W - L - R); };
     var yP = function (p) { return pTop + pH - (p / m.ymax) * pH; };
@@ -561,7 +563,7 @@
   function soundList(md) {
     var m = md.m, ev = md.ev, list = [];
     list.push({ t: ev.s1[1], w: 0.022, a: m.s1, label: "S1", kind: "s1" });
-    if (m.click) list.push({ t: m.click, w: 0.006, a: 0.55, label: "EC", dx: 10, kind: "click" });
+    if (m.click != null && (m.clickA == null || m.clickA > 0.02)) list.push({ t: m.click, w: 0.006, a: m.clickA != null ? m.clickA : 0.55, label: "EC", dx: 10, kind: "click" });
     if (m.split === "single") {
       list.push({ t: ev.s2[1], w: 0.016, a: m.s2, label: "S2", kind: "s2" });
     } else if (md.split >= 0.03) {
@@ -570,7 +572,7 @@
     } else {
       list.push({ t: ev.s2[1], w: 0.016, a: m.s2, label: "S2", kind: "s2" });
     }
-    if (m.os) list.push({ t: m.os, w: 0.007, a: 0.6, label: "OS", dx: 10, kind: "os" });
+    if (m.os != null && (m.osA == null || m.osA > 0.02)) list.push({ t: m.os, w: 0.007, a: m.osA != null ? m.osA : 0.6, label: "OS", dx: 10, kind: "os" });
     return list;
   }
   function renderLegend(md, masked) {
@@ -670,13 +672,101 @@
     mb.querySelectorAll(".mm-man").forEach(function (b) { b.addEventListener("click", function () { setMan(b.getAttribute("data-man")); }); });
     $("manNote").textContent = MANS.filter(function (x) { return x.id === S.man; })[0].note;
   }
+  function zeros() { var a = new Array(N), i; for (i = 0; i < N; i++) a[i] = 0; return a; }
+  function arrOf(md, key, fallback) { return md.tr[key] ? md.tr[key] : fallback; }
+  function firstTrace(md) {
+    var p = md.m.traces && md.m.traces[0];
+    return (p && md.tr[p[0]]) ? md.tr[p[0]] : zeros();
+  }
+  function lerpEv(a, b, e) {
+    var ev = {}, keys = {}, k, A, B, lab, ta, tb;
+    Object.keys(a.ev).forEach(function (x) { keys[x] = 1; });
+    Object.keys(b.ev).forEach(function (x) { keys[x] = 1; });
+    for (k in keys) {
+      A = a.ev[k]; B = b.ev[k];
+      lab = (e < 0.5 ? (A || B) : (B || A))[0];
+      ta = A ? A[1] : B[1];
+      tb = B ? B[1] : A[1];
+      ev[k] = [lab, GraphTween.lerp(ta, tb, e)];
+    }
+    return ev;
+  }
+  /* Match traces by name when both models share a series, otherwise by order
+     so an artery morphs into an artery and a ventricle into a ventricle. */
+  function mixTraces(a, b, e) {
+    var tr = {}, i, key, fromArr, toArr, fromKey;
+    var aList = a.m.traces, bList = b.m.traces;
+    var fbA = firstTrace(a), fbB = firstTrace(b);
+    for (i = 0; i < bList.length; i++) {
+      key = bList[i][0];
+      toArr = b.tr[key];
+      fromArr = a.tr[key] || (aList[i] && a.tr[aList[i][0]]) || fbA;
+      tr[key] = GraphTween.lerpArray(fromArr, toArr, e);
+    }
+    if (e < 0.85) {
+      for (i = 0; i < aList.length; i++) {
+        fromKey = aList[i][0];
+        if (tr[fromKey]) continue;
+        if (bList[i] && bList[i][0] !== fromKey) continue;
+        tr[fromKey] = GraphTween.lerpArray(a.tr[fromKey], fbB, e);
+      }
+    }
+    return tr;
+  }
+  function mixModel(a, b, e) {
+    var L = GraphTween.lerp;
+    var ma = a.m, mb = b.m;
+    var traces = mb.traces.slice();
+    if (e < 0.85) {
+      ma.traces.forEach(function (p, i) {
+        var taken = traces.some(function (q) { return q[0] === p[0]; });
+        if (taken) return;
+        /* remapped by order onto a different destination series: do not also draw it */
+        if (mb.traces[i] && mb.traces[i][0] !== p[0]) return;
+        traces.push(p);
+      });
+    }
+    var clickT = (ma.click != null || mb.click != null) ? L(ma.click != null ? ma.click : mb.click, mb.click != null ? mb.click : ma.click, e) : null;
+    var osT = (ma.os != null || mb.os != null) ? L(ma.os != null ? ma.os : mb.os, mb.os != null ? mb.os : ma.os, e) : null;
+    var m = Object.assign({}, e < 0.5 ? ma : mb, {
+      ymax: L(ma.ymax, mb.ymax, e),
+      traces: traces,
+      pair: mb.pair || ma.pair,
+      s1: L(ma.s1, mb.s1, e),
+      s2: L(ma.s2, mb.s2, e),
+      p2: L(ma.p2 != null ? ma.p2 : ma.s2 * 0.75, mb.p2 != null ? mb.p2 : mb.s2 * 0.75, e),
+      click: clickT,
+      clickA: L(ma.click != null ? 0.55 : 0, mb.click != null ? 0.55 : 0, e),
+      os: osT,
+      osA: L(ma.os != null ? 0.6 : 0, mb.os != null ? 0.6 : 0, e)
+    });
+    return {
+      m: m,
+      tr: mixTraces(a, b, e),
+      env: GraphTween.lerpArray(a.env, b.env, e),
+      grad: GraphTween.lerpArray(a.grad, b.grad, e),
+      gmax: L(a.gmax, b.gmax, e),
+      ev: lerpEv(a, b, e),
+      split: L(a.split, b.split, e)
+    };
+  }
+  var graphTw = window.GraphTween ? GraphTween.create({
+    mix: mixModel,
+    render: function (md) { render(md); loop(); }
+  }) : null;
+
   function select(id) { S.id = id; refresh(); }
   function setMan(man) { S.man = man; refresh(); }
-  function refresh() {
+  function refresh(instant) {
     document.querySelectorAll(".mm-btn").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-id") === S.id)); });
     document.querySelectorAll(".mm-man").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-man") === S.man)); });
     $("manNote").textContent = MANS.filter(function (x) { return x.id === S.man; })[0].note;
-    render(); renderExplain();
+    renderExplain();
+    var target = model(S.id, S.man);
+    if (!graphTw || instant) {
+      if (graphTw) graphTw.jump(target);
+      else render(target);
+    } else graphTw.go(target);
   }
 
   /* ---------- animation ---------- */
@@ -813,15 +903,15 @@
 
   /* ---------- init ---------- */
   function init() {
-    renderControls(); render(); renderExplain(); renderRevise();
+    renderControls(); refresh(true); renderRevise();
     $("animSwitch").addEventListener("click", function () { setAnim(!S.anim); });
     $("testToggle").addEventListener("click", function () { if (S.test) stopTest(); else startTest(); });
     document.querySelectorAll(".try-btn[data-murmur]").forEach(function (b) {
       b.addEventListener("click", function () { S.id = b.getAttribute("data-murmur"); S.man = b.getAttribute("data-man"); refresh(); });
     });
     var rt = null;
-    window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(function () { render(); loop(); }, 120); });
-    window.addEventListener("themechange", function () { render(); renderExplain(); loop(); });
+    window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(function () { render(graphTw && graphTw.state()); loop(); }, 120); });
+    window.addEventListener("themechange", function () { render(graphTw && graphTw.state()); renderExplain(); loop(); });
     document.addEventListener("visibilitychange", function () { if (document.hidden && S.anim) setAnim(false); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
