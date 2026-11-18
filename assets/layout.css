@@ -294,3 +294,31 @@ a.jcard .jcard-open.is-off { min-height: 24px; text-decoration: underline; text-
 .uc-label { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 4px 11px 4px 9px; border: 1.5px solid var(--text); border-radius: var(--radius-pill); background: var(--surface); font-family: var(--font-sans); font-size: 12.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text); }
 .uc-label svg { flex: none; }
 @media (prefers-reduced-motion: reduce) { .jcard, .jcard-open .arrow { transition: none; } a.jcard:hover, a.jcard:hover .jcard-open .arrow { transform: none; } }
+
+/* Header: About link beside the colour-blind toggle */
+.header-actions { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; margin-left: auto; }
+.header-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--text); text-decoration: underline; text-decoration-color: var(--border); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.header-link:hover { text-decoration-color: currentColor; }
+.header-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+
+/* Footer: one muted line; on narrow screens it breaks into two tidy lines */
+footer .footer-left { margin: 0; gap: 4px 0; line-height: 1.5; }
+.footer-item { white-space: nowrap; }
+.footer-item .footer-dot { margin: 0 8px; color: var(--muted); }
+.footer-break { display: none; }
+@media (max-width: 520px) {
+  .footer-break { display: block; flex-basis: 100%; height: 0; }
+  .footer-item:nth-of-type(2) .footer-dot { display: none; }
+}
+
+/* Homepage About card */
+.about-card { margin: 8px 0 0; padding: 22px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow); scroll-margin-top: 16px; }
+.about-title { font-family: var(--font-serif); font-size: 26px; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 6px; color: var(--text); }
+.about-cols { display: grid; grid-template-columns: 1fr; gap: 0 32px; }
+@media (min-width: 760px) { .about-cols { grid-template-columns: 1fr 1fr; } }
+.about-label { font-family: var(--font-sans); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; }
+.about-card p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text); max-width: 62ch; }
+.about-card .about-note { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 15px; max-width: none; }
+.about-note a { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.about-note a:hover { text-decoration-thickness: 2px; }
+.about-note a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
