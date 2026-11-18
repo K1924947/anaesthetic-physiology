@@ -318,7 +318,15 @@ footer .footer-left { margin: 0; gap: 4px 0; line-height: 1.5; }
 @media (min-width: 760px) { .about-cols { grid-template-columns: 1fr 1fr; } }
 .about-label { font-family: var(--font-sans); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; }
 .about-card p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text); max-width: 62ch; }
-.about-card .about-note { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 15px; max-width: none; }
+.about-note { margin: 14px 4px 0; font-size: 15px; line-height: 1.6; color: var(--muted); }
+.about-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+.about-summary::-webkit-details-marker { display: none; }
+.about-summary .about-title { margin: 0; }
+.about-toggle { flex: none; width: 32px; height: 32px; border: 1.5px solid var(--border); border-radius: 999px; position: relative; }
+.about-toggle::before { content: ""; position: absolute; left: 50%; top: 55%; width: 9px; height: 9px; border-right: 2px solid var(--text); border-bottom: 2px solid var(--text); transform: translate(-50%, -50%) rotate(-135deg); transition: transform .15s; }
+.about-card:not([open]) .about-toggle::before { top: 45%; transform: translate(-50%, -50%) rotate(45deg); }
+.about-summary:focus-visible { outline: 3px solid var(--text); outline-offset: 4px; border-radius: 6px; }
+.about-card[open] .about-summary { margin-bottom: 6px; }
 .about-note a { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .about-note a:hover { text-decoration-thickness: 2px; }
 .about-note a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

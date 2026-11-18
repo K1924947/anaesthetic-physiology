@@ -49,8 +49,8 @@
       </a>
     </div>
 
-    <section class="about-card" id="about" aria-labelledby="about-title">
-      <h2 class="about-title" id="about-title">About</h2>
+    <details class="about-card" id="about" open>
+      <summary class="about-summary"><h2 class="about-title" id="about-title">About</h2><span class="about-toggle" aria-hidden="true"></span></summary>
       <div class="about-cols">
         <div>
           <h3 class="about-label">Who I am</h3>
@@ -65,8 +65,8 @@
           <p>Medical students, foundation doctors and anyone revising physiology, including for exams such as the MSRA, FRCA and USMLE.</p>
         </div>
       </div>
-      <p class="about-note"><strong>A teaching tool, not clinical guidance.</strong> Always follow local protocols and current guidelines. Spotted an error or have an idea? Use the <a href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="2 minute feedback form, opens Google Forms in a new tab">2 minute feedback form</a>.</p>
-    </section>
+    </details>
+    <p class="about-note"><strong>A teaching tool, not clinical guidance.</strong> Always follow local protocols and current guidelines. Spotted an error or have an idea? Use the <a href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="2 minute feedback form, opens Google Forms in a new tab">2 minute feedback form</a>.</p>
   </main>
 
   <footer>
@@ -79,5 +79,14 @@
     </p>
   </footer>
 </div>
+<script>
+(function () {
+  var a = document.getElementById("about");
+  function openAbout() { if (a && location.hash === "#about") a.open = true; }
+  window.addEventListener("hashchange", openAbout);
+  document.addEventListener("click", function (e) { var l = e.target.closest && e.target.closest('a[href$="#about"]'); if (l && a) a.open = true; });
+  openAbout();
+})();
+</script>
 </body>
 </html>
