@@ -44,12 +44,22 @@ An interactive action potential tool with a linked schematic ECG strip.
 
 ---
 
+### Cardiac Murmurs
+
+An interactive murmur tool that links pressure gradients to the phonocardiogram.
+
+- Left- and right-heart pressure traces with a hatched murmur envelope
+- Normal and innocent sounds, systolic and diastolic valve lesions, and congenital lesions
+- Bedside manoeuvres, a chest map, Test yourself questions, and a revision section
+- Teaching simulation, not clinical guidance
+
+---
+
 ### Tools under construction
 
 These tools keep their usual addresses but the old pages are offline while they are rebuilt and rechecked:
 
 - Arterial Pressure Waveform
-- Cardiac Murmurs
 - Heart Failure notes
 - Myocardial Infarction Timeline
 
@@ -64,8 +74,9 @@ No login or download needed. Open the live tools directly in any browser:
 - [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
 - [ECG Rhythm Quiz](https://k1924947.github.io/anaesthetic-physiology/ECG_Rhythm_Quiz.html)
 - [Cardiac Action Potential](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Action_Potential.html)
+- [Cardiac Murmurs](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Murmurs.html)
 
-Four further cardiac tools are under construction and are not available yet.
+Three further cardiac tools are under construction and are not available yet.
 
 ---
 

@@ -4,14 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cardiac Action Potential · The Physio Lab</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css">
-<link rel="stylesheet" href="assets/layout.css">
-<link rel="stylesheet" href="assets/pv-core.css">
-<link rel="stylesheet" href="assets/pv-tool.css">
-<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/site.css?v=20261118">
+<link rel="stylesheet" href="assets/layout.css?v=20261118">
+<link rel="stylesheet" href="assets/pv-core.css?v=20261118">
+<link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
+<script src="assets/theme.js?v=20261118"></script>
 
 <style>
 /* Cardiac Action Potential: page additions on top of the PV tool template */
@@ -130,13 +133,10 @@
 <div class="page page-wide page-tool">
   <header class="site-header tool-view-header">
     <div class="site-header-top">
-      <nav class="crumb" aria-label="Breadcrumb">
-        <a href="index.html">Home</a>
-        <span class="crumb-sep" aria-hidden="true">/</span>
-        <a href="cardiac.html">Cardiac</a>
-        <span class="crumb-sep" aria-hidden="true">/</span>
-        <span aria-current="page">Cardiac Action Potential</span>
-      </nav>
+      <a class="site-mark" href="index.html">
+        <img class="site-logo" src="assets/logo.svg?v=20261118" width="20" height="20" alt="">
+        <span class="site-mark-name">The Physio Lab</span>
+      </a>
       <div class="header-actions">
         <a class="header-link" href="index.html#about">About</a>
         <button type="button" id="colour-blind-toggle" class="cb-toggle" aria-pressed="false">
@@ -145,6 +145,14 @@
         </button>
       </div>
     </div>
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="index.html">Home</a>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <a href="cardiac.html">Cardiac</a>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <span aria-current="page">Cardiac Action Potential</span>
+    </nav>
+
     <h1>Cardiac Action Potential</h1>
     <p class="subtitle">Fast Na+ channels drive the working myocyte; Ca2+ channels and the funny current set the pace.</p>
   </header>
@@ -370,7 +378,7 @@
     </p>
   </footer>
 </div>
-<script src="assets/graph-tween.js"></script>
+<script src="assets/graph-tween.js?v=20261118"></script>
 <script>
 "use strict";
 /* Cardiac Action Potential: teaching data.

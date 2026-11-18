@@ -391,7 +391,7 @@
     var W = Math.max(320, Math.min(760, Math.round(box.clientWidth || 700)));
     var narrow = W < 560;
     var L = narrow ? 40 : 50, R = narrow ? 50 : 66;
-    var pTop = 26, pH = narrow ? 170 : 210, evH = 34, phTop = pTop + pH + evH + 10, phH = narrow ? 96 : 110, axisH = 34;
+    var pTop = 26, pH = narrow ? 170 : 210, evH = 48, phTop = pTop + pH + evH + 10, phH = narrow ? 96 : 110, axisH = 34;
     var H = phTop + phH + axisH;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.setAttribute("width", W); svg.setAttribute("height", H);
@@ -432,16 +432,40 @@
 
     /* valve events */
     var evKeys = ["s1", "avo", "s2", "mvo"];
-    evKeys.forEach(function (k, i) {
+    evKeys.forEach(function (k) {
       if (!ev[k]) return;
       var t = ev[k][1], xx = x(t);
       el("line", { x1: xx, x2: xx, y1: pTop, y2: phTop + phH, stroke: c.muted, "stroke-width": 1, "stroke-dasharray": "2 3" }, svg);
-      if (!narrow || k === "s1" || k === "s2") {
-        var row = (k === "s1" || k === "s2") ? 0 : 1;
-        var lab = ev[k][0];
-        if (narrow && (k === "s1" || k === "s2")) lab = k.toUpperCase();
-        el("text", { x: xx, y: pTop + pH + 14 + (narrow ? 0 : row * 15), "text-anchor": "middle", "font-size": fs - 1, "font-weight": 600, fill: c.text, "class": "mm-sans mm-halo" }, svg, lab);
+    });
+    /* Closings stay as S1/S2 so they stay short. Openings use the event's own
+       text (AV opens, MV opens, PV opens, TV opens) on a second row, nudged
+       apart if neighbours would overlap. */
+    var evFs = fs - 1, evRow = 16;
+    function evLabW(s) { return Math.max(12, s.length * evFs * 0.56); }
+    var evLabs = [];
+    evKeys.forEach(function (k) {
+      if (!ev[k]) return;
+      var isOpen = (k === "avo" || k === "mvo");
+      evLabs.push({ k: k, lab: isOpen ? ev[k][0] : k.toUpperCase(), row: isOpen ? 1 : 0, x: x(ev[k][1]) });
+    });
+    evLabs.sort(function (a, b) { return a.row - b.row || a.x - b.x; });
+    evLabs.forEach(function (lb, i) {
+      var prev = evLabs[i - 1];
+      if (!prev || prev.row !== lb.row) return;
+      var need = (evLabW(prev.lab) + evLabW(lb.lab)) / 2 + 8;
+      var gap = lb.x - prev.x;
+      if (gap < need) {
+        var mid = (prev.x + lb.x) / 2;
+        prev.x = mid - need / 2;
+        lb.x = mid + need / 2;
       }
+    });
+    evLabs.forEach(function (lb) {
+      var hw = evLabW(lb.lab) / 2;
+      lb.x = Math.max(L + hw, Math.min(W - R - hw, lb.x));
+    });
+    evLabs.forEach(function (lb) {
+      el("text", { x: lb.x, y: pTop + pH + 14 + lb.row * evRow, "text-anchor": "middle", "font-size": evFs, "font-weight": 600, fill: c.text, "class": "mm-sans mm-halo" }, svg, lb.lab);
     });
 
     if (masked) {
@@ -591,6 +615,10 @@
     var s = (masked ? "Mystery murmur" : m.name) + ", " + man.toLowerCase() + ". ";
     if (!masked) s += "Pressure traces: " + m.traces.map(function (p) { return STY[p[0]].label; }).join(", ") + ". ";
     if (m.pair && !masked) s += "Shaded gradient: " + m.pairText + ". ";
+    var ev = md.ev || {}, evBits = ["s1", "avo", "s2", "mvo"].filter(function (k) { return ev[k]; }).map(function (k) {
+      return (k === "s1" || k === "s2") ? k.toUpperCase() : ev[k][0];
+    });
+    if (evBits.length) s += "Valve events: " + evBits.join(", ") + ". ";
     s += "Phonocardiogram, with solid black heart sounds and a hatched murmur if present: S1, " + (m.pair ? (masked ? "a murmur, " : shapeWord(m).toLowerCase() + " murmur, ") : "") + (m.split === "single" ? "single S2" : (md.split >= 0.03 ? "split S2 (A2 then P2)" : "S2")) + (m.os ? ", opening snap after S2" : "") + (m.click ? ", ejection click after S1" : "") + ".";
     return s;
   }
