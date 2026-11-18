@@ -566,6 +566,9 @@ body.scn-popup-open { overflow: hidden; }
 @media (min-width: 900px) {
   .log-compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 }
+
+.correct-ans { margin: 8px 0 0; padding: 8px 10px; border: 1.5px solid var(--text); border-radius: 8px; background: var(--surface-2); font-size: 15px; }
+.correct-ans-src { display: inline; font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -5211,6 +5214,7 @@ function queuePendingResult(p) {
 }
 function deliverPending(p) {
   ASK_PENDING = ASK_PENDING.filter(function (x) { return x !== p; });
+  var quiet = typeof MODEL_RUNNING !== "undefined" && MODEL_RUNNING;
   if (!SIM || SIM.done || SIM.pendingToken !== p.token) {
     renderPending();
     return;
@@ -5220,9 +5224,11 @@ function deliverPending(p) {
     var no = O("info", (p.reading && p.reading.keys) || "n_nibp", { event: p.text, notAction: true });
     no.label = "Cycle NIBP now";
     if (typeof logEvent === "function") logEvent(no, p.text, "nibp");
-    if (typeof renderFeedback === "function") renderFeedback(no, false);
-    if (typeof renderMonitor === "function") renderMonitor();
-    if ($("scnLive")) $("scnLive").textContent = p.text;
+    if (!quiet) {
+      if (typeof renderFeedback === "function") renderFeedback(no, false);
+      if (typeof renderMonitor === "function") renderMonitor();
+      if ($("scnLive")) $("scnLive").textContent = p.text;
+    }
   } else {
     var keys = "ask_" + p.id;
     if (!TXT[keys]) {
@@ -5240,8 +5246,10 @@ function deliverPending(p) {
     o.label = p.label;
     o.askText = p.text;
     if (typeof logEvent === "function") logEvent(o, p.label + ": " + p.text, "ask:" + p.id);
-    if (typeof renderFeedback === "function") renderFeedback(o, false);
-    if ($("scnLive")) $("scnLive").textContent = p.label + " result: " + p.text;
+    if (!quiet) {
+      if (typeof renderFeedback === "function") renderFeedback(o, false);
+      if ($("scnLive")) $("scnLive").textContent = p.label + " result: " + p.text;
+    }
   }
   renderPending();
   if (typeof fillAskList === "function") fillAskList();
@@ -5767,6 +5775,7 @@ function liveFbParts(o) {
   return parts;
 }
 function announceFeedback(o) {
+  if (typeof MODEL_RUNNING !== "undefined" && MODEL_RUNNING) return;
   var bits = [];
   function push(s) {
     if (!s) return;
@@ -5951,9 +5960,16 @@ function uniqueField(due, field) {
 function isCycleCheck(o) {
   return !!(o && (o.cycleCheck || (o.keys && o.keys.some(function (k) { return CYCLE_CHECK[k] || k === "n_skip"; }))));
 }
+function copyDueItems(list) {
+  return (list || []).map(function (d) {
+    return { id: d.id, name: d.name, category: d.category, src: d.src, guideline: d.guideline };
+  });
+}
 function snapshotDue() {
   if (!SIM) return;
-  SIM.dueBeforeAction = (outstandingSteps(SIM) || []).map(function (d) { return d.id; });
+  var due = outstandingSteps(SIM) || [];
+  SIM.dueItemsBeforeAction = copyDueItems(due);
+  SIM.dueBeforeAction = due.map(function (d) { return d.id; });
 }
 function stillDueSteps(due) {
   var before = (SIM && SIM.dueBeforeAction) || [];
@@ -6034,7 +6050,7 @@ function applyReview(a, o) {
       o.nudge = n;
       o.nudgeText = copy.text;
       o.nudgeCats = copy.cats || o.nudgeCats;
-      o.separateNudge = { n: n, text: copy.text, key: copy.key, verdict: copy.verdict };
+      o.separateNudge = { n: n, text: copy.text, key: copy.key, verdict: copy.verdict, due: copyDueItems(stillDue) };
       if (n >= 3) {
         o.end = true;
         o.endReason = "missed";
@@ -6184,7 +6200,8 @@ function logSeparateNudge(o) {
   if (!n || !SIM || n.n >= 3) return;
   var no = {
     v: "info", keys: [n.key], isNudge: true, notAction: true, nudge: n.n,
-    nudgeText: n.text, event: n.text, label: "Algorithm check", t: SIM.clock
+    nudgeText: n.text, event: n.text, label: "Algorithm check", t: SIM.clock,
+    dueAt: n.due || o.dueAt || copyDueItems(SIM.dueItemsBeforeAction || [])
   };
   logEvent(no, n.text);
 }
@@ -6276,6 +6293,7 @@ function doActionFinish(a, o, timeCost) {
   o.label = label; o.t = SIM.clock;
   if (o.event == null && typeof defaultEvent === "function") o.event = defaultEvent(a, label);
   if ((a === "shock" || a === "sync") && o.keys && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync", "h1_shock", "h2_shock", "h4_shockAsys", "h9_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
+  if (!o.dueAt) o.dueAt = copyDueItems(SIM.dueItemsBeforeAction || []);
   if (a !== "skip") applyReview(a, o);
   logEvent(o, label, a);
   if (o.separateNudge) logSeparateNudge(o);
@@ -6317,6 +6335,7 @@ function rhythmAnnounce(o) {
   return "Rhythm change: " + name;
 }
 function renderFeedback(o, changed) {
+  if (typeof MODEL_RUNNING !== "undefined" && MODEL_RUNNING) return;
   if (SIM) SIM.lastFb = { o: o, changed: changed };
   var ic = o.v === "ok" ? ICON_OK : o.v === "bad" ? ICON_NO : "<span class='verdict-glyph' aria-hidden='true'>" + VERD[o.v][0] + "</span>";
   var verdict = o.verdictText ? (ic + esc(o.verdictText)) : (ic + VERD[o.v][1] + ": " + esc(o.label));
@@ -6386,6 +6405,118 @@ function finishScenario(completed, reason) {
   }
   syncScnBanner();
 }
+
+function withPeriod(s) {
+  s = String(s || "").trim();
+  if (!s) return "";
+  return /[.!?]$/.test(s) ? s : s + ".";
+}
+function sourceTagFor(srcKey, guideline) {
+  var raw = (srcKey && typeof SRC !== "undefined" && SRC[srcKey]) || "";
+  if (raw) {
+    var cut = raw.indexOf(":");
+    if (cut > 8 && cut < 110) return raw.slice(0, cut).replace(/\s+\([^)]*\)\s*$/, "").trim();
+  }
+  if (guideline && /RCUK|BNF/.test(guideline)) return guideline;
+  if (srcKey && typeof IDEAL_PATHS !== "undefined") {
+    /* fall through to a readable default */
+  }
+  return guideline && /RCUK|BNF|ALS|Brady|Tachy|Special/.test(guideline) ? guideline : (guideline ? "RCUK 2025 Adult ALS guideline" : "RCUK 2025 Adult ALS guideline");
+}
+function idealWhyFor(scn, id) {
+  var ideal = (typeof IDEAL_PATHS !== "undefined" && scn && IDEAL_PATHS[scn.id]) || [];
+  var aliases = { aden2: "aden", adenNext: "aden", adrRepeat: "adr", sync2: "sync" };
+  var want = aliases[id] || id, i, step;
+  for (i = 0; i < ideal.length; i++) {
+    step = ideal[i];
+    if (step.id === want || step.id === id || (step.alts && (step.alts.indexOf(id) >= 0 || step.alts.indexOf(want) >= 0))) {
+      return { why: step.why, src: step.src, label: step.label };
+    }
+  }
+  return null;
+}
+function answerFromDue(due, scn) {
+  if (!due || !due.length) return null;
+  var names = due.map(function (d) { return d.name; }).filter(Boolean);
+  if (!names.length) return null;
+  var action = names.join("; ");
+  var meta = idealWhyFor(scn, due[0].id);
+  var why = (meta && meta.why) || due[0].guideline || due[0].category || "This was the algorithm step that was due at that moment.";
+  var src = (meta && meta.src) || sourceTagFor(due[0].src, due[0].guideline);
+  return { action: action, why: why, src: src };
+}
+function answerFromTxt(keys) {
+  var i, k, t;
+  for (i = 0; i < (keys || []).length; i++) {
+    k = keys[i];
+    t = TXT[k];
+    if (t && t.nextStep) {
+      return { action: t.nextStep, why: t.guideline || t.whyWrong || "", src: sourceTagFor(t.src, t.guideline) };
+    }
+  }
+  return null;
+}
+function fallbackExpected(scn, logBefore) {
+  var meta, step, i, done = {}, alias;
+  (logBefore || []).forEach(function (l) {
+    if (!l || !l.act || (l.o && l.o.isNudge)) return;
+    alias = (typeof idealActId === "function") ? idealActId(l.act) : l.act;
+    done[alias] = 1;
+    done[l.act] = 1;
+  });
+  var ideal = (typeof IDEAL_PATHS !== "undefined" && scn && IDEAL_PATHS[scn.id]) || [];
+  function unused(step) {
+    if (done[step.id]) return false;
+    return !(step.alts || []).some(function (a) { return done[a]; });
+  }
+  for (i = 0; i < ideal.length; i++) {
+    step = ideal[i];
+    if (step.orderFree) continue;
+    if (unused(step)) return { action: step.label, why: step.why, src: step.src };
+  }
+  for (i = 0; i < ideal.length; i++) {
+    step = ideal[i];
+    if (unused(step)) return { action: step.label, why: step.why, src: step.src };
+  }
+  return { action: "Continue with the next step on the RCUK 2025 algorithm for this rhythm", why: "Reassess the patient and treat according to the algorithm.", src: "RCUK 2025 Adult ALS guideline" };
+}
+function needsCorrectAnswer(l) {
+  if (!l || !l.o) return false;
+  if (l.o.isReg) return false;
+  if (l.o.v === "bad" || l.o.v === "part") return true;
+  if (l.o.isNudge && l.o.nudge) return true;
+  return false;
+}
+function correctAnswerForLog(l, log, idx, scn) {
+  if (!needsCorrectAnswer(l)) return null;
+  var o = l.o || {};
+  var due = o.dueAt || [];
+  var unmatched = due.filter(function (d) { return !actionMatchesDue(l.act, d.id); });
+  var ans = unmatched.length ? answerFromDue(unmatched, scn) : null;
+  if (!ans) ans = answerFromTxt(o.keys || []);
+  if (!ans) ans = fallbackExpected(scn, (log || []).slice(0, idx));
+  if (!ans || !ans.action) {
+    ans = { action: "Continue with the next step on the RCUK 2025 algorithm for this rhythm", why: "Reassess the patient and treat according to the algorithm.", src: "RCUK 2025 Adult ALS guideline" };
+  }
+  return ans;
+}
+function correctAnswerForMissed(s, r) {
+  var id = r && r[0], name = r && r[1], srcKey = r && r[2], guideline = r && r[3];
+  var meta = idealWhyFor(s, id);
+  return {
+    action: (meta && meta.label) || name || "The missed algorithm step",
+    why: (meta && meta.why) || guideline || "This required step was due and was not done.",
+    src: (meta && meta.src) || sourceTagFor(srcKey, guideline)
+  };
+}
+function renderCorrectAnswer(ans) {
+  if (!ans || !ans.action) return "";
+  var html = "<p class='correct-ans'><strong>Correct answer:</strong> " + esc(withPeriod(ans.action));
+  if (ans.why && !sameLine(ans.why, ans.action)) html += " " + esc(withPeriod(ans.why));
+  if (ans.src) html += " <span class='correct-ans-src'>Source: " + esc(ans.src) + "</span>";
+  html += "</p>";
+  return html;
+}
 function debriefReqItem(s, r, kind) {
   var label = kind === "missed" ? "Missed" : "Not reached";
   var reqI = -1;
@@ -6399,7 +6530,8 @@ function debriefReqItem(s, r, kind) {
   }
   if (!quotes && src) quotes = esc(src);
   var extra = kind === "notReached" ? "<p>This step was not yet due when the case ended, so it is not marked as missed.</p>" : "";
-  return "<li class='db-item db-bad'><p class='db-head'><span class='predict-mark' aria-hidden='true'>✗</span><span><strong>" + label + ":</strong> " + esc(r[1]) + tag + "</span></p>" + extra + (g ? "<p class='scn-src'><strong>Guideline step:</strong> " + esc(g) + "</p>" : "") + sourceLinesBlock(quotes) + "</li>";
+  var ca = kind === "missed" ? renderCorrectAnswer(correctAnswerForMissed(s, r)) : "";
+  return "<li class='db-item db-bad'><p class='db-head'><span class='predict-mark' aria-hidden='true'>✗</span><span><strong>" + label + ":</strong> " + esc(r[1]) + tag + "</span></p>" + extra + ca + (g ? "<p class='scn-src'><strong>Guideline step:</strong> " + esc(g) + "</p>" : "") + sourceLinesBlock(quotes) + "</li>";
 }
 function debriefEntryBody(l) {
   var k = l.o.keys || [];
@@ -6437,9 +6569,10 @@ function showDebrief() {
   html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct scores 1, partly right 0.5, not quite 0; noted actions are not scored. Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed at the end." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
   html += renderLogCompare(s, SIM.log);
   html += "<h3 class='viva-group' id='scnYourDecisions'>Your decisions in detail</h3>";
-  html += "<ol class='debrief-list'>" + acts.map(function (l) {
+  html += "<ol class='debrief-list' id='scnDecisionList'>" + acts.map(function (l, idx) {
     var k = l.o.keys || [];
     var body = debriefEntryBody(l);
+    var ca = renderCorrectAnswer(correctAnswerForLog(l, acts, idx, s));
     var gk = k.length ? k[k.length - 1] : "", i;
     for (i = k.length - 1; i >= 0; i--) if (TXT[k[i]] && TXT[k[i]].guideline) { gk = k[i]; break; }
     var srcBlock = "";
@@ -6450,6 +6583,7 @@ function showDebrief() {
     }
     return "<li class='db-item db-" + l.o.v + "'><p class='db-head'><span class='predict-mark' aria-hidden='true'>" + VERD[l.o.v][0] + "</span><span><strong>" + (l.o.verdictText || VERD[l.o.v][1]) + "</strong> · " + mmss(l.t) + " · " + esc(l.text) + "</span></p>" +
       body +
+      ca +
       (l.o.phys ? "<p class='db-phys'><strong>Physiology:</strong> " + esc(PHYS[l.o.phys]) + "</p>" : "") +
       srcBlock + "</li>";
   }).join("") + "</ol>";
