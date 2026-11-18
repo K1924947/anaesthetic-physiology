@@ -527,7 +527,7 @@
       el("text", { x: x(s.t) + (s.dx || 0), y: phTop + 8, "text-anchor": "middle", "font-size": fs, "font-weight": 700, fill: c.text, "class": "mm-sans mm-halo" }, svg, s.label);
     });
     /* murmur shape label */
-    if (m.pair && !masked) {
+    if (m.pair && m.win && !masked) {
       var sum = 0, wsum = 0; for (var z = 0; z < N; z++) { var tz = z / N * T; if (m.win[1] > T && tz < m.win[0]) tz += T; sum += md.env[z] * tz; wsum += md.env[z]; }
       var tc = wsum ? (sum / wsum) % T : 0, txt = shapeWord(m), tw = txt.length * (fs - 1) * 0.52;
       var lx = Math.max(L + tw / 2, Math.min(W - R - tw / 2, x(tc)));
@@ -775,12 +775,18 @@
     var traces = mixed.traces;
     var srcPair = e < 0.5 ? (ma.pair || mb.pair) : (mb.pair || ma.pair);
     var pair = mapPair(srcPair, mixed.pairs, mixed.disp);
+    /* Keep a murmur window whenever a pair is shown. Normal heart sounds
+       have no window, so without a fallback the mixed model keeps the
+       pair but drops win, and the phonocardiogram label then crashes
+       halfway through the transition (which freezes the graph). */
+    var win = e < 0.5 ? (ma.win || mb.win) : (mb.win || ma.win);
     var clickT = (ma.click != null || mb.click != null) ? L(ma.click != null ? ma.click : mb.click, mb.click != null ? mb.click : ma.click, e) : null;
     var osT = (ma.os != null || mb.os != null) ? L(ma.os != null ? ma.os : mb.os, mb.os != null ? mb.os : ma.os, e) : null;
     var m = Object.assign({}, e < 0.5 ? ma : mb, {
       ymax: L(ma.ymax, mb.ymax, e),
       traces: traces,
       pair: pair,
+      win: win,
       s1: L(ma.s1, mb.s1, e),
       s2: L(ma.s2, mb.s2, e),
       p2: L(ma.p2 != null ? ma.p2 : ma.s2 * 0.75, mb.p2 != null ? mb.p2 : mb.s2 * 0.75, e),
@@ -793,7 +799,6 @@
        and the displayed window, so a systolic pair is not painted with a
        continuous destination mask (and vice versa). The sound envelope still
        interpolates independently. */
-    var win = e < 0.5 ? ma.win : mb.win;
     var g = recomputeGrad(mixed.tr, pair, win, e < 0.5 ? ma.machinery : mb.machinery);
     return {
       m: m,
