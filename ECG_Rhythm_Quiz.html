@@ -557,6 +557,15 @@ body.scn-popup-open { overflow: hidden; }
 .ideal-mark { flex: none; font-weight: 700; line-height: 24px; }
 .ideal-flag { font-family: var(--font-sans); font-weight: 700; font-size: 13px; margin-left: 6px; }
 .ideal-why { margin: 0; font-size: 15px; }
+
+.log-compare { display: grid; gap: 14px; margin: 14px 0 18px; }
+.log-compare-card { margin: 0; padding: 10px 12px 12px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); min-width: 0; }
+.log-compare-model { border-color: var(--text); }
+.log-compare .viva-group { margin-top: 0; }
+.log-compare .scn-log-scroll { max-height: 480px; }
+@media (min-width: 900px) {
+  .log-compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
 </style>
 </head>
 <body>
@@ -5104,8 +5113,13 @@ function previewNIBP(st) {
   var amtS = (typeof prefersReduced === "function" && prefersReduced()) ? 2 : 5;
   var amtD = (typeof prefersReduced === "function" && prefersReduced()) ? 2 : 4;
   var tr = m.trend || 0;
-  sys = Math.round(sys + (Math.random() * 2 - 1) * amtS + tr * 3);
-  dia = Math.round(dia + (Math.random() * 2 - 1) * amtD + tr * 2);
+  if (typeof MODEL_RUNNING !== "undefined" && MODEL_RUNNING) {
+    sys = Math.round(sys + tr * 3);
+    dia = Math.round(dia + tr * 2);
+  } else {
+    sys = Math.round(sys + (Math.random() * 2 - 1) * amtS + tr * 3);
+    dia = Math.round(dia + (Math.random() * 2 - 1) * amtD + tr * 2);
+  }
   return { unrecordable: false, sys: sys, dia: dia, t: st.clock, event: "NIBP " + sys + "/" + dia + " mmHg at " + mmss(st.clock) + ".", keys: ["n_nibp"] };
 }
 
@@ -5928,6 +5942,7 @@ function outstandingSteps(st) {
   }
   return out;
 }
+var MODEL_RUNNING = false;
 function uniqueField(due, field) {
   var seen = {}, out = [];
   due.forEach(function (d) { if (d[field] && !seen[d[field]]) { seen[d[field]] = 1; out.push(d[field]); } });
@@ -6176,7 +6191,9 @@ function logSeparateNudge(o) {
 function logEvent(o, text, act) {
   var li = { t: SIM.clock, text: text, o: o, act: act };
   SIM.log.push(li);
+  if (MODEL_RUNNING) return;
   var host = $("scnLog");
+  if (!host) return;
   var item = document.createElement("li");
   if (o) item.innerHTML = "<span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>" + VERD[o.v][0] + "</span><span class='log-text'><strong>" + esc(text) + "</strong> <span class='log-verdict'>" + VERD[o.v][1] + "</span></span>";
   else item.innerHTML = "<span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>\u2022</span><span class='log-text'><em>" + esc(text) + "</em></span>";
@@ -6263,11 +6280,17 @@ function doActionFinish(a, o, timeCost) {
   logEvent(o, label, a);
   if (o.separateNudge) logSeparateNudge(o);
   var changed = false;
-  if (o.rhythm) { changed = o.rhythm.gen !== SIM.rhythm.gen || JSON.stringify(o.rhythm.opts || {}) !== JSON.stringify(SIM.rhythm.opts || {}); SIM.rhythm = o.rhythm; }
-  if (o.rhythm || o.cprStart || o.cprStop) SIM.sig = monitor.set(SIM.rhythm, SIM.cpr, true);
+  if (o.rhythm) { changed = !SIM.rhythm || o.rhythm.gen !== SIM.rhythm.gen || JSON.stringify(o.rhythm.opts || {}) !== JSON.stringify(SIM.rhythm.opts || {}); SIM.rhythm = o.rhythm; }
+  if (!MODEL_RUNNING && typeof monitor !== "undefined" && monitor && (o.rhythm || o.cprStart || o.cprStop)) {
+    SIM.sig = monitor.set(SIM.rhythm, SIM.cpr, true);
+  }
   if (changed) {
     o.changeAnnounce = rhythmAnnounce(o);
-    if (hintsOn()) logEvent(null, o.changeAnnounce);
+    if (hintsOn() || MODEL_RUNNING) logEvent(null, o.changeAnnounce);
+  }
+  if (MODEL_RUNNING) {
+    if (o.end) finishScenario(!o.endReason || o.endReason === "complete", o.endReason);
+    return;
   }
   renderVitals(); renderClock(); renderFeedback(o, changed);
   if (a === "aden" && o.v !== "info") renderActions();
@@ -6340,8 +6363,10 @@ function renderFeedback(o, changed) {
 function finishScenario(completed, reason) {
   if (!SIM || SIM.done) return;
   SIM.done = true; SIM.completed = completed; SIM.endReason = reason || (completed ? "complete" : "early");
-  clearInterval(simTimer);
-  renderActions();
+  if (!MODEL_RUNNING) {
+    clearInterval(simTimer);
+    renderActions();
+  }
   var endLine;
   if (SIM.endReason === "harm") endLine = "Patient harmed: scenario ended.";
   else if (SIM.endReason === "missed") {
@@ -6350,6 +6375,7 @@ function finishScenario(completed, reason) {
   } else if (SIM.endReason === "cap") endLine = "Scenario ended: too many cycles without a resolution.";
   else endLine = completed ? "Scenario complete." : "Scenario ended early.";
   logEvent(null, endLine);
+  if (MODEL_RUNNING) return;
   if (SIM.endReason === "missed" || SIM.endReason === "cap" || SIM.endReason === "harm") {
     showDebrief();
   } else {
@@ -6409,6 +6435,8 @@ function showDebrief() {
   var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
   var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
   html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct scores 1, partly right 0.5, not quite 0; noted actions are not scored. Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed at the end." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
+  html += renderLogCompare(s, SIM.log);
+  html += "<h3 class='viva-group' id='scnYourDecisions'>Your decisions in detail</h3>";
   html += "<ol class='debrief-list'>" + acts.map(function (l) {
     var k = l.o.keys || [];
     var body = debriefEntryBody(l);
@@ -6520,7 +6548,15 @@ var SRC_BNF_ATRO = "BNF: atropine sulfate";
 var SRC_BNF_ADEN = "BNF: adenosine";
 var SRC_BNF_MG = "BNF: magnesium sulfate";
 
-function IP(id, label, why, src, alts) { return { id: id, label: label, why: why, src: src, alts: alts || [] }; }
+function IP(id, label, why, src, alts, opts) {
+  if (alts && !Array.isArray(alts) && typeof alts === "object") { opts = alts; alts = []; }
+  var o = { id: id, label: label, why: why, src: src, alts: alts || [] };
+  if (opts) {
+    if (opts.orderFree) o.orderFree = true;
+    if (opts.after) o.after = opts.after;
+  }
+  return o;
+}
 
 var IDEAL_PATHS = {
   s1: [
@@ -6542,8 +6578,8 @@ var IDEAL_PATHS = {
     IP("assess", "Check rhythm and pulse", "Confirm a non-shockable arrest before you treat.", SRC_ALS_A),
     IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
     IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
-    IP("causes", "Identify the reversible cause (hypovolaemia)", "Identify and treat reversible causes early.", SRC_ALS_A),
-    IP("fluid", "Give IV fluid for hypovolaemia", "Give fluids during CPR only if the arrest is caused by hypovolaemia.", SRC_ALS),
+    IP("causes", "Identify the reversible cause (hypovolaemia)", "Identify and treat reversible causes early. This can be done at any time once the arrest is recognised.", SRC_ALS_A, { orderFree: true }),
+    IP("fluid", "Give IV fluid for hypovolaemia", "Give fluids during CPR only if the arrest is caused by hypovolaemia.", SRC_ALS, { after: ["causes"] }),
     IP("ff", "CPR for 2 minutes", "Resume CPR for 2 minutes and then reassess.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Look for ROSC after treating the cause.", SRC_ALS_A)
   ],
@@ -6551,7 +6587,7 @@ var IDEAL_PATHS = {
     IP("assess", "Check rhythm and pulse", "Confirm the bradycardia and the life-threatening features. Monitoring and IV access are already in place.", SRC_BRADY),
     IP("atro", "Atropine 500 micrograms IV", "Atropine 500 micrograms IV is first-line when life-threatening features are present. Assess the response.", SRC_BRADY),
     IP("pace", "Transcutaneous pacing", "If the response to atropine is unsatisfactory, start transcutaneous pacing as an interim measure.", SRC_BRADY),
-    IP("expert", "Seek expert help", "Seek expert help and consider transvenous pacing.", SRC_BRADY)
+    IP("expert", "Seek expert help", "Seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true })
   ],
   s4: [
     IP("assess", "Check rhythm and pulse", "Confirm a stable narrow complex tachycardia, with no life-threatening features.", SRC_TACHY),
@@ -6568,14 +6604,14 @@ var IDEAL_PATHS = {
   s6: [
     IP("assess", "Check rhythm and pulse", "Confirm self-terminating polymorphic VT (torsades de pointes).", SRC_TACHY),
     IP("mg", "Magnesium 8 mmol IV over 10 min", "Give magnesium 8 mmol IV over 10 minutes for polymorphic VT with QT prolongation.", SRC_TACHY),
-    IP("causes", "Identify and treat reversible causes", "Look for low potassium and QT-prolonging drugs, and treat the cause.", SRC_TACHY)
+    IP("causes", "Identify and treat reversible causes", "Look for low potassium and QT-prolonging drugs, and treat the cause. This can be done at any time once the rhythm is recognised.", SRC_TACHY, { orderFree: true })
   ],
   h1: [
     IP("assess", "Check rhythm and pulse", "Confirm asystole before you treat.", SRC_ALS_A),
     IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
     IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
-    IP("causes", "Identify the reversible cause (hyperkalaemia)", "Name and treat reversible causes early. In this case the reversible cause is hyperkalaemia.", SRC_ALS_A),
-    IP("calcium", "Calcium chloride 10 mL of 10% IV", "Give calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest.", SRC_SPEC),
+    IP("causes", "Identify the reversible cause (hyperkalaemia)", "Name and treat reversible causes early. In this case the reversible cause is hyperkalaemia. Naming the cause can be done at any time once the arrest is recognised.", SRC_ALS_A, { orderFree: true }),
+    IP("calcium", "Calcium chloride 10 mL of 10% IV", "Give calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest.", SRC_SPEC, { after: ["causes"] }),
     IP("ff", "Continue CPR cycles, with adrenaline every 3 to 5 minutes", "After treating the cause, continue 2-minute cycles of CPR and repeat adrenaline every 3 to 5 minutes until there is a return of spontaneous circulation.", SRC_ALS),
     IP("assess", "Check rhythm and pulse (ROSC)", "Reassess the rhythm and pulse after treating the cause; a return of spontaneous circulation is the aim.", SRC_ALS_A)
   ],
@@ -6583,8 +6619,8 @@ var IDEAL_PATHS = {
     IP("assess", "Check rhythm and pulse", "Confirm PEA before you treat.", SRC_ALS_A),
     IP("cpr", "CPR 30:2 without delay", "High-quality CPR with minimal interruption is the priority.", SRC_ALS),
     IP("adr", "Adrenaline 1 mg as soon as possible", "Give adrenaline 1 mg as soon as possible in a non-shockable arrest.", SRC_ALS),
-    IP("causes", "Identify the reversible cause (tension pneumothorax)", "Identify and treat reversible causes early.", SRC_ALS_A),
-    IP("decompress", "Chest decompression", "Treat tension pneumothorax with immediate chest decompression.", SRC_SPEC),
+    IP("causes", "Identify the reversible cause (tension pneumothorax)", "Identify and treat reversible causes early. Naming the cause can be done at any time once the arrest is recognised.", SRC_ALS_A, { orderFree: true }),
+    IP("decompress", "Chest decompression", "Treat tension pneumothorax with immediate chest decompression.", SRC_SPEC, { after: ["causes"] }),
     IP("ff", "CPR for 2 minutes", "Resume CPR for 2 minutes and then reassess.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Look for ROSC after treating the cause.", SRC_ALS_A)
   ],
@@ -6640,7 +6676,7 @@ var IDEAL_PATHS = {
   ],
   h8: [
     IP("assess", "Check rhythm and pulse", "Confirm broad-complex complete heart block. There are no current life-threatening features, but there is a risk of asystole.", SRC_BRADY),
-    IP("expert", "Seek expert help", "When there is a risk of asystole, seek expert help and consider transvenous pacing.", SRC_BRADY),
+    IP("expert", "Seek expert help", "When there is a risk of asystole, seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true }),
     IP("pace", "Transcutaneous pacing, or an adrenaline or isoprenaline infusion", "Use transcutaneous pacing, or an adrenaline or isoprenaline infusion, as a bridge if transvenous pacing is not immediately available.", SRC_BRADY, ["adrInf", "iso"])
   ],
   h9: [
@@ -6665,6 +6701,13 @@ function idealActId(act) {
   return act;
 }
 
+function stepMustFollow(first, second) {
+  if (!first || !second) return false;
+  if (second.after && second.after.indexOf(first.id) >= 0) return true;
+  if (first.after && first.after.indexOf(second.id) >= 0) return false;
+  if (first.orderFree || second.orderFree) return false;
+  return true;
+}
 function markIdealPath(ideal, log) {
   var acts = (log || []).filter(function (l) { return l.o && l.act && !l.o.isNudge && !l.o.isReg; }).map(function (l) {
     return { id: idealActId(l.act), t: l.t };
@@ -6683,11 +6726,11 @@ function markIdealPath(ideal, log) {
     var mark = "missed";
     if (row.userIndex >= 0) {
       var late = assigned.some(function (other, sj) {
-        return sj > si && other.userIndex >= 0 && other.userIndex < row.userIndex;
+        return sj > si && other.userIndex >= 0 && other.userIndex < row.userIndex && stepMustFollow(row.step, other.step);
       });
       mark = late ? "late" : "matched";
     }
-    return { id: row.step.id, label: row.step.label, why: row.step.why, src: row.step.src, mark: mark };
+    return { id: row.step.id, label: row.step.label, why: row.step.why, src: row.step.src, mark: mark, orderFree: !!row.step.orderFree };
   });
 }
 
@@ -6695,8 +6738,9 @@ function renderIdealPath(s, log) {
   var ideal = (typeof IDEAL_PATHS !== "undefined" && IDEAL_PATHS[s.id]) || [];
   if (!ideal.length) return "";
   var rows = markIdealPath(ideal, log);
-  var html = "<h3 class='viva-group' id='scnIdealTitle'>Ideal pathway</h3>";
-  html += "<p class='ideal-lead'>The sequence below is the model path for this case. Your actions are marked as matched (done in a sensible order), late (done after a later step), or missed. Requests that are not scored, such as Cycle NIBP, are not required here unless listed.</p>";
+  var html = "<div class='ideal-path' id='scnIdealPath'>";
+  html += "<h3 class='viva-group' id='scnIdealTitle'>Ideal pathway</h3>";
+  html += "<p class='ideal-lead'>The sequence below is the model path for this case. Your actions are marked as matched, late, or missed. Late is used only when a step was done after a step the algorithm requires to come after it (for example, pacing before atropine). Seeking expert help, asking for values, and identifying reversible causes when they are allowed at any time do not make other steps late if you did them early. Requests that are not scored, such as Cycle NIBP, are not required here unless listed.</p>";
   html += "<ol class='ideal-list'>";
   rows.forEach(function (r, i) {
     var markLabel = r.mark === "matched" ? "Matched" : r.mark === "late" ? "Late" : "Missed";
@@ -6707,10 +6751,132 @@ function renderIdealPath(s, log) {
     if (r.src) html += "<p class='scn-src'><strong>Source:</strong> " + esc(r.src) + "</p>";
     html += "</li>";
   });
-  html += "</ol>";
+  html += "</ol></div>";
   return html;
 }
 
-window.__scnIdeal = { paths: IDEAL_PATHS, mark: markIdealPath, render: renderIdealPath };
+
+/* ===== Model answer event log: run the ideal path through the engine ===== */
+var MODEL_ACTS = {
+  s1: ["assess","shock","cpr","ff","shock","cpr","ff","shock","cpr","adr","amio300","ff","assess"],
+  s2: ["assess","cpr","adr","ask:gas","cause:hypovolaemia","fluid","ff","assess"],
+  s3: ["assess","expert","ask:ecg12","nibp","atro","pace"],
+  s4: ["assess","ask:ecg12","nibp","vagal","aden","aden"],
+  s5: ["assess","ask:ecg12","nibp","expert","sync","sync"],
+  s6: ["assess","ask:ecg12","ask:gas","mg","cause:hypokalaemia"],
+  h1: ["assess","cpr","adr","ask:gas","cause:hyperkalaemia","calcium","ff","assess"],
+  h2: ["assess","cpr","adr","ask:examine","cause:tension","decompress","ff","assess"],
+  h3: ["assess","shock","cpr","ff","shock","cpr","ff","shock","cpr","adr","amio300","ff","shock","cpr","ff","shock","cpr","amio150","ff","assess"],
+  h4: ["assess","shock","cpr","ff","assess","cpr","adr","ff","assess"],
+  h5: ["assess","ask:ecg12","nibp","vagal","aden","aden","aden"],
+  h6: ["assess","ask:ecg12","nibp","expert","sync","sync"],
+  h7: ["assess","ask:ecg12","nibp","amioInf"],
+  h8: ["assess","expert","ask:ecg12","nibp","pace"],
+  h9: ["assess","shock","cpr","mg","ff","assess"],
+  h10: ["assess","ask:ecg12","nibp","expert","sync"]
+};
+var MODEL_LOG_CACHE = {};
+
+function isModelRequest(a) {
+  return !!(a && (a === "nibp" || a.indexOf("ask:") === 0));
+}
+function snapshotAskState() {
+  return {
+    mode: typeof askTimerMode !== "undefined" ? askTimerMode : "real",
+    now: typeof askFakeNow !== "undefined" ? askFakeNow : 0,
+    seq: typeof askFakeSeq !== "undefined" ? askFakeSeq : 0,
+    queue: typeof askFakeQueue !== "undefined" ? askFakeQueue.slice() : [],
+    pending: typeof ASK_PENDING !== "undefined" ? ASK_PENDING.slice() : [],
+    real: typeof askRealTimeouts !== "undefined" ? askRealTimeouts.slice() : []
+  };
+}
+function restoreAskState(s) {
+  if (!s || typeof askTimerMode === "undefined") return;
+  askTimerMode = s.mode;
+  askFakeNow = s.now;
+  askFakeSeq = s.seq;
+  askFakeQueue = s.queue;
+  ASK_PENDING = s.pending;
+  askRealTimeouts = s.real;
+}
+function modelFlushPending() {
+  if (typeof ASK_PENDING === "undefined" || !ASK_PENDING.length) return;
+  var now = askNow(), maxLeft = 0;
+  ASK_PENDING.forEach(function (p) {
+    var left = (p.dueAt || 0) - now;
+    if (left > maxLeft) maxLeft = left;
+  });
+  if (maxLeft > 0) {
+    SIM.clock += Math.max(1, Math.round(maxLeft / 1000));
+    if (typeof advanceAskTimers === "function") advanceAskTimers(maxLeft);
+  }
+}
+function startModelScenario(id) {
+  var s = SCN[id];
+  if (!s) return false;
+  SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: false, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false, wasDue: {}, reviewsWhenReady: null, actionsWhenReady: null, asked: {}, found: {} };
+  if (typeof initScenarioExtras === "function") initScenarioExtras(SIM);
+  SIM.rhythm = s.start.rhythm;
+  logEvent(null, "Scenario started. " + s.scene.split(". ")[0] + ".");
+  return true;
+}
+function runModelLog(id) {
+  if (MODEL_LOG_CACHE[id] && MODEL_LOG_CACHE[id].length) return MODEL_LOG_CACHE[id];
+  var acts = MODEL_ACTS[id];
+  if (!acts || !SCN[id] || typeof doAction !== "function") return [];
+  var savedSIM = SIM, savedLast = typeof lastScn !== "undefined" ? lastScn : null, askState = snapshotAskState();
+  MODEL_RUNNING = true;
+  try {
+    askTimerMode = "fake";
+    askFakeNow = 0;
+    askFakeQueue = [];
+    ASK_PENDING = [];
+    if (!startModelScenario(id)) return [];
+    var i, a, prevReq = false;
+    for (i = 0; i < acts.length; i++) {
+      if (!SIM || SIM.done) break;
+      a = acts[i];
+      if (prevReq && !isModelRequest(a)) modelFlushPending();
+      doAction(a);
+      prevReq = isModelRequest(a);
+    }
+    modelFlushPending();
+    MODEL_LOG_CACHE[id] = (SIM && SIM.log) ? SIM.log.slice() : [];
+    return MODEL_LOG_CACHE[id];
+  } catch (err) {
+    return [];
+  } finally {
+    MODEL_RUNNING = false;
+    SIM = savedSIM;
+    if (typeof lastScn !== "undefined") lastScn = savedLast;
+    restoreAskState(askState);
+  }
+}
+function renderEventLogItems(log) {
+  return (log || []).map(function (li) {
+    var o = li.o;
+    if (o) {
+      return "<li><span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>" + VERD[o.v][0] + "</span><span class='log-text'><strong>" + esc(li.text) + "</strong> <span class='log-verdict'>" + VERD[o.v][1] + "</span></span></li>";
+    }
+    return "<li><span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>\u2022</span><span class='log-text'><em>" + esc(li.text) + "</em></span></li>";
+  }).join("");
+}
+function renderLogCompare(s, userLog) {
+  var model = [];
+  try { model = runModelLog(s && s.id) || []; } catch (err) { model = []; }
+  var html = "<div class='log-compare' id='scnLogCompare'>";
+  html += "<section class='log-compare-card' aria-labelledby='scnYourLogTitle'>";
+  html += "<h3 class='viva-group' id='scnYourLogTitle'>Your event log</h3>";
+  html += "<p class='ideal-lead'>What you did in this attempt, in the same format as the event log during the case.</p>";
+  html += "<div class='scn-log-scroll' tabindex='0' aria-label='Your event log, newest at the bottom'><ol class='scn-log'>" + renderEventLogItems(userLog) + "</ol></div></section>";
+  html += "<section class='log-compare-card log-compare-model' aria-labelledby='scnModelLogTitle'>";
+  html += "<h3 class='viva-group' id='scnModelLogTitle'>Model answer event log</h3>";
+  html += "<p class='ideal-lead'>A guide, not the only acceptable sequence. Times come from a simulated perfect run of this case, including helpful requests such as a 12-lead ECG or a blood gas where they add information.</p>";
+  html += "<div class='scn-log-scroll' tabindex='0' aria-label='Model answer event log, a guide, newest at the bottom'><ol class='scn-log' id='scnModelLog'>" + renderEventLogItems(model) + "</ol></div></section>";
+  html += "</div>";
+  return html;
+}
+
+window.__scnIdeal = { paths: IDEAL_PATHS, mark: markIdealPath, render: renderIdealPath, modelActs: MODEL_ACTS, runModel: runModelLog };
 </script>
 </body></html>
