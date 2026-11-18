@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECG Rhythm Quiz · The Physio Lab</title>
 <meta name="description" content="Interactive ECG rhythm tool with synthetic lead II strips, callipers, conduction diagrams and a Test yourself quiz.">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118c">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118c">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118c">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118e">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118e">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=20261118c">
-<link rel="stylesheet" href="assets/layout.css?v=20261118c">
-<link rel="stylesheet" href="assets/pv-core.css?v=20261118c">
-<link rel="stylesheet" href="assets/pv-tool.css?v=20261118c">
-<script src="assets/theme.js?v=20261118c"></script>
+<link rel="stylesheet" href="assets/site.css?v=20261118e">
+<link rel="stylesheet" href="assets/layout.css?v=20261118e">
+<link rel="stylesheet" href="assets/pv-core.css?v=20261118e">
+<link rel="stylesheet" href="assets/pv-tool.css?v=20261118e">
+<script src="assets/theme.js?v=20261118e"></script>
 <style>
 /* ECG tool. Layout conventions and type scale come from pv-tool.css; only ECG-specific parts live here. */
 :root {
@@ -630,7 +630,7 @@ body.scn-popup-open { overflow: hidden; }
   <header class="site-header tool-view-header">
     <div class="site-header-top">
       <a class="site-mark" href="index.html">
-        <img class="site-logo" src="assets/logo.svg?v=20261118c" width="20" height="20" alt="">
+        <img class="site-logo" src="assets/logo.svg?v=20261118e" width="20" height="20" alt="">
         <span class="site-mark-name">The Physio Lab</span>
       </a>
       <div class="header-actions">
@@ -6842,6 +6842,7 @@ function showDebrief() {
   var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
   var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
   html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct scores 1, partly right 0.5, not quite 0; noted actions are not scored. Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed below." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
+  html += renderLogCompare(s, SIM.log);
   if (missed.length) html += "<h3 class='viva-group'>Missed steps</h3><ul class='debrief-list'>" + missed.map(function (r) { return debriefReqItem(s, r, "missed"); }).join("") + "</ul>";
   if (notReached.length) html += "<h3 class='viva-group'>Not reached</h3><ul class='debrief-list'>" + notReached.map(function (r) { return debriefReqItem(s, r, "notReached"); }).join("") + "</ul>";
   if (s.extra) html += "<div class='panel-block trap'><h3>Teaching point</h3><p>" + txtHTML(s.extra) + "</p><p class='scn-src'><strong>Source:</strong> " + esc(srcOf(s.extra)) + "</p></div>";
@@ -6864,8 +6865,8 @@ function showDebrief() {
       (l.o.phys ? "<p class='db-phys'><strong>Physiology:</strong> " + esc(PHYS[l.o.phys]) + "</p>" : "") +
       srcBlock + "</li>";
   }).join("") + "</ol>";
-  html += debriefFold("scnYourDecisions", "Your decisions in detail", renderYourEventLog(SIM.log) + decisionList);
-  html += debriefFold("scnIdealTitle", "Ideal pathway", renderIdealPath(s, SIM.log, { noTitle: true }) + renderModelEventLog(s));
+  html += debriefFold("scnYourDecisions", "Your decisions in detail", decisionList);
+  html += debriefFold("scnIdealTitle", "Ideal pathway", renderIdealPath(s, SIM.log, { noTitle: true }));
   $("scnDebrief").innerHTML = html;
   $("scnDebrief").classList.remove("hidden"); $("scnPanels").classList.add("hidden");
   var wasRandom = SIM.random;
