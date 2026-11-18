@@ -1,4 +1,4 @@
-/* Shared colour-blind theme toggle for Physio Lab.
+/* Shared colour-blind theme toggle for The Physio Lab.
    Saved in localStorage so the choice persists across pages, including
    when a tool is opened as a standalone file. */
 (function () {

@@ -1,8 +1,8 @@
-# Physio Lab
+# The Physio Lab
 
 Interactive physiology teaching tools built by Dr Ed Kim. No installation required: open any page in a browser.
 
-**Site:** [Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
+**Site:** [The Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
 
 ---
 
@@ -57,7 +57,7 @@ These tools keep their usual addresses but the old pages are offline while they 
 
 ## Live Site
 
-[Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
+[The Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
 
 No login or download needed. Open the live tools directly in any browser:
 
@@ -69,5 +69,5 @@ Four further cardiac tools are under construction and are not available yet.
 
 ---
 
-Built for teaching · Physio Lab  
+Built for teaching · The Physio Lab  
 Developed by **Dr Ed Kim**
