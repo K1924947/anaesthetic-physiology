@@ -1974,7 +1974,9 @@ var VER = {
   s3_atroRepeat: ["V", ["gAtro", "bInterim", "nAtro"]],
   s3_atroMax: ["V", ["gAtro", "nAtro"]],
   s3_atroPaced: ["V", ["bInterim"]],
-  s3_paceFirst: ["V", ["bLTF", "bInterim"]],
+  s3_paceEarly: ["V", ["bLTF", "bInterim", "gTC"]],
+  s3_adrInf: ["V", ["gSecond", "bInterim", "nAdrInf"]],
+  s3_iso: ["V", ["bInterim"]],
   s3_pace: ["S", ["bInterim", "gTC"], "Immediate capture and BP rise are scripted."],
   s3_expert: ["V", ["bInterim", "gTV"]],
   s3_causes: ["V", ["bABCDE", "gGlucagon"]],
@@ -3464,49 +3466,49 @@ var TXT = {
     nextStep: "Treat now: atropine 500 mcg IV first."
   },
   s3_atro1: {
-    full: "Atropine 500 mcg IV given. Assess the response: the ventricular rate has barely changed and BP is still low, so the response is unsatisfactory.",
+    full: "Atropine 500 micrograms IV given. Assess the response: the ventricular rate has barely changed and BP is still low, so the response is unsatisfactory. Repeat atropine to a maximum of 3 mg, and transcutaneous pacing, isoprenaline or adrenaline, are all interim measures. In complete heart block atropine often fails, so starting or preparing pacing early alongside atropine is reasonable.",
     guideline: "Bradyarrhythmia: atropine 500 mcg, assess response",
     src: "brady",
     flag: 1,
-    outcome: "Atropine 500 mcg IV given. The ventricular rate has barely changed and BP is still low, so the response is unsatisfactory.",
+    outcome: "Atropine 500 micrograms IV given. The ventricular rate has barely changed and BP is still low, so the response is unsatisfactory.",
     whyWrong: "",
     nextStep: ""
   },
   s3_atroRepeat: {
-    full: "Atropine 500 mcg can be repeated (every 3 to 5 min, to a total of 3 mg), but with no response at all, move on to other interim measures such as pacing, and seek expert help.",
-    guideline: "Bradyarrhythmia: interim measures",
+    full: "Further atropine 500 micrograms given. The RCUK 2025 Adult ALS guideline allows a repeat every 3 to 5 minutes, if necessary, to a total of 3 mg (the bradyarrhythmia algorithm states the 3 mg maximum but does not print an interval). There is still no response.",
+    guideline: "Bradyarrhythmia: atropine to a maximum of 3 mg; RCUK 2025 ALS guideline; BNF: atropine sulfate",
     src: "brady",
     flag: 1,
-    outcome: "Further atropine 500 mcg given (it can be repeated every 3 to 5 min, to a total of 3 mg). There is still no response.",
+    outcome: "Further atropine 500 micrograms given (it can be repeated to a total of 3 mg). There is still no response.",
     whyWrong: "",
-    nextStep: "With no response at all, move on to other interim measures such as pacing, and seek expert help."
+    nextStep: "Repeat atropine to a maximum of 3 mg, or move on to another interim measure such as transcutaneous pacing, isoprenaline or adrenaline, and seek expert help."
   },
   s3_atroMax: {
-    full: "The maximum total atropine dose is 3 mg. Move on to pacing and expert help.",
+    full: "The maximum total atropine dose is 3 mg (RCUK bradyarrhythmia algorithm and BNF). No further atropine should be given. Move on to another interim measure: transcutaneous pacing, or an isoprenaline or adrenaline infusion, and seek expert help for transvenous pacing.",
     guideline: "Bradyarrhythmia: atropine to a maximum of 3 mg",
     src: "brady",
     flag: 1,
     outcome: "",
     whyWrong: "The maximum total atropine dose is 3 mg, so no further atropine should be given.",
-    nextStep: "Move on to pacing and expert help."
+    nextStep: "Move on to another interim measure such as transcutaneous pacing, and seek expert help."
   },
   s3_atroPaced: {
-    full: "Pacing has achieved capture. Seek expert help and consider transvenous pacing.",
+    full: "An interim measure is already in place. Seek expert help and consider transvenous pacing. Further atropine is not needed.",
     guideline: "Bradyarrhythmia: interim measures",
     src: "brady",
     flag: 1,
-    outcome: "Pacing has already achieved capture, so further atropine is not needed.",
+    outcome: "An interim measure is already in place, so further atropine is not needed.",
     whyWrong: "",
     nextStep: "Seek expert help and consider transvenous pacing."
   },
-  s3_paceFirst: {
-    full: "Pacing works, but the algorithm gives atropine 500 mcg first and uses pacing as an interim measure if the response is unsatisfactory.",
-    guideline: "Bradyarrhythmia: atropine first",
-    src: "brady",
+  s3_paceEarly: {
+    full: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. In complete heart block atropine often fails, so starting or preparing pacing early, including alongside atropine, is reasonable. Atropine 500 micrograms IV, repeated to a maximum of 3 mg, remains a valid interim measure if it has not already been given. Seek expert help and consider transvenous pacing.",
+    guideline: "Bradyarrhythmia: interim measures, transcutaneous pacing",
+    src: "pacing",
     flag: 1,
-    outcome: "",
-    whyWrong: "Pacing can work here, but it is not the first treatment on the algorithm for this presentation.",
-    nextStep: "The algorithm gives atropine 500 mcg first and uses pacing as an interim measure if the response is unsatisfactory."
+    outcome: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves.",
+    whyWrong: "",
+    nextStep: "Seek expert help and consider transvenous pacing. Atropine remains a valid interim measure if it has not already been given."
   },
   s3_pace: {
     full: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. Use it as a bridge to transvenous pacing.",
@@ -3523,6 +3525,42 @@ var TXT = {
     src: "pacing",
     flag: 0,
     outcome: "Pacing is already running with capture.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s3_adrInf: {
+    full: "Adrenaline infusion 2 to 10 micrograms/min started as an interim measure. The bradyarrhythmia algorithm lists this alongside repeat atropine to 3 mg, isoprenaline and transcutaneous pacing. Seek expert help and consider transvenous pacing.",
+    guideline: "Bradyarrhythmia: interim measures, adrenaline 2 to 10 mcg/min",
+    src: "brady",
+    flag: 1,
+    outcome: "Adrenaline infusion 2 to 10 micrograms/min started as an interim measure.",
+    whyWrong: "",
+    nextStep: "Seek expert help and consider transvenous pacing."
+  },
+  s3_adrInfAgain: {
+    full: "An adrenaline infusion is already running.",
+    guideline: "Bradyarrhythmia: interim measures",
+    src: "brady",
+    flag: 0,
+    outcome: "An adrenaline infusion is already running.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s3_iso: {
+    full: "Isoprenaline infusion 5 micrograms/min started as an interim measure. The bradyarrhythmia algorithm lists this alongside repeat atropine to 3 mg, adrenaline and transcutaneous pacing. Seek expert help and consider transvenous pacing.",
+    guideline: "Bradyarrhythmia: interim measures, isoprenaline 5 mcg/min",
+    src: "brady",
+    flag: 1,
+    outcome: "Isoprenaline infusion 5 micrograms/min started as an interim measure.",
+    whyWrong: "",
+    nextStep: "Seek expert help and consider transvenous pacing."
+  },
+  s3_isoAgain: {
+    full: "An isoprenaline infusion is already running.",
+    guideline: "Bradyarrhythmia: interim measures",
+    src: "brady",
+    flag: 0,
+    outcome: "An isoprenaline infusion is already running.",
     whyWrong: "",
     nextStep: ""
   },
@@ -5391,7 +5429,7 @@ var ACTIONS = [
   { id: "iso", label: "Isoprenaline infusion 5 mcg/min", g: "Drugs and fluids" }
 ];
 var ACT = {}; ACTIONS.forEach(function (a) { ACT[a.id] = a; });
-var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20, decompress: 30, amioInf: 30, adrInf: 30, iso: 30 };
+var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 180, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20, decompress: 30, amioInf: 30, adrInf: 30, iso: 30 };
 function adenLabel(n) { return n === 0 ? "Adenosine 6 mg rapid IV" : n === 1 ? "Adenosine 12 mg rapid IV" : "Adenosine 18 mg (RCUK) or 12 mg (BNF) rapid IV"; }
 
 function O(v, keys, x) { x = x || {}; x.v = v; x.keys = [].concat(keys); return x; }
@@ -5510,13 +5548,15 @@ var SCENARIOS = [
     blurb: "Dizzy, fainted and now hypotensive with a slow pulse.",
     scene: "A 79-year-old on a medical ward felt dizzy and fainted while walking to the bathroom. Now awake but pale, clammy and confused. Monitoring and IV access are in place.",
     start: { rhythm: { gen: "chb", opts: { broad: false, vr: 40 } }, pulse: true, vit: { pulse: "Present, regular", bp: "78/44 mmHg", consc: "Awake, pale, clammy, confused", threats: "Shock; syncope" } },
-    req: [["atro", "Atropine 500 mcg IV first", "brady"], ["pace", "Transcutaneous pacing when atropine fails", "pacing"], ["expert", "Seek expert help (transvenous pacing)", "brady"]],
+    req: [["pace", "Interim measures: transcutaneous pacing, or an isoprenaline or adrenaline infusion", "pacing"], ["expert", "Seek expert help and consider transvenous pacing", "brady"]],
     extra: "s3_widePoint", idleNudge: true,
     step: function (a, st) {
-      var done = function (o) { if (st.paced && st.expert) o.end = true; return o; };
+      var interim = function () { return !!(st.paced || st.did.adrInf || st.did.iso); };
+      var done = function (o) { if (interim() && st.did.expert) o.end = true; return o; };
+      var capture = { rhythm: { gen: "pace_v", opts: { rate: 70, pRate: 85 } }, phys: "pace", vit: { bp: "104/62 mmHg", consc: "Awake, less clammy", threats: "Improving with pacing" } };
       if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "s3_assess"); }
       if (a === "atro") {
-        if (st.paced) return O("info", "s3_atroPaced");
+        if (interim()) return O("info", "s3_atroPaced");
         st.atro++;
         if (st.atro > 6) return O("bad", "s3_atroMax");
         st.did.atro = 1;
@@ -5526,7 +5566,17 @@ var SCENARIOS = [
       if (a === "pace") {
         if (st.paced) return O("info", "s3_paceAgain");
         st.paced = true; st.did.pace = 1;
-        return done(O(st.atro ? "ok" : "part", st.atro ? "s3_pace" : ["s3_paceFirst", "s3_pace"], { rhythm: { gen: "pace_v", opts: { rate: 70, pRate: 85 } }, phys: "pace", vit: { bp: "104/62 mmHg", consc: "Awake, less clammy", threats: "Improving with pacing" } }));
+        return done(O("ok", st.atro ? "s3_pace" : "s3_paceEarly", capture));
+      }
+      if (a === "adrInf") {
+        if (st.did.adrInf) return O("info", "s3_adrInfAgain");
+        st.did.adrInf = 1;
+        return done(O("ok", "s3_adrInf", { phys: "adrInf", vit: { pulse: "Present, a little faster", bp: "92/56 mmHg", threats: "Interim drug support" } }));
+      }
+      if (a === "iso") {
+        if (st.did.iso) return O("info", "s3_isoAgain");
+        st.did.iso = 1;
+        return done(O("ok", "s3_iso", { phys: "iso", vit: { pulse: "Present, a little faster", bp: "92/56 mmHg", threats: "Interim drug support" } }));
       }
       if (a === "expert") { st.expert = true; st.did.expert = 1; return done(O("ok", "s3_expert")); }
       if (a === "causes") return O("ok", "s3_causes");
@@ -5914,14 +5964,16 @@ function outstandingSteps(st) {
       out.push(dueItem(st.did.causes ? "fluid" : "causes", st.did.causes ? "IV fluid for hypovolaemia" : "Identify the reversible cause (hypovolaemia)", "Think about reversible causes", "Have you thought about reversible causes?", st.did.causes ? "fluid" : "causes", st.did.causes ? "ALS: fluids only if arrest caused by hypovolaemia" : "ALS: identify and treat reversible causes"));
     }
   } else if (id === "s3") {
-    if (!st.did.atro && hadChance) {
-      out.push(dueItem("atro", "Atropine 500 mcg IV first", "Review the first drug on this algorithm", "Have you thought about the first drug on this algorithm?", "brady", "Bradyarrhythmia: life-threatening features, give atropine"));
+    var s3interim = !!(st.paced || st.did.adrInf || st.did.iso);
+    if (!st.did.atro && !s3interim && hadChance) {
+      out.push(dueItem("atro", "Atropine 500 micrograms IV, repeat to a maximum of 3 mg", "Review the first drug on this algorithm", "Have you thought about the first drug on this algorithm?", "brady", "Bradyarrhythmia: life-threatening features, give atropine"));
     }
-    if (st.atro >= 1 && !st.paced) {
-      out.push(dueItem("pace", "Transcutaneous pacing when atropine fails", "The first drug has not changed things. Review interim measures", "The first drug has not changed things. Have you thought about interim measures?", "pacing", "Bradyarrhythmia: interim measures, transcutaneous pacing"));
+    /* Do not treat pacing as overdue while atropine is still being given within the 3 mg maximum. */
+    if (!s3interim && st.atro >= 6) {
+      out.push(dueItem("pace", "Interim measures: transcutaneous pacing, or an isoprenaline or adrenaline infusion", "Atropine has reached the 3 mg maximum and has not changed things. Review other interim measures", "The first drug has not changed things. Have you thought about other interim measures?", "pacing", "Bradyarrhythmia: interim measures"));
     }
-    if (st.paced && !st.did.expert) {
-      out.push(dueItem("expert", "Seek expert help (transvenous pacing)", "Think about who else needs to be involved", "Have you thought about who else needs to be involved?", "brady", "Bradyarrhythmia: seek expert help, consider transvenous pacing"));
+    if (s3interim && !st.did.expert) {
+      out.push(dueItem("expert", "Seek expert help and consider transvenous pacing", "Think about who else needs to be involved", "Have you thought about who else needs to be involved?", "brady", "Bradyarrhythmia: seek expert help, consider transvenous pacing"));
     }
   } else if (id === "s4") {
     if (!st.vagal && st.aden === 0 && hadChance) {
@@ -6795,8 +6847,8 @@ var IDEAL_PATHS = {
   ],
   s3: [
     IP("assess", "Check rhythm and pulse", "Confirm the bradycardia and the life-threatening features. Monitoring and IV access are already in place.", SRC_BRADY),
-    IP("atro", "Atropine 500 micrograms IV", "Atropine 500 micrograms IV is first-line when life-threatening features are present. Assess the response.", SRC_BRADY),
-    IP("pace", "Transcutaneous pacing", "If the response to atropine is unsatisfactory, start transcutaneous pacing as an interim measure.", SRC_BRADY),
+    IP("atro", "Atropine 500 micrograms IV, repeated to a maximum of 3 mg", "Atropine 500 micrograms IV is first-line when life-threatening features are present. The RCUK 2025 Adult ALS guideline says to repeat it every 3 to 5 minutes, if necessary, to a total of 3 mg. The bradyarrhythmia algorithm lists repeat atropine to a maximum of 3 mg, and transcutaneous pacing, isoprenaline or adrenaline, as interim measures. In complete heart block atropine often fails, so starting or preparing pacing early alongside atropine is reasonable.", SRC_BRADY, null, { orderFree: true }),
+    IP("pace", "Transcutaneous pacing, or an isoprenaline or adrenaline infusion", "If the response to atropine is unsatisfactory, use transcutaneous pacing, or an isoprenaline or adrenaline infusion, as an interim measure. Arrange expert help and transvenous pacing.", SRC_BRADY, ["adrInf", "iso"]),
     IP("expert", "Seek expert help", "Seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true })
   ],
   s4: [
