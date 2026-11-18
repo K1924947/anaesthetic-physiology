@@ -1656,7 +1656,7 @@ var RHYTHMS = {
     name: "Complete (third degree) heart block", gen: "chb",
     features: ["Regular P waves and regular QRS complexes with no relationship between them (AV dissociation)", "Atrial rate faster than ventricular rate", "Escape: narrow junctional about 40 to 60 /min, or broad ventricular about 20 to 40 /min", "PR interval varies randomly; P waves 'march through' the QRS and T waves"],
     mechanism: "Complete failure of AV conduction. A pacemaker below the block takes over.",
-    management: ["With a broad QRS it is a risk of asystole: monitor, treat the underlying cause and consider transvenous pacing. Do not give atropine in high-degree AV block with wide QRS: it is ineffective and may worsen the block."],
+    management: ["With a broad QRS it is a risk of asystole: the bradyarrhythmia algorithm lists interim measures (atropine 500 mcg IV, repeated to a maximum of 3 mg, isoprenaline, adrenaline, transcutaneous pacing) and prompts expert help and transvenous pacing. Teaching note: the 2025 Adult ALS guideline says not to give atropine in high-degree AV block with wide QRS, because it is ineffective and may worsen the block; the scenarios mark against the algorithm."],
     trap: "Some P waves are hidden inside QRS complexes or T waves. Map the P waves with callipers: the P-P interval stays constant.",
     distract: ["mobitz2", "mobitz1", "junctional", "sinus_brady"]
   },
@@ -1949,7 +1949,7 @@ var VER = {
   s1_amioEarly: ["V", ["gAmio300"]],
   s1_amio: ["V", ["gAmio300", "gAmio150", "nAmio"]],
   s1_amioTwice: ["V", ["gAmio150"]],
-  s1_amio150: ["V", ["gAmio150", "nAmio"]],
+  s1_amio150: ["V", ["gAmio150", "nAmio"], "This further dose is in the 2025 Adult ALS guideline, not on the algorithm poster."],
   s1_rosc: ["S", ["aRosc"], "ROSC at this point is scripted; the post-ROSC steps are verified."],
   s1_roscCPR: ["V", ["gResume"]],
   s1_roscShock: ["V", ["aShock", "gResume"]],
@@ -1983,7 +1983,11 @@ var VER = {
   s3_adr: ["V", ["gSecond", "bInterim", "nAdrInf"]],
   s3_aden: ["V", ["nAdenCI"]],
   s3_observe: ["V", ["bLTF", "bRisk"]],
-  s3_widePoint: ["V", ["gWide", "bRisk"]],
+  s3_widePoint: ["V", ["bInterim", "bRisk", "gWide"], "The scenarios mark against the bradyarrhythmia algorithm; the ALS guideline caution is a teaching note."],
+  h8_atro1: ["V", ["bInterim", "bRisk"]],
+  h8_atroRepeat: ["V", ["bInterim", "gAtro"], "The 3 to 5 minute interval is in the ALS guideline; the algorithm states the 3 mg maximum but does not print an interval."],
+  h8_guideNote: ["V", ["bInterim", "gWide"], "The scenario marks against the bradyarrhythmia algorithm; the ALS guideline caution is a teaching note."],
+  h3_amio150Note: ["V", ["gAmio300", "gAmio150"], "The algorithm poster says amiodarone after 3 shocks; 150 mg after five shocks is guideline text only."],
   /* Scenario 4 */
   s4_assess: ["V", ["tNarrow"]],
   s4_vagal: ["S", ["tNarrow"], "Failure of vagal manoeuvres is scripted."],
@@ -2012,8 +2016,10 @@ var VER = {
   s6_mgAgain: ["V", ["nMg"]],
   s6_causes: ["V", ["tABCDE", "aCauses"], "Low potassium is a listed reversible cause; stopping QT-prolonging drugs is the scenario application of 'identify and treat reversible causes'."],
   s6_amio: ["S", ["tPoly"], "Loss of pulse after amiodarone is a scripted consequence."],
-  s6_paceFirst: ["V", ["tPoly"]],
   s6_pace: ["V", ["tPoly"]],
+  s6_paceAgain: ["V", ["tPoly"]],
+  s6_iso: ["V", ["tPoly"]],
+  s6_isoAgain: ["V", ["tPoly"]],
   s6_sync: ["V", ["tPoly", "tUnstable"]],
   s6_arrestShock: ["S", ["aShock"], "Immediate ROSC after one shock is scripted."],
   s6_arrestCPR: ["V", ["gAsap"]],
@@ -2026,7 +2032,7 @@ var VER = {
   "req:s6:0": ["V", ["tPoly", "nMg"]], "req:s6:1": ["V", ["tABCDE", "aCauses"]],
   "req:h1:0": ["V", ["aStart"]], "req:h1:1": ["V", ["gAdrNon"]], "req:h1:2": ["V", ["aCauses"]], "req:h1:3": ["V", ["gHyperkArrest"]],
   "req:h2:0": ["V", ["aStart"]], "req:h2:1": ["V", ["gAdrNon"]], "req:h2:2": ["V", ["aCauses"]], "req:h2:3": ["V", ["gDecomp"]],
-  "req:h3:0": ["V", ["gAsap"]], "req:h3:1": ["V", ["gResume"]], "req:h3:2": ["V", ["gAdrSh"]], "req:h3:3": ["V", ["gAmio300"]], "req:h3:4": ["V", ["gAmio150", "nAmio"]],
+  "req:h3:0": ["V", ["gAsap"]], "req:h3:1": ["V", ["gResume"]], "req:h3:2": ["V", ["gAdrSh"]], "req:h3:3": ["V", ["gAmio300"]],
   "req:h4:0": ["V", ["gAsap"]], "req:h4:1": ["V", ["gResume"]], "req:h4:2": ["V", ["gAdrNon"]],
   "req:h5:0": ["V", ["tNarrow"]], "req:h5:1": ["V", ["tNarrow", "nAden"]],
   "req:h6:0": ["V", ["gSed"]], "req:h6:1": ["V", ["tUnstable", "gCardiov"]],
@@ -2913,12 +2919,12 @@ var TXT = {
     nextStep: ""
   },
   a_amio150: {
-    full: "Amiodarone 150 mg is given after a total of five shocks, after the first 300 mg dose, and only for VF/pVT.",
-    guideline: "ALS: antiarrhythmic drugs",
+    full: "A further 150 mg of amiodarone after five shocks is in the 2025 Adult ALS guideline text, not on the algorithm poster, and only for VF or pulseless VT after the 300 mg dose.",
+    guideline: "RCUK 2025 Adult ALS guideline (not on the algorithm poster)",
     src: "amio",
     flag: 1,
     outcome: "",
-    whyWrong: "Amiodarone 150 mg is not due now: it is only used in VF or pulseless VT, after the 300 mg dose, and only after a total of five shocks.",
+    whyWrong: "Amiodarone 150 mg is not indicated now. A further 150 mg after five shocks is in the 2025 Adult ALS guideline, not on the algorithm poster, and only for VF or pulseless VT after the 300 mg dose.",
     nextStep: ""
   },
   a_amio300: {
@@ -3275,26 +3281,26 @@ var TXT = {
     nextStep: ""
   },
   s1_amio: {
-    full: "Amiodarone 300 mg IV given after the third shock. A further 150 mg is given after five shocks if VF/pVT continues.",
+    full: "Amiodarone 300 mg IV given after the third shock, as the ALS algorithm poster states. A further 150 mg after five shocks is in the 2025 Adult ALS guideline text, not on the poster, and is optional if VF or pulseless VT continues.",
     guideline: "ALS: amiodarone after 3 shocks",
     src: "amio",
     flag: 1,
     outcome: "Amiodarone 300 mg IV given after the third shock.",
     whyWrong: "",
-    nextStep: "A further 150 mg is given after five shocks if VF or pulseless VT continues."
+    nextStep: ""
   },
   s1_amioTwice: {
-    full: "Amiodarone 300 mg has already been given. The next dose is 150 mg, after a total of five shocks.",
+    full: "Amiodarone 300 mg has already been given, so that dose should not be repeated. The algorithm poster does not list a further amiodarone dose; the 2025 Adult ALS guideline mentions 150 mg after five shocks.",
     guideline: "ALS: antiarrhythmic drugs",
     src: "amio",
     flag: 1,
     outcome: "",
     whyWrong: "Amiodarone 300 mg has already been given, so that dose should not be repeated.",
-    nextStep: "The next dose is 150 mg, after a total of five shocks."
+    nextStep: ""
   },
   s1_amio150: {
-    full: "Amiodarone 150 mg IV given after a total of five shocks.",
-    guideline: "ALS: amiodarone 150 mg after 5 shocks",
+    full: "Amiodarone 150 mg IV given after a total of five shocks. This further dose is in the 2025 Adult ALS guideline text. The ALS algorithm poster says only to give amiodarone after 3 shocks, and does not mention 150 mg after five shocks.",
+    guideline: "RCUK 2025 Adult ALS guideline (not on the algorithm poster)",
     src: "amio",
     flag: 1,
     outcome: "Amiodarone 150 mg IV given after a total of five shocks.",
@@ -3610,8 +3616,8 @@ var TXT = {
     nextStep: "Observation is only for patients without life-threatening features and without a risk of asystole."
   },
   s3_widePoint: {
-    full: "Teaching point: if the escape QRS had been broad, atropine would have been the wrong drug. RCUK: do not give atropine in high-degree AV block with wide QRS; it is ineffective and may worsen the block. Complete heart block with broad QRS is also a risk of asystole.",
-    guideline: "Bradyarrhythmia: complete heart block with broad QRS",
+    full: "Teaching note: complete heart block with a broad QRS is a risk of asystole. The bradyarrhythmia algorithm still lists atropine 500 mcg IV, repeated to a maximum of 3 mg, as an interim measure on that path. The 2025 Adult ALS guideline text says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' The scenarios mark against the algorithm.",
+    guideline: "Bradyarrhythmia algorithm; RCUK 2025 Adult ALS guideline",
     src: "bradyWide",
     flag: 1,
     outcome: "",
@@ -3846,21 +3852,39 @@ var TXT = {
     whyWrong: "Avoid amiodarone in polymorphic VT with QT prolongation (RCUK).",
     nextStep: ""
   },
-  s6_paceFirst: {
-    full: "The algorithm lists magnesium first, then consider isoprenaline or temporary pacing to increase heart rate.",
-    guideline: "Tachyarrhythmia: Mg2+, then consider isoprenaline or pacing",
-    src: "tdp",
-    flag: 1,
-    outcome: "",
-    whyWrong: "Temporary pacing can be used in torsades, but it is not the first algorithm step.",
-    nextStep: "The algorithm lists magnesium first, then consider isoprenaline or temporary pacing to increase heart rate."
-  },
   s6_pace: {
-    full: "Temporary pacing to increase heart rate is a recognised option in torsades, alongside magnesium.",
+    full: "Temporary pacing to increase heart rate is a listed option on the tachyarrhythmia algorithm for polymorphic VT with QT prolongation, alongside magnesium and isoprenaline. The algorithm also says to avoid amiodarone.",
     guideline: "Tachyarrhythmia: consider isoprenaline or temporary pacing",
     src: "tdp",
     flag: 1,
-    outcome: "Temporary pacing started to increase the heart rate, a recognised option in torsades.",
+    outcome: "Temporary pacing started to increase the heart rate, a listed option in torsades.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s6_paceAgain: {
+    full: "Temporary pacing is already running.",
+    guideline: "Tachyarrhythmia: consider isoprenaline or temporary pacing",
+    src: "tdp",
+    flag: 0,
+    outcome: "Temporary pacing is already running.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s6_iso: {
+    full: "Isoprenaline is a listed option on the tachyarrhythmia algorithm for polymorphic VT with QT prolongation, to increase heart rate, alongside magnesium and temporary pacing.",
+    guideline: "Tachyarrhythmia: consider isoprenaline or temporary pacing",
+    src: "tdp",
+    flag: 1,
+    outcome: "Isoprenaline started to increase the heart rate, a listed option in torsades.",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s6_isoAgain: {
+    full: "An isoprenaline infusion is already running.",
+    guideline: "Tachyarrhythmia: consider isoprenaline or temporary pacing",
+    src: "tdp",
+    flag: 0,
+    outcome: "An isoprenaline infusion is already running.",
     whyWrong: "",
     nextStep: ""
   },
@@ -4030,7 +4054,8 @@ Object.assign(TXT, {
 });
 
 Object.assign(TXT, {
-  h3_checkLater: T("Still VF after five shocks. Amiodarone 150 mg is due after a total of five shocks, in addition to adrenaline every 3 to 5 minutes.", "ALS: amiodarone 150 mg after 5 shocks", "amio", { outcome: "Still VF after five shocks.", nextStep: "Amiodarone 150 mg is due after a total of five shocks, in addition to adrenaline every 3 to 5 minutes." }),
+  h3_checkLater: T("Still VF after five shocks. Continue the shockable algorithm: adrenaline every 3 to 5 minutes, and high-quality CPR with further shocks.", "ALS: shockable, adrenaline every 3 to 5 min", "adrShock", { outcome: "Still VF after five shocks.", nextStep: "Continue the shockable algorithm: adrenaline every 3 to 5 minutes, and high-quality CPR with further shocks." }),
+  h3_amio150Note: T("Teaching note: the ALS algorithm poster says to give amiodarone after 3 shocks. It does not mention a further 150 mg after five shocks. That further dose is in the 2025 Adult ALS guideline text, and it remains a reasonable optional action in this case.", "RCUK 2025 Adult ALS algorithm; RCUK 2025 Adult ALS guideline", "amio", { outcome: "", nextStep: "" }),
   h3_rosc: T("A pulse has returned after a prolonged shockable arrest. Immediately after ROSC: ABCDE assessment, aim SpO2 94 to 98% and a normal PaCO2, systolic blood pressure over 100 mmHg, a 12-lead ECG, identify and treat the cause, and temperature control.", "ALS: immediately after ROSC", "rosc", { outcome: "A pulse has returned after a prolonged shockable arrest.", nextStep: "Immediately after ROSC: ABCDE assessment and the usual post-ROSC targets." }),
   h4_asys: T("Rhythm change: asystole, still no pulse. This is now a non-shockable arrest. Do not keep shocking. Give adrenaline 1 mg as soon as possible and continue CPR.", "ALS: non-shockable", "adrNon", { outcome: "Rhythm change: asystole, still no pulse.", nextStep: "This is now a non-shockable arrest. Give adrenaline 1 mg as soon as possible and continue CPR." }),
   h4_shockAsys: T("The rhythm is now asystole. Do not shock a non-shockable rhythm.", "ALS: non-shockable", "als", { whyWrong: "The rhythm is now asystole, so a further shock will not help." }),
@@ -4049,8 +4074,10 @@ Object.assign(TXT, {
   h7_sync: T("Synchronised cardioversion is an accepted treatment for monomorphic VT, including in some stable patients, with careful sedation or anaesthesia if the patient is conscious.", "Tachyarrhythmia: broad and regular, synchronised shock", "broadStable", { outcome: "Synchronised cardioversion. Sinus rhythm is restored." }),
   h7_aden: T("IV adenosine is only for suspected SVT with aberrant conduction in a stable patient. This case should be treated as VT.", "Tachyarrhythmia: suspected SVT with aberrant conduction", "broad", { whyWrong: "Adenosine is only for suspected SVT with aberrancy. This case should be treated as VT." }),
   h8_assess: T("Complete heart block with a broad QRS. There are no current life-threatening features, but this is a risk of asystole on the bradyarrhythmia algorithm (complete heart block with broad QRS).", "Bradyarrhythmia: risk of asystole", "bradyRisk", { outcome: "Complete heart block with a broad QRS. There are no current life-threatening features, but this is a risk of asystole." }),
-  h8_atro: T("Do not give atropine to patients with high-degree atrioventricular block and a wide QRS. It is ineffective and may worsen the block.", "Bradyarrhythmia: do not give atropine in high-degree block with wide QRS", "bradyWide", { whyWrong: "Atropine should not be given in high-degree atrioventricular block with a wide QRS: it is ineffective and may worsen the block." }),
-  h8_pace: T("Transcutaneous pacing started as a bridge to transvenous pacing. Seek expert help and consider transvenous pacing.", "Bradyarrhythmia: transcutaneous pacing; consider transvenous pacing", "pacing", { outcome: "Transcutaneous pacing started as a bridge to transvenous pacing.", nextStep: "Seek expert help and consider transvenous pacing." }),
+  h8_atro1: T("Atropine 500 micrograms IV given. The ventricular rate has barely changed, so the response is unsatisfactory. On the risk-of-asystole path the bradyarrhythmia algorithm lists atropine 500 micrograms IV, repeated to a maximum of 3 mg, as an interim measure, and also prompts other interim measures and transvenous pacing. In complete heart block atropine often fails, so starting or preparing pacing early alongside atropine is reasonable.", "Bradyarrhythmia: interim measures, atropine to a maximum of 3 mg", "brady", { outcome: "Atropine 500 micrograms IV given. The ventricular rate has barely changed, so the response is unsatisfactory.", nextStep: "" }),
+  h8_atroRepeat: T("Further atropine 500 micrograms given. The RCUK 2025 Adult ALS guideline allows a repeat every 3 to 5 minutes, if necessary, to a total of 3 mg (the bradyarrhythmia algorithm states the 3 mg maximum but does not print an interval). There is still no response.", "Bradyarrhythmia: atropine to a maximum of 3 mg", "brady", { outcome: "Further atropine 500 micrograms given (it can be repeated to a total of 3 mg). There is still no response.", nextStep: "" }),
+  h8_pace: T("Transcutaneous pacing started as a bridge to transvenous pacing. On the risk-of-asystole path the algorithm lists transcutaneous pacing, repeat atropine to 3 mg, isoprenaline and adrenaline as interim measures, and prompts expert help and transvenous pacing.", "Bradyarrhythmia: interim measures, transcutaneous pacing", "pacing", { outcome: "Transcutaneous pacing started as a bridge to transvenous pacing.", nextStep: "Seek expert help and consider transvenous pacing." }),
+  h8_guideNote: T("Teaching note: this scenario marks against the bradyarrhythmia algorithm, which lists atropine 500 mcg IV, repeated to a maximum of 3 mg, as an interim measure. The 2025 Adult ALS guideline text says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.'", "Bradyarrhythmia algorithm; RCUK 2025 Adult ALS guideline", "bradyWide", { outcome: "", nextStep: "" }),
   h8_adrInf: T("Adrenaline infusion 2 to 10 mcg/min started as an interim measure. Seek expert help and arrange pacing.", "Bradyarrhythmia: interim measures, adrenaline 2 to 10 mcg/min", "brady", { outcome: "Adrenaline infusion 2 to 10 mcg/min started as an interim measure.", nextStep: "Seek expert help and arrange pacing." }),
   h8_iso: T("Isoprenaline infusion 5 mcg/min started as an interim measure. Seek expert help and arrange pacing.", "Bradyarrhythmia: interim measures, isoprenaline 5 mcg/min", "brady", { outcome: "Isoprenaline infusion 5 mcg/min started as an interim measure.", nextStep: "Seek expert help and arrange pacing." }),
   h8_expert: T("Expert help sought. In a patient at risk of asystole, consider transvenous pacing and treat the underlying cause.", "Bradyarrhythmia: risk of asystole, seek expert help", "bradyRisk", { outcome: "Expert help sought.", nextStep: "Consider transvenous pacing and treat the underlying cause." }),
@@ -4190,12 +4217,13 @@ HIDDEN_SCENARIOS.push(
 );
 
 HIDDEN_SCENARIOS.push(
-  { id: "h3", hidden: true, group: "Cardiac arrest", title: "Refractory VF: amiodarone after the fifth shock",
+  { id: "h3", hidden: true, group: "Cardiac arrest", title: "Refractory VF: a longer shockable arrest",
     listTitle: "Shockable arrest: a longer VF arrest",
     blurb: "Collapse in the emergency department waiting room. This arrest will not be brief.",
     scene: "A 72-year-old collapses in the emergency department waiting room. Unresponsive and not breathing normally. The resuscitation team is present, CPR 30:2 has been started and defibrillator pads are on. Compressions are paused for the first rhythm check. This arrest will not be brief.",
     start: { rhythm: { gen: "vf" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
-    req: [["shock", "Shock VF without delay", "shock"], ["cpr", "Resume CPR immediately after each shock", "als"], ["adr", "Adrenaline 1 mg after the third shock", "adrShock"], ["amio300", "Amiodarone 300 mg after the third shock", "amio"], ["amio150", "Amiodarone 150 mg after a total of five shocks", "amio"]],
+    req: [["shock", "Shock VF without delay", "shock"], ["cpr", "Resume CPR immediately after each shock", "als"], ["adr", "Adrenaline 1 mg after the third shock", "adrShock"], ["amio300", "Amiodarone 300 mg after the third shock", "amio"]],
+    extra: "h3_amio150Note",
     due: function (st) {
       var out = [];
       if (st.shocks === 0 && (st.cpr || (st.reviews || 0) > 0 || (st.actionN || 0) >= 2)) {
@@ -4210,13 +4238,10 @@ HIDDEN_SCENARIOS.push(
       if (st.adrAfter3 && st.amio && st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] >= 180) {
         out.push(dueItem("adrRepeat", "Repeat adrenaline 1 mg every 3 to 5 minutes", "Review drug timing later in the arrest", "Have you thought about whether any drugs are due again?", "adrShock", "ALS: adrenaline every 3 to 5 min"));
       }
-      if (st.shocks >= 5 && st.amio && !st.amio150) {
-        out.push(dueItem("amio150", "Amiodarone 150 mg after a total of five shocks", "Review drug timing later in the arrest", "Have you thought about whether any further drugs are due?", "amio", "ALS: amiodarone 150 mg after 5 shocks"));
-      }
       return out;
     },
     step: function (a, st) {
-      var ready = st.shocks >= 5 && st.adrAfter3 && st.amio && st.amio150;
+      var ready = st.shocks >= 5 && st.adrAfter3 && st.amio;
       var roscVit = { pulse: "Present", bp: "94/58 mmHg", consc: "Unresponsive but breathing", threats: "Immediately post-ROSC" };
       if (st.phase === "organised") {
         if (a === "assess") return O("ok", "h3_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc", rhythm: R_SINUS_ROSC });
@@ -4253,7 +4278,7 @@ HIDDEN_SCENARIOS.push(
         if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
         st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
         if (ready) return O("ok", "h3_rosc", { end: true, pulse: true, cprStop: true, rhythm: R_SINUS_ROSC, phys: "rosc", vit: roscVit });
-        var k = st.shocks >= 5 && st.amio && !st.amio150 ? "h3_checkLater" : st.shocks >= 3 ? "s1_checkNoDrugs" : "s1_check";
+        var k = st.shocks >= 5 ? "h3_checkLater" : st.shocks >= 3 ? "s1_checkNoDrugs" : "s1_check";
         return O("ok", k, { cprStop: true, cycleCheck: true, rhythm: { gen: "vf" }, phys: "vfPersists", vit: { pulse: "Absent" } });
       }
       if (a === "adr") {
@@ -4478,21 +4503,34 @@ HIDDEN_SCENARIOS.push(
     scene: "A 81-year-old is found to have a ventricular pause of 4 seconds on telemetry, then a slow broad rhythm. They are awake, a little light-headed, but not shocked or confused. Blood pressure is 102/60 mmHg. Monitoring and IV access are in place.",
     start: { rhythm: { gen: "chb", opts: { broad: true, vr: 34 } }, pulse: true, vit: { pulse: "Present, regular, slow", bp: "102/60 mmHg", consc: "Awake, light-headed", threats: "None currently; recent ventricular pause greater than 3 s" } },
     req: [["expert", "Seek expert help; consider transvenous pacing", "bradyRisk"], ["pace", "Interim measure: transcutaneous pacing, or an adrenaline or isoprenaline infusion", "brady"]],
+    extra: "h8_guideNote",
     due: function (st) {
       var out = [], hadChance = (st.actionN || 0) >= 1 || st.checked;
       var interim = st.paced || st.did.adrInf || st.did.iso;
-      if (!interim && hadChance) {
+      var atroOpen = st.atro >= 1 && st.atro < 6 && !interim;
+      if (!interim && !atroOpen && hadChance) {
         out.push(dueItem("pace", "Interim measure: transcutaneous pacing, or an adrenaline or isoprenaline infusion", "Review interim measures for this risk of asystole", "Have you thought about interim measures?", "brady", "Bradyarrhythmia: interim measures"));
       }
-      if (!st.did.expert && hadChance) {
+      if (!interim && st.atro >= 6) {
+        out.push(dueItem("pace", "Interim measures: transcutaneous pacing, or an isoprenaline or adrenaline infusion", "Atropine has reached the 3 mg maximum and has not changed things. Review other interim measures", "The first drug has not changed things. Have you thought about other interim measures?", "brady", "Bradyarrhythmia: interim measures"));
+      }
+      if (!st.did.expert && hadChance && !atroOpen) {
         out.push(dueItem("expert", "Seek expert help; consider transvenous pacing", "Think about who else needs to be involved", "Have you thought about who else needs to be involved?", "bradyRisk", "Bradyarrhythmia: risk of asystole, seek expert help"));
       }
       return out;
     },
     step: function (a, st) {
-      var done = function (o) { if ((st.paced || st.did.adrInf || st.did.iso) && st.did.expert) o.end = true; return o; };
+      var interim = function () { return !!(st.paced || st.did.adrInf || st.did.iso); };
+      var done = function (o) { if (interim() && st.did.expert) o.end = true; return o; };
       if (a === "assess") { if (st.checked) return O("info", "a_assessAgain"); st.checked = true; return O("ok", "h8_assess"); }
-      if (a === "atro") return O("bad", "h8_atro");
+      if (a === "atro") {
+        if (interim()) return O("info", "s3_atroPaced");
+        st.atro++;
+        if (st.atro > 6) return O("bad", "s3_atroMax");
+        st.did.atro = 1;
+        if (st.atro === 1) return O("ok", "h8_atro1", { phys: "atroCHB" });
+        return O("ok", "h8_atroRepeat");
+      }
       if (a === "pace") {
         if (st.paced) return O("info", "s3_paceAgain");
         st.paced = true; st.did.pace = 1;
@@ -5657,7 +5695,16 @@ var SCENARIOS = [
       }
       if (a === "causes") { st.cause = true; st.did.causes = 1; return done(O("ok", "s6_causes")); }
       if (a === "amio300" || a === "amio150") { st.arrest = true; return O("bad", "s6_amio", { pulse: false, rhythm: { gen: "torsades", opts: {} }, phys: "amioQT", vit: { pulse: "Absent", bp: "Not recordable", consc: "Unresponsive", threats: "Cardiac arrest" } }); }
-      if (a === "pace") return O(st.mg ? "ok" : "part", st.mg ? "s6_pace" : "s6_paceFirst", { phys: "rateQT" });
+      if (a === "pace") {
+        if (st.paced) return O("info", "s6_paceAgain");
+        st.paced = true; st.did.pace = 1;
+        return O("ok", "s6_pace", { phys: "rateQT" });
+      }
+      if (a === "iso") {
+        if (st.did.iso) return O("info", "s6_isoAgain");
+        st.did.iso = 1;
+        return O("ok", "s6_iso", { phys: "iso", vit: { pulse: "Present, a little faster" } });
+      }
       if (a === "sync") return O("bad", "s6_sync");
       return null;
     } }
@@ -5949,9 +5996,6 @@ function outstandingSteps(st) {
     }
     if (st.adrAfter3 && st.amio && st.adrT.length && st.clock - st.adrT[st.adrT.length - 1] >= 180) {
       out.push(dueItem("adrRepeat", "Repeat adrenaline 1 mg every 3 to 5 minutes", "Review drug timing later in the arrest", "Have you thought about whether any drugs are due again?", "adrShock", "ALS: adrenaline every 3 to 5 min"));
-    }
-    if (st.shocks >= 5 && st.amio && !st.amio150) {
-      out.push(dueItem("amio150", "Amiodarone 150 mg after a total of five shocks", "Review drug timing later in the arrest", "Have you thought about whether any further drugs are due?", "amio", "ALS: amiodarone 150 mg after 5 shocks"));
     }
   } else if (id === "s2") {
     if (!st.did.adr && (st.cpr || st.checked || (st.reviews || 0) > 0 || (st.actionN || 0) >= 2)) {
@@ -6902,9 +6946,8 @@ var IDEAL_PATHS = {
     IP("shock", "Fourth shock", "If VF persists, continue the shockable algorithm.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
-    IP("shock", "Fifth shock", "A further 150 mg of amiodarone is due after a total of five shocks.", SRC_ALS),
+    IP("shock", "Fifth shock", "If VF persists, continue the shockable algorithm. Repeat adrenaline every 3 to 5 minutes.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("amio150", "Amiodarone 150 mg after a total of five shocks", "Amiodarone mainly blocks K+ channels, prolonging the action potential and refractory period, which makes re-entry harder to sustain.", SRC_BNF_AMIO),
     IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess the rhythm and pulse.", SRC_ALS),
     IP("assess", "Check rhythm and pulse", "Look for ROSC after the cycle of CPR.", SRC_ALS_A)
   ],
@@ -6938,8 +6981,8 @@ var IDEAL_PATHS = {
   ],
   h8: [
     IP("assess", "Check rhythm and pulse", "Confirm broad-complex complete heart block. There are no current life-threatening features, but there is a risk of asystole.", SRC_BRADY),
-    IP("expert", "Seek expert help", "When there is a risk of asystole, seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true }),
-    IP("pace", "Transcutaneous pacing, or an adrenaline or isoprenaline infusion", "Use transcutaneous pacing, or an adrenaline or isoprenaline infusion, as a bridge if transvenous pacing is not immediately available.", SRC_BRADY, ["adrInf", "iso"])
+    IP("expert", "Seek expert help", "When there is a risk of asystole, the algorithm prompts you to seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true }),
+    IP("pace", "Transcutaneous pacing, or an adrenaline or isoprenaline infusion", "On the risk-of-asystole path the bradyarrhythmia algorithm lists transcutaneous pacing, repeat atropine to a maximum of 3 mg, isoprenaline and adrenaline as interim measures. Use pacing, isoprenaline or adrenaline as a bridge if transvenous pacing is not immediately available. Atropine often fails in complete heart block, so starting or preparing pacing early is reasonable.", SRC_BRADY, ["adrInf", "iso"])
   ],
   h9: [
     IP("assess", "Check rhythm and pulse", "Confirm pulseless polymorphic VT and treat it as a shockable arrest.", SRC_ALS_A),
@@ -7028,12 +7071,12 @@ var MODEL_ACTS = {
   s6: ["assess","ask:ecg12","ask:gas","mg","cause:hypokalaemia"],
   h1: ["assess","cpr","adr","ask:gas","cause:hyperkalaemia","calcium","ff","assess"],
   h2: ["assess","cpr","adr","ask:examine","cause:tension","decompress","ff","assess"],
-  h3: ["assess","shock","cpr","ff","shock","cpr","ff","shock","cpr","adr","amio300","ff","shock","cpr","ff","shock","cpr","amio150","ff","assess"],
+  h3: ["assess","shock","cpr","ff","shock","cpr","ff","shock","cpr","adr","amio300","ff","shock","cpr","ff","shock","cpr","ff","assess"],
   h4: ["assess","shock","cpr","ff","assess","cpr","adr","ff","assess"],
   h5: ["assess","ask:ecg12","nibp","vagal","aden","aden","aden"],
   h6: ["assess","ask:ecg12","nibp","expert","sync","sync"],
   h7: ["assess","ask:ecg12","nibp","amioInf"],
-  h8: ["assess","expert","ask:ecg12","nibp","pace"],
+  h8: ["assess","expert","ask:ecg12","nibp","atro","pace"],
   h9: ["assess","shock","cpr","mg","ff","assess"],
   h10: ["assess","ask:ecg12","nibp","expert","sync"]
 };
