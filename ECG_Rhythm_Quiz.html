@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECG Rhythm Quiz · The Physio Lab</title>
 <meta name="description" content="Interactive ECG rhythm tool with synthetic lead II strips, callipers, conduction diagrams and a Test yourself quiz.">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118b">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118b">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118b">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118c">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118c">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=20261118b">
-<link rel="stylesheet" href="assets/layout.css?v=20261118b">
-<link rel="stylesheet" href="assets/pv-core.css?v=20261118b">
-<link rel="stylesheet" href="assets/pv-tool.css?v=20261118b">
-<script src="assets/theme.js?v=20261118b"></script>
+<link rel="stylesheet" href="assets/site.css?v=20261118c">
+<link rel="stylesheet" href="assets/layout.css?v=20261118c">
+<link rel="stylesheet" href="assets/pv-core.css?v=20261118c">
+<link rel="stylesheet" href="assets/pv-tool.css?v=20261118c">
+<script src="assets/theme.js?v=20261118c"></script>
 <style>
 /* ECG tool. Layout conventions and type scale come from pv-tool.css; only ECG-specific parts live here. */
 :root {
@@ -630,7 +630,7 @@ body.scn-popup-open { overflow: hidden; }
   <header class="site-header tool-view-header">
     <div class="site-header-top">
       <a class="site-mark" href="index.html">
-        <img class="site-logo" src="assets/logo.svg?v=20261118b" width="20" height="20" alt="">
+        <img class="site-logo" src="assets/logo.svg?v=20261118c" width="20" height="20" alt="">
         <span class="site-mark-name">The Physio Lab</span>
       </a>
       <div class="header-actions">
@@ -759,7 +759,7 @@ body.scn-popup-open { overflow: hidden; }
             </summary>
             <ol class="scn-guide-steps">
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random picks from all of the cases in the list. The name of a random case is revealed in the debrief, not while you are playing.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Each opens as a pop-up, so you do not have to scroll the actions list. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. Nothing you should have to request is shown up front.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Each opens as a pop-up, so you do not have to scroll the actions list. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. After the first Cycle NIBP, the cuff then repeats every 2 minutes of simulated time; a further Cycle NIBP now resets that interval. Nothing you should have to request is shown up front.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>CPR for 2 minutes performs two minutes of CPR and shows the rhythm on the monitor. Skip time only advances the clock and does not count as an action. Check rhythm and pulse is a separate step.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback states only what was done and the objective event. It will not interpret the monitor or tell you what to do next.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends. The debrief names the missed step and the correct action; the live nudges stay vague.</span></li>
@@ -860,7 +860,7 @@ body.scn-popup-open { overflow: hidden; }
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-            <p class="scn-popup-lead">Values appear only when you request them. Results, and Cycle NIBP now, take a few seconds of real time and do not advance the simulated clock, so requesting a test will not run the case out of time. You can keep treating while they are pending, and more than one request can be pending at once.</p>
+            <p class="scn-popup-lead">Values appear only when you request them. Results, and Cycle NIBP now, take a few seconds of real time and do not advance the simulated clock, so requesting a test will not run the case out of time. You can keep treating while they are pending, and more than one request can be pending at once. The NIBP starts blank until the first cycle; after that it auto-cycles every 2 minutes of simulated time, and a further Cycle NIBP now resets the interval.</p>
             <ul class="scn-popup-list" id="scnAskButtons"></ul>
           </div>
         </div>
@@ -4949,11 +4949,12 @@ function initScenarioExtras(st) {
     sysBase: m.sys != null ? m.sys : null,
     diaBase: m.dia != null ? m.dia : null,
     trend: m.trend || 0,
-    interval: m.interval || 180,
-    lastNIBP: m.arrest || !st.pulse ? { t: 0, unrecordable: true } : (m.sys != null ? { t: 0, sys: m.sys, dia: m.dia } : null),
+    interval: m.interval || 120,
+    lastNIBP: null,
     nextDrift: prefersReduced() ? 15 : 4,
     labs: Object.assign({ k: 4.3, na: 140, ica: 1.20, hb: 134, lactate: 1.1, ph: 7.40, pco2: 5.3, po2: 12.4, glu: 5.6, temp: 36.8, mg: 0.85 }, x.labs || {})
   };
+  if (typeof syncMonBpFromVit === "function") syncMonBpFromVit(st);
 }
 
 function tickMonitor(st) {
@@ -4971,6 +4972,7 @@ function tickMonitor(st) {
     m.rr = 0;
     if (m.lastNIBP) m.lastNIBP.unrecordable = true;
   }
+  if (typeof maybeAutoNIBP === "function") maybeAutoNIBP(st);
   var every = prefersReduced() ? 15 : 4;
   if (prefersReduced() && every > 20) return;
   m.nextDrift = (m.nextDrift || every) - 1;
@@ -4988,53 +4990,84 @@ function tickMonitor(st) {
   if (!m.arrest && m.hrBase) m.hr = drift(m.hr || m.hrBase, m.hrBase, m.hrBase - 4, m.hrBase + 4, prefersReduced() ? 1 : 3);
   if (!m.arrest && m.spo2Base != null) m.spo2 = Math.round(drift(m.spo2 != null ? m.spo2 : m.spo2Base, m.spo2Base, Math.max(84, m.spo2Base - 3), Math.min(100, m.spo2Base + 2), 1));
   if (!m.arrest) m.rr = Math.round(drift(m.rr || m.rrBase, m.rrBase, Math.max(8, m.rrBase - 3), m.rrBase + 4, 1));
-  if (!m.arrest && st.pulse && m.lastNIBP && !m.lastNIBP.unrecordable && m.interval && (st.clock - (m.lastNIBP.t || 0) >= m.interval)) {
-    cycleNIBP(st, true);
-  }
 }
 
-function cycleNIBP(st, auto) {
+function parseBpString(s) {
+  var m = String(s || "").match(/(\d+)\s*\/\s*(\d+)/);
+  return m ? { sys: +m[1], dia: +m[2] } : null;
+}
+function syncMonBpFromVit(st) {
+  if (!st || !st.mon || !st.vit) return;
+  var bp = parseBpString(st.vit.bp);
+  if (!bp) return;
+  st.mon.sysBase = bp.sys;
+  st.mon.diaBase = bp.dia;
+  st.mon.sys = bp.sys;
+  st.mon.dia = bp.dia;
+}
+function nibpAgeText(st, last) {
+  if (!st || !last) return "";
+  var dt = Math.max(0, (st.clock || 0) - (last.t || 0));
+  if (dt <= 0) return "just now";
+  var m = Math.floor(dt / 60), s = dt % 60;
+  if (!m) return dt + " s ago";
+  if (!s) return m + " min ago";
+  return m + " min " + s + " s ago";
+}
+function maybeAutoNIBP(st) {
+  if (!st || !st.mon || st.done) return;
+  if (typeof MODEL_RUNNING !== "undefined" && MODEL_RUNNING) return;
   var m = st.mon;
-  if (!st.pulse || m.arrest) {
-    m.lastNIBP = { t: st.clock, unrecordable: true };
-    return { v: "info", keys: ["n_nibpFail"], event: "NIBP cycled: unrecordable." };
-  }
-  var sys = m.sysBase, dia = m.diaBase;
-  if (sys == null) { sys = 118; dia = 72; }
-  var amtS = prefersReduced() ? 2 : 5, amtD = prefersReduced() ? 2 : 4;
-  var t = m.trend || 0;
-  sys = Math.round(sys + (Math.random() * 2 - 1) * amtS + t * 3);
-  dia = Math.round(dia + (Math.random() * 2 - 1) * amtD + t * 2);
-  m.lastNIBP = { t: st.clock, sys: sys, dia: dia, unrecordable: false, auto: !!auto };
-  m.sys = sys; m.dia = dia;
-  return { v: "info", keys: ["n_nibp"], event: "NIBP " + sys + "/" + dia + " mmHg at " + mmss(st.clock) + "." };
+  if (!m.lastNIBP || !m.interval) return;
+  if (typeof isAskPending === "function" && isAskPending("nibp")) return;
+  if ((st.clock || 0) - (m.lastNIBP.t || 0) < m.interval) return;
+  /* Do not auto-cycle an unrecordable cuff during arrest: it would spam the log and is clinically meaningless. After ROSC, a due cycle records the current BP. */
+  if (!st.pulse || m.arrest) return;
+  var o = cycleNIBP(st, true);
+  var no = O("info", (o && o.keys) || "n_nibp", { event: o.event, notAction: true, autoNibp: true });
+  no.label = "NIBP auto-cycle";
+  if (typeof logEvent === "function") logEvent(no, o.event, "nibp-auto");
+}
+function cycleNIBP(st, auto) {
+  var reading = previewNIBP(st);
+  if (auto) reading.auto = true;
+  applyNIBPReading(st, reading);
+  var ev = reading.event || (reading.unrecordable ? "NIBP cycled: unrecordable." : "NIBP cycled.");
+  if (auto && ev && ev.charAt(ev.length - 1) === ".") ev = ev.slice(0, -1) + " (automatic cycle).";
+  else if (auto) ev = ev + " (automatic cycle).";
+  return { v: "info", keys: reading.keys || (reading.unrecordable ? ["n_nibpFail"] : ["n_nibp"]), event: ev };
 }
 
 function renderMonitor() {
   if (!SIM || !SIM.mon) { renderVitalsLegacy && renderVitalsLegacy(); return; }
   var m = SIM.mon, pulse = !!SIM.pulse;
   tickMonitor(SIM);
-  function cell(label, val, note) {
-    return "<div class='stat'><div class='stat-val'>" + esc(val) + "</div><div class='stat-label'>" + esc(label) + (note ? " <span class='stat-note'>" + esc(note) + "</span>" : "") + "</div></div>";
+  function cell(label, val, note, aria) {
+    var a = aria ? " aria-label='" + esc(aria) + "'" : "";
+    return "<div class='stat'" + a + "><div class='stat-val'>" + esc(val) + "</div><div class='stat-label'>" + esc(label) + (note ? " <span class='stat-note'>" + esc(note) + "</span>" : "") + "</div></div>";
   }
   var hr = !pulse ? "No pulse" : (m.hr ? Math.round(m.hr) + " /min" : "Not yet checked");
   var spo2 = !pulse ? "No trace" : (m.spo2 != null ? Math.round(m.spo2) + " %" : "No trace");
   var rr = !pulse ? "Not breathing" : (m.rr != null ? Math.round(m.rr) + " /min" : "Not yet counted");
-  var nibp, nibpNote = "";
+  var nibp, nibpNote = "", nibpAria = "";
   if (typeof isAskPending === "function" && isAskPending("nibp")) {
     nibp = "Cycling…";
     nibpNote = "Pending NIBP cycle";
-  } else if (!pulse || (m.lastNIBP && m.lastNIBP.unrecordable)) {
-    nibp = "Unrecordable";
-    if (m.lastNIBP) nibpNote = "Last cycled " + mmss(m.lastNIBP.t);
+    nibpAria = "NIBP cycling";
   } else if (!m.lastNIBP) {
-    nibp = "Not yet measured";
+    nibp = "--/--";
+    nibpAria = "not yet measured";
+  } else if (!pulse || m.lastNIBP.unrecordable) {
+    nibp = "Unrecordable";
+    nibpNote = "Last cycled " + mmss(m.lastNIBP.t) + " · " + nibpAgeText(SIM, m.lastNIBP);
+    nibpAria = "NIBP unrecordable, last cycled " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP);
   } else {
     nibp = m.lastNIBP.sys + "/" + m.lastNIBP.dia + " mmHg";
-    nibpNote = "Last measured " + mmss(m.lastNIBP.t) + " (NIBP)";
+    nibpNote = "Last measured " + mmss(m.lastNIBP.t) + " (NIBP) · " + nibpAgeText(SIM, m.lastNIBP);
+    nibpAria = "NIBP " + nibp + ", last measured " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP);
   }
   var v = SIM.vit || {};
-  var html = cell("Heart rate", hr) + cell("SpO2", spo2, !pulse ? "No pulse: no pulse oximeter trace" : "") + cell("Respiratory rate", rr) + cell("NIBP", nibp, nibpNote);
+  var html = cell("Heart rate", hr) + cell("SpO2", spo2, !pulse ? "No pulse: no pulse oximeter trace" : "") + cell("Respiratory rate", rr) + cell("NIBP", nibp, nibpNote, nibpAria);
   html += cell("Conscious level", v.consc || "") + cell("Life-threatening features", v.threats || "");
   $("scnVitals").innerHTML = html;
 }
@@ -5395,10 +5428,11 @@ function deliverPending(p) {
 }
 function applyNIBPReading(st, reading) {
   if (!st || !st.mon || !reading) return;
+  var t = st.clock;
   if (reading.unrecordable) {
-    st.mon.lastNIBP = { t: reading.t, unrecordable: true };
+    st.mon.lastNIBP = { t: t, unrecordable: true, auto: !!reading.auto };
   } else {
-    st.mon.lastNIBP = { t: reading.t, sys: reading.sys, dia: reading.dia, unrecordable: false, auto: false };
+    st.mon.lastNIBP = { t: t, sys: reading.sys, dia: reading.dia, unrecordable: false, auto: !!reading.auto };
     st.mon.sys = reading.sys;
     st.mon.dia = reading.dia;
   }
@@ -5420,10 +5454,11 @@ function renderPending() {
 function decoratePendingActions() {
   if (!SIM) return;
   var nibpBtn = document.querySelector("[data-a='nibp']");
-  if (nibpBtn && isAskPending("nibp") && !SIM.done) {
-    nibpBtn.disabled = true;
-    if (nibpBtn.textContent.indexOf("pending") < 0) nibpBtn.textContent = nibpBtn.textContent + " (pending)";
-  }
+  if (!nibpBtn) return;
+  var pending = typeof isAskPending === "function" && isAskPending("nibp") && !SIM.done;
+  var base = (ACT.nibp && ACT.nibp.label) || "Cycle NIBP now";
+  nibpBtn.disabled = !!(pending || SIM.done);
+  nibpBtn.textContent = pending ? base + " (pending)" : base;
 }
 function listAskPending() {
   return ASK_PENDING.map(function (p) {
@@ -6457,6 +6492,7 @@ function doActionFinish(a, o, timeCost) {
   if (o.pulse !== undefined) SIM.pulse = o.pulse;
   if (o.vit) Object.keys(o.vit).forEach(function (k) { SIM.vit[k] = o.vit[k]; });
   if (SIM.mon) SIM.mon.arrest = !SIM.pulse;
+  if (typeof syncMonBpFromVit === "function") syncMonBpFromVit(SIM);
   o.label = label; o.t = SIM.clock;
   if (o.event == null && typeof defaultEvent === "function") o.event = defaultEvent(a, label);
   if ((a === "shock" || a === "sync") && o.keys && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync", "h1_shock", "h2_shock", "h4_shockAsys", "h9_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
