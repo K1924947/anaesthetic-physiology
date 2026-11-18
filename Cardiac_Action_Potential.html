@@ -911,9 +911,12 @@ function halo(parent, attrs, text) {
   var a = Object.assign({ "paint-order": "stroke", stroke: COL.halo, "stroke-width": 4, "stroke-linejoin": "round" }, attrs);
   return sv("text", a, parent, text);
 }
-function marker(parent, type, x, y, color, filled, r) {
+function marker(parent, type, x, y, color, filled, r, opacity) {
   r = r || 4;
+  var op = opacity == null ? 1 : opacity;
+  if (op <= 0.02) return null;
   var fill = filled ? color : COL.halo, a = { stroke: color, "stroke-width": 1.6, fill: fill, "pointer-events": "none" };
+  if (op < 1) { a["stroke-opacity"] = op; a["fill-opacity"] = op; }
   if (type === "circle") return sv("circle", Object.assign({ cx: x, cy: y, r: r }, a), parent);
   if (type === "square") return sv("rect", Object.assign({ x: x - r, y: y - r, width: 2 * r, height: 2 * r }, a), parent);
   if (type === "triangle") return sv("path", Object.assign({ d: "M" + x + " " + (y - r - 1) + " L" + (x + r + 1) + " " + (y + r) + " L" + (x - r - 1) + " " + (y + r) + " Z" }, a), parent);
@@ -1009,7 +1012,7 @@ function drawAll(svg, S) {
   pl.block({ x: G.x0, y: G.ecgTop - 28, w: G.x1 - G.x0, h: 22 });
 
   /* modifier target bands (hatched) */
-  var wins = phaseWindows(st, cell), tg = [];
+  var wins = S.wins || phaseWindows(st, cell), tg = [];
   (MODS[S.mod].target || []).forEach(function (k) {
     var parts = k.split(":"), kind = CELLS[cell].kind;
     if (parts[0] === kind && wins[parts[1]]) tg.push(parts[1]);
@@ -1037,46 +1040,36 @@ function drawAll(svg, S) {
   }
 
   /* threshold line */
-  var thr = cell === "sa" ? st.sa.thr : st.fast.thr;
+  var thr = S.thr != null ? S.thr : (cell === "sa" ? st.sa.thr : st.fast.thr);
   sv("line", { x1: G.x0, x2: G.x1, y1: Y(thr), y2: Y(thr), stroke: COL.thr, "stroke-width": 1.6, "stroke-dasharray": "10 3 2 3", "pointer-events": "none" }, g);
 
   /* traces */
   var apPts = S.apPts || apTrace(st, cell), gPts = S.gPts || (ghost ? apTrace(ghost, cell) : null);
-  if (gPts) sv("path", { d: pathOf(gPts, X, Y), fill: "none", stroke: COL.ghost, "stroke-width": 2, "stroke-dasharray": "7 5", "pointer-events": "none" }, g);
+  var ghostOp = S.ghostOp == null ? (gPts ? 1 : 0) : S.ghostOp;
+  if (gPts && ghostOp > 0.02) sv("path", { d: pathOf(gPts, X, Y), fill: "none", stroke: COL.ghost, "stroke-width": 2, "stroke-dasharray": "7 5", "stroke-opacity": ghostOp < 1 ? ghostOp : undefined, "pointer-events": "none" }, g);
   sv("path", { d: pathOf(apPts, X, Y), fill: "none", stroke: COL.trace, "stroke-width": 3, "stroke-linejoin": "round", "pointer-events": "none" }, g);
   var ePts = S.ePts || ecgTrace(st), egPts = S.egPts || (ghost ? ecgTrace(ghost) : null);
   sv("line", { x1: G.x0, x2: G.x1, y1: YE(0), y2: YE(0), stroke: COL.grid, "stroke-width": 1 }, g);
-  if (egPts) sv("path", { d: pathOf(egPts, X, YE), fill: "none", stroke: COL.ghost, "stroke-width": 1.8, "stroke-dasharray": "7 5", "pointer-events": "none" }, g);
+  if (egPts && ghostOp > 0.02) sv("path", { d: pathOf(egPts, X, YE), fill: "none", stroke: COL.ghost, "stroke-width": 1.8, "stroke-dasharray": "7 5", "stroke-opacity": ghostOp < 1 ? ghostOp : undefined, "pointer-events": "none" }, g);
   sv("path", { d: pathOf(ePts, X, YE), fill: "none", stroke: COL.ecg, "stroke-width": 2.4, "stroke-linejoin": "round", "pointer-events": "none" }, g);
   blockTrace(pl, apPts, X, Y, 5);
   blockTrace(pl, ePts, X, YE, 5);
   if (gPts) blockTrace(pl, gPts, X, Y, 3);
   if (egPts) blockTrace(pl, egPts, X, YE, 3);
 
-  /* markers: current AP filled circles at phase starts, ghost open squares at peaks, ECG triangles */
-  var mk = [];
-  if (cell === "sa") {
-    st.beats.forEach(function (b) { if (b.tS >= 0 && b.tS <= WIN) { mk.push([b.tS, st.sa.thr]); if (b.tS + st.sa.d0 <= WIN) mk.push([b.tS + st.sa.d0, st.sa.peak]); } });
-  } else {
-    var f = st.fast;
-    st.beats.forEach(function (b) {
-      if (!b.conducted && f.anchor !== "P") return;
-      var a = (f.anchor === "P" ? b.tP : b.tQ) + f.off;
-      [[a, f.rmp], [a + f.d0, f.peak], [a + f.d0 + f.d1 + f.d2, f.p2e]].forEach(function (q) { if (q[0] >= 0 && q[0] <= WIN) mk.push(q); });
-    });
-  }
-  mk.forEach(function (q) { marker(g, "circle", X(q[0]), Y(q[1]), COL.trace, true, 4); });
-  if (ghost) {
-    if (cell === "sa") ghost.beats.forEach(function (b) { var tt = b.tS + ghost.sa.d0; if (tt >= 0 && tt <= WIN) marker(g, "square", X(tt), Y(ghost.sa.peak), COL.ghost, false, 3.5); });
-    else { var gf = ghost.fast; ghost.beats.forEach(function (b) { var tt = (gf.anchor === "P" ? b.tP : b.tQ) + gf.off + gf.d0; if (tt >= 0 && tt <= WIN) marker(g, "square", X(tt), Y(gf.peak), COL.ghost, false, 3.5); }); }
-    ghost.beats.forEach(function (b) { if (!b.conducted) return; var tr = b.tQ + 0.42 * ghost.ecg.qrs; if (tr >= 0 && tr <= WIN) marker(g, "square", X(tr), YE(ecgV(ghost, tr)), COL.ghost, false, 3.5); });
-  }
-  st.beats.forEach(function (b) {
-    if (!b.conducted) return;
-    var tr = b.tQ + 0.42 * e.qrs;
-    if (tr >= 0 && tr <= WIN) marker(g, "triangle", X(tr), YE(ecgV(st, tr)) - 1, COL.ecg, true, 4);
-  });
-  mk.forEach(function (q) { pl.block({ x: X(q[0]) - 6, y: Y(q[1]) - 6, w: 12, h: 12 }); });
+  /* markers: filled circles on the AP, open squares on the ghost, triangles on the ECG.
+     Times may be supplied (mid-transition); Y is always taken from the drawn trace. */
+  var mk = S.apMarks || apMarkDefs(st, cell).map(function (m) { return { t: m.t, y: m.v, op: 1 }; });
+  mk.forEach(function (q) { q.y = yAt(apPts, q.t); marker(g, "circle", X(q.t), Y(q.y), COL.trace, true, 4, q.op); });
+  var gMarks = S.gMarks;
+  if (!gMarks && ghost && gPts && ghostOp > 0.02) gMarks = ghostApMarks(ghost, cell).map(function (m) { return { t: m.t, y: m.v, op: ghostOp }; });
+  if (gMarks && gPts) gMarks.forEach(function (q) { q.y = yAt(gPts, q.t); marker(g, "square", X(q.t), Y(q.y), COL.ghost, false, 3.5, q.op); });
+  var eMarks = S.eMarks || ecgMarkDefs(st).map(function (m) { return { t: m.t, y: m.v, op: 1 }; });
+  eMarks.forEach(function (q) { q.y = yAt(ePts, q.t); marker(g, "triangle", X(q.t), YE(q.y) - 1, COL.ecg, true, 4, q.op); });
+  var egMarks = S.egMarks;
+  if (!egMarks && ghost && egPts && ghostOp > 0.02) egMarks = ghostEcgMarks(ghost).map(function (m) { return { t: m.t, y: m.v, op: ghostOp }; });
+  if (egMarks && egPts) egMarks.forEach(function (q) { q.y = yAt(egPts, q.t); marker(g, "square", X(q.t), YE(q.y), COL.ghost, false, 3.5, q.op); });
+  mk.forEach(function (q) { if ((q.op == null || q.op > 0.2)) pl.block({ x: X(q.t) - 6, y: Y(q.y) - 6, w: 12, h: 12 }); });
 
   /* threshold label */
   var tl = "Threshold " + (thr < 0 ? "\u2212" : "") + Math.abs(Math.round(thr)) + " mV";
@@ -1107,54 +1100,32 @@ function drawAll(svg, S) {
     if (ns) halo(g, { x: ns.cx, y: ns.cy + 4, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: COL.text }, nt);
   }
 
-  /* phase badges (clickable) on the first beat */
-  var anchors = {};
-  if (cell === "sa") {
-    var sp = st.sa, s0 = T_S0;
-    anchors.p0 = [s0 + sp.d0 * 0.5, saBeatV(sp, sp.d0 * 0.5)];
-    anchors.p3 = [s0 + sp.d0 + sp.drep * 0.55, saBeatV(sp, sp.d0 + sp.drep * 0.55)];
-    anchors.p4 = [s0 + sp.d0 + sp.drep + sp.t4 * 0.5, saBeatV(sp, sp.d0 + sp.drep + sp.t4 * 0.5)];
-  } else if (wins.p0) {
-    var ff = st.fast, a0 = wins.p0[0];
-    anchors.p0 = [a0, (ff.rmp + ff.peak) / 2];
-    anchors.p1 = [a0 + ff.d0 + ff.d1 * 0.6, fastBeatV(ff, ff.d0 + ff.d1 * 0.6)];
-    anchors.p2 = [a0 + ff.d0 + ff.d1 + ff.d2 * 0.5, fastBeatV(ff, ff.d0 + ff.d1 + ff.d2 * 0.5)];
-    anchors.p3 = [a0 + ff.d0 + ff.d1 + ff.d2 + ff.d3 * 0.45, fastBeatV(ff, ff.d0 + ff.d1 + ff.d2 + ff.d3 * 0.45)];
-    var t4 = Math.min(wins.p4[1], wins.p3[1] + 140);
-    anchors.p4 = [wins.p3[1] + (t4 - wins.p3[1]) * 0.6, ff.rmp];
-    if (a0 > 120) anchors.p4 = [a0 * 0.5, fastBeatV(ff, -1) === null ? ff.rmp : ff.rmp];
-  }
-  var order = cell === "sa" ? ["p0", "p3", "p4"] : ["p0", "p1", "p2", "p3", "p4"];
+  /* phase badges (clickable) on the first beat; sit on the drawn AP */
+  var anchors = S.anchors || phaseAnchorDefs(st, cell, wins);
+  Object.keys(anchors).forEach(function (ph) { anchors[ph].y = yAt(apPts, anchors[ph].t); });
+  var order = S.anchorOrder || (cell === "sa" ? ["p0", "p3", "p4"] : ["p0", "p1", "p2", "p3", "p4"]);
   order.forEach(function (ph) {
-    var an = anchors[ph]; if (!an) return;
-    var ax = X(an[0]), ay = Y(an[1]);
+    var an = anchors[ph]; if (!an || (an.op != null && an.op <= 0.02)) return;
+    var ax = X(an.t), ay = Y(an.y);
     var c = ph === "p1" ? [[ax + 16, ay - 16], [ax + 24, ay - 26], [ax + 30, ay - 12]].concat(aroundCands(ax, ay, 18)) : aroundCands(ax, ay, 18);
     var spot = pl.place(24, 24, c);
     if (!spot) return;
     var dx = spot.cx - ax, dy = spot.cy - ay, dist = Math.sqrt(dx * dx + dy * dy);
     if (dist > 14) sv("line", { x1: ax + dx / dist * 4, y1: ay + dy / dist * 4, x2: spot.cx - dx / dist * 11, y2: spot.cy - dy / dist * 11, stroke: COL.text, "stroke-width": 1, "pointer-events": "none" }, g);
     var on = S.phase === ph;
-    var bg = sv("g", { class: "clickable phase-badge", "data-phase": ph, "aria-hidden": "true" }, g);
+    var bg = sv("g", { class: "clickable phase-badge", "data-phase": ph, "aria-hidden": "true", opacity: (an.op != null && an.op < 1) ? String(an.op) : undefined }, g);
     sv("circle", { cx: spot.cx, cy: spot.cy, r: 11, fill: on ? COL.text : COL.halo, stroke: COL.text, "stroke-width": 1.6 }, bg);
     sv("text", { x: spot.cx, y: spot.cy + 5, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: on ? COL.halo : COL.text }, bg, ph.slice(1));
   });
 
-  /* ECG wave labels for the first conducted beat */
-  var m = ecgMarks(st, 0), lab = [];
-  lab.push(["P", m.P0 + (m.P1 - m.P0) / 2, ecgV(st, m.P0 + (m.P1 - m.P0) / 2)]);
-  if (m.conducted) {
-    lab.push(["QRS", m.R, ecgV(st, m.R)]);
-    if (m.T0 - m.J > 40) lab.push(["ST", (m.J + m.T0) / 2, ecgV(st, (m.J + m.T0) / 2)]);
-    lab.push([e.sag ? "ST-T" : "T", m.Tpk, ecgV(st, m.Tpk)]);
-    if (e.u >= 0.07) lab.push(["U", m.U, ecgV(st, m.U)]);
-  } else {
-    lab.push(["No QRS", m.P1 + 120, 0]);
-  }
+  /* ECG wave labels for the first conducted beat, placed on the drawn strip */
+  var lab = S.ecgLabs || ecgLabDefs(st);
   lab.forEach(function (L) {
-    var lx = X(L[1]), ly = YE(L[2]), w = estW(L[0], 14, true);
+    if (L.op != null && L.op <= 0.02) return;
+    var lyv = yAt(ePts, L.t), lx = X(L.t), ly = YE(lyv), w = estW(L.role, 14, true);
     var c = [[lx, ly - 16], [lx, ly - 26], [lx, ly + 18], [lx + w / 2 + 6, ly - 12], [lx - w / 2 - 6, ly - 12], [lx, ly - 38], [lx, ly + 30]];
     var spot = pl.place(w, 18 * FS, c);
-    if (spot) halo(g, { x: spot.cx, y: spot.cy + 5, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: COL.ecg }, L[0]);
+    if (spot) halo(g, { x: spot.cx, y: spot.cy + 5, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: COL.ecg, opacity: (L.op != null && L.op < 1) ? String(L.op) : undefined }, L.role);
   });
 
   /* hit areas for phases (pointer only; keyboard uses the phase buttons) */
@@ -1235,8 +1206,9 @@ function metrics(st, cell) {
 }
 function signed(n, unit) { var r = Math.round(n); if (r === 0) return ""; return (r > 0 ? "+" : "\u2212") + Math.abs(r) + (unit || ""); }
 function mv(n) { var r = Math.round(n); return (r < 0 ? "\u2212" : r > 0 ? "+" : "") + Math.abs(r) + " mV"; }
-function renderStats(st, base) {
-  var m = metrics(st, A.cell), b = metrics(base, A.cell), sa = A.cell === "sa";
+function renderStats(st, base, cell) {
+  cell = cell || A.cell;
+  var m = metrics(st, cell), b = metrics(base, cell), sa = cell === "sa";
   var pct = Math.round(m.slope0 / b.slope0 * 100);
   var items = [
     { label: sa ? "Max diastolic potential" : "Resting potential", val: mv(m.rest), d: signed(m.rest - b.rest, " mV") },
@@ -1657,31 +1629,239 @@ function lerpTraces(aPts, bPts, e) {
   for (i = 0; i < times.length; i++) pts.push([times[i], A[i] + (B[i] - A[i]) * e]);
   return pts;
 }
+function yAt(pts, t) {
+  if (!pts || !pts.length) return 0;
+  if (t <= pts[0][0]) return pts[0][1];
+  var last = pts[pts.length - 1];
+  if (t >= last[0]) return last[1];
+  var lo = 0, hi = pts.length - 1, mid;
+  while (hi - lo > 1) {
+    mid = (lo + hi) >> 1;
+    if (pts[mid][0] <= t) lo = mid; else hi = mid;
+  }
+  var x0 = pts[lo][0], x1 = pts[hi][0];
+  var u = x1 === x0 ? 1 : (t - x0) / (x1 - x0);
+  return pts[lo][1] + (pts[hi][1] - pts[lo][1]) * u;
+}
+function apMarkDefs(st, cell) {
+  var list = [];
+  if (cell === "sa") {
+    st.beats.forEach(function (b) {
+      list.push({ k: b.k, role: "start", t: b.tS, v: st.sa.thr });
+      list.push({ k: b.k, role: "peak", t: b.tS + st.sa.d0, v: st.sa.peak });
+    });
+  } else if (st.fast) {
+    var f = st.fast;
+    st.beats.forEach(function (b) {
+      if (!b.conducted && f.anchor !== "P") return;
+      var a = (f.anchor === "P" ? b.tP : b.tQ) + f.off;
+      list.push({ k: b.k, role: "start", t: a, v: f.rmp });
+      list.push({ k: b.k, role: "peak", t: a + f.d0, v: f.peak });
+      list.push({ k: b.k, role: "p2e", t: a + f.d0 + f.d1 + f.d2, v: f.p2e });
+    });
+  }
+  return list.filter(function (m) { return m.t >= 0 && m.t <= WIN; });
+}
+function ecgMarkDefs(st) {
+  var list = [];
+  st.beats.forEach(function (b) {
+    if (!b.conducted) return;
+    var tR = b.tQ + 0.42 * st.ecg.qrs;
+    list.push({ k: b.k, role: "r", t: tR, v: ecgV(st, tR) });
+  });
+  return list.filter(function (m) { return m.t >= 0 && m.t <= WIN; });
+}
+function ghostApMarks(ghost, cell) {
+  var list = [];
+  if (cell === "sa") {
+    ghost.beats.forEach(function (b) { list.push({ k: b.k, role: "peak", t: b.tS + ghost.sa.d0, v: ghost.sa.peak }); });
+  } else if (ghost.fast) {
+    var gf = ghost.fast;
+    ghost.beats.forEach(function (b) {
+      var tt = (gf.anchor === "P" ? b.tP : b.tQ) + gf.off + gf.d0;
+      list.push({ k: b.k, role: "peak", t: tt, v: gf.peak });
+    });
+  }
+  return list.filter(function (m) { return m.t >= 0 && m.t <= WIN; });
+}
+function ghostEcgMarks(ghost) { return ecgMarkDefs(ghost); }
+function phaseAnchorDefs(st, cell, wins) {
+  var anchors = {}, w = wins || phaseWindows(st, cell);
+  if (cell === "sa") {
+    var sp = st.sa, s0 = T_S0;
+    anchors.p0 = { t: s0 + sp.d0 * 0.5, y: saBeatV(sp, sp.d0 * 0.5), op: 1 };
+    anchors.p3 = { t: s0 + sp.d0 + sp.drep * 0.55, y: saBeatV(sp, sp.d0 + sp.drep * 0.55), op: 1 };
+    anchors.p4 = { t: s0 + sp.d0 + sp.drep + sp.t4 * 0.5, y: saBeatV(sp, sp.d0 + sp.drep + sp.t4 * 0.5), op: 1 };
+  } else if (w.p0 && st.fast) {
+    var ff = st.fast, a0 = w.p0[0];
+    anchors.p0 = { t: a0, y: (ff.rmp + ff.peak) / 2, op: 1 };
+    anchors.p1 = { t: a0 + ff.d0 + ff.d1 * 0.6, y: fastBeatV(ff, ff.d0 + ff.d1 * 0.6), op: 1 };
+    anchors.p2 = { t: a0 + ff.d0 + ff.d1 + ff.d2 * 0.5, y: fastBeatV(ff, ff.d0 + ff.d1 + ff.d2 * 0.5), op: 1 };
+    anchors.p3 = { t: a0 + ff.d0 + ff.d1 + ff.d2 + ff.d3 * 0.45, y: fastBeatV(ff, ff.d0 + ff.d1 + ff.d2 + ff.d3 * 0.45), op: 1 };
+    var t4 = Math.min(w.p4[1], w.p3[1] + 140);
+    anchors.p4 = { t: a0 > 120 ? a0 * 0.5 : w.p3[1] + (t4 - w.p3[1]) * 0.6, y: ff.rmp, op: 1 };
+  }
+  return anchors;
+}
+function ecgLabDefs(st) {
+  var m = ecgMarks(st, 0), lab = [], e = st.ecg;
+  lab.push({ role: "P", slot: "P", t: m.P0 + (m.P1 - m.P0) / 2, op: 1 });
+  if (m.conducted) {
+    lab.push({ role: "QRS", slot: "QRS", t: m.R, op: 1 });
+    if (m.T0 - m.J > 40) lab.push({ role: "ST", slot: "ST", t: (m.J + m.T0) / 2, op: 1 });
+    lab.push({ role: e.sag ? "ST-T" : "T", slot: "T", t: m.Tpk, op: 1 });
+    if (e.u >= 0.07) lab.push({ role: "U", slot: "U", t: m.U, op: 1 });
+  } else {
+    lab.push({ role: "No QRS", slot: "NoQRS", t: m.P1 + 120, op: 1 });
+  }
+  return lab;
+}
+function mixMarkLists(fromList, toList, pts, e) {
+  var out = [], used = {}, i, a, b, t, key, L = GraphTween.lerp;
+  function keyOf(m) { return m.role + ":" + m.k; }
+  function find(list, k) { for (i = 0; i < list.length; i++) if (keyOf(list[i]) === k) return list[i]; return null; }
+  toList.forEach(function (b) {
+    a = find(fromList, keyOf(b));
+    t = a ? L(a.t, b.t, e) : b.t;
+    out.push({ t: t, y: yAt(pts, t), op: a ? 1 : e, role: b.role, k: b.k });
+    if (a) used[keyOf(a)] = 1;
+  });
+  fromList.forEach(function (a) {
+    if (used[keyOf(a)]) return;
+    out.push({ t: a.t, y: yAt(pts, a.t), op: 1 - e, role: a.role, k: a.k });
+  });
+  return out;
+}
+function mixAnchors(fromA, toA, pts, e) {
+  var keys = {}, k, out = {}, L = GraphTween.lerp, a, b, t;
+  Object.keys(fromA).forEach(function (x) { keys[x] = 1; });
+  Object.keys(toA).forEach(function (x) { keys[x] = 1; });
+  for (k in keys) {
+    a = fromA[k]; b = toA[k];
+    t = a && b ? L(a.t, b.t, e) : (b ? b.t : a.t);
+    out[k] = { t: t, y: yAt(pts, t), op: a && b ? 1 : (b ? e : 1 - e) };
+  }
+  return out;
+}
+function mixWins(fromW, toW, e) {
+  var keys = {}, k, out = {}, L = GraphTween.lerp, a, b;
+  Object.keys(fromW).forEach(function (x) { keys[x] = 1; });
+  Object.keys(toW).forEach(function (x) { keys[x] = 1; });
+  for (k in keys) {
+    a = fromW[k]; b = toW[k];
+    if (a && b) out[k] = [L(a[0], b[0], e), L(a[1], b[1], e)];
+    else if (b && e >= 0.45) out[k] = b;
+    else if (a && e < 0.55) out[k] = a;
+  }
+  return out;
+}
+function mixLabs(fromLab, toLab, pts, e) {
+  var used = {}, out = [], L = GraphTween.lerp;
+  function find(list, slot) { for (var i = 0; i < list.length; i++) if ((list[i].slot || list[i].role) === slot) return list[i]; return null; }
+  function appear(x) { return x < 0.5 ? 0 : Math.min(1, (x - 0.5) * 2); }
+  function fade(x) { return x > 0.5 ? 0 : Math.min(1, (0.5 - x) * 2); }
+  toLab.forEach(function (b) {
+    var slot = b.slot || b.role, a = find(fromLab, slot);
+    var t = a ? L(a.t, b.t, e) : b.t;
+    var role = a && e < 0.5 ? a.role : b.role;
+    out.push({ role: role, slot: slot, t: t, op: a ? 1 : appear(e) });
+    if (a) used[a.slot || a.role] = 1;
+  });
+  fromLab.forEach(function (a) {
+    var slot = a.slot || a.role;
+    if (used[slot]) return;
+    out.push({ role: a.role, slot: slot, t: a.t, op: fade(e) });
+  });
+  return out;
+}
+function cellThr(st, cell) { return cell === "sa" ? st.sa.thr : (st.fast ? st.fast.thr : 0); }
+function displayState(from, to, e) {
+  var st = lerpState(from.state, to.state, e);
+  st.ecg.block = e < 0.5 ? !!from.state.ecg.block : !!to.state.ecg.block;
+  st.ecg.sag = e < 0.5 ? !!from.state.ecg.sag : !!to.state.ecg.sag;
+  st.beats = makeBeats(st.rr, st.ecg);
+  return st;
+}
+function ghostOpacity(from, to, e) {
+  if (from.ghost && to.ghost) return 1;
+  if (to.ghost && !from.ghost) return e;
+  if (from.ghost && !to.ghost) return 1 - e;
+  return 0;
+}
+function attachCurveMarks(view, from, to, e, apPts, ePts, gPts, egPts) {
+  view.apMarks = mixMarkLists(apMarkDefs(from.state, from.cell), apMarkDefs(to.state, to.cell), apPts, e);
+  view.eMarks = mixMarkLists(ecgMarkDefs(from.state), ecgMarkDefs(to.state), ePts, e);
+  var fromAnch = phaseAnchorDefs(from.state, from.cell, phaseWindows(from.state, from.cell));
+  var toAnch = phaseAnchorDefs(to.state, to.cell, phaseWindows(to.state, to.cell));
+  view.anchors = mixAnchors(fromAnch, toAnch, apPts, e);
+  var ko = {}, k;
+  Object.keys(fromAnch).forEach(function (x) { ko[x] = 1; });
+  Object.keys(toAnch).forEach(function (x) { ko[x] = 1; });
+  view.anchorOrder = ["p0", "p1", "p2", "p3", "p4"].filter(function (x) { return ko[x]; });
+  view.wins = mixWins(phaseWindows(from.state, from.cell), phaseWindows(to.state, to.cell), e);
+  view.thr = GraphTween.lerp(cellThr(from.state, from.cell), cellThr(to.state, to.cell), e);
+  view.ecgLabs = mixLabs(ecgLabDefs(from.state), ecgLabDefs(to.state), ePts, e);
+  if (gPts && (from.ghost || to.ghost)) {
+    view.gMarks = mixMarkLists(
+      from.ghost ? ghostApMarks(from.ghost, from.cell) : [],
+      to.ghost ? ghostApMarks(to.ghost, to.cell) : [],
+      gPts, e
+    );
+  }
+  if (egPts && (from.ghost || to.ghost)) {
+    view.egMarks = mixMarkLists(
+      from.ghost ? ghostEcgMarks(from.ghost) : [],
+      to.ghost ? ghostEcgMarks(to.ghost) : [],
+      egPts, e
+    );
+  }
+  return view;
+}
+
 function flagsDiffer(a, b) {
   if (!a || !b || a.cell !== b.cell) return true;
   var ae = a.state.ecg || {}, be = b.state.ecg || {};
   return !!ae.block !== !!be.block || !!ae.sag !== !!be.sag;
 }
 function mixView(from, to, e) {
+  var ghostOp = ghostOpacity(from, to, e);
+  var ghost = (from.ghost && to.ghost) ? lerpState(from.ghost, to.ghost, e) : (to.ghost || from.ghost || null);
+  var view, apPts, ePts, gPts = null, egPts = null;
   if (!flagsDiffer(from, to)) {
-    return {
-      state: lerpState(from.state, to.state, e),
-      cell: to.cell,
-      ghost: to.ghost && from.ghost ? lerpState(from.ghost, to.ghost, e) : to.ghost,
-      mod: to.mod, phase: to.phase, switched: to.switched
+    var st = lerpState(from.state, to.state, e);
+    apPts = apTrace(st, to.cell);
+    ePts = ecgTrace(st);
+    if (ghost && ghostOp > 0.02) {
+      gPts = (from.ghost && to.ghost) ? apTrace(ghost, to.cell) : lerpTraces(
+        apTrace((from.ghost || to.ghost), from.ghost ? from.cell : to.cell),
+        apTrace((to.ghost || from.ghost), to.ghost ? to.cell : from.cell),
+        e
+      );
+      egPts = (from.ghost && to.ghost) ? ecgTrace(ghost) : lerpTraces(ecgTrace(from.ghost || to.ghost), ecgTrace(to.ghost || from.ghost), e);
+    }
+    view = {
+      state: st, cell: to.cell, ghost: ghost, ghostOp: ghostOp,
+      mod: to.mod, phase: to.phase, switched: to.switched,
+      apPts: apPts, ePts: ePts, gPts: gPts, egPts: egPts
+    };
+  } else {
+    apPts = lerpTraces(apTrace(from.state, from.cell), apTrace(to.state, to.cell), e);
+    ePts = lerpTraces(ecgTrace(from.state), ecgTrace(to.state), e);
+    if (ghostOp > 0.02 && (from.ghost || to.ghost)) {
+      gPts = lerpTraces(
+        apTrace(from.ghost || to.ghost, from.ghost ? from.cell : to.cell),
+        apTrace(to.ghost || from.ghost, to.ghost ? to.cell : from.cell),
+        e
+      );
+      egPts = lerpTraces(ecgTrace(from.ghost || to.ghost), ecgTrace(to.ghost || from.ghost), e);
+    }
+    view = {
+      state: displayState(from, to, e), cell: to.cell, ghost: ghost, ghostOp: ghostOp,
+      mod: to.mod, phase: to.phase, switched: to.switched,
+      apPts: apPts, ePts: ePts, gPts: gPts, egPts: egPts
     };
   }
-  var view = {
-    state: to.state, cell: to.cell, ghost: to.ghost,
-    mod: to.mod, phase: to.phase, switched: to.switched,
-    apPts: lerpTraces(apTrace(from.state, from.cell), apTrace(to.state, to.cell), e),
-    ePts: lerpTraces(ecgTrace(from.state), ecgTrace(to.state), e)
-  };
-  if (from.ghost && to.ghost) {
-    view.gPts = lerpTraces(apTrace(from.ghost, from.cell), apTrace(to.ghost, to.cell), e);
-    view.egPts = lerpTraces(ecgTrace(from.ghost), ecgTrace(to.ghost), e);
-  }
-  return view;
+  return attachCurveMarks(view, from, to, e, apPts, ePts, gPts, egPts);
 }
 function viewTarget() {
   var id = shownMod(), g = gradeFor(id);
@@ -1692,7 +1872,7 @@ function curveKey(v) { return v ? (v.cell + "|" + v.state.id + "|" + v.state.g) 
 function paintGraph(view) {
   lastRender = drawAll($("apSvg"), view);
   var base = buildState("normal", 0, view.cell);
-  renderStats(view.state, base);
+  renderStats(view.state, base, view.cell);
   renderKey(!!view.ghost, view.mod !== "normal" && (MODS[view.mod].target || []).some(function (t) { return t.indexOf(CELLS[view.cell].kind + ":") === 0; }));
   window.__ap.state = view.state;
 }
@@ -1784,6 +1964,15 @@ window.__ap = {
   A: A, state: null,
   set: function (o) { Object.assign(A, o); renderAll(true); },
   apply: function (id) { requestScenario(id); },
+  preview: function (from, to, t) {
+    function viewOf(spec) {
+      var st = buildState(spec.mod, spec.grade || 0, spec.cell);
+      var base = buildState("normal", 0, spec.cell);
+      return { state: st, cell: spec.cell, ghost: spec.mod === "normal" ? null : base, mod: spec.mod, phase: spec.phase || null, switched: false };
+    }
+    var e = (window.GraphTween ? GraphTween.easeInOut : function (x) { return x; })(Math.max(0, Math.min(1, t)));
+    paintGraph(mixView(viewOf(from), viewOf(to), e));
+  },
   cell: function (c) { chooseCell(c); },
   phase: function (p) { A.phase = p; renderAll(); },
   wins: function () { return lastRender && lastRender.wins; }

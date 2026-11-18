@@ -449,7 +449,7 @@
       el("text", { x: (L + W - R) / 2, y: pTop + pH / 2, "text-anchor": "middle", "font-size": fs + 1, "font-weight": 700, fill: c.text, "class": "mm-sans" }, svg, "Pressure traces hidden until you answer");
     } else {
       /* gradient fill */
-      if (m.pair) {
+      if (m.pair && md.tr[m.pair[0]] && md.tr[m.pair[1]]) {
         var hi = md.tr[m.pair[0]], lo = md.tr[m.pair[1]], seg = [], segs = [];
         for (var i = 0; i <= N; i++) {
           var ii = i % N;
@@ -691,47 +691,96 @@
     }
     return ev;
   }
-  /* Match traces by name when both models share a series, otherwise by order
-     so an artery morphs into an artery and a ventricle into a ventricle. */
+  var TRACE_ROLE = {
+    Ao: "art", PA: "art", AoP: "art", AoD: "art",
+    LV: "vent", RV: "vent", RVv: "vent",
+    LA: "atr", RA: "atr"
+  };
+  /* Match traces by name, then by label (RV with RVv), then by role
+     (artery, ventricle, atrium), so a left-heart set morphs into the
+     matching right-heart set. Leftover series fade to or from baseline
+     rather than being paired with a different role. */
+  function pairTraces(a, b) {
+    var aList = a.m.traces.map(function (p) { return p[0]; });
+    var bList = b.m.traces.map(function (p) { return p[0]; });
+    var usedA = {}, usedB = {}, pairs = [];
+    function take(ak, bk) {
+      if (ak && usedA[ak]) return;
+      if (bk && usedB[bk]) return;
+      if (ak) usedA[ak] = 1;
+      if (bk) usedB[bk] = 1;
+      pairs.push([ak || null, bk || null]);
+    }
+    aList.forEach(function (k) { if (bList.indexOf(k) !== -1) take(k, k); });
+    function lab(k) { return STY[k] && STY[k].label; }
+    aList.forEach(function (ak) {
+      if (usedA[ak]) return;
+      bList.forEach(function (bk) {
+        if (!usedA[ak] && !usedB[bk] && lab(ak) && lab(ak) === lab(bk)) take(ak, bk);
+      });
+    });
+    aList.forEach(function (ak) {
+      if (usedA[ak]) return;
+      bList.forEach(function (bk) {
+        if (!usedA[ak] && !usedB[bk] && TRACE_ROLE[ak] && TRACE_ROLE[ak] === TRACE_ROLE[bk]) take(ak, bk);
+      });
+    });
+    aList.forEach(function (ak) { if (!usedA[ak]) take(ak, null); });
+    bList.forEach(function (bk) { if (!usedB[bk]) take(null, bk); });
+    return pairs;
+  }
   function mixTraces(a, b, e) {
-    var tr = {}, i, key, fromArr, toArr, fromKey;
-    var aList = a.m.traces, bList = b.m.traces;
-    var fbA = firstTrace(a), fbB = firstTrace(b);
-    for (i = 0; i < bList.length; i++) {
-      key = bList[i][0];
-      toArr = b.tr[key];
-      fromArr = a.tr[key] || (aList[i] && a.tr[aList[i][0]]) || fbA;
-      tr[key] = GraphTween.lerpArray(fromArr, toArr, e);
-    }
-    if (e < 0.85) {
-      for (i = 0; i < aList.length; i++) {
-        fromKey = aList[i][0];
-        if (tr[fromKey]) continue;
-        if (bList[i] && bList[i][0] !== fromKey) continue;
-        tr[fromKey] = GraphTween.lerpArray(a.tr[fromKey], fbB, e);
+    var z = zeros(), tr = {}, traces = [], pairs = pairTraces(a, b);
+    function disp(ak, bk) { return e < 0.5 ? (ak || bk) : (bk || ak); }
+    pairs.forEach(function (pr) {
+      var ak = pr[0], bk = pr[1], key = disp(ak, bk);
+      if (!key) return;
+      if (!bk && e >= 0.85) return;
+      if (!ak && e <= 0.15) return;
+      tr[key] = GraphTween.lerpArray(ak ? a.tr[ak] : z, bk ? b.tr[bk] : z, e);
+      traces.push([key, key]);
+    });
+    return { tr: tr, traces: traces, pairs: pairs, disp: disp };
+  }
+  function mapPair(pair, pairs, disp) {
+    if (!pair) return null;
+    var out = pair.map(function (k) {
+      var i, pr, key = null;
+      for (i = 0; i < pairs.length; i++) {
+        pr = pairs[i];
+        if (pr[0] === k || pr[1] === k) { key = disp(pr[0], pr[1]); break; }
       }
+      return key || k;
+    });
+    return out;
+  }
+  function recomputeGrad(tr, pair, win, machinery) {
+    var grad = new Array(N).fill(0), gmax = 0, i, t, tt, g;
+    if (!pair || !win || !tr[pair[0]] || !tr[pair[1]]) return { grad: grad, gmax: 0 };
+    var hi = tr[pair[0]], lo = tr[pair[1]];
+    for (i = 0; i < N; i++) {
+      t = i / N * T;
+      tt = (win[1] > T && t < win[0]) ? t + T : t;
+      if (tt < win[0] || tt > win[1]) continue;
+      g = Math.max(0, hi[i] - lo[i]);
+      if (!machinery) g *= smooth(win[0], win[0] + 0.012, tt) * (1 - smooth(win[1] - 0.008, win[1], tt));
+      grad[i] = g; if (g > gmax) gmax = g;
     }
-    return tr;
+    return { grad: grad, gmax: gmax };
   }
   function mixModel(a, b, e) {
     var L = GraphTween.lerp;
     var ma = a.m, mb = b.m;
-    var traces = mb.traces.slice();
-    if (e < 0.85) {
-      ma.traces.forEach(function (p, i) {
-        var taken = traces.some(function (q) { return q[0] === p[0]; });
-        if (taken) return;
-        /* remapped by order onto a different destination series: do not also draw it */
-        if (mb.traces[i] && mb.traces[i][0] !== p[0]) return;
-        traces.push(p);
-      });
-    }
+    var mixed = mixTraces(a, b, e);
+    var traces = mixed.traces;
+    var srcPair = e < 0.5 ? (ma.pair || mb.pair) : (mb.pair || ma.pair);
+    var pair = mapPair(srcPair, mixed.pairs, mixed.disp);
     var clickT = (ma.click != null || mb.click != null) ? L(ma.click != null ? ma.click : mb.click, mb.click != null ? mb.click : ma.click, e) : null;
     var osT = (ma.os != null || mb.os != null) ? L(ma.os != null ? ma.os : mb.os, mb.os != null ? mb.os : ma.os, e) : null;
     var m = Object.assign({}, e < 0.5 ? ma : mb, {
       ymax: L(ma.ymax, mb.ymax, e),
       traces: traces,
-      pair: mb.pair || ma.pair,
+      pair: pair,
       s1: L(ma.s1, mb.s1, e),
       s2: L(ma.s2, mb.s2, e),
       p2: L(ma.p2 != null ? ma.p2 : ma.s2 * 0.75, mb.p2 != null ? mb.p2 : mb.s2 * 0.75, e),
@@ -740,12 +789,18 @@
       os: osT,
       osA: L(ma.os != null ? 0.6 : 0, mb.os != null ? 0.6 : 0, e)
     });
+    /* Recompute the pressure-gradient hatch from the currently mapped traces
+       and the displayed window, so a systolic pair is not painted with a
+       continuous destination mask (and vice versa). The sound envelope still
+       interpolates independently. */
+    var win = e < 0.5 ? ma.win : mb.win;
+    var g = recomputeGrad(mixed.tr, pair, win, e < 0.5 ? ma.machinery : mb.machinery);
     return {
       m: m,
-      tr: mixTraces(a, b, e),
+      tr: mixed.tr,
       env: GraphTween.lerpArray(a.env, b.env, e),
-      grad: GraphTween.lerpArray(a.grad, b.grad, e),
-      gmax: L(a.gmax, b.gmax, e),
+      grad: g.grad,
+      gmax: g.gmax,
       ev: lerpEv(a, b, e),
       split: L(a.split, b.split, e)
     };
@@ -915,5 +970,12 @@
     document.addEventListener("visibilitychange", function () { if (document.hidden && S.anim) setAnim(false); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
-  window.MurmurTool = { model: model, M: M, T: T, N: N, state: S, render: render };
+  window.MurmurTool = {
+    model: model, M: M, T: T, N: N, state: S, render: render,
+    preview: function (fromId, fromMan, toId, toMan, t) {
+      var a = model(fromId, fromMan), b = model(toId, toMan);
+      var e = (window.GraphTween ? GraphTween.easeInOut : function (x) { return x; })(Math.max(0, Math.min(1, t)));
+      render(mixModel(a, b, e));
+    }
+  };
 })();
