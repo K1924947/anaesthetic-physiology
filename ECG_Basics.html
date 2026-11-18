@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECG Basics in 3D (prototype) · The Physio Lab</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118d">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118d">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css?v=20261118d">
+<link rel="stylesheet" href="assets/layout.css?v=20261118d">
+<link rel="stylesheet" href="assets/ecg3d.css?v=20261118d">
+<script src="assets/theme.js?v=20261118d"></script>
+</head>
+<body>
+<a class="skip-link" href="#tool">Skip to the 3D model</a>
+<div class="page page-wide page-tool">
+  <header class="site-header tool-view-header">
+    <div class="site-header-top">
+      <a class="site-mark" href="index.html">
+        <img class="site-logo" src="assets/logo.svg?v=20261118d" width="20" height="20" alt="">
+        <span class="site-mark-name">The Physio Lab</span>
+      </a>
+      <div class="header-actions">
+        <a class="header-link" href="index.html#about">About</a>
+        <button type="button" id="colour-blind-toggle" class="cb-toggle" aria-pressed="false">
+          <span class="cb-switch" aria-hidden="true"></span>
+          <span class="cb-toggle-text">Colour-blind mode</span>
+        </button>
+      </div>
+    </div>
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="index.html">Home</a>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <a href="cardiac.html">Cardiac</a>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <span aria-current="page">ECG Basics in 3D</span>
+    </nav>
+    <h1>ECG Basics in 3D</h1>
+    <p class="subtitle">Each lead is a line of sight. Its trace is the shadow of the heart's electrical arrow on that line.</p>
+  </header>
+
+  <main>
+    <p class="proto-banner" role="note"><strong>Prototype: work in progress.</strong> A simplified teaching model, shared for feedback. Content is still being reviewed.</p>
+    <section id="tool" aria-label="Interactive 3D ECG model">
+      <div class="tool-hero ecg3d-hero">
+        <div class="tool-stage">
+          <div class="graph-card stage-card">
+            <div class="view-btns" role="group" aria-label="Camera view">
+              <button type="button" class="t-btn view-btn" data-view="oblique" aria-pressed="true">3D view</button>
+              <button type="button" class="t-btn view-btn" data-view="frontal" aria-pressed="false">Frontal: limb leads</button>
+              <button type="button" class="t-btn view-btn" data-view="transverse" aria-pressed="false">Transverse: chest leads</button>
+              <button type="button" class="t-btn" id="resetView">Reset view</button>
+            </div>
+            <div class="stage" id="stage">
+              <canvas id="scene" tabindex="0" role="img" aria-label="3D model of a torso and heart, with lead lines and the mean electrical vector arrow" aria-describedby="sceneHelp"></canvas>
+              <div class="labels" id="labels" aria-hidden="true"></div>
+              <p class="view-note" id="viewNote" aria-hidden="true"></p>
+              <div class="fallback" id="fallback" hidden>
+                <p><strong>3D graphics are not available in this browser.</strong></p>
+                <p>WebGL could not start, so the 3D model cannot be shown. The traces, timeline and phase descriptions still work.</p>
+              </div>
+            </div>
+            <p id="sceneHelp" class="stage-help">Drag to rotate, scroll or pinch to zoom, click a lead line to select it. Keyboard: focus the model, then arrow keys rotate, + and - zoom, R resets.</p>
+
+            <div class="timeline">
+              <button type="button" class="t-btn play-btn" id="playBtn" aria-pressed="false"><span class="play-icon" aria-hidden="true"></span><span class="play-label">Play</span></button>
+              <div class="scrub-wrap">
+                <label for="scrub" class="visually-hidden">Time through one beat</label>
+                <input type="range" id="scrub" min="0" max="800" step="1" value="250">
+                <div class="phase-strip" id="phaseStrip" aria-hidden="true"></div>
+              </div>
+              <output id="timeOut" for="scrub">250 ms</output>
+              <label class="speed-label" for="speed">Speed
+                <select id="speed">
+                  <option value="0.1">0.1×</option>
+                  <option value="0.25" selected>0.25×</option>
+                  <option value="0.5">0.5×</option>
+                  <option value="1">Real time</option>
+                </select>
+              </label>
+            </div>
+            <div class="phase-jumps" role="group" aria-label="Jump to a moment in the beat">
+              <button type="button" class="t-btn" data-jump="110">P wave</button>
+              <button type="button" class="t-btn" data-jump="190">PR segment</button>
+              <button type="button" class="t-btn" data-jump="222">Septal</button>
+              <button type="button" class="t-btn" data-jump="250">Main QRS</button>
+              <button type="button" class="t-btn" data-jump="281">Late QRS</button>
+              <button type="button" class="t-btn" data-jump="340">ST segment</button>
+              <button type="button" class="t-btn" data-jump="490">T wave</button>
+            </div>
+            <ul class="key" aria-label="Key">
+              <li><span class="sw sw-arrow" aria-hidden="true"></span>Black arrow: mean electrical vector</li>
+              <li><span class="sw sw-lead" aria-hidden="true"></span>Blue rod, solid to the + ball: lead axis (dashed half is negative)</li>
+              <li><span class="sw sw-sel" aria-hidden="true"></span>Thick magenta: selected lead and the arrow's shadow on it</li>
+              <li><span class="sw sw-depol" aria-hidden="true"></span>Orange muscle: depolarised (grey: resting)</li>
+              <li><span class="sw sw-mesh" aria-hidden="true"></span>Magenta mesh: wall the selected lead faces</li>
+              <li><span class="sw sw-trail" aria-hidden="true"></span>Dotted grey: path of the arrow tip (vector loop)</li>
+            </ul>
+          </div>
+        </div>
+
+        <aside class="tool-side">
+          <div class="card traces-card">
+            <h2 class="tool-section-title" id="leadsHeading">Leads</h2>
+            <p class="side-note">Choose a lead to highlight it. Each trace is computed live as the arrow's length times how closely it points at the lead's + pole.</p>
+            <div class="lead-rows" id="leadRows" role="group" aria-labelledby="leadsHeading"></div>
+          </div>
+          <div class="card explain-card">
+            <p class="phase-kicker" id="phaseKicker">Now</p>
+            <h2 class="phase-title" id="phaseTitle">Main ventricular depolarisation</h2>
+            <p class="phase-text" id="phaseText"></p>
+            <div class="lead-explain" id="leadExplain"></div>
+            <p class="visually-hidden" id="live" aria-live="polite"></p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="card model-notes" aria-labelledby="notes-heading">
+      <h2 id="notes-heading" class="tool-section-title">About this model</h2>
+      <ul>
+        <li><strong>This is a simplified teaching model.</strong> At any instant many depolarisation waves spread through the heart at once; their sum is the mean electrical vector, shown here as one arrow that changes size and direction through the beat. The traces are computed from that arrow, not recorded from a patient.</li>
+        <li>Each lead records the arrow's component along its own line: upright when the arrow points towards the + pole, downward when it points away, and no net deflection when it is at right angles to the lead.</li>
+        <li>The limb leads use the hexaxial angles: I 0°, II +60°, aVF +90°, aVR -150° (positive angles point downwards). In this model the augmented leads (aVR, aVF) are drawn at 0.87 times the size of I and II.</li>
+        <li>In this model the chest leads lie in a horizontal plane through the heart, with V6 pointing to the patient's left and V1 forwards and slightly to the right. Their exact angles here are schematic.</li>
+        <li>The heart shape, arrow directions, timings and sizes are stylised and were chosen for teaching. The model beat runs at 75 per minute.</li>
+      </ul>
+    </section>
+
+    <details class="card revise-sources">
+      <summary>Sources and credits</summary>
+      <ul class="source-list">
+        <li>Life in the Fast Lane (LITFL). <a href="https://litfl.com/ecg-lead-positioning/" target="_blank" rel="noopener">ECG lead positioning</a> (chest electrode positions; inferior, lateral and anterior lead groups).</li>
+        <li>LITFL. <a href="https://litfl.com/ecg-axis-interpretation/" target="_blank" rel="noopener">ECG axis interpretation</a> (hexaxial angles; normal axis -30° to +90°).</li>
+        <li>LITFL. <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a> (biphasic P in V1: right atrium first, then left atrium).</li>
+        <li>LITFL. <a href="https://litfl.com/q-wave-ecg-library/" target="_blank" rel="noopener">Q wave</a> (small septal q waves in I, aVL, V5 and V6; none in V1 to V3).</li>
+        <li>LITFL. <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a> (upright in all leads except aVR and V1).</li>
+        <li>LITFL. <a href="https://litfl.com/anterior-myocardial-infarction-ecg-library/" target="_blank" rel="noopener">Anterior myocardial infarction</a> (septal leads V1 and V2).</li>
+        <li>LITFL. <a href="https://litfl.com/lateral-stemi-ecg-library/" target="_blank" rel="noopener">Lateral STEMI</a> (lateral wall of the left ventricle).</li>
+        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Electrocardiogram</a> (P wave from the SA node; PR segment and AV node delay; ST segment; T wave and the direction of repolarisation).</li>
+        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a014" target="_blank" rel="noopener">Volume conductor principles and ECG rules of interpretation</a> (towards, away and at right angles; amplitude and muscle mass; repolarisation direction).</li>
+        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a015" target="_blank" rel="noopener">Mean electrical vector</a>.</li>
+        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a016" target="_blank" rel="noopener">Ventricular depolarization and the mean electrical axis</a> (septum left to right, then towards the apex, last regions giving the S wave).</li>
+        <li>3D graphics: <a href="https://threejs.org/" target="_blank" rel="noopener">three.js</a> r160, © 2010-2023 three.js authors, MIT licence (<a href="assets/vendor/three/LICENSE.txt">licence text</a>). Served from this site, not a third-party CDN.</li>
+      </ul>
+    </details>
+  </main>
+
+  <footer>
+    <p class="footer-left">
+      <span class="footer-item">Dr Ed Kim<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item">The Physio Lab<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-break" aria-hidden="true"></span>
+      <span class="footer-item">Built for teaching<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item">3D by three.js (MIT)<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item"><a class="footer-feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="Give feedback, opens Google Forms in a new tab">Give feedback</a></span>
+    </p>
+  </footer>
+</div>
+<script type="module" src="assets/ecg3d.js?v=20261118d"></script>
+</body>
+</html>
