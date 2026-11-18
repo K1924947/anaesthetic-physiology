@@ -135,3 +135,36 @@
 .revise-sources summary { cursor: pointer; font-family: var(--font-sans); font-weight: 700; }
 .source-list { font-size: 14.5px; padding-left: 20px; }
 .source-list li { margin-bottom: 4px; }
+
+/* Decluttered controls: one row, advanced items behind 'More' */
+.stage-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+.stage-bar > .view-btns { flex: 1 1 auto; }
+.stage-bar .toggle-btns { margin-top: 0; }
+.more-menu { position: relative; flex: 0 0 auto; }
+.more-menu > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.more-menu > summary::-webkit-details-marker { display: none; }
+.more-menu > summary::after { content: ""; border: 5px solid transparent; border-top-color: currentColor; margin-top: 5px; }
+.more-menu[open] > summary::after { border-top-color: transparent; border-bottom-color: currentColor; margin-top: -5px; }
+.menu-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; display: flex; flex-direction: column; gap: 4px; min-width: 220px; padding: 8px; background: var(--surface, #fff); border: 1px solid var(--border, #bbb); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
+.menu-pop .t-btn { text-align: left; }
+.steps { display: flex; gap: 6px; align-items: stretch; }
+.step-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; }
+.step-chips .t-btn { flex: 1 1 90px; padding: 6px 6px; min-height: 36px; font-size: 12.5px; }
+.step-nav { flex: 0 0 auto; min-height: 36px; font-weight: 700; }
+.step-n { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid currentColor; font-size: 11px; font-weight: 700; margin-right: 2px; }
+.step-count { text-transform: none; letter-spacing: 0; font-weight: 600; margin-left: 6px; }
+.sw-inline { margin-left: 8px; }
+.key li { flex-wrap: wrap; }
+.key-more > summary { cursor: pointer; font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; color: var(--text); padding: 4px 0; }
+.key-more .key { margin-top: 4px; }
+@media (max-width: 640px) {
+  .steps { flex-wrap: wrap; }
+  .step-chips { order: 3; flex-basis: 100%; }
+  .step-nav { flex: 1 1 40%; }
+  .menu-pop { right: auto; left: 0; }
+}
+.key li { display: block; line-height: 1.5; }
+.key li .sw { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.key li .sw-inline { margin-left: 4px; }
+.step-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); }
+.step-chips .t-btn { font-size: 12px; padding: 4px 3px; line-height: 1.2; }

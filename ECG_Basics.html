@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECG Basics in 3D (prototype) · The Physio Lab</title>
 <meta name="robots" content="noindex">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118e">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118e">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118e">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118f">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118f">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=20261118e">
-<link rel="stylesheet" href="assets/layout.css?v=20261118e">
-<link rel="stylesheet" href="assets/ecg3d.css?v=20261118e">
-<script src="assets/theme.js?v=20261118e"></script>
+<link rel="stylesheet" href="assets/site.css?v=20261118f">
+<link rel="stylesheet" href="assets/layout.css?v=20261118f">
+<link rel="stylesheet" href="assets/ecg3d.css?v=20261118f">
+<script src="assets/theme.js?v=20261118f"></script>
 </head>
 <body>
 <a class="skip-link" href="#tool">Skip to the 3D model</a>
@@ -22,7 +22,7 @@
   <header class="site-header tool-view-header">
     <div class="site-header-top">
       <a class="site-mark" href="index.html">
-        <img class="site-logo" src="assets/logo.svg?v=20261118e" width="20" height="20" alt="">
+        <img class="site-logo" src="assets/logo.svg?v=20261118f" width="20" height="20" alt="">
         <span class="site-mark-name">The Physio Lab</span>
       </a>
       <div class="header-actions">
@@ -50,19 +50,28 @@
       <div class="tool-hero ecg3d-hero">
         <div class="tool-stage">
           <div class="graph-card stage-card">
-            <div class="view-btns" role="group" aria-label="Camera view">
-              <button type="button" class="t-btn view-btn" data-view="frontal" aria-pressed="true">Frontal: limb leads</button>
-              <button type="button" class="t-btn view-btn" data-view="section" aria-pressed="false">Face-on to the cut</button>
-              <button type="button" class="t-btn view-btn" data-view="oblique" aria-pressed="false">3D view</button>
-              <button type="button" class="t-btn view-btn" data-view="transverse" aria-pressed="false">Transverse: chest leads</button>
-              <button type="button" class="t-btn" id="resetView">Reset view</button>
-            </div>
-            <div class="view-btns toggle-btns" role="group" aria-label="Show or hide">
-              <button type="button" class="t-btn toggle-btn" id="toggleCut" aria-pressed="true">Cut-away section</button>
-              <button type="button" class="t-btn toggle-btn" id="toggleLabels" aria-pressed="true">Conduction labels</button>
+            <div class="stage-bar">
+              <div class="view-btns" role="group" aria-label="Camera view">
+                <button type="button" class="t-btn view-btn" data-view="frontal" aria-pressed="true">Frontal</button>
+                <button type="button" class="t-btn view-btn" data-view="oblique" aria-pressed="false">3D view</button>
+              </div>
+              <div class="view-btns toggle-btns" role="group" aria-label="Show or hide">
+                <button type="button" class="t-btn toggle-btn" id="toggleLeads" aria-pressed="false">Show all leads</button>
+                <button type="button" class="t-btn toggle-btn" id="toggleLabelAll" aria-pressed="false">Label everything</button>
+              </div>
+              <details class="more-menu" id="moreMenu">
+                <summary class="t-btn">More views and options</summary>
+                <div class="menu-pop" role="group" aria-label="More views and options">
+                  <button type="button" class="t-btn view-btn menu-item" data-view="section" aria-pressed="false">Face-on to the cut</button>
+                  <button type="button" class="t-btn view-btn menu-item" data-view="transverse" aria-pressed="false">Transverse: chest leads</button>
+                  <button type="button" class="t-btn toggle-btn menu-item" id="toggleCut" aria-pressed="true">Cut-away section</button>
+                  <button type="button" class="t-btn toggle-btn menu-item" id="toggleLoop" aria-pressed="false">Vector loop path</button>
+                  <button type="button" class="t-btn menu-item" id="resetView">Reset view</button>
+                </div>
+              </details>
             </div>
             <div class="stage" id="stage">
-              <canvas id="scene" tabindex="0" role="img" aria-label="3D model of a torso and heart with the conduction system, lead lines and the mean electrical vector arrow" aria-describedby="sceneHelp"></canvas>
+              <canvas id="scene" tabindex="0" role="img" aria-label="3D model of the heart with the conduction system, lead lines and the mean electrical vector arrow" aria-describedby="sceneHelp"></canvas>
               <div class="labels" id="labels" aria-hidden="true"></div>
               <p class="view-note" id="viewNote" aria-hidden="true"></p>
               <div class="fallback" id="fallback" hidden>
@@ -93,28 +102,33 @@
                 </select>
               </label>
             </div>
-            <div class="phase-jumps" id="phaseJumps" role="group" aria-label="Jump to a moment in the beat"></div>
+            <div class="steps" role="group" aria-label="Guided steps through one beat">
+              <button type="button" class="t-btn step-nav" id="stepBack"><span aria-hidden="true">&#8592;</span> Back</button>
+              <div class="step-chips" id="stepChips"></div>
+              <button type="button" class="t-btn step-nav" id="stepNext">Next <span aria-hidden="true">&#8594;</span></button>
+            </div>
             <ul class="key" aria-label="Key">
-              <li><span class="sw sw-rest" aria-hidden="true"></span>Flat grey: resting muscle</li>
-              <li><span class="sw sw-front" aria-hidden="true"></span>Orange band with black edges: depolarisation front</li>
-              <li><span class="sw sw-depol" aria-hidden="true"></span>Dotted magenta: depolarised</li>
-              <li><span class="sw sw-repol" aria-hidden="true"></span>Hatched magenta and grey: repolarising</li>
-              <li><span class="sw sw-cond" aria-hidden="true"></span>Thick blue tubes with black edges: conduction system (pale before, dark once conducted)</li>
-              <li><span class="sw sw-pulse" aria-hidden="true"></span>White bead and bulge: the impulse travelling</li>
-              <li><span class="sw sw-nodes" aria-hidden="true"></span>Diamond: SA node. Cube with filling ring: AV node delay</li>
+              <li><span class="sw sw-rest" aria-hidden="true"></span>Flat grey: resting muscle. <span class="sw sw-front sw-inline" aria-hidden="true"></span>Orange band with black edges: depolarisation front</li>
+              <li><span class="sw sw-depol" aria-hidden="true"></span>Dotted magenta: depolarised. <span class="sw sw-repol sw-inline" aria-hidden="true"></span>Hatched: repolarising</li>
+              <li><span class="sw sw-cond" aria-hidden="true"></span>Blue tubes: conduction system; a white bead and bulge is the impulse travelling</li>
               <li><span class="sw sw-arrow" aria-hidden="true"></span>Solid black arrow: mean electrical vector</li>
-              <li><span class="sw sw-lead" aria-hidden="true"></span>Thin grey rod to the ball or box (+ pole): lead axis; dashed half is negative</li>
-              <li><span class="sw sw-sel" aria-hidden="true"></span>Extra-thick black rod, black label: selected lead</li>
-              <li><span class="sw sw-proj" aria-hidden="true"></span>Black and white striped bar: the arrow's shadow on the selected lead</li>
-              <li><span class="sw sw-mesh" aria-hidden="true"></span>Black wire mesh, dashed label: wall the selected lead faces</li>
-              <li><span class="sw sw-trail" aria-hidden="true"></span>Dotted grey: path of the arrow tip (vector loop)</li>
+              <li><span class="sw sw-sel" aria-hidden="true"></span>Thick black rod: selected lead (ball or box is +). <span class="sw sw-proj sw-inline" aria-hidden="true"></span>Striped bar: the arrow's shadow on it</li>
             </ul>
+            <details class="key-more">
+              <summary>Show more of the key</summary>
+              <ul class="key" aria-label="More of the key">
+                <li><span class="sw sw-nodes" aria-hidden="true"></span>Diamond: SA node. Cube with filling ring: AV node delay</li>
+                <li><span class="sw sw-lead" aria-hidden="true"></span>Thin grey rod (with Show all leads): other lead axes; dashed half is negative</li>
+                <li><span class="sw sw-mesh" aria-hidden="true"></span>Black wire mesh, dashed label (with Label everything): wall the selected lead faces</li>
+                <li><span class="sw sw-trail" aria-hidden="true"></span>Dotted grey (with Vector loop path): path of the arrow tip</li>
+              </ul>
+            </details>
           </div>
         </div>
 
         <aside class="tool-side">
           <div class="card explain-card">
-            <p class="phase-kicker" id="phaseKicker">Now</p>
+            <p class="phase-kicker" id="phaseKicker">Now <span class="step-count" id="stepCount"></span></p>
             <h2 class="phase-title" id="phaseTitle">Main ventricular depolarisation</h2>
             <p class="phase-text" id="phaseText"></p>
             <div class="lead-explain" id="leadExplain"></div>
@@ -186,6 +200,6 @@
     </p>
   </footer>
 </div>
-<script type="module" src="assets/ecg3d.js?v=20261118e"></script>
+<script type="module" src="assets/ecg3d.js?v=20261118f"></script>
 </body>
 </html>

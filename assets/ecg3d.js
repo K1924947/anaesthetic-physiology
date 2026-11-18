@@ -19,23 +19,35 @@ function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 const $ = id => document.getElementById(id);
 
 /* ======================= Heart geometry (heart-local units) ======================= */
-// Ventricles below y = 0 (the valve plane), atria above y = ATRIA_Y0. Septum is |x| < SEPT.
-const SEPT = 0.15, ATRIA_Y0 = 0.14;
+// Ventricles below y = 0 (the valve plane / AV groove); atria sit directly on top (y >= ATRIA_Y0 = 0).
+// The fibrous AV ring insulates them electrically: atrial and ventricular elements never conduct to each other.
+// Interventricular septum: |x| < SEPT. Interatrial septum: the plane ASEPT (RA in front and to the right, LA behind).
+const SEPT = 0.15, ATRIA_Y0 = 0.0;
+const TL = 0.4, TR = 0.35, WA = 0.35; // apex taper of the left and right ventricles; waist of the atria at the AV groove
 const SHAPES = {
-  LV:  { c: [0.25, -1.0, -0.05], r: [0.85, 1.25, 0.80] },
-  LVc: { c: [0.30, -0.92, -0.05], r: [0.50, 0.98, 0.47] },
-  RV:  { c: [-0.35, -0.85, 0.12], r: [0.70, 1.05, 0.72] },
-  RVc: { c: [-0.40, -0.80, 0.12], r: [0.56, 0.90, 0.59] },
+  LV:  { c: [0.25, -1.0, -0.05], r: [0.85, 1.25, 0.80], t: TL },
+  LVc: { c: [0.30, -0.92, -0.05], r: [0.50, 0.98, 0.47], t: TL },
+  RV:  { c: [-0.35, -0.85, 0.12], r: [0.70, 1.05, 0.72], t: TR },
+  RVc: { c: [-0.40, -0.80, 0.12], r: [0.56, 0.90, 0.59], t: TR },
   S:   { c: [0.0, -0.85, 0.04],  r: [SEPT, 1.05, 0.62] },
-  RA:  { c: [-0.58, 0.50, 0.30], r: [0.55, 0.40, 0.46] },
-  LA:  { c: [0.40, 0.50, -0.15], r: [0.50, 0.38, 0.44] }
+  RA:  { c: [-0.40, 0.0, 0.22],  r: [0.62, 0.66, 0.55], w: WA },
+  LA:  { c: [0.30, 0.02, -0.26], r: [0.60, 0.58, 0.52], w: WA }
 };
-function inE(p, s) { const c = SHAPES[s].c, r = SHAPES[s].r; const a = (p[0] - c[0]) / r[0], b = (p[1] - c[1]) / r[1], d = (p[2] - c[2]) / r[2]; return a * a + b * b + d * d <= 1; }
+const ASEPT = { p: [-0.05, 0, 0.0], n: unit(0.85, 0, -0.53) };
+function atrialSide(p) { return (p[0] - ASEPT.p[0]) * ASEPT.n[0] + (p[2] - ASEPT.p[2]) * ASEPT.n[2]; } // < 0: RA side
+// taper (t): below its centre a ventricle narrows towards the apex, so the heart has a clear point rather than a round end
+// waist (w): the atria narrow where they meet the ventricles (the AV groove), so they sit on the base instead of overhanging it
+function taperOf(S, y) {
+  let f = 1;
+  if (S.t && y < S.c[1]) { const u = Math.min(1, (S.c[1] - y) / S.r[1]); f *= 1 - S.t * u * u; }
+  if (S.w) { const u = Math.max(0, 1 - (y - ATRIA_Y0) / 0.4); f *= 1 - S.w * u * u; }
+  return f;
+}
+function inE(p, s) { const S = SHAPES[s], c = S.c, r = S.r, f = taperOf(S, p[1]); const a = (p[0] - c[0]) / (r[0] * f), b = (p[1] - c[1]) / r[1], d = (p[2] - c[2]) / (r[2] * f); return a * a + b * b + d * d <= 1; }
 function inYZ(p, s) { const c = SHAPES[s].c, r = SHAPES[s].r; const b = (p[1] - c[1]) / r[1], d = (p[2] - c[2]) / r[2]; return b * b + d * d <= 1; }
 // Region of a point: 'S' septum, 'LV', 'RV' (walls), 'LVc'/'RVc' cavities, 'RA', 'LA', or null.
 function regionOf(p) {
-  if (p[1] >= ATRIA_Y0) { if (inE(p, 'RA') && p[0] <= 0.0) return 'RA'; if (inE(p, 'LA')) return 'LA'; if (inE(p, 'RA')) return 'RA'; return null; }
-  if (p[1] > 0) return null;
+  if (p[1] >= ATRIA_Y0) { const side = atrialSide(p); if (side < 0 && inE(p, 'RA')) return 'RA'; if (side >= 0 && inE(p, 'LA')) return 'LA'; return null; }
   if (Math.abs(p[0]) < SEPT && inYZ(p, 'S')) return 'S';
   if (p[0] >= -SEPT && inE(p, 'LV')) return (p[0] >= SEPT && inE(p, 'LVc')) ? 'LVc' : 'LV';
   if (p[0] <= -SEPT && inE(p, 'RV')) return inE(p, 'RVc') ? 'RVc' : 'RV';
@@ -49,12 +61,12 @@ function regionOf(p) {
 // smaller than a real one, so it gives a normal His-to-ventricle time (about 40 ms) and PR (about 155 ms).
 const CONDUCTION = {
   saTime: 50,
-  sa: [-0.70, 0.85, 0.20],
-  av: [-0.14, 0.16, -0.04],
-  avDelay: 75,
-  vAtrial: 0.024, vHis: 0.04, vVent: 0.007, vPurkinje: 0.08, purkinjeJunction: 3, purkinjeTopY: -0.28,
+  sa: [-0.40, 0.60, 0.05],
+  av: [-0.10, 0.06, -0.02],
+  avDelay: 88,
+  vAtrial: 0.018, vHis: 0.04, vVent: 0.007, vPurkinje: 0.08, purkinjeJunction: 3, purkinjeTopY: -0.28,
   segments: [
-    { id: 'his', label: 'Bundle of His', parent: 'avn', v: 0.015, r: 0.06, pts: [[-0.14, 0.16, -0.04], [-0.06, -0.05, 0.0], [0.0, -0.32, 0.02]] },
+    { id: 'his', label: 'Bundle of His', parent: 'avn', v: 0.012, r: 0.06, pts: [[-0.10, 0.06, -0.02], [-0.05, -0.08, 0.0], [0.0, -0.32, 0.02]] },
     { id: 'rbb', label: 'Right bundle branch', parent: 'his', r: 0.045, purk: 'RV', purkFromY: -0.95,
       pts: [[0.0, -0.32, 0.02], [-0.19, -0.6, 0.05], [-0.2, -1.2, 0.08], [-0.26, -1.58, 0.1], [-0.72, -1.42, 0.28]] },
     { id: 'lbb', label: 'Left bundle branch', parent: 'his', r: 0.05, purk: 'LV', purkFromY: -0.35,
@@ -89,7 +101,7 @@ const BASELINE = {
   orientation: { rotY: 35, rotZ: 15, rotX: -10 },
   conduction: CONDUCTION,
   repolarisation: { apd0: 300, slope: 1.4, atrialApd: 170, anteriorShift: 3, apicalShift: 0 },
-  smoothing: { p: 9, qrs: 7, t: 22 },
+  smoothing: { p: 11, qrs: 7, t: 22 },
   calibration: { qrsIIpeak: 1.2, pIIpeak: 0.16, tIIpeak: 0.3, chestMaxR: 1.3 },
   // Chest electrodes (body coordinates, heart centre = origin, about 4 cm per unit). They see the
   // heart from close up, so V1 to V6 are computed from every element's local dipole at the
@@ -306,41 +318,46 @@ function measureIntervals() {
 }
 
 /* ======================= Phases (from the computed timings) ======================= */
-let PHASES = [];
+let PHASES = [], STEPS = [];
 function buildPhases() {
   const M = MODEL, C = CONDUCTION; const r = Math.round;
   const qrsOn = M.vMin, qrsOff = M.vMax + 6, tOn = M.recMin - 40, tOff = Math.min(BEAT_MS - 20, M.recMax + 50);
-  const mainTo = qrsOn + 0.62 * (qrsOff - qrsOn);
+  // Guided steps: each phase with a `step` is a chip; `at` is the moment the step jumps to. Text: one or two sentences.
+  const hisMid = (M.seg.his.start + M.seg.his.end) / 2;
   PHASES = [
-    { key: 'rest', from: 0, to: C.saTime, title: 'Resting (before the P wave)',
-      text: 'All muscle is at rest, so there is no net electrical vector. Every lead sits on the isoelectric line.' },
-    { key: 'P', label: 'P wave', from: C.saTime, to: M.atrialEnd + 8, title: 'Atrial depolarisation: P wave',
-      text: 'The SA node fires and the wave spreads through the atrial muscle cell to cell (about 0.5 m/s): watch the orange front, edged in black, sweep across the atria; depolarised muscle turns dotted magenta. The normal P axis is between 0° and +75°, so P is upright in I and II and inverted in aVR. In V1 the right atrium and then the left atrium give a biphasic P.' },
-    { key: 'avd', label: 'AV delay', from: M.atrialEnd + 8, to: M.tHis, title: 'PR segment: AV node delay',
-      text: `The impulse reached the AV node (the cube, in the lower interatrial septum) at about ${r(M.tAV)} ms and is held there: the AV node conducts very slowly (about 0.05 m/s). This pause gives the atria time to finish depolarising and contracting before the ventricles. The line is isoelectric.` },
-    { key: 'his', label: 'His and bundles', from: M.tHis, to: qrsOn, title: 'PR segment: His bundle and bundle branches',
-      text: 'The impulse passes down the bundle of His and races along the right and left bundle branches in the septum (about 2 m/s in a real heart), then into the Purkinje fibres (about 4 m/s). In this smaller model heart the His bundle is slowed so that the time from His to the first ventricular muscle is a normal 40 ms or so: watch the white pulse travel along the blue tubes, which turn dark once conducted. The line is still isoelectric.' },
-    { key: 'sep', label: 'Septal', from: qrsOn, to: qrsOn + 14, title: 'Septal depolarisation: start of QRS',
-      text: 'The septum is the first muscle to depolarise, from left to right, so the small early arrow points to the right. Left-sided leads (I, aVL, V5, V6) see a small septal q wave; V1 normally has no q wave.' },
-    { key: 'main', label: 'Main QRS', from: qrsOn + 14, to: mainTo, title: 'Main ventricular depolarisation',
-      text: 'The Purkinje fibres have spread the impulse over the inner walls, and the muscle depolarises from endocardium to epicardium. The large arrow points down and to the left, towards lead II, which records a tall R wave. aVR looks from the opposite direction, so it records a negative deflection.' },
-    { key: 'late', label: 'Late QRS', from: mainTo, to: qrsOff, title: 'Late ventricular depolarisation',
-      text: 'The last regions to depolarise, near the bases and including the upper wall of the left ventricle, give a small arrow pointing upwards, so II and aVF can show a small terminal s wave.' },
-    { key: 'ST', label: 'ST segment', from: qrsOff, to: tOn, title: 'ST segment',
-      text: 'The ST segment is isoelectric. It roughly matches the plateau phase of the ventricular action potentials: all ventricular muscle is depolarised (dotted magenta), so there is no net arrow.' },
-    { key: 'T', label: 'T wave', from: tOn, to: tOff, title: 'Ventricular repolarisation: T wave',
-      text: 'Watch the hatched band: muscle returns to grey more slowly than it depolarised. The last cells to depolarise are the first to repolarise, so repolarisation runs roughly opposite to depolarisation, and a repolarisation wave moving away from a + pole gives an upward deflection. So the T wave is upright in most leads; the normal T wave is inverted in aVR and V1.' },
-    { key: 'TP', from: tOff, to: BEAT_MS + 1, title: 'Diastole: TP segment',
-      text: 'The heart is electrically at rest until the next impulse from the SA node. All traces are flat.' }
+    { key: 'rest', from: 0, to: C.saTime, title: 'Resting',
+      text: 'All muscle is at rest, so there is no arrow and every lead is flat.' },
+    { key: 'P', step: 'SA node and atria', at: Math.round((C.saTime + M.atrialEnd) / 2), from: C.saTime, to: M.atrialEnd + 8,
+      title: 'P wave: the atria depolarise',
+      text: 'The SA node, where the superior vena cava joins the right atrium, fires and the wave spreads through both atria. The arrow points down and to the left, so P is upright in II.' },
+    { key: 'avd', step: 'AV node delay', at: Math.round((M.atrialEnd + 8 + M.tHis) / 2), from: M.atrialEnd + 8, to: M.tHis,
+      title: 'PR segment: AV node delay',
+      text: `The AV node, low in the interatrial septum, holds the impulse for about ${r(M.tHis - M.tAV)} ms. The line is flat while the atria finish contracting.` },
+    { key: 'his', step: 'His and bundles', at: Math.round(hisMid), from: M.tHis, to: qrsOn,
+      title: 'PR segment: His bundle and bundle branches',
+      text: 'The white pulse runs down the His bundle on the septal crest and into the bundle branches. These fibres are too small to show on the ECG, so the line is still flat.' },
+    { key: 'sep', step: 'Septum', at: Math.round(qrsOn + 8), from: qrsOn, to: qrsOn + 16,
+      title: 'Start of QRS: the septum',
+      text: 'The septum depolarises first, from left to right, so the small early arrow points right. Left-sided leads such as I and V6 show a small q wave.' },
+    { key: 'main', step: 'Ventricles (QRS)', at: Math.round(qrsOn + 40), from: qrsOn + 16, to: qrsOff,
+      title: 'QRS: the ventricles depolarise',
+      text: 'The wave spreads from the inner wall outwards. The big arrow points down and left, towards II, so II shows a tall R wave.' },
+    { key: 'ST', step: 'ST segment', at: Math.round((qrsOff + tOn) / 2), from: qrsOff, to: tOn,
+      title: 'ST segment',
+      text: 'All ventricular muscle is depolarised (dotted magenta), so there is no arrow and the line is flat.' },
+    { key: 'T', step: 'T wave', at: Math.round((M.recMin + M.recMax) / 2 - 10), from: tOn, to: tOff,
+      title: 'T wave: the ventricles repolarise',
+      text: 'The hatched band shows muscle recovering, outside first. Recovery moving away from a lead gives an upright T, so T is upright in II.' },
+    { key: 'TP', from: tOff, to: BEAT_MS + 1, title: 'Diastole',
+      text: 'The heart is at rest until the SA node fires again.' }
   ];
-  // jump buttons
-  const box = $('phaseJumps'); box.innerHTML = '';
-  for (const p of PHASES) {
-    if (!p.label) continue;
-    const b = document.createElement('button'); b.type = 'button'; b.className = 't-btn'; b.textContent = p.label;
-    const at = Math.round(p.key === 'T' ? (M.recMin + M.recMax) / 2 - 10 : p.key === 'sep' ? p.from + 6 : (p.from + p.to) / 2);
-    b.addEventListener('click', () => { setPlaying(false); setT(at, true); }); box.appendChild(b);
-  }
+  STEPS = PHASES.filter(p => p.step);
+  const box = $('stepChips'); box.innerHTML = '';
+  STEPS.forEach((p, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 't-btn step-chip'; b.dataset.step = i;
+    b.innerHTML = `<span class="step-n" aria-hidden="true">${i + 1}</span> ${p.step}`; b.setAttribute('aria-label', `Step ${i + 1}: ${p.step}`);
+    b.addEventListener('click', () => goStep(i)); box.appendChild(b);
+  });
   // timeline bands
   const strip = $('phaseStrip'); strip.innerHTML = '';
   for (const [a, b, l] of [[C.saTime, M.atrialEnd + 8, 'P'], [M.tHis, M.tHis + 0.01, ''], [qrsOn, qrsOff, 'QRS'], [tOn, tOff, 'T']]) {
@@ -390,7 +407,6 @@ function drawSeg(g, id, t0, t1, xStartMm, basemm, px, bold, lw) {
 function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px) {
   const beat0 = Math.floor(tAbs / BEAT_MS) * BEAT_MS;
   const xb = (xStartMm + (beat0 - tStart) * MM_PER_MS) * px;
-  g.fillStyle = PAPER.shade; g.fillRect(xb, topmm * px, BEAT_MS * MM_PER_MS * px, hmm * px);
   const x = (xStartMm + (tAbs - tStart) * MM_PER_MS) * px;
   g.strokeStyle = PAPER.cursor; g.lineWidth = 1.6; g.beginPath(); g.moveTo(x, topmm * px); g.lineTo(x, (topmm + hmm) * px); g.stroke();
   const v = TRACE[id][Math.round(tAbs) % BEAT_MS];
@@ -506,7 +522,7 @@ function webglAvailable() {
 try { if (webglAvailable()) renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true }); } catch (e) { renderer = null; }
 if (!renderer || !renderer.getContext()) {
   $('fallback').hidden = false; canvas.hidden = true; renderer = null;
-  document.querySelectorAll('.view-btn, #resetView, #toggleCut, #toggleLabels').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('.view-btn, #resetView, #toggleCut, #toggleLeads, #toggleLabelAll, #toggleLoop').forEach(b => { b.disabled = true; });
   $('sceneHelp').textContent = '3D is unavailable here, but the timeline, phase buttons and the 12-lead ECG still work.';
 }
 if (renderer) renderer.localClippingEnabled = true;
@@ -527,7 +543,7 @@ const VIEWS = {
   oblique:    { az: 35 * DEG, el: 14 * DEG, r: 24, note: '3D view. Drag to rotate.' },
   transverse: { az: 0, el: 89.4 * DEG, r: 22, note: "Transverse view from above: front of the chest at the bottom, patient's left on your right." }
 };
-const ui = { cut: true, condLabels: true };
+const ui = { cut: true, labelAll: false, allLeads: false, loop: false };
 
 function rod(from, to, radius, mat) {
   const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to);
@@ -651,7 +667,8 @@ const FIN = v => (isFinite(v) ? v : 1e6);
 function shellGeometry(name, clamp, w = 56, h = 36) {
   const s = SHAPES[name]; const g = new THREE.SphereGeometry(1, w, h); const pos = g.attributes.position;
   for (let i = 0; i < pos.count; i++) {
-    const p = [s.c[0] + s.r[0] * pos.getX(i), s.c[1] + s.r[1] * pos.getY(i), s.c[2] + s.r[2] * pos.getZ(i)];
+    const y = s.c[1] + s.r[1] * pos.getY(i), f = taperOf(s, y);
+    const p = [s.c[0] + s.r[0] * f * pos.getX(i), y, s.c[2] + s.r[2] * f * pos.getZ(i)];
     clamp(p); pos.setXYZ(i, p[0], p[1], p[2]);
   }
   g.computeVertexNormals(); return g;
@@ -663,6 +680,9 @@ function septumGeometry() {
     p[1] = Math.min(p[1], 0); pos.setXYZ(i, p[0], p[1], p[2]);
   }
   g.computeVertexNormals(); return g;
+}
+function toSeptum(p, side) { // clamp a vertex onto the interatrial septum plane if it lies on the other atrium's side
+  const d = atrialSide(p); if (d * side < 0) { p[0] -= ASEPT.n[0] * d; p[2] -= ASEPT.n[2] * d; }
 }
 function outlineGeometry(g, w) { // inverted hull: push every vertex out along its normal
   const o = g.clone(); const pos = o.attributes.position, nor = o.attributes.normal;
@@ -679,8 +699,8 @@ function buildHeart() {
     { name: 'LV', region: 'LV', geo: shellGeometry('LV', p => { p[1] = Math.min(p[1], 0); p[0] = Math.max(p[0], -SEPT); }) },
     { name: 'RV', region: 'RV', geo: shellGeometry('RV', p => { p[1] = Math.min(p[1], 0); p[0] = Math.min(p[0], -SEPT); }) },
     { name: 'S', region: 'S', geo: septumGeometry() },
-    { name: 'RA', region: 'RA', geo: shellGeometry('RA', p => { p[1] = Math.max(p[1], ATRIA_Y0); }, 40, 26) },
-    { name: 'LA', region: 'LA', geo: shellGeometry('LA', p => { p[1] = Math.max(p[1], ATRIA_Y0); }, 40, 26) }
+    { name: 'RA', region: 'RA', geo: shellGeometry('RA', p => { p[1] = Math.max(p[1], ATRIA_Y0); toSeptum(p, -1); }, 48, 32) },
+    { name: 'LA', region: 'LA', geo: shellGeometry('LA', p => { p[1] = Math.max(p[1], ATRIA_Y0); toSeptum(p, 1); }, 48, 32) }
   ];
   const outlineMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.BackSide, clippingPlanes: ui.cut ? [CUT_PLANE] : [] });
   for (const d of defs) {
@@ -718,11 +738,18 @@ function buildHeart() {
   sectionMesh.position.set(x0 + W / 2, y0 + Hh / 2, SECTION_Z); sectionMesh.visible = ui.cut;
   heart.add(sectionMesh);
   const toWorld = (x, y, z) => () => new THREE.Vector3(x, y, z).applyMatrix4(HEART_VIS);
-  addLabel('LV', 'heart', toWorld(0.95, -1.0, 0.1));
-  addLabel('RV', 'heart', toWorld(-1.0, -0.9, 0.3));
-  addLabel('RA', 'heart', toWorld(-1.15, 0.6, 0.3));
-  addLabel('LA', 'heart', toWorld(0.95, 0.75, -0.1));
-  addLabel('Septum', 'heart', toWorld(0.0, -1.95, 0.1));
+  addLabel('Left ventricle', 'heart', toWorld(1.0, -1.1, 0.1)).tag = 'LV';
+  addLabel('Right ventricle', 'heart', toWorld(-1.0, -1.0, 0.3)).tag = 'RV';
+  addLabel('Right atrium', 'heart', toWorld(-1.05, 0.35, 0.35)).tag = 'RA';
+  addLabel('Left atrium', 'heart', toWorld(0.95, 0.45, -0.25)).tag = 'LA';
+  addLabel('Septum', 'heart', toWorld(0.0, -1.95, 0.1)).tag = 'S';
+  // superior vena cava (drawn only, not electrical): the SA node sits where it joins the right atrium
+  const svcPts = [[-0.40, 0.45, 0.05], [-0.40, 0.95, 0.02], [-0.40, 1.25, 0.0]];
+  const svcGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(svcPts.map(p => new THREE.Vector3(...p))), 12, 0.17, 20, false);
+  const svc = new THREE.Mesh(svcGeo, new THREE.MeshLambertMaterial({ color: 0xD6D6D6 }));
+  const svcOut = new THREE.Mesh(outlineGeometry(svcGeo, 0.022), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.BackSide }));
+  heart.add(svc, svcOut);
+  addLabel('Superior vena cava', 'heart', toWorld(-0.40, 1.35, 0.0)).tag = 'svc';
 }
 function nearestInGrid(p, region) { // nearest element of a region, searching the voxel grid near p
   const i0 = Math.round((p[0] - GX0) / H), j0 = Math.round((p[1] - GY0) / H), k0 = Math.round((p[2] - GZ0) / H);
@@ -795,21 +822,21 @@ function buildConduction() {
     const mid0 = polyAt(s.pts, polyLen(s.pts) * (s.id === 'rbb' ? 0.55 : s.id === 'his' ? 0.4 : 0.6));
     const off = { his: [-0.45, 0.05, 0], rbb: [-0.5, 0, 0], lbb: [0.5, 0.1, 0], laf: [0.55, 0.05, 0], lpf: [0.45, -0.15, 0] }[s.id] || [0, 0, 0];
     const mid = mid0.map((v, k) => v + off[k]);
-    const lbl = addLabel(s.label, 'cond', () => new THREE.Vector3(...mid).applyMatrix4(HEART_VIS));
+    const lbl = addLabel(s.label, 'cond', () => new THREE.Vector3(...mid).applyMatrix4(HEART_VIS)); lbl.tag = s.id;
     const bead = nodeMesh(new THREE.SphereGeometry(Math.max(0.07, s.r * 2.4), 16, 12), 1.4); bead.material.color.set(0xffffff); heart.add(bead);
     condParts.push({ s, tube, mesh, out, lbl }); beads.push({ s, bead });
   }
   saNode = nodeMesh(new THREE.OctahedronGeometry(0.11), 1.3); saNode.position.set(...C.sa); heart.add(saNode);
   avNode = nodeMesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), 1.3); avNode.position.set(...C.av); heart.add(avNode);
-  saLabel = addLabel('SA node', 'node', () => new THREE.Vector3(...C.sa).applyMatrix4(HEART_VIS).add(new THREE.Vector3(-0.6, 0.5, 0)));
-  avLabel = addLabel('AV node', 'node', () => new THREE.Vector3(...C.av).applyMatrix4(HEART_VIS).add(new THREE.Vector3(-1.75, -0.05, 0)));
+  saLabel = addLabel('SA node', 'node', () => new THREE.Vector3(...C.sa).applyMatrix4(HEART_VIS).add(new THREE.Vector3(-0.9, 0.25, 0))); saLabel.tag = 'sa';
+  avLabel = addLabel('AV node', 'node', () => new THREE.Vector3(...C.av).applyMatrix4(HEART_VIS).add(new THREE.Vector3(-1.75, -0.05, 0))); avLabel.tag = 'av';
   // AV delay gauge: a ring that fills while the impulse is held in the AV node
   avRingBack = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.46, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
   avRing = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.44, 48, 1, Math.PI / 2, 0.01), new THREE.MeshBasicMaterial({ color: COL.blue, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
   avRingBack.renderOrder = 23; avRing.renderOrder = 24; scene.add(avRingBack, avRing);
   const edge = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.49, 48), new THREE.MeshBasicMaterial({ color: 0x111111, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
   edge.renderOrder = 23; avRingBack.add(edge);
-  const pl = addLabel('Purkinje fibres', 'cond', () => new THREE.Vector3(0.75, -1.65, 0.2).applyMatrix4(HEART_VIS));
+  const pl = addLabel('Purkinje fibres', 'cond', () => new THREE.Vector3(0.75, -1.65, 0.2).applyMatrix4(HEART_VIS)); pl.tag = 'purk';
   condParts.push({ lbl: pl });
   buildPurkinje();
 }
@@ -850,11 +877,30 @@ function applyConductionTimes() {
   for (const c of condParts) { if (!c.s) continue; const sg = MODEL.seg[c.s.id]; setTubeTimes(c.tube, sg.start, sg.v, 0.3 / sg.v); }
   buildPurkinje();
 }
-function setCondLabels(on) {
-  ui.condLabels = on; $('toggleLabels').setAttribute('aria-pressed', String(on));
-  for (const c of condParts) c.lbl.visible = on;
-  if (saLabel) { saLabel.visible = on; avLabel.visible = on; }
-  needsRender = true;
+/* Which structures are active at time t (for 'labels only for the active structure') */
+let ACTIVE_RANGES = null;
+function buildActiveRanges() {
+  const R = {}; const M = MODEL;
+  for (const r of ['RA', 'LA', 'S', 'LV', 'RV']) {
+    let a0 = Infinity, a1 = -Infinity, r0 = Infinity, r1 = -Infinity;
+    for (const e of REGION_ELEMS[r]) { const a = M.act[e], q = M.rec[e]; if (!isFinite(a)) continue; a0 = Math.min(a0, a); a1 = Math.max(a1, a); r0 = Math.min(r0, q); r1 = Math.max(r1, q); }
+    R[r] = (r === 'RA' || r === 'LA' || r === 'S') ? [[a0, a1 + 4]] : [[a0, a1 + 4], [r0, r1 + 20]];
+  }
+  R.sa = [[CONDUCTION.saTime - 2, CONDUCTION.saTime + 22]]; R.svc = R.sa;
+  R.av = [[M.tAV, M.tHis]];
+  let p0 = Infinity; for (const s of CONDUCTION.segments) { const sg = M.seg[s.id]; R[s.id] = [[sg.start, sg.end + 4]]; if (s.purk) p0 = Math.min(p0, sg.start); }
+  R.purk = [[p0 + 8, M.vMin + 25]];
+  ACTIVE_RANGES = R;
+}
+function isActive(tag, t) { const r = ACTIVE_RANGES && ACTIVE_RANGES[tag]; return !!r && r.some(([a, b]) => t >= a && t <= b); }
+function applyLabelVisibility() {
+  const t = state.t;
+  for (const L of labels) {
+    if (L.tag) { L.visible = ui.labelAll || isActive(L.tag, t); L.el.classList.toggle('active', isActive(L.tag, t) && (L.cls === 'cond' || L.cls === 'node')); }
+  }
+  if (regionLabel) regionLabel.visible = ui.labelAll && regionMeshes.length > 0;
+  for (const m of regionMeshes) m.visible = ui.labelAll;
+  if (trail) trail.visible = ui.loop;
 }
 
 /* ---------- Torso, leads, vector, projection ---------- */
@@ -953,9 +999,10 @@ function setLeadStyles() {
   for (const L of LEADS) {
     const o = leadObjs[L.id]; const sel = L.id === state.sel;
     const dim = !sel && ((state.view === 'frontal' && L.type === 'chest') || (state.view === 'transverse' && L.type === 'limb'));
+    o.grp.visible = sel || ui.allLeads; // default: only the selected lead is drawn
     for (const m of [o.matPos, o.matNeg]) { m.color.setHex(sel ? COL.black : COL.leadGrey); m.transparent = dim; m.opacity = dim ? 0.15 : 1; m.depthWrite = !dim; m.needsUpdate = true; }
     const s = sel ? 2.8 : 1; o.pos.scale.set(s, 1, s); o.negR.children.forEach(c => c.scale.set(s, 1, s)); o.marker.scale.setScalar(sel ? 1.5 : 1);
-    o.lbl.el.className = 'lbl lead' + (sel ? ' sel' : dim ? ' dim' : ''); o.lbl.visible = !dim;
+    o.lbl.el.className = 'lbl lead' + (sel ? ' sel' : dim ? ' dim' : ''); o.lbl.visible = sel || (ui.allLeads && !dim);
   }
   if (frontLabel) frontLabel.visible = state.view === 'transverse';
   needsRender = true;
@@ -976,13 +1023,12 @@ function updateScene() {
     for (const m of [avRing, avRingBack]) { m.position.copy(avW); m.quaternion.copy(camera.quaternion); }
   }
   avLabel.el.textContent = avHold ? `AV node: held ${Math.round(t - M.tAV)} of ${Math.round(M.tHis - M.tAV)} ms` : 'AV node';
-  avLabel.el.classList.toggle('active', avHold); saLabel.el.classList.toggle('active', saOn);
   // travelling pulses
   for (const b of beads) {
     const sg = M.seg[b.s.id]; const on = t >= sg.start && t <= sg.end;
     b.bead.visible = on; if (on) b.bead.position.set(...polyAt(b.s.pts, (t - sg.start) * sg.v));
   }
-  for (const c of condParts) if (c.s) { const sg = M.seg[c.s.id]; c.lbl.el.classList.toggle('active', t >= sg.start && t <= sg.end + 4); }
+  applyLabelVisibility();
   // mean vector
   const D = dipole(t); const mag = Math.hypot(...D); const len = mag * VEC_SCALE;
   const shaft = arrow.getObjectByName('shaft'), head = arrow.getObjectByName('head');
@@ -1108,14 +1154,26 @@ function describeLead() {
     rel = ang < 60 ? `The arrow points towards the + pole (${ang}° from it), so the trace goes up.` : ang > 120 ? `The arrow points away from the + pole (${ang}° from it), so the trace goes down.` : `The arrow is nearly at right angles to this lead (${ang}°), so the deflection is small.`;
   } else rel = v > 0 ? 'Activity is heading towards this electrode overall, so the trace goes up.' : 'Activity is heading away from this electrode overall, so the trace goes down.';
   const where = L.type === 'limb' ? `a limb lead at ${L.angle}` : `a chest lead (${L.pos})`;
-  $('leadExplain').innerHTML = `<p class="le-head">Selected: lead ${L.id} (${L.view.toLowerCase()})</p>` +
-    `<p>${L.id} is ${where}. It mainly faces ${REGION_TEXT[L.region]}.</p><p>${rel} Value now: ${fmt(v)} mV.</p>`;
-  $('ecgCaption').textContent = `Lead ${L.id} selected (bold box). The shaded beat and line in every lead mark the same moment, ${Math.round(state.t)} ms into the beat. ${L.id} now: ${fmt(v)} mV.`;
+  $('leadExplain').innerHTML = `<p class="le-head">Lead ${L.id}: ${fmt(v)} mV</p><p>${rel}</p>`;
+  $('leadExplain').title = `${L.id} is ${where}. It mainly faces ${REGION_TEXT[L.region]}.`;
+  $('ecgCaption').textContent = `Lead ${L.id} selected (bold box). The line in every lead marks the same moment, ${Math.round(state.t)} ms into the beat.`;
   $('miniLabel').textContent = `Lead ${L.id}, 5 s at 25 mm/s`;
+}
+/* Guided steps */
+function stepIndexAt(t) { let k = -1; STEPS.forEach((p, i) => { if (t >= p.from) k = i; }); return k; }
+function goStep(i) {
+  i = Math.max(0, Math.min(STEPS.length - 1, i)); setPlaying(false); setT(STEPS[i].at, true);
+}
+function updateSteps() {
+  const k = stepIndexAt(state.t); const ph = phaseAt(state.t); const onStep = !!ph.step;
+  document.querySelectorAll('.step-chip').forEach((b, i) => b.setAttribute('aria-pressed', String(onStep && i === k)));
+  $('stepCount').textContent = onStep ? `Step ${k + 1} of ${STEPS.length}` : '';
+  $('stepBack').disabled = k <= 0 && onStep; $('stepNext').disabled = k >= STEPS.length - 1 && onStep;
 }
 function updateText(announce) {
   const ph = phaseAt(state.t);
   if (ph !== lastPhase) { $('phaseTitle').textContent = ph.title; $('phaseText').textContent = ph.text; lastPhase = ph; }
+  updateSteps();
   describeLead();
   if (announce) $('live').textContent = `${Math.round(state.t)} milliseconds. ${ph.title}. ${ph.text}`;
 }
@@ -1143,7 +1201,7 @@ function setPlaying(on) {
 
 /* Recompute everything after a change to BASELINE / CONDUCTION (hook for later pathology modes) */
 function rebuildModel() {
-  MODEL = computeModel(); buildTraces(); buildPhases(); lastPhase = null;
+  MODEL = computeModel(); buildTraces(); buildPhases(); buildActiveRanges(); lastPhase = null;
   applyMuscleTimes(); applyConductionTimes(); setT(state.t);
 }
 
@@ -1154,14 +1212,21 @@ speedSel.addEventListener('change', () => { state.speed = +speedSel.value; });
 document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', () => goView(b.dataset.view)));
 $('resetView').addEventListener('click', () => goView('frontal'));
 $('toggleCut').addEventListener('click', () => setCut(!ui.cut));
-$('toggleLabels').addEventListener('click', () => setCondLabels(!ui.condLabels));
+function setToggle(id, key, on) { ui[key] = on; $(id).setAttribute('aria-pressed', String(on)); setLeadStyles(); if (state.sel) buildRegion(LEAD[state.sel].region); updateScene(); }
+$('toggleLeads').addEventListener('click', () => setToggle('toggleLeads', 'allLeads', !ui.allLeads));
+$('toggleLabelAll').addEventListener('click', () => setToggle('toggleLabelAll', 'labelAll', !ui.labelAll));
+$('toggleLoop').addEventListener('click', () => setToggle('toggleLoop', 'loop', !ui.loop));
+$('stepBack').addEventListener('click', () => { const k = stepIndexAt(state.t); goStep(phaseAt(state.t).step ? k - 1 : k); });
+$('stepNext').addEventListener('click', () => goStep(stepIndexAt(state.t) + 1));
+// close the 'More' menu after choosing an item
+document.querySelectorAll('#moreMenu .menu-item').forEach(b => b.addEventListener('click', () => { if (!b.classList.contains('toggle-btn')) $('moreMenu').open = false; }));
 let rzT = null; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(resize, 60); });
 
-MODEL = computeModel(); buildTraces(); buildPhases();
+MODEL = computeModel(); buildTraces(); buildPhases(); buildActiveRanges();
 if (renderer) { buildScene(); applyMuscleTimes(); applyConductionTimes(); initInteraction(); }
 resize();
 goView('frontal', true);
-setCut(true); setCondLabels(true);
+setCut(true);
 select('II');
 setT(250);
 
@@ -1182,7 +1247,9 @@ if (!REDUCED) setPlaying(true);
 
 /* Hooks for automated checks, screenshots and later pathology modes */
 window.ecg3d = {
-  setT: t => { setPlaying(false); setT(t, true); }, select, view: v => goView(v, true), play: setPlaying, cut: setCut, condLabels: setCondLabels,
+  setT: t => { setPlaying(false); setT(t, true); }, select, view: v => goView(v, true), play: setPlaying, cut: setCut, step: goStep,
+  toggle: (key, on) => setToggle({ allLeads: 'toggleLeads', labelAll: 'toggleLabelAll', loop: 'toggleLoop' }[key], key, on),
+  leadRodsShown: () => renderer ? Object.values(leadObjs).filter(o => o.grp.visible).length : 0,
   orbit: (az, el, r) => { camAnim = null; orbit.az = az * DEG; orbit.el = el * DEG; if (r) orbit.r = r; placeCamera(); markCustom(); },
   trace: id => Array.from(TRACE[id]), timings: () => ({ tAV: MODEL.tAV, tHis: MODEL.tHis, seg: MODEL.seg, vMin: MODEL.vMin, vMax: MODEL.vMax, recMin: MODEL.recMin, recMax: MODEL.recMax }),
   BASELINE, CONDUCTION, rebuildModel, webgl: !!renderer
