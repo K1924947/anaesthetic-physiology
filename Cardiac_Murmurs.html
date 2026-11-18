@@ -3,19 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex">
 <title>Cardiac Murmurs · The Physio Lab</title>
+<meta name="description" content="Interactive cardiac murmurs: see the pressure gradient behind each murmur, its timing, shape and where to listen, with a simplified synthesised sound and a Test yourself quiz.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css">
 <link rel="stylesheet" href="assets/layout.css">
+<link rel="stylesheet" href="assets/pv-core.css">
+<link rel="stylesheet" href="assets/pv-tool.css">
+<link rel="stylesheet" href="assets/murmurs.css">
 <script src="assets/theme.js"></script>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="page page-wide">
-  <header class="site-header">
+<a class="skip-link" href="#tool">Skip to the murmur tool</a>
+<div class="page page-wide page-tool">
+  <header class="site-header tool-view-header">
     <div class="site-header-top">
       <nav class="crumb" aria-label="Breadcrumb">
         <a href="index.html">Home</a>
@@ -32,23 +35,148 @@
         </button>
       </div>
     </div>
-    <div class="brand" style="text-align:left;">
-      <p class="kicker" style="text-align:left;">Cardiac</p>
-      <h1 class="title" style="text-align:left;">Cardiac Murmurs</h1>
-    </div>
+    <h1>Cardiac Murmurs</h1>
+    <p class="subtitle">A murmur is turbulent flow driven by a pressure difference. Find the gradient and you know when the murmur happens.</p>
   </header>
 
-  <main id="main">
-    <div class="uc-panel">
-      <span class="uc-badge"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2 13.5h12M3.2 13.5l2.4-8h4.8l2.4 8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M4.4 10.5h7.2M5.3 8h5.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Under construction</span>
-      <p>Under construction: this tool is being rebuilt and rechecked. Check back soon.</p>
-      <ul class="uc-links">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="cardiac.html">Cardiac hub</a></li>
-        <li><a href="PV_Loop.html">Pressure–Volume Loop</a></li>
-        <li><a href="ECG_Rhythm_Quiz.html">ECG Rhythm Quiz</a></li>
-      </ul>
-    </div>
+  <main>
+    <section id="tool" aria-label="Interactive cardiac murmurs">
+      <div class="test-banner" id="testBanner">
+        <span class="test-banner-icon" aria-hidden="true">?</span>
+        <div class="test-banner-copy">
+          <h2 class="test-banner-title">Test yourself!</h2>
+          <p class="test-banner-tag">See the phonocardiogram (and hear it if you like), then name the murmur.</p>
+        </div>
+        <p class="test-banner-score" id="testBannerScore" hidden></p>
+        <button type="button" class="test-banner-cta" id="testToggle" aria-pressed="false">
+          <span class="test-cta-label">Start</span>
+        </button>
+      </div>
+
+      <div class="tool-controls" id="toolControls">
+        <div class="tool-block">
+          <h2 class="tool-section-title" id="murmur-heading">Murmurs</h2>
+          <div class="scen-panel">
+            <div class="mm-groups" id="murmurGroups" role="group" aria-labelledby="murmur-heading"></div>
+            <details class="mm-try">
+              <summary>Try this</summary>
+              <ol class="try-list">
+                <li><button type="button" class="try-btn" data-murmur="as" data-man="rest">Aortic stenosis: find the gap between LV and aortic pressure</button></li>
+                <li><button type="button" class="try-btn" data-murmur="ms" data-man="rest">Mitral stenosis: spot the opening snap, then the rumble</button></li>
+                <li><button type="button" class="try-btn" data-murmur="tr" data-man="insp">Tricuspid regurgitation: breathe in and it gets louder</button></li>
+                <li><button type="button" class="try-btn" data-murmur="hocm" data-man="valsalva">HOCM: Valsalva makes the obstruction worse</button></li>
+                <li><button type="button" class="try-btn" data-murmur="normal" data-man="insp">Normal heart: breathe in and S2 splits</button></li>
+              </ol>
+            </details>
+          </div>
+        </div>
+        <div class="tool-block">
+          <h2 class="tool-section-title" id="man-heading">Manoeuvres and sound</h2>
+          <div class="guide-panel">
+            <div class="mm-mans" id="manButtons" role="group" aria-labelledby="man-heading"></div>
+            <p class="mm-man-note" id="manNote"></p>
+            <div class="mm-sound">
+              <button type="button" class="mm-play" id="playBtn" aria-pressed="false">
+                <span class="mm-play-icon" aria-hidden="true"></span><span class="mm-play-text">Play sound</span>
+              </button>
+              <button type="button" class="mode-switch" id="animSwitch" role="switch" aria-checked="false">
+                <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+                <span>Animation <span class="switch-state" id="animState">off</span></span>
+              </button>
+            </div>
+            <p class="mm-sound-note">Simplified synthesised teaching sound, not a real recording. Low-pitched sounds are hard to hear on phone or laptop speakers; headphones help.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-hero">
+        <div class="tool-stage">
+          <div class="graph-card">
+            <div class="mm-legend" id="mmLegend" aria-hidden="true"></div>
+            <div class="mm-svg-box" id="mmSvgBox">
+              <svg id="mmSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mm-svg-title mm-svg-desc"></svg>
+            </div>
+            <p id="mm-svg-title" class="visually-hidden">Pressure traces and phonocardiogram over one heartbeat</p>
+            <p id="mm-svg-desc" class="visually-hidden"></p>
+            <p class="mm-status" id="mmStatus" hidden></p>
+          </div>
+          <p class="disclaimer">Teaching schematic over one beat at 72 per minute, not a measured trace. In this drawing the murmur follows the pressure difference across the valve or defect; real loudness also depends on flow, the valve and the chest wall.</p>
+        </div>
+        <aside class="tool-side">
+          <div class="card explain-panel" id="explainPanel" aria-live="polite"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="revise-section" aria-labelledby="revise-heading">
+      <h2 id="revise-heading" class="revise-title">Revise this topic</h2>
+      <div class="revise-tabs" role="tablist" aria-label="Revision sections">
+        <button type="button" role="tab" id="tab-summary" aria-selected="true" aria-controls="panel-summary" tabindex="0">One-screen summary</button>
+        <button type="button" role="tab" id="tab-viva" aria-selected="false" aria-controls="panel-viva" tabindex="-1">Viva questions</button>
+        <button type="button" role="tab" id="tab-numbers" aria-selected="false" aria-controls="panel-numbers" tabindex="-1">Key numbers</button>
+      </div>
+      <div class="revise-panels">
+        <div id="panel-summary" class="revise-panel" role="tabpanel" aria-labelledby="tab-summary" tabindex="0">
+          <div class="summary-grid">
+            <article class="card summary-card">
+              <h3 class="card-title">Why murmurs happen</h3>
+              <ul>
+                <li>Blood flow becomes <strong>turbulent</strong> when it is forced through a narrow or leaking opening by a <strong>pressure difference</strong>.</li>
+                <li>The murmur lasts as long as that gradient drives flow, so the <strong>timing comes from the pressure traces</strong>.</li>
+                <li>Systole runs from <strong>S1</strong> (mitral and tricuspid closure) to <strong>S2</strong> (aortic then pulmonary closure).</li>
+              </ul>
+            </article>
+            <article class="card summary-card">
+              <h3 class="card-title">Systolic murmurs</h3>
+              <ul>
+                <li><strong>Ejection systolic</strong> (crescendo-decrescendo): aortic stenosis, HOCM, innocent flow murmur.</li>
+                <li><strong>Pansystolic</strong> (S1 to S2): mitral regurgitation, tricuspid regurgitation, VSD.</li>
+                <li>AS radiates to the <strong>carotids</strong>; MR to the <strong>axilla</strong>.</li>
+              </ul>
+            </article>
+            <article class="card summary-card">
+              <h3 class="card-title">Diastolic murmurs</h3>
+              <ul>
+                <li><strong>Aortic regurgitation:</strong> early diastolic, decrescendo, high pitched; left sternal edge, sitting forward, breath held out.</li>
+                <li><strong>Mitral stenosis:</strong> loud S1, opening snap, low-pitched mid-diastolic rumble at the apex; left lateral position, bell.</li>
+                <li>Diastolic murmurs are <strong>almost always pathological</strong> and need investigating.</li>
+              </ul>
+            </article>
+            <article class="card summary-card">
+              <h3 class="card-title">Bedside manoeuvres</h3>
+              <ul>
+                <li><strong>Breath in:</strong> right-sided murmurs louder (Carvallo's sign in TR). Left-sided murmurs are louder in expiration.</li>
+                <li><strong>Valsalva or standing:</strong> most murmurs softer; <strong>HOCM louder</strong>.</li>
+                <li><strong>Squatting:</strong> most murmurs louder; HOCM softer. <strong>Handgrip:</strong> MR, VSD and AR louder; AS and HOCM softer.</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+        <div id="panel-viva" class="revise-panel" role="tabpanel" aria-labelledby="tab-viva" tabindex="0" hidden>
+          <div id="vivaList"></div>
+        </div>
+        <div id="panel-numbers" class="revise-panel" role="tabpanel" aria-labelledby="tab-numbers" tabindex="0" hidden>
+          <p class="hy-lead" style="margin-top:0;">Textbook teaching values and guideline thresholds. They are for learning, not for interpreting a named person's results.</p>
+          <div class="nums-table-wrap" id="numsWrap"></div>
+        </div>
+      </div>
+      <details class="revise-sources">
+        <summary>Sources</summary>
+        <div class="details-body">
+          <ul class="source-list">
+            <li>Hall JE. <cite>Guyton and Hall Textbook of Medical Physiology</cite>. Cardiac cycle (Ch. 9) and heart sounds and valve lesions (Ch. 23), 12th ed. numbering.</li>
+            <li>Innes JA, Dover AR, Fairhurst K, eds. <cite>Macleod's Clinical Examination</cite>. Cardiovascular system chapter.</li>
+            <li>Wilkinson IB, Raine T, Wiles K, et al. <cite>Oxford Handbook of Clinical Medicine</cite>. Cardiovascular medicine chapter (heart sounds and murmurs).</li>
+            <li>Lembo NJ, Dell'Italia LJ, Crawford MH, O'Rourke RA. Bedside diagnosis of systolic murmurs. <cite>N Engl J Med</cite> 1988;318:1572-1578.</li>
+            <li>Vahanian A, Beyersdorf F, Praz F, et al. 2021 ESC/EACTS Guidelines for the management of valvular heart disease. <cite>Eur Heart J</cite> 2022;43:561-632.</li>
+            <li>Arbelo E, Protonotarios A, Gimeno JR, et al. 2023 ESC Guidelines for the management of cardiomyopathies. <cite>Eur Heart J</cite> 2023;44:3503-3626.</li>
+            <li>NICE guideline NG208. Heart valve disease presenting in adults: investigation and management. 2021.</li>
+          </ul>
+          <p class="caveat">Pressure traces are schematics shaped from the textbook cardiac cycle, not recordings. The synthesised sounds are simplified and are not a substitute for listening to real patients or validated recordings.</p>
+        </div>
+      </details>
+    </section>
+    <p class="mm-teaching-note">A teaching tool, not clinical guidance. A new murmur in a real patient needs proper clinical assessment.</p>
   </main>
 
   <footer>
@@ -61,5 +189,6 @@
     </p>
   </footer>
 </div>
+<script src="assets/murmurs.js"></script>
 </body>
 </html>
