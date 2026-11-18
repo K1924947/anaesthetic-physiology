@@ -90,8 +90,8 @@
 .sw-front { background: #E0701E; border: 3px solid #111; border-radius: 3px; }
 .sw-depol { border: 1.5px solid #1a1a1a; border-radius: 3px; background-color: #B0287A; background-image: radial-gradient(circle, #F4D2E6 1.6px, transparent 1.8px); background-size: 6px 6px; }
 .sw-repol { border: 1.5px solid #1a1a1a; border-radius: 3px; background: repeating-linear-gradient(45deg, #B0287A 0 4px, #C4C4C4 4px 9px); }
-.sw-cond { height: 7px; background: linear-gradient(90deg, #184A63 0 50%, #A9C3D2 50%); border: 2px solid #111; border-radius: 4px; }
-.sw-pulse { height: 7px; background: linear-gradient(90deg, #184A63 0 40%, #fff 40% 70%, #A9C3D2 70%); border: 2px solid #111; border-radius: 4px; }
+.sw-cond { height: 7px; background: linear-gradient(90deg, #4F84A8 0 50%, #A9C3D2 50%); border: 2px solid #111; border-radius: 4px; }
+.sw-pulse { height: 7px; background: linear-gradient(90deg, #4F84A8 0 40%, #fff 40% 70%, #A9C3D2 70%); border: 2px solid #111; border-radius: 4px; }
 .sw-nodes { width: 26px; height: 12px; background: linear-gradient(45deg, transparent 30%, #184A63 30% 70%, transparent 70%); border: 1.5px solid #111; }
 .sw-mesh { border: 1.5px dashed #111; border-radius: 3px; background-image: linear-gradient(45deg, transparent 45%, #111 45%, #111 55%, transparent 55%), linear-gradient(-45deg, transparent 45%, #111 45%, #111 55%, transparent 55%); background-size: 6px 6px; }
 .sw-trail { height: 0; border-top: 3px dotted #595959; }
@@ -168,3 +168,9 @@
 .key li .sw-inline { margin-left: 4px; }
 .step-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); }
 .step-chips .t-btn { font-size: 12px; padding: 4px 3px; line-height: 1.2; }
+.labels .leaders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.labels .leaders line { stroke: #333; stroke-width: 1.2; }
+.labels .leaders circle { fill: #333; }
+/* swatches matching the calmer 3D patterns */
+.sw-depol { background-color: #B0287A; background-image: radial-gradient(circle, #D27FB0 3px, transparent 3.6px); background-size: 12px 12px; background-position: 0 -1px; }
+.sw-repol { background: repeating-linear-gradient(45deg, #B0287A 0 6px, #C4C4C4 6px 12px); }

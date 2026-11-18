@@ -341,7 +341,7 @@ function buildPhases() {
       text: 'The septum depolarises first, from left to right, so the small early arrow points right. Left-sided leads such as I and V6 show a small q wave.' },
     { key: 'main', step: 'Ventricles (QRS)', at: Math.round(qrsOn + 40), from: qrsOn + 16, to: qrsOff,
       title: 'QRS: the ventricles depolarise',
-      text: 'The wave spreads from the inner wall outwards. The big arrow points down and left, towards II, so II shows a tall R wave.' },
+      text: 'The wave spreads from the inner wall outwards. The big arrow points down and left, towards II, and its shadow on the lead (striped bar) is long, so II shows a tall R wave.' },
     { key: 'ST', step: 'ST segment', at: Math.round((qrsOff + tOn) / 2), from: qrsOff, to: tOn,
       title: 'ST segment',
       text: 'All ventricular muscle is depolarised (dotted magenta), so there is no arrow and the line is flat.' },
@@ -543,7 +543,7 @@ const VIEWS = {
   oblique:    { az: 35 * DEG, el: 14 * DEG, r: 24, note: '3D view. Drag to rotate.' },
   transverse: { az: 0, el: 89.4 * DEG, r: 22, note: "Transverse view from above: front of the chest at the bottom, patient's left on your right." }
 };
-const ui = { cut: true, labelAll: false, allLeads: false, loop: false };
+const ui = { cut: false, labelAll: false, allLeads: false, loop: false };
 
 function rod(from, to, radius, mat) {
   const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to);
@@ -560,8 +560,9 @@ function dashedRod(from, to, radius, mat, n) {
 
 /* ---------- Shaders: muscle state by activation (act) and recovery (rec) times ----------
    Each state has its own colour family plus a pattern (Ed is red-green colour blind):
-   resting: flat grey; depolarisation front: orange band with bold black edges;
-   depolarised: magenta with light dots; repolarising: magenta and grey hatching. */
+   resting: flat grey; depolarisation front: orange band with dark edges;
+   depolarised: magenta with a few large soft dots; repolarising: wide magenta and grey stripes.
+   Patterns are in screen space and antialiased; vertex times are smoothed so the band is one clean line. */
 const U = {
   uT: { value: 0 }, uPx: { value: 1 }, uFront: { value: 16 }, uRepol: { value: 45 },
   cRest: { value: new THREE.Color(0xC4C4C4) }, cFront: { value: new THREE.Color(0xE0701E) },
@@ -575,12 +576,18 @@ uniform vec3 cRest; uniform vec3 cFront; uniform vec3 cDep; uniform vec3 cDot;
 vec3 stateCol(float act, float rec, float w) {
   vec2 fc = gl_FragCoord.xy / uPx;
   if (uT < act) return cRest;                                   // resting: flat grey
-  if (uT < act + uFront) {                                      // front: orange band with bold black edges
-    float e0 = (uT - act) / w, e1 = (act + uFront - uT) / w;
-    return (e0 < 2.5 || e1 < 2.5) ? vec3(0.07) : cFront;
+  if (uT < act + uFront) {                                      // front: one orange band with soft-edged dark borders (about 2 px)
+    float e = min(uT - act, act + uFront - uT) / w;
+    return mix(vec3(0.09), cFront, smoothstep(1.0, 2.4, e));
   }
-  if (uT < rec) { vec2 g = mod(fc, 7.0) - 3.5; return dot(g, g) < 2.8 ? cDot : cDep; } // depolarised: magenta with dots
-  if (uT < rec + uRepol) { float s = mod(fc.x - fc.y, 9.0); return s < 4.0 ? cDep : cRest; } // repolarising: hatched
+  if (uT < rec) {                                               // depolarised: magenta with a few large soft dots
+    vec2 g = mod(fc + vec2(0.0, 13.0) * step(13.0, mod(fc.x, 52.0)), 26.0) - 13.0;
+    return mix(cDep, cDot, 0.45 * (1.0 - smoothstep(4.0, 5.6, length(g))));
+  }
+  if (uT < rec + uRepol) {                                      // repolarising: wide diagonal magenta and grey stripes
+    float s = mod(fc.x - fc.y, 30.0);
+    return mix(cRest, cDep, smoothstep(0.0, 1.4, s) * (1.0 - smoothstep(14.0, 15.4, s)));
+  }
   return cRest;
 }`;
 const MUSCLE_VS = `
@@ -607,25 +614,23 @@ void main() {
 }`;
 const SECTION_VS = `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const SECTION_FS = `
-varying vec2 vUv; uniform sampler2D uTex; uniform vec2 uTexSize; uniform vec3 cCav; uniform vec3 cEdge;
+varying vec2 vUv; uniform sampler2D uMask; uniform sampler2D uTimes; uniform vec2 uTSize; uniform vec3 cCav; uniform vec3 cEdge;
 ${STATE_GLSL}
-vec2 smoothTimes(vec2 uv, vec2 fallback) { // bilinear blend of activation / recovery over muscle texels only
-  vec2 p = uv * uTexSize - 0.5; vec2 f = fract(p); vec2 b = (floor(p) + 0.5) / uTexSize;
-  vec2 dx = vec2(1.0 / uTexSize.x, 0.0), dy = vec2(0.0, 1.0 / uTexSize.y);
-  vec4 a = texture2D(uTex, b), c = texture2D(uTex, b + dx), d = texture2D(uTex, b + dy), e = texture2D(uTex, b + dx + dy);
-  float wa = (1.0 - f.x) * (1.0 - f.y) * step(0.6, a.b), wc = f.x * (1.0 - f.y) * step(0.6, c.b);
-  float wd = (1.0 - f.x) * f.y * step(0.6, d.b), we = f.x * f.y * step(0.6, e.b);
-  float ws = wa + wc + wd + we;
-  return ws < 1e-4 ? fallback : (a.rg * wa + c.rg * wc + d.rg * wd + e.rg * we) / ws;
+vec2 times(vec2 uv) { // manual bilinear blend of activation / recovery on the voxel grid (values are dilated outside the muscle)
+  vec2 p = uv * uTSize - 0.5; vec2 f = fract(p); vec2 b = (floor(p) + 0.5) / uTSize;
+  vec2 dx = vec2(1.0 / uTSize.x, 0.0), dy = vec2(0.0, 1.0 / uTSize.y);
+  vec2 a = texture2D(uTimes, b).rg, c = texture2D(uTimes, b + dx).rg, d = texture2D(uTimes, b + dy).rg, e = texture2D(uTimes, b + dx + dy).rg;
+  return mix(mix(a, c, f.x), mix(d, e, f.x), f.y);
 }
 void main() {
-  vec4 d = texture2D(uTex, vUv);
-  vec2 ar = smoothTimes(vUv, d.rg);
+  vec2 m = texture2D(uMask, vUv).rg;              // r: inside the heart outline, g: muscle (linear filtered, so edges are smooth)
+  vec2 ar = times(vUv);
   float w = max(fwidth(ar.x), 1e-3);
-  if (d.b < 0.25) discard;
-  if (d.b < 0.6) { gl_FragColor = vec4(cCav, 1.0); return; }
-  if (d.b < 0.9) { gl_FragColor = vec4(cEdge, 1.0); return; }
-  gl_FragColor = vec4(stateCol(ar.x, ar.y, w), 1.0);
+  float fr = max(fwidth(m.r), 1e-4), fg = max(fwidth(m.g), 1e-4);
+  if (m.r < 0.5 - fr) discard;
+  vec3 col = mix(cCav, stateCol(ar.x, ar.y, w), smoothstep(0.5 - fg, 0.5 + fg, m.g));
+  float line = 1.0 - smoothstep(0.6, 1.6, min(abs(m.r - 0.5) / fr, abs(m.g - 0.5) / fg));
+  gl_FragColor = vec4(mix(col, cEdge, line), 1.0);
 }`;
 // conduction tubes: idle steel blue, bright white pulse (with a bulge), then dark blue once conducted
 const TUBE_VS = `
@@ -644,17 +649,17 @@ void main() {
   vec3 c = uT < vT ? cIdle : (uT < vT + vW ? vec3(1.0) : cDone);
   gl_FragColor = vec4(c, 1.0);
 }`;
-const CIDLE = new THREE.Color(0xA9C3D2), CDONE = new THREE.Color(COL.blue);
+const CIDLE = new THREE.Color(0xA9C3D2), CDONE = new THREE.Color(0x4F84A8); // conducted: mid steel blue (lighter than before so the tubes do not read as a black tangle)
 function tubeMats(radius) {
   const mk = (out) => new THREE.ShaderMaterial({
-    uniforms: { uT: U.uT, uOut: { value: out }, uBulge: { value: radius * 1.5 }, cIdle: { value: CIDLE }, cDone: { value: CDONE } },
+    uniforms: { uT: U.uT, uOut: { value: out }, uBulge: { value: radius * 0.8 }, cIdle: { value: CIDLE }, cDone: { value: CDONE } },
     vertexShader: TUBE_VS, fragmentShader: TUBE_FS, depthTest: false, depthWrite: false, side: out > 0 ? THREE.BackSide : THREE.FrontSide
   });
   return [mk(0), mk(Math.max(0.012, radius * 0.35))];
 }
 
 /* ---------- Heart: four opaque chambers, septum, cut-away section ---------- */
-let heart, shells = [], sectionMesh = null, sectionTex = null, CUT_PLANE = null;
+let svcMesh = null, heart, shells = [], sectionMesh = null, sectionTex = null, CUT_PLANE = null;
 const SECTION_Z = 0.05; // heart-local z of the cut-away (a four-chamber section)
 const REGION_ELEMS = {}; ['S', 'LV', 'RV', 'RA', 'LA'].forEach(r => { REGION_ELEMS[r] = []; });
 for (let e = 0; e < NE; e++) REGION_ELEMS[ELEM.region[e]].push(e);
@@ -696,10 +701,10 @@ function buildHeart() {
   heart = new THREE.Group(); heart.matrixAutoUpdate = false; heart.matrix.copy(HEART_VIS); scene.add(heart);
   CUT_PLANE = new THREE.Plane(new THREE.Vector3(0, 0, -1), SECTION_Z).applyMatrix4(HEART_VIS); // keep heart-local z <= SECTION_Z
   const defs = [
-    { name: 'LV', region: 'LV', geo: shellGeometry('LV', p => { p[1] = Math.min(p[1], 0); p[0] = Math.max(p[0], -SEPT); }) },
-    { name: 'RV', region: 'RV', geo: shellGeometry('RV', p => { p[1] = Math.min(p[1], 0); p[0] = Math.min(p[0], -SEPT); }) },
-    { name: 'S', region: 'S', geo: septumGeometry() },
-    { name: 'RA', region: 'RA', geo: shellGeometry('RA', p => { p[1] = Math.max(p[1], ATRIA_Y0); toSeptum(p, -1); }, 48, 32) },
+    { name: 'LV', region: 'LV', geo: shellGeometry('LV', p => { p[1] = Math.min(p[1], -0.004); p[0] = Math.max(p[0], -SEPT + 0.004); }) },
+    { name: 'RV', region: 'RV', geo: shellGeometry('RV', p => { p[1] = Math.min(p[1], -0.004); p[0] = Math.min(p[0], -SEPT - 0.004); }), off: 1 },
+    { name: 'S', region: 'S', geo: septumGeometry(), off: 2 },
+    { name: 'RA', region: 'RA', geo: shellGeometry('RA', p => { p[1] = Math.max(p[1], ATRIA_Y0); toSeptum(p, -1); }, 48, 32), off: 1 },
     { name: 'LA', region: 'LA', geo: shellGeometry('LA', p => { p[1] = Math.max(p[1], ATRIA_Y0); toSeptum(p, 1); }, 48, 32) }
   ];
   const outlineMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.BackSide, clippingPlanes: ui.cut ? [CUT_PLANE] : [] });
@@ -710,46 +715,53 @@ function buildHeart() {
     const near = new Int32Array(n); const v = d.geo.attributes.position;
     for (let i = 0; i < n; i++) near[i] = nearestIn([v.getX(i), v.getY(i), v.getZ(i)], REGION_ELEMS[d.region]);
     const mesh = new THREE.Mesh(d.geo, muscleMaterial());
+    if (d.off) { mesh.material.polygonOffset = true; mesh.material.polygonOffsetFactor = d.off; mesh.material.polygonOffsetUnits = d.off * 2; }
     const outline = new THREE.Mesh(outlineGeometry(d.geo, 0.022), outlineMat);
     heart.add(mesh, outline);
     shells.push({ ...d, mesh, outline, near });
   }
-  // cut-away section: one texel per (H / 4), coloured by the activation and recovery of the muscle it cuts
-  const TW = NX * 4, TH = NY * 4, x0 = GX0, y0 = GY0, W = (NX - 1) * H, Hh = (NY - 1) * H;
-  const data = new Float32Array(TW * TH * 4); const kind = new Uint8Array(TW * TH); const near = new Int32Array(TW * TH).fill(-1);
+  // cut-away section: a smooth mask from the analytic shapes (4 texels per voxel) and the activation and recovery
+  // times on the voxel grid, blended bilinearly, so the cut face reads as clean flat fills with a thin outline
+  const MS = 6, TW = NX * MS, TH = NY * MS, x0 = GX0, y0 = GY0, W = (NX - 1) * H, Hh = (NY - 1) * H;
+  const mask = new Uint8Array(TW * TH * 4);
   for (let j = 0; j < TH; j++) for (let i = 0; i < TW; i++) {
-    const p = [x0 + (i + 0.5) * W / TW, y0 + (j + 0.5) * Hh / TH, SECTION_Z]; const r = regionOf(p); const k = j * TW + i;
-    if (r === 'LVc' || r === 'RVc') kind[k] = 1;
-    else if (r) { kind[k] = 2; near[k] = nearestInGrid(p, r); }
+    let cin = 0, cmu = 0; const k = (j * TW + i) * 4; // 4 x 4 supersampled coverage, so the filtered edge is a smooth curve
+    for (let sj = 0; sj < 4; sj++) for (let si = 0; si < 4; si++) {
+      const r = regionOf([x0 + (i + (si + 0.5) / 4) * W / TW, y0 + (j + (sj + 0.5) / 4) * Hh / TH, SECTION_Z]);
+      if (r) { cin++; if (r !== 'LVc' && r !== 'RVc') cmu++; } }
+    mask[k] = Math.round(cin / 16 * 255); mask[k + 1] = Math.round(cmu / 16 * 255); mask[k + 3] = 255;
   }
-  const kind0 = kind.slice();
-  for (let j = 0; j < TH; j++) for (let i = 0; i < TW; i++) {
-    const k = j * TW + i; if (kind0[k] !== 2) continue;
-    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= TW || b >= TH || kind0[b * TW + a] !== 2) { kind[k] = 3; break; }
-    }
-  }
-  sectionTex = new THREE.DataTexture(data, TW, TH, THREE.RGBAFormat, THREE.FloatType);
+  const maskTex = new THREE.DataTexture(mask, TW, TH, THREE.RGBAFormat, THREE.UnsignedByteType);
+  maskTex.magFilter = THREE.LinearFilter; maskTex.minFilter = THREE.LinearFilter; maskTex.needsUpdate = true;
+  sectionTex = new THREE.DataTexture(new Float32Array(NX * NY * 4), NX, NY, THREE.RGBAFormat, THREE.FloatType);
   sectionTex.magFilter = THREE.NearestFilter; sectionTex.minFilter = THREE.NearestFilter;
-  sectionTex.userData = { kind, near, TW, TH };
-  sectionMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh), new THREE.ShaderMaterial({
-    uniforms: { ...U, uTex: { value: sectionTex }, uTexSize: { value: new THREE.Vector2(TW, TH) } }, vertexShader: SECTION_VS, fragmentShader: SECTION_FS, side: THREE.DoubleSide
-  }));
+  const kz = Math.round((SECTION_Z - GZ0) / H), cellEl = new Int32Array(NX * NY).fill(-1);
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) for (const dk of [0, -1, 1]) { const e = elemOfCell[gridIdx(i, j, kz + dk)]; if (e >= 0) { cellEl[j * NX + i] = e; break; } }
+  for (let it = 0; it < 6; it++) { const prev = cellEl.slice(); // dilate so that blending at the muscle edge never pulls in empty cells
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { if (prev[j * NX + i] >= 0) continue;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const a = i + di, b = j + dj; if (a >= 0 && b >= 0 && a < NX && b < NY && prev[b * NX + a] >= 0) { cellEl[j * NX + i] = prev[b * NX + a]; break; } } } }
+  sectionTex.userData = { cellEl };
+  const smat = new THREE.ShaderMaterial({
+    uniforms: { ...U, uMask: { value: maskTex }, uTimes: { value: sectionTex }, uTSize: { value: new THREE.Vector2(NX, NY) } }, vertexShader: SECTION_VS, fragmentShader: SECTION_FS, side: THREE.DoubleSide,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 // the cut face always wins over the clipped walls behind it
+  });
+  smat.extensions = { derivatives: true };
+  sectionMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh), smat);
   sectionMesh.position.set(x0 + W / 2, y0 + Hh / 2, SECTION_Z); sectionMesh.visible = ui.cut;
   heart.add(sectionMesh);
   const toWorld = (x, y, z) => () => new THREE.Vector3(x, y, z).applyMatrix4(HEART_VIS);
-  addLabel('Left ventricle', 'heart', toWorld(1.0, -1.1, 0.1)).tag = 'LV';
-  addLabel('Right ventricle', 'heart', toWorld(-1.0, -1.0, 0.3)).tag = 'RV';
-  addLabel('Right atrium', 'heart', toWorld(-1.05, 0.35, 0.35)).tag = 'RA';
-  addLabel('Left atrium', 'heart', toWorld(0.95, 0.45, -0.25)).tag = 'LA';
-  addLabel('Septum', 'heart', toWorld(0.0, -1.95, 0.1)).tag = 'S';
+  addLabel('Left ventricle', 'heart', toWorld(0.85, -1.25, 0.35)).tag = 'LV';
+  addLabel('Right ventricle', 'heart', toWorld(-0.7, -1.05, 0.55)).tag = 'RV';
+  addLabel('Right atrium', 'heart', toWorld(-0.85, 0.3, 0.3)).tag = 'RA';
+  addLabel('Left atrium', 'heart', toWorld(0.75, 0.35, -0.3)).tag = 'LA';
+  addLabel('Septum', 'heart', toWorld(0.0, -1.5, 0.45)).tag = 'S';
   // superior vena cava (drawn only, not electrical): the SA node sits where it joins the right atrium
   const svcPts = [[-0.40, 0.45, 0.05], [-0.40, 0.95, 0.02], [-0.40, 1.25, 0.0]];
   const svcGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(svcPts.map(p => new THREE.Vector3(...p))), 12, 0.17, 20, false);
   const svc = new THREE.Mesh(svcGeo, new THREE.MeshLambertMaterial({ color: 0xD6D6D6 }));
   const svcOut = new THREE.Mesh(outlineGeometry(svcGeo, 0.022), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.BackSide }));
-  heart.add(svc, svcOut);
-  addLabel('Superior vena cava', 'heart', toWorld(-0.40, 1.35, 0.0)).tag = 'svc';
+  heart.add(svc, svcOut); svcMesh = svc;
+  addLabel('Superior vena cava', 'heart', toWorld(-0.40, 1.1, 0.12)).tag = 'svc';
 }
 function nearestInGrid(p, region) { // nearest element of a region, searching the voxel grid near p
   const i0 = Math.round((p[0] - GX0) / H), j0 = Math.round((p[1] - GY0) / H), k0 = Math.round((p[2] - GZ0) / H);
@@ -761,18 +773,35 @@ function nearestInGrid(p, region) { // nearest element of a region, searching th
   }
   return best >= 0 ? best : nearestIn(p, REGION_ELEMS[region]);
 }
+function smoothVertexTimes(sh, arr, iters = 4) { // average each vertex with its mesh neighbours: removes voxel speckle in the front band
+  if (!sh.adj) {
+    const n = arr.length, idx = sh.geo.index.array, pos = sh.geo.attributes.position, key = i => `${pos.getX(i).toFixed(4)},${pos.getY(i).toFixed(4)},${pos.getZ(i).toFixed(4)}`;
+    const weld = new Int32Array(n), first = new Map(); for (let i = 0; i < n; i++) { const k = key(i); if (!first.has(k)) first.set(k, i); weld[i] = first.get(k); }
+    const nb = Array.from({ length: n }, () => new Set());
+    for (let t = 0; t < idx.length; t += 3) { const a = weld[idx[t]], b = weld[idx[t + 1]], c = weld[idx[t + 2]]; nb[a].add(b).add(c); nb[b].add(a).add(c); nb[c].add(a).add(b); }
+    sh.adj = { weld, nb: nb.map(x => [...x]) };
+  }
+  const { weld, nb } = sh.adj; let cur = Float32Array.from(arr);
+  for (let it = 0; it < iters; it++) { const nx = cur.slice();
+    for (let i = 0; i < cur.length; i++) { if (weld[i] !== i || !nb[i].length) continue; let sum = cur[i] * 2, c = 2; for (const j of nb[i]) { sum += cur[j]; c++; } nx[i] = sum / c; }
+    for (let i = 0; i < cur.length; i++) nx[i] = nx[weld[i]]; cur = nx; }
+  arr.set(cur);
+}
 function applyMuscleTimes() { // after rebuildModel(): copy activation and recovery times to the 3D muscle
   if (!renderer) return;
   for (const s of shells) {
     const A = s.geo.attributes.aAct, R = s.geo.attributes.aRec;
-    for (let i = 0; i < s.near.length; i++) { A.array[i] = FIN(MODEL.act[s.near[i]]); R.array[i] = FIN(MODEL.rec[s.near[i]]); }
+    for (let i = 0; i < s.near.length; i++) { A.array[i] = Math.min(5000, FIN(MODEL.act[s.near[i]])); R.array[i] = Math.min(5000, FIN(MODEL.rec[s.near[i]])); }
+    smoothVertexTimes(s, A.array); smoothVertexTimes(s, R.array);
     A.needsUpdate = true; R.needsUpdate = true;
   }
-  const { kind, near } = sectionTex.userData; const d = sectionTex.image.data;
-  for (let k = 0; k < kind.length; k++) {
-    d[k * 4 + 2] = kind[k] === 0 ? 0 : kind[k] === 1 ? 0.5 : kind[k] === 3 ? 0.75 : 1;
-    if (near[k] >= 0) { d[k * 4] = FIN(MODEL.act[near[k]]); d[k * 4 + 1] = FIN(MODEL.rec[near[k]]); }
-  }
+  const { cellEl } = sectionTex.userData; const d = sectionTex.image.data; const CAP = 5000;
+  for (let k = 0; k < cellEl.length; k++) { const e = cellEl[k]; d[k * 4] = e >= 0 ? Math.min(CAP, FIN(MODEL.act[e])) : CAP; d[k * 4 + 1] = e >= 0 ? Math.min(CAP, FIN(MODEL.rec[e])) : CAP; d[k * 4 + 2] = 1; d[k * 4 + 3] = 1; }
+  for (let pass = 0; pass < 2; pass++) { const src = d.slice(); // light 3 x 3 blur: the lattice times have small plateaus that show as steps
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { if (cellEl[j * NX + i] < 0) continue;
+      for (const ch of [0, 1]) { let sum = 0, n = 0;
+        for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= NX || b >= NY || cellEl[b * NX + a] < 0) continue; const v = src[(b * NX + a) * 4 + ch]; if (v >= CAP) continue; sum += v; n++; }
+        if (n) d[(j * NX + i) * 4 + ch] = sum / n; } } }
   sectionTex.needsUpdate = true;
 }
 function setCut(on) {
@@ -820,16 +849,15 @@ function buildConduction() {
     const mesh = new THREE.Mesh(tube.g, mat), out = new THREE.Mesh(tube.g, outMat);
     mesh.renderOrder = 20; out.renderOrder = 19; heart.add(out, mesh);
     const mid0 = polyAt(s.pts, polyLen(s.pts) * (s.id === 'rbb' ? 0.55 : s.id === 'his' ? 0.4 : 0.6));
-    const off = { his: [-0.45, 0.05, 0], rbb: [-0.5, 0, 0], lbb: [0.5, 0.1, 0], laf: [0.55, 0.05, 0], lpf: [0.45, -0.15, 0] }[s.id] || [0, 0, 0];
-    const mid = mid0.map((v, k) => v + off[k]);
+    const mid = mid0; // the label is placed beside this point with a leader line
     const lbl = addLabel(s.label, 'cond', () => new THREE.Vector3(...mid).applyMatrix4(HEART_VIS)); lbl.tag = s.id;
-    const bead = nodeMesh(new THREE.SphereGeometry(Math.max(0.07, s.r * 2.4), 16, 12), 1.4); bead.material.color.set(0xffffff); heart.add(bead);
+    const bead = nodeMesh(new THREE.SphereGeometry(Math.max(0.05, s.r * 1.7), 16, 12), 1.3); bead.material.color.set(0xffffff); heart.add(bead);
     condParts.push({ s, tube, mesh, out, lbl }); beads.push({ s, bead });
   }
   saNode = nodeMesh(new THREE.OctahedronGeometry(0.11), 1.3); saNode.position.set(...C.sa); heart.add(saNode);
   avNode = nodeMesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), 1.3); avNode.position.set(...C.av); heart.add(avNode);
-  saLabel = addLabel('SA node', 'node', () => new THREE.Vector3(...C.sa).applyMatrix4(HEART_VIS).add(new THREE.Vector3(-0.9, 0.25, 0))); saLabel.tag = 'sa';
-  avLabel = addLabel('AV node', 'node', () => new THREE.Vector3(...C.av).applyMatrix4(HEART_VIS).add(new THREE.Vector3(-1.75, -0.05, 0))); avLabel.tag = 'av';
+  saLabel = addLabel('SA node', 'node', () => new THREE.Vector3(...C.sa).applyMatrix4(HEART_VIS)); saLabel.tag = 'sa';
+  avLabel = addLabel('AV node', 'node', () => new THREE.Vector3(...C.av).applyMatrix4(HEART_VIS)); avLabel.tag = 'av';
   // AV delay gauge: a ring that fills while the impulse is held in the AV node
   avRingBack = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.46, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
   avRing = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.44, 48, 1, Math.PI / 2, 0.01), new THREE.MeshBasicMaterial({ color: COL.blue, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
@@ -844,7 +872,7 @@ function buildPurkinje() { // thin fibres from the bundles to sample endocardial
   for (const p of purkParts) { heart.remove(p.mesh, p.out); p.tube.g.dispose(); }
   purkParts = [];
   const C = CONDUCTION;
-  for (const [list, side, count] of [[endoLV, 'LV', 9], [endoRV, 'RV', 6]]) {
+  for (const [list, side, count] of [[endoLV, 'LV', 4], [endoRV, 'RV', 2]]) {
     const cand = list.filter(e => ELEM.pos[e][1] <= C.purkinjeTopY && Math.abs(ELEM.pos[e][2] - SECTION_Z) < 0.5);
     const picked = []; // farthest-point sampling for an even spread
     if (!cand.length) continue; picked.push(cand[Math.floor(cand.length / 2)]);
@@ -874,7 +902,7 @@ function buildPurkinje() { // thin fibres from the bundles to sample endocardial
 }
 function applyConductionTimes() {
   if (!renderer) return;
-  for (const c of condParts) { if (!c.s) continue; const sg = MODEL.seg[c.s.id]; setTubeTimes(c.tube, sg.start, sg.v, 0.3 / sg.v); }
+  for (const c of condParts) { if (!c.s) continue; const sg = MODEL.seg[c.s.id]; setTubeTimes(c.tube, sg.start, sg.v, 0.18 / sg.v); }
   buildPurkinje();
 }
 /* Which structures are active at time t (for 'labels only for the active structure') */
@@ -921,8 +949,8 @@ function buildScene() {
   for (const L of LEADS) {
     const grp = new THREE.Group(); grp.userData.lead = L.id;
     const matPos = new THREE.MeshLambertMaterial({ color: COL.leadGrey }), matNeg = matPos.clone();
-    const pole = L.type === 'limb' ? L.dir.map(v => v * 4.3) : BASELINE.chestElectrodes[L.id].map(v => v * VIS_SCALE * 0.85);
-    const neg = L.dir.map(v => v * (L.type === 'limb' ? -4.3 : -3.0));
+    const pole = L.type === 'limb' ? L.dir.map(v => v * 3.7) : BASELINE.chestElectrodes[L.id].map(v => v * VIS_SCALE * 0.85);
+    const neg = L.dir.map(v => v * (L.type === 'limb' ? -3.7 : -3.0));
     const pos = rod([0, 0, 0], pole, 0.035, matPos), negR = dashedRod([0, 0, 0], neg, 0.025, matNeg, 9);
     const marker = L.type === 'limb' ? new THREE.Mesh(new THREE.SphereGeometry(0.17, 18, 12), matPos) : new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), matPos);
     marker.position.set(...pole);
@@ -934,11 +962,11 @@ function buildScene() {
     leadObjs[L.id] = { grp, matPos, matNeg, pos, negR, marker, pick, lbl, pole };
   }
   // the arrow's shadow on the selected lead: thick black-and-white striped bar with a black outline
-  const pg = new THREE.CylinderGeometry(0.12, 0.12, 1, 14);
-  projBar = new THREE.Mesh(pg, new THREE.ShaderMaterial({ uniforms: { uLen: { value: 1 } }, depthTest: false, depthWrite: false,
+  const pg = new THREE.CylinderGeometry(0.07, 0.07, 1, 14);
+  projBar = new THREE.Mesh(pg, new THREE.ShaderMaterial({ uniforms: { uLen: { value: 1 } }, // depth-tested: hidden where it passes inside the heart
     vertexShader: 'varying float vY; void main() { vY = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: 'varying float vY; uniform float uLen; void main() { float s = fract(vY * uLen / 0.3); gl_FragColor = vec4(vec3(s < 0.5 ? 0.07 : 1.0), 1.0); }' }));
-  projOut = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide, depthTest: false, depthWrite: false }));
+  projOut = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide }));
   projOut.scale.set(1.45, 1, 1.45); projBar.add(projOut); projBar.renderOrder = 31; projOut.renderOrder = 30; scene.add(projBar);
   projLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
     new THREE.LineDashedMaterial({ color: COL.black, dashSize: 0.12, gapSize: 0.08, depthTest: false }));
@@ -963,7 +991,7 @@ function buildRegion(region) {
   for (const m of regionMeshes) { m.parent.remove(m); m.geometry.dispose(); }
   regionMeshes = []; if (regionLabel) regionLabel.visible = false;
   if (!region || !renderer) return;
-  const mat = new THREE.LineBasicMaterial({ color: 0x111111, depthTest: false, transparent: true, opacity: 0.45 });
+  const mat = new THREE.LineBasicMaterial({ color: 0x111111, depthTest: false, transparent: true, opacity: 0.22 });
   const centroid = new THREE.Vector3(); let cn = 0; const nm = new THREE.Matrix3().getNormalMatrix(HEART_VIS);
   for (const s of shells) {
     if (region === 'septal' ? s.name !== 'S' : (s.name !== 'LV' && s.name !== 'RV')) continue;
@@ -1043,12 +1071,13 @@ function updateScene() {
   trail.geometry.dispose(); trail.geometry = new THREE.BufferGeometry().setFromPoints(pts.length > 1 ? pts : [new THREE.Vector3(), new THREE.Vector3()]); trail.computeLineDistances();
   // projection on the selected lead
   const L = LEAD[state.sel]; const u = new THREE.Vector3(...L.dir); const p = arrowTip.dot(u); const foot = u.clone().multiplyScalar(p);
-  projBar.visible = Math.abs(p) > 0.03;
+  const showProj = ui.labelAll || phaseAt(t).key === 'main';
+  projBar.visible = showProj && Math.abs(p) > 0.03;
   if (projBar.visible) { projBar.material.uniforms.uLen.value = Math.abs(p); projBar.scale.set(1, Math.abs(p), 1); projBar.position.copy(foot).multiplyScalar(0.5); projBar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), u.clone().multiplyScalar(Math.sign(p))); }
   const vNow = TRACE[L.id][Math.round(t)];
-  projLabel.visible = Math.abs(p) > 0.3; projLabel.el.textContent = `${L.id}: ${(vNow >= 0 ? '+' : '\u2212') + Math.abs(vNow).toFixed(2)} mV`;
+  projLabel.visible = showProj && Math.abs(p) > 0.3; projLabel.el.textContent = `${L.id}: ${(vNow >= 0 ? '+' : '\u2212') + Math.abs(vNow).toFixed(2)} mV`;
   projLabel.pos = foot.clone().add(u.clone().multiplyScalar(Math.sign(p) * 0.5));
-  projLine.geometry.setFromPoints([arrowTip.clone(), foot]); projLine.computeLineDistances(); projLine.visible = arrow.visible;
+  projLine.geometry.setFromPoints([arrowTip.clone(), foot]); projLine.computeLineDistances(); projLine.visible = showProj && arrow.visible;
   needsRender = true;
 }
 
@@ -1064,11 +1093,29 @@ function goView(name, instant) {
   document.querySelectorAll('.view-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
   $('viewNote').textContent = v.note; setLeadStyles();
   if (!renderer) return;
-  const tgt = name === 'section' ? new THREE.Vector3(0, 0.2, 0) : new THREE.Vector3(0, 0.3, 0);
-  if (instant || REDUCED) { orbit.az = v.az; orbit.el = v.el; orbit.r = v.r; orbit.target.copy(tgt); placeCamera(); return; }
+  if (name === 'section' && !ui.cut) setCut(true);
+  const fit = fitView(v, name); const tgt = fit.target, r = fit.r;
+  if (instant || REDUCED) { orbit.az = v.az; orbit.el = v.el; orbit.r = r; orbit.target.copy(tgt); placeCamera(); return; }
   const daz = ((v.az - orbit.az) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
   orbit.target.copy(tgt);
-  camAnim = { t0: performance.now(), from: { az: orbit.az, el: orbit.el, r: orbit.r }, to: { az: orbit.az + daz, el: v.el, r: v.r } };
+  camAnim = { t0: performance.now(), from: { az: orbit.az, el: orbit.el, r: orbit.r }, to: { az: orbit.az + daz, el: v.el, r } };
+}
+/* Frame the heart: it fills about 65% of the canvas height (60% in the 3D view), centred */
+let HEART_BOX = null;
+function fitView(v, name) {
+  if (name === 'transverse') return { target: new THREE.Vector3(0, 0.3, 0), r: v.r };
+  if (!HEART_BOX) { scene.updateMatrixWorld(true); HEART_BOX = new THREE.Box3(); for (const s of shells) HEART_BOX.expandByObject(s.mesh); HEART_BOX.expandByObject(svcMesh); }
+  const c = HEART_BOX.getCenter(new THREE.Vector3());
+  const dir = new THREE.Vector3(Math.cos(v.el) * Math.sin(v.az), Math.sin(v.el), Math.cos(v.el) * Math.cos(v.az));
+  const right = new THREE.Vector3(0, 1, 0).cross(dir).normalize(), up = dir.clone().cross(right).normalize();
+  let hh = 0, hw = 0, hd = 0; const b = HEART_BOX;
+  for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
+    const q = new THREE.Vector3(x, y, z).sub(c); hh = Math.max(hh, Math.abs(q.dot(up))); hw = Math.max(hw, Math.abs(q.dot(right))); hd = Math.max(hd, Math.abs(q.dot(dir)));
+  }
+  const frac = name === 'oblique' ? 0.6 : 0.66; const tf = Math.tan(camera.fov / 2 * DEG);
+  // the box overestimates a rounded heart, so use 0.82 of its extent
+  const r = Math.max(0.82 * hh / frac / tf, 0.82 * hw / (0.62 * camera.aspect) / tf) + 0.5 * hd;
+  return { target: c, r };
 }
 function markCustom() {
   if (state.view !== 'custom') { state.view = 'custom'; document.querySelectorAll('.view-btn').forEach(b => b.setAttribute('aria-pressed', 'false')); $('viewNote').textContent = 'Custom 3D view. Use Reset view to return to the frontal view.'; setLeadStyles(); }
@@ -1120,26 +1167,41 @@ function resize() {
 }
 
 /* ======================= Labels in the 3D view (collision-avoiding) ======================= */
-const OFFSETS = [[0, 0], [0, -20], [0, 20], [-34, 0], [34, 0], [-28, -20], [28, -20], [-28, 20], [28, 20], [0, -38], [0, 38], [-60, 0], [60, 0]];
+const OFFSETS = [[0, 0]]; // candidate positions: on the anchor, then rings further out (a leader line joins label and anchor)
+for (const rad of [26, 44, 64, 86]) for (let k = 0; k < 12; k++) { const a = k / 12 * 2 * Math.PI; OFFSETS.push([Math.round(Math.cos(a) * rad * 1.5), Math.round(Math.sin(a) * rad)]); }
 function effPrio(L) { return L.el.classList.contains('sel') || L.el.classList.contains('active') ? 0 : L.prio; }
+const SVGNS = 'http://www.w3.org/2000/svg';
+const leaderSvg = document.createElementNS(SVGNS, 'svg'); leaderSvg.setAttribute('class', 'leaders'); leaderSvg.setAttribute('aria-hidden', 'true');
+labelLayer.prepend(leaderSvg);
 function updateLabels() {
-  const w = stage.clientWidth, h = stage.clientHeight; const v = new THREE.Vector3(); const placed = [];
+  const w = stage.clientWidth, h = stage.clientHeight; const v = new THREE.Vector3(); const placed = []; const lines = [];
+  const sr = stage.getBoundingClientRect(), note = $('viewNote').getBoundingClientRect();
+  if (note.width > 0) placed.push([note.left - sr.left - 4, note.top - sr.top - 4, note.right - sr.left + 4, note.bottom - sr.top + 4]); // never under the view note
+  const hit = box => placed.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]);
   for (const L of labels.slice().sort((a, b) => effPrio(a) - effPrio(b))) {
     if (!L.visible) { L.el.classList.add('hidden'); continue; }
     const p = L.getPos(); if (!p) { L.el.classList.add('hidden'); continue; }
     v.copy(p).project(camera);
-    if (v.z > 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) { L.el.classList.add('hidden'); continue; }
+    if (v.z > 1 || ((Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) && !L.el.classList.contains('sel'))) { L.el.classList.add('hidden'); continue; } // the selected lead's label is kept, pinned to the edge
     L.el.classList.remove('hidden');
-    const bw = L.el.offsetWidth + 4, bh = L.el.offsetHeight + 2; const x0 = ((v.x + 1) / 2) * w, y0 = ((1 - v.y) / 2) * h;
+    const bw = L.el.offsetWidth + 6, bh = L.el.offsetHeight + 4; const x0 = ((v.x + 1) / 2) * w, y0 = ((1 - v.y) / 2) * h;
     let spot = null;
-    for (const [dx, dy] of OFFSETS) {
+    const beside = L.cls === 'heart' || L.cls === 'cond' || L.cls === 'node' || L.cls === 'region';
+    const cands = beside ? [] : OFFSETS; // 'beside' labels never cover their anchor: try boxes just off each side, then further out
+    if (beside) for (const g of [10, 26, 46, 70, 96]) { const sx = bw / 2 + g, sy = bh / 2 + g * 0.6;
+      cands.push([sx, 0], [-sx, 0], [0, -sy], [0, sy], [sx, -sy], [-sx, -sy], [sx, sy], [-sx, sy]); }
+    for (const [dx, dy] of cands) {
       const x = Math.min(w - bw / 2, Math.max(bw / 2, x0 + dx)), y = Math.min(h - bh / 2, Math.max(bh / 2, y0 + dy));
       const box = [x - bw / 2, y - bh / 2, x + bw / 2, y + bh / 2];
-      if (!placed.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) { spot = [x, y, box]; break; }
+      if (!hit(box)) { spot = [x, y, box]; break; }
     }
-    if (!spot) { if (effPrio(L) > 2) { L.el.classList.add('hidden'); continue; } spot = [x0, y0, [x0 - bw / 2, y0 - bh / 2, x0 + bw / 2, y0 + bh / 2]]; }
+    if (!spot) { if (effPrio(L) > 0) { L.el.classList.add('hidden'); continue; } spot = [x0, y0, [x0 - bw / 2, y0 - bh / 2, x0 + bw / 2, y0 + bh / 2]]; }
     placed.push(spot[2]); L.el.style.transform = `translate(${spot[0]}px, ${spot[1]}px) translate(-50%, -50%)`;
+    // leader line from the anchor to the nearest point of the label box, when the label had to move away
+    const bx = Math.max(spot[2][0] + 3, Math.min(spot[2][2] - 3, x0)), by = Math.max(spot[2][1] + 2, Math.min(spot[2][3] - 2, y0));
+    if (Math.hypot(bx - x0, by - y0) > 8 && L.cls !== 'lead' && L.cls !== 'proj') lines.push(`<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}"/><circle cx="${x0.toFixed(1)}" cy="${y0.toFixed(1)}" r="2.2"/>`);
   }
+  leaderSvg.setAttribute('viewBox', `0 0 ${w} ${h}`); leaderSvg.innerHTML = lines.join('');
 }
 
 /* ======================= Text ======================= */
@@ -1211,6 +1273,7 @@ playBtn.addEventListener('click', () => setPlaying(!state.playing));
 speedSel.addEventListener('change', () => { state.speed = +speedSel.value; });
 document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', () => goView(b.dataset.view)));
 $('resetView').addEventListener('click', () => goView('frontal'));
+function refit() { if (renderer && VIEWS[state.view]) { const f = fitView(VIEWS[state.view], state.view); orbit.r = f.r; orbit.target.copy(f.target); placeCamera(); } }
 $('toggleCut').addEventListener('click', () => setCut(!ui.cut));
 function setToggle(id, key, on) { ui[key] = on; $(id).setAttribute('aria-pressed', String(on)); setLeadStyles(); if (state.sel) buildRegion(LEAD[state.sel].region); updateScene(); }
 $('toggleLeads').addEventListener('click', () => setToggle('toggleLeads', 'allLeads', !ui.allLeads));
@@ -1220,13 +1283,13 @@ $('stepBack').addEventListener('click', () => { const k = stepIndexAt(state.t); 
 $('stepNext').addEventListener('click', () => goStep(stepIndexAt(state.t) + 1));
 // close the 'More' menu after choosing an item
 document.querySelectorAll('#moreMenu .menu-item').forEach(b => b.addEventListener('click', () => { if (!b.classList.contains('toggle-btn')) $('moreMenu').open = false; }));
-let rzT = null; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(resize, 60); });
+let rzT = null; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { resize(); refit(); }, 60); });
 
 MODEL = computeModel(); buildTraces(); buildPhases(); buildActiveRanges();
 if (renderer) { buildScene(); applyMuscleTimes(); applyConductionTimes(); initInteraction(); }
 resize();
 goView('frontal', true);
-setCut(true);
+setCut(false);
 select('II');
 setT(250);
 
@@ -1249,6 +1312,7 @@ if (!REDUCED) setPlaying(true);
 window.ecg3d = {
   setT: t => { setPlaying(false); setT(t, true); }, select, view: v => goView(v, true), play: setPlaying, cut: setCut, step: goStep,
   toggle: (key, on) => setToggle({ allLeads: 'toggleLeads', labelAll: 'toggleLabelAll', loop: 'toggleLoop' }[key], key, on),
+  poleScreen: id => { const v = new THREE.Vector3(...leadObjs[id].pole).project(camera); const r = stage.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; },
   leadRodsShown: () => renderer ? Object.values(leadObjs).filter(o => o.grp.visible).length : 0,
   orbit: (az, el, r) => { camAnim = null; orbit.az = az * DEG; orbit.el = el * DEG; if (r) orbit.r = r; placeCamera(); markCustom(); },
   trace: id => Array.from(TRACE[id]), timings: () => ({ tAV: MODEL.tAV, tHis: MODEL.tHis, seg: MODEL.seg, vMin: MODEL.vMin, vMax: MODEL.vMax, recMin: MODEL.recMin, recMax: MODEL.recMax }),

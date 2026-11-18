@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECG Basics in 3D (prototype) · The Physio Lab</title>
 <meta name="robots" content="noindex">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118f">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118f">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118f">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118g">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118g">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118g">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=20261118f">
-<link rel="stylesheet" href="assets/layout.css?v=20261118f">
-<link rel="stylesheet" href="assets/ecg3d.css?v=20261118f">
-<script src="assets/theme.js?v=20261118f"></script>
+<link rel="stylesheet" href="assets/site.css?v=20261118g">
+<link rel="stylesheet" href="assets/layout.css?v=20261118g">
+<link rel="stylesheet" href="assets/ecg3d.css?v=20261118g">
+<script src="assets/theme.js?v=20261118g"></script>
 </head>
 <body>
 <a class="skip-link" href="#tool">Skip to the 3D model</a>
@@ -22,7 +22,7 @@
   <header class="site-header tool-view-header">
     <div class="site-header-top">
       <a class="site-mark" href="index.html">
-        <img class="site-logo" src="assets/logo.svg?v=20261118f" width="20" height="20" alt="">
+        <img class="site-logo" src="assets/logo.svg?v=20261118g" width="20" height="20" alt="">
         <span class="site-mark-name">The Physio Lab</span>
       </a>
       <div class="header-actions">
@@ -64,7 +64,7 @@
                 <div class="menu-pop" role="group" aria-label="More views and options">
                   <button type="button" class="t-btn view-btn menu-item" data-view="section" aria-pressed="false">Face-on to the cut</button>
                   <button type="button" class="t-btn view-btn menu-item" data-view="transverse" aria-pressed="false">Transverse: chest leads</button>
-                  <button type="button" class="t-btn toggle-btn menu-item" id="toggleCut" aria-pressed="true">Cut-away section</button>
+                  <button type="button" class="t-btn toggle-btn menu-item" id="toggleCut" aria-pressed="false">Cut-away section</button>
                   <button type="button" class="t-btn toggle-btn menu-item" id="toggleLoop" aria-pressed="false">Vector loop path</button>
                   <button type="button" class="t-btn menu-item" id="resetView">Reset view</button>
                 </div>
@@ -112,7 +112,7 @@
               <li><span class="sw sw-depol" aria-hidden="true"></span>Dotted magenta: depolarised. <span class="sw sw-repol sw-inline" aria-hidden="true"></span>Hatched: repolarising</li>
               <li><span class="sw sw-cond" aria-hidden="true"></span>Blue tubes: conduction system; a white bead and bulge is the impulse travelling</li>
               <li><span class="sw sw-arrow" aria-hidden="true"></span>Solid black arrow: mean electrical vector</li>
-              <li><span class="sw sw-sel" aria-hidden="true"></span>Thick black rod: selected lead (ball or box is +). <span class="sw sw-proj sw-inline" aria-hidden="true"></span>Striped bar: the arrow's shadow on it</li>
+              <li><span class="sw sw-sel" aria-hidden="true"></span>Thick black rod: selected lead (ball or box is +). <span class="sw sw-proj sw-inline" aria-hidden="true"></span>Striped bar (QRS step): the arrow&#39;s shadow on it</li>
             </ul>
             <details class="key-more">
               <summary>Show more of the key</summary>
@@ -200,6 +200,6 @@
     </p>
   </footer>
 </div>
-<script type="module" src="assets/ecg3d.js?v=20261118f"></script>
+<script type="module" src="assets/ecg3d.js?v=20261118g"></script>
 </body>
 </html>
