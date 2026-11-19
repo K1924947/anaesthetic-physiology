@@ -20,7 +20,7 @@ An interactive cardiac PV loop exploring how the loop changes across physiologic
 
 ---
 
-### ECG Rhythm Quiz
+### ECG Rhythms
 
 An interactive lead II rhythm tool with synthetic strips, callipers, conduction diagrams, a Test yourself quiz, and guideline-based scenarios.
 
@@ -72,7 +72,7 @@ These tools keep their usual addresses but the old pages are offline while they 
 No login or download needed. Open the live tools directly in any browser:
 
 - [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
-- [ECG Rhythm Quiz](https://k1924947.github.io/anaesthetic-physiology/ECG_Rhythm_Quiz.html)
+- [ECG Rhythms](https://k1924947.github.io/anaesthetic-physiology/ECG_Rhythm_Quiz.html)
 - [Cardiac Action Potential](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Action_Potential.html)
 - [Cardiac Murmurs](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Murmurs.html)
 

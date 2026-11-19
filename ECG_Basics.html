@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119g">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119i">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -50,14 +50,35 @@
   <main>
     <p class="proto-banner" role="note"><strong>Draft: not yet on the homepage.</strong> Content is still being reviewed. This page is a teaching tool, not clinical guidance.</p>
 
+    <div class="mode-banners" id="topActions">
+      <div class="test-banner" id="topTestBanner">
+        <span class="test-banner-icon" aria-hidden="true">?</span>
+        <div class="test-banner-copy">
+          <h2 class="test-banner-title">Test yourself</h2>
+          <p class="test-banner-tag">Short drills on a teaching trace: find a part, measure an interval, work out the rate, or spot an abnormal beat.</p>
+        </div>
+        <p class="test-banner-score test-banner-score-sync" hidden></p>
+        <button type="button" class="test-banner-cta test-toggle" id="testToggleTop" aria-pressed="false" aria-label="Start Test yourself">
+          <span class="test-cta-label">Start</span>
+        </button>
+      </div>
+      <a class="test-banner scn-banner scn-banner-link" href="ECG_3D.html">
+        <span class="test-banner-icon" aria-hidden="true"><svg width="22" height="16" viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 14c3-1 5-7 6-7 2 6 3 9 5 9 2 0 3-6 7-10"/><circle cx="5" cy="14" r="1.2" fill="currentColor" stroke="none"/></svg></span>
+        <div class="test-banner-copy">
+          <h2 class="test-banner-title">See it in 3D</h2>
+          <p class="test-banner-tag">Watch how these waves are written as the impulse travels through a 3D heart, and how each lead sees that same beat.</p>
+        </div>
+        <span class="test-banner-cta">Open</span>
+      </a>
+    </div>
+
     <section id="tool" aria-label="Interactive labelled ECG beat">
       <div class="tool-hero">
         <div class="tool-stage">
           <div class="graph-card">
             <h2 class="tool-title">One labelled beat</h2>
             <p class="tool-intro">Hover a wave or segment to preview it; click the trace to lock, and click again to unlock. Use the brackets under the paper for the PR, QT and RR intervals, or use the buttons.</p>
-            <svg id="beatSvg" class="beat-svg" viewBox="0 0 720 360" role="img" tabindex="0" aria-labelledby="beat-svg-title" aria-describedby="beat-svg-desc">
-              <title id="beat-svg-title">Two synthetic lead II complexes on standard ECG paper, with the P wave, QRS, T wave, U wave, PR, QT and RR intervals labelled</title>
+            <svg id="beatSvg" class="beat-svg" viewBox="0 0 720 360" role="img" tabindex="0" aria-label="Two synthetic lead II complexes on standard ECG paper, with the P wave, QRS, T wave, U wave, PR, QT and RR intervals labelled" aria-describedby="beat-svg-desc">
               <desc id="beat-svg-desc">A teaching trace at 60 per minute, not a patient recording. Two beats are shown so each part can be compared and the RR interval measured. Click a wave or segment on the trace to lock it; click again to unlock. Use the brackets under the paper for the PR, QT and RR intervals, or use the buttons.</desc>
             </svg>
             <div class="part-btns" id="partBtns" role="group" aria-label="Parts of the beat"></div>
@@ -71,18 +92,143 @@
       </div>
       <details class="about-paper">
         <summary>About the paper</summary>
-        <div class="grid-facts" aria-label="ECG paper standards">
-          <div class="stat"><div class="stat-val">25 mm/s</div><div class="stat-label">Paper speed</div></div>
-          <div class="stat"><div class="stat-val">0.04 s</div><div class="stat-label">1 small square (1 mm)</div></div>
-          <div class="stat"><div class="stat-val">0.20 s</div><div class="stat-label">1 large square (5 mm)</div></div>
-          <div class="stat"><div class="stat-val">10 mm/mV</div><div class="stat-label">Calibration</div></div>
+        <div class="paper-chips" aria-label="ECG paper standards">
+          <span class="paper-chip"><strong>25 mm/s</strong> paper speed</span>
+          <span class="paper-chip"><strong>0.04 s</strong> 1 small square (1 mm)</span>
+          <span class="paper-chip"><strong>0.20 s</strong> 1 large square (5 mm)</span>
+          <span class="paper-chip"><strong>10 mm/mV</strong> calibration</span>
         </div>
-        <p class="svg-cap">Synthetic lead II at 60 /min, drawn to scale on standard paper. The square pulse on the left is the 1 mV calibration mark. Two beats are shown so each part can be compared and the RR interval measured. One small square is 0.04 s and 0.1 mV; one large square is 0.20 s and 0.5 mV. A hatched band and a thicker line mark the selected part, so colour is never the only cue.</p>
       </details>
     </section>
 
-    <section class="card values-card" aria-labelledby="values-heading">
-      <h2 class="tool-title" id="values-heading">Normal values at a glance</h2>
+
+
+    <section id="read-ecg" class="read-ecg-card" aria-labelledby="read-ecg-heading">
+      <h2 class="tool-title" id="read-ecg-heading">Read an ECG step by step</h2>
+      <p class="tool-intro">Once you can name the parts of a beat, read a tracing in this order: rate, then rhythm, then axis. The PR, QRS, QT and QTc intervals are covered on the labelled beat and in the normal values table at the bottom of the page.</p>
+
+      <article class="read-step" id="step-rate" aria-labelledby="step-rate-h">
+        <h3 id="step-rate-h">1. Rate</h3>
+        <p>On standard paper (25 mm/s), a 10-second lead II rhythm strip is 50 large squares long. For a regular rhythm, rate = 300 / the number of large squares between two R waves. For an irregular rhythm, count the QRS complexes in the 10-second strip and multiply by 6.</p>
+        <p class="read-task" id="rateTask"></p>
+        <div class="strip-wrap" id="rateWrap">
+          <svg id="rateSvg" class="read-svg" viewBox="0 0 800 200" role="application" tabindex="0" aria-label="Ten-second lead II rhythm strip for measuring the heart rate">
+          </svg>
+        </div>
+        <p class="strip-hint">Scroll the strip sideways if you cannot see all 10 seconds.</p>
+        <p class="quiz-readout" id="rateReadout"></p>
+        <div class="read-controls" id="rateControls"></div>
+        <p class="visually-hidden" id="rateLive" aria-live="polite"></p>
+        <div class="read-notes">
+          <div class="panel-block">
+            <h4>Usual normal</h4>
+            <p>Adult rate 60 to 100 /min.</p>
+          </div>
+          <div class="clinical">
+            <h4>Why it matters clinically</h4>
+            <ul>
+              <li>A rate under 60 /min is bradycardia; over 100 /min is tachycardia.</li>
+              <li>An irregularly irregular rate, with no P waves, occurs in atrial fibrillation.</li>
+            </ul>
+          </div>
+          <p class="src-line">Sources: <a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">LITFL, ECG rate interpretation</a> · <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">LITFL, rhythm evaluation</a>.</p>
+        </div>
+      </article>
+
+      <article class="read-step" id="step-rhythm" aria-labelledby="step-rhythm-h">
+        <h3 id="step-rhythm-h">2. Rhythm</h3>
+        <p>Ask two questions. Is the rhythm regular or irregular? And is there a P wave before every QRS? March the calipers from R to R: if they keep landing on each R wave, the rhythm is regular. A regular rhythm with a P wave before every QRS is consistent with sinus rhythm. An irregularly irregular rhythm with no P waves is atrial fibrillation.</p>
+        <p class="read-task" id="rhythmTask"></p>
+        <div class="strip-wrap" id="rhythmWrap">
+          <svg id="rhythmSvg" class="read-svg" viewBox="0 0 800 200" role="application" tabindex="0" aria-label="Lead II rhythm strip for deciding if the rhythm is regular and whether a P wave precedes each QRS">
+          </svg>
+        </div>
+        <p class="strip-hint">Scroll the strip sideways if you cannot see all 10 seconds.</p>
+        <p class="quiz-readout" id="rhythmReadout"></p>
+        <div class="read-controls" id="rhythmControls"></div>
+        <p class="visually-hidden" id="rhythmLive" aria-live="polite"></p>
+        <div class="read-notes">
+          <div class="panel-block">
+            <h4>Usual normal</h4>
+            <p>Sinus rhythm is regular, at 60 to 100 /min in adults, with a P wave before every QRS and a constant PR interval. P waves are upright in I and II, and inverted in aVR.</p>
+          </div>
+          <div class="clinical">
+            <h4>Why it matters clinically</h4>
+            <ul>
+              <li>A P wave before every QRS, with a stable PR interval, is consistent with sinus rhythm.</li>
+              <li>Absent P waves and an irregularly irregular QRS rhythm occur in atrial fibrillation.</li>
+            </ul>
+          </div>
+          <p class="src-line">Sources: <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">LITFL, rhythm evaluation</a> · <a href="https://litfl.com/normal-sinus-rhythm-ecg-library/" target="_blank" rel="noopener">LITFL, normal sinus rhythm</a>.</p>
+        </div>
+      </article>
+
+      <article class="read-step" id="step-axis" aria-labelledby="step-axis-h">
+        <h3 id="step-axis-h">3. Axis</h3>
+        <p>Cardiac axis is the net direction of ventricular depolarisation in the frontal plane. Usual normal is -30° to +90°. Drag the arrow on the hexaxial wheel, or use the buttons and arrow keys, and watch leads I, II and aVF change. The quadrant method uses I and aVF: if both are positive, the axis is between 0° and +90°. Lead II then separates a still-normal axis (-30° to 0°) from left axis deviation (less than -30°).</p>
+        <div class="axis-layout">
+          <div class="axis-wheel-col">
+            <svg id="axisSvg" class="axis-svg" viewBox="0 0 420 420" role="application" tabindex="0" aria-label="Hexaxial reference wheel. Drag the arrow to change the QRS axis.">
+            </svg>
+            <p class="axis-caption">Each sector has its own pattern. The thicker outline is the region the arrow sits in.</p>
+            <p class="quiz-readout" id="axisReadout"></p>
+            <div class="read-controls" id="axisControls"></div>
+          </div>
+          <div class="axis-leads-col">
+            <svg id="axisLeadsSvg" class="read-svg axis-leads-svg" viewBox="0 0 400 280" role="img" aria-label="Leads I, II and aVF for the chosen axis">
+            </svg>
+            <p class="axis-caption">Traces are scaled so the whole QRS stays on the paper. Read polarity, not height.</p>
+            <p class="quiz-readout" id="axisLeadReadout"></p>
+          </div>
+        </div>
+        <p class="visually-hidden" id="axisLive" aria-live="polite"></p>
+        <div class="read-notes">
+          <div class="panel-block">
+            <h4>Usual normal</h4>
+            <p>QRS axis between -30° and +90°. Left axis deviation is less than -30°. Right axis deviation is greater than +90°. An extreme (northwest) axis is when leads I and aVF are both negative.</p>
+          </div>
+          <div class="clinical">
+            <h4>Why it matters clinically</h4>
+            <ul>
+              <li>Left axis deviation can be seen in left ventricular hypertrophy, left bundle branch block, inferior infarction, and left anterior fascicular block.</li>
+              <li>Right axis deviation can be seen in right ventricular hypertrophy, acute right ventricular strain (for example pulmonary embolism), and chronic lung disease.</li>
+            </ul>
+          </div>
+          <p class="src-line">Sources: <a href="https://litfl.com/ecg-axis-interpretation/" target="_blank" rel="noopener">LITFL, ECG axis interpretation</a>.</p>
+        </div>
+      </article>
+    </section>
+
+    <div class="test-banner" id="testBanner">
+      <span class="test-banner-icon" aria-hidden="true">?</span>
+      <div class="test-banner-copy">
+        <h2 class="test-banner-title" id="test-label">Test yourself</h2>
+        <p class="test-banner-tag">Short drills on a teaching trace: find a part, measure an interval, work out the rate, or spot an abnormal beat.</p>
+      </div>
+      <p class="test-banner-score test-banner-score-sync" id="testBannerScore" hidden></p>
+      <button type="button" class="test-banner-cta test-toggle" id="testToggle" aria-pressed="false" aria-describedby="test-label">
+        <span class="test-cta-label">Start</span>
+      </button>
+    </div>
+    <div class="card quiz-wrap quiz-card" id="quizPanel" hidden>
+      <div id="quizBody"></div>
+      <p class="visually-hidden" id="quizLive" aria-live="polite"></p>
+    </div>
+
+    <div class="next-card">
+      <span class="next-icon" aria-hidden="true"><svg width="26" height="18" viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 14c3-1 5-7 6-7 2 6 3 9 5 9 2 0 3-6 7-10"/><circle cx="5" cy="14" r="1.2" fill="currentColor" stroke="none"/></svg></span>
+      <div class="test-banner-copy">
+        <h2 class="test-banner-title">Next: see it in 3D</h2>
+        <p class="test-banner-tag">Watch how these waves are written as the impulse travels through a 3D heart, and how each lead sees that same beat.</p>
+      </div>
+      <a class="next-link" href="ECG_3D.html">Open ECG in 3D</a>
+    </div>
+
+
+    <details class="card values-card" id="values" aria-labelledby="values-heading">
+      <summary>
+        <span class="tool-title" id="values-heading">Normal values at a glance</span>
+      </summary>
             <div class="values-wrap" tabindex="0">
         <table class="values-table">
           <caption class="visually-hidden">Normal values for the main parts of an ECG beat, with the source for each figure</caption>
@@ -133,133 +279,7 @@
         <p>The uncorrected QT shortens as the heart rate rises, so we estimate what the QT would be at 60 /min. The most commonly used formula is Bazett: <span class="formula">QTc = QT &#247; &#8730;RR</span>, with RR in seconds.</p>
         <p>Bazett over-corrects above 100 /min and under-corrects below 60 /min. Outside that range, Fridericia or Framingham is often used instead. A useful rule of thumb is that a normal QT is under half the preceding RR interval. Do not use a single QTc value alone to make clinical decisions.</p>
       </div>
-    </section>
-
-
-    <section id="read-ecg" class="read-ecg-card" aria-labelledby="read-ecg-heading">
-      <h2 class="tool-title" id="read-ecg-heading">Read an ECG step by step</h2>
-      <p class="tool-intro">Once you can name the parts of a beat, read a tracing in this order: rate, then rhythm, then axis. The PR, QRS, QT and QTc intervals are covered on the labelled beat and in the table above.</p>
-
-      <article class="read-step" id="step-rate" aria-labelledby="step-rate-h">
-        <h3 id="step-rate-h">1. Rate</h3>
-        <p>On standard paper (25 mm/s), a 10-second lead II rhythm strip is 50 large squares long. For a regular rhythm, rate = 300 / the number of large squares between two R waves. For an irregular rhythm, count the QRS complexes in the 10-second strip and multiply by 6.</p>
-        <p class="read-task" id="rateTask"></p>
-        <div class="strip-wrap" id="rateWrap">
-          <svg id="rateSvg" class="read-svg" viewBox="0 0 800 200" role="application" tabindex="0" aria-labelledby="step-rate-h rateSvgTitle">
-            <title id="rateSvgTitle">Ten-second lead II rhythm strip for measuring the heart rate</title>
-          </svg>
-        </div>
-        <p class="strip-hint">Scroll the strip sideways if you cannot see all 10 seconds.</p>
-        <p class="quiz-readout" id="rateReadout"></p>
-        <div class="read-controls" id="rateControls"></div>
-        <p class="visually-hidden" id="rateLive" aria-live="polite"></p>
-        <div class="read-notes">
-          <div class="panel-block">
-            <h4>Usual normal</h4>
-            <p>Adult rate 60 to 100 /min.</p>
-          </div>
-          <div class="clinical">
-            <h4>Why it matters clinically</h4>
-            <ul>
-              <li>A rate under 60 /min is bradycardia; over 100 /min is tachycardia.</li>
-              <li>An irregularly irregular rate, with no P waves, occurs in atrial fibrillation.</li>
-            </ul>
-          </div>
-          <p class="src-line">Sources: <a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">LITFL, ECG rate interpretation</a> · <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">LITFL, rhythm evaluation</a>.</p>
-        </div>
-      </article>
-
-      <article class="read-step" id="step-rhythm" aria-labelledby="step-rhythm-h">
-        <h3 id="step-rhythm-h">2. Rhythm</h3>
-        <p>Ask two questions. Is the rhythm regular or irregular? And is there a P wave before every QRS? March the calipers from R to R: if they keep landing on each R wave, the rhythm is regular. A regular rhythm with a P wave before every QRS is consistent with sinus rhythm. An irregularly irregular rhythm with no P waves is atrial fibrillation.</p>
-        <p class="read-task" id="rhythmTask"></p>
-        <div class="strip-wrap" id="rhythmWrap">
-          <svg id="rhythmSvg" class="read-svg" viewBox="0 0 800 200" role="application" tabindex="0" aria-labelledby="step-rhythm-h rhythmSvgTitle">
-            <title id="rhythmSvgTitle">Lead II rhythm strip for deciding if the rhythm is regular and whether a P wave precedes each QRS</title>
-          </svg>
-        </div>
-        <p class="strip-hint">Scroll the strip sideways if you cannot see all 10 seconds.</p>
-        <p class="quiz-readout" id="rhythmReadout"></p>
-        <div class="read-controls" id="rhythmControls"></div>
-        <p class="visually-hidden" id="rhythmLive" aria-live="polite"></p>
-        <div class="read-notes">
-          <div class="panel-block">
-            <h4>Usual normal</h4>
-            <p>Sinus rhythm is regular, at 60 to 100 /min in adults, with a P wave before every QRS and a constant PR interval. P waves are upright in I and II, and inverted in aVR.</p>
-          </div>
-          <div class="clinical">
-            <h4>Why it matters clinically</h4>
-            <ul>
-              <li>A P wave before every QRS, with a stable PR interval, is consistent with sinus rhythm.</li>
-              <li>Absent P waves and an irregularly irregular QRS rhythm occur in atrial fibrillation.</li>
-            </ul>
-          </div>
-          <p class="src-line">Sources: <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">LITFL, rhythm evaluation</a> · <a href="https://litfl.com/normal-sinus-rhythm-ecg-library/" target="_blank" rel="noopener">LITFL, normal sinus rhythm</a>.</p>
-        </div>
-      </article>
-
-      <article class="read-step" id="step-axis" aria-labelledby="step-axis-h">
-        <h3 id="step-axis-h">3. Axis</h3>
-        <p>Cardiac axis is the net direction of ventricular depolarisation in the frontal plane. Usual normal is -30° to +90°. Drag the arrow on the hexaxial wheel, or use the buttons and arrow keys, and watch leads I, II and aVF change. The quadrant method uses I and aVF: if both are positive, the axis is between 0° and +90°. Lead II then separates a still-normal axis (-30° to 0°) from left axis deviation (less than -30°).</p>
-        <div class="axis-layout">
-          <div class="axis-wheel-col">
-            <svg id="axisSvg" class="axis-svg" viewBox="0 0 360 360" role="application" tabindex="0" aria-labelledby="step-axis-h axisSvgTitle">
-              <title id="axisSvgTitle">Hexaxial reference wheel. Drag the arrow to change the QRS axis.</title>
-            </svg>
-            <p class="axis-caption">Hatched sector: usual normal, -30° to +90°.</p>
-            <p class="quiz-readout" id="axisReadout"></p>
-            <div class="read-controls" id="axisControls"></div>
-          </div>
-          <div class="axis-leads-col">
-            <svg id="axisLeadsSvg" class="read-svg axis-leads-svg" viewBox="0 0 400 280" role="img" aria-labelledby="axisLeadsTitle">
-              <title id="axisLeadsTitle">Leads I, II and aVF for the chosen axis</title>
-            </svg>
-            <p class="axis-caption">Traces are scaled so the whole QRS stays on the paper. Read polarity, not height.</p>
-            <p class="quiz-readout" id="axisLeadReadout"></p>
-          </div>
-        </div>
-        <p class="visually-hidden" id="axisLive" aria-live="polite"></p>
-        <div class="read-notes">
-          <div class="panel-block">
-            <h4>Usual normal</h4>
-            <p>QRS axis between -30° and +90°. Left axis deviation is less than -30°. Right axis deviation is greater than +90°. An extreme (northwest) axis is when leads I and aVF are both negative.</p>
-          </div>
-          <div class="clinical">
-            <h4>Why it matters clinically</h4>
-            <ul>
-              <li>Left axis deviation can be seen in left ventricular hypertrophy, left bundle branch block, inferior infarction, and left anterior fascicular block.</li>
-              <li>Right axis deviation can be seen in right ventricular hypertrophy, acute right ventricular strain (for example pulmonary embolism), and chronic lung disease.</li>
-            </ul>
-          </div>
-          <p class="src-line">Sources: <a href="https://litfl.com/ecg-axis-interpretation/" target="_blank" rel="noopener">LITFL, ECG axis interpretation</a>.</p>
-        </div>
-      </article>
-    </section>
-
-    <div class="test-banner" id="testBanner">
-      <span class="test-banner-icon" aria-hidden="true">?</span>
-      <div class="test-banner-copy">
-        <h2 class="test-banner-title" id="test-label">Test yourself</h2>
-        <p class="test-banner-tag">Short drills on a teaching trace: find a part, measure an interval, work out the rate, or spot an abnormal beat.</p>
-      </div>
-      <p class="test-banner-score" id="testBannerScore" hidden></p>
-      <button type="button" class="test-banner-cta" id="testToggle" aria-pressed="false" aria-describedby="test-label">
-        <span class="test-cta-label">Start</span>
-      </button>
-    </div>
-    <div class="card quiz-wrap quiz-card" id="quizPanel" hidden>
-      <div id="quizBody"></div>
-      <p class="visually-hidden" id="quizLive" aria-live="polite"></p>
-    </div>
-
-    <div class="next-card">
-      <span class="next-icon" aria-hidden="true"><svg width="26" height="18" viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 14c3-1 5-7 6-7 2 6 3 9 5 9 2 0 3-6 7-10"/><circle cx="5" cy="14" r="1.2" fill="currentColor" stroke="none"/></svg></span>
-      <div class="test-banner-copy">
-        <h2 class="test-banner-title">Next: see it in 3D</h2>
-        <p class="test-banner-tag">Watch how these waves are written as the impulse travels through a 3D heart, and how each lead sees that same beat.</p>
-      </div>
-      <a class="next-link" href="ECG_3D.html">Open ECG in 3D</a>
-    </div>
+    </details>
 
     <details class="card revise-sources">
       <summary>Sources</summary>
@@ -282,6 +302,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-basics.js?v=20261119g"></script>
+<script src="assets/ecg-basics.js?v=20261119i"></script>
 </body>
 </html>

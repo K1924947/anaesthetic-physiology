@@ -28,6 +28,34 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
+  function iconTick() {
+    return "<svg class='btn-icon' viewBox='0 0 16 16' width='16' height='16' aria-hidden='true'><path d='M2.5 8.5 L6.5 12.5 L13.5 4' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+  }
+  function iconRedo() {
+    return "<svg class='btn-icon' viewBox='0 0 16 16' width='16' height='16' aria-hidden='true'><path d='M13 8 A5 5 0 1 1 11.8 4.7' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M13 2.4 v3.3 h-3.3' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+  }
+  function primaryBtn(id, label) {
+    return "<button type='button' class='t-btn t-btn-primary' id='" + id + "'>" + iconTick() + "<span>" + esc(label) + "</span></button>";
+  }
+  function secondaryBtn(id, label) {
+    return "<button type='button' class='t-btn t-btn-secondary' id='" + id + "'>" + iconRedo() + "<span>" + esc(label) + "</span></button>";
+  }
+  function actionRow(inner) {
+    return "<div class='action-row quiz-nav'>" + inner + "</div>";
+  }
+  function formatCaliperSpan(span) {
+    var smallN = Math.round((span / 0.04) * 10) / 10;
+    var largeWhole = Math.floor((smallN + 1e-9) / 5);
+    var smallRem = Math.round((smallN - largeWhole * 5) * 10) / 10;
+    if (smallRem < 0) { largeWhole -= 1; smallRem += 5; }
+    if (Math.abs(smallRem) < 0.05) smallRem = 0;
+    function qty(n, singular, plural) {
+      var txt = (Math.abs(n - Math.round(n)) < 0.05) ? String(Math.round(n)) : n.toFixed(1);
+      return txt + " " + (Math.abs(n - 1) < 0.05 ? singular : plural);
+    }
+    var total = (Math.abs(smallN - Math.round(smallN)) < 0.05) ? String(Math.round(smallN)) : smallN.toFixed(1);
+    return qty(largeWhole, "large square", "large squares") + " + " + qty(smallRem, "small square", "small squares") + " (" + total + " small squares)";
+  }
   function T() {
     return window.PhysioTheme ? PhysioTheme.tokens() : {
       a: "#184A63", b: "#0B6B5F", c: "#9A3412", d: "#1A2330", e: "#5C4A2E",
@@ -280,48 +308,27 @@
   var BRACKET_CENTRES = { PRi: 0.08, QT: 0.36, RR: 0.705 };
 
   function waveAtTime(t) {
-    var x = t;
-    while (x >= RR) x -= RR;
-    while (x < -0.08) x += RR;
-    var i, w, best = null, bestD = 0.04;
-    for (i = 0; i < WAVE_HITS.length; i++) {
-      w = WAVE_HITS[i];
-      if (x >= w.t0 && x < w.t1) return w.key;
-      var mid = (w.t0 + w.t1) / 2;
-      var d = Math.abs(x - mid);
-      /* If the click sits in a tiny gap, snap to the nearest wave within 1 small square. */
-      if (x < w.t0) d = w.t0 - x;
-      else if (x >= w.t1) d = x - w.t1;
-      if (d < bestD) { bestD = d; best = w.key; }
-    }
-    return best;
+    var h = hitAtTime(t, BEAT_P, RR, null);
+    return h.key === "baseline" ? null : h.key;
   }
 
   function beatClientToT(ev, svg) {
     svg = svg || $("beatSvg");
-    if (!svg || !svg.getScreenCTM) return null;
-    var pt = svg.createSVGPoint();
-    pt.x = ev.clientX;
-    pt.y = ev.clientY;
-    var loc = pt.matrixTransform(svg.getScreenCTM().inverse());
-    return BG.tStart + (loc.x - (BG.x0 + 8 * BG.u)) / (25 * BG.u);
+    if (!svg) return null;
+    return clientToTime(svg, ev, beatGeom());
   }
 
   function beatSvgPoint(t, band) {
     var svg = $("beatSvg");
-    if (!svg || !svg.getScreenCTM) return null;
+    if (!svg) return null;
     var gy = 16, gh = 20 * BG.u, paperBottom = gy + gh;
     var y;
     if (band === "PRi") y = paperBottom + 32;
     else if (band === "QT") y = paperBottom + 64;
     else if (band === "RR") y = paperBottom + 100;
     else y = gy + gh * 0.55;
-    var pt = svg.createSVGPoint();
-    pt.x = bx(t);
-    pt.y = y;
-    var scr = pt.matrixTransform(svg.getScreenCTM());
-    var r = svg.getBoundingClientRect();
-    return { x: scr.x - r.left, y: scr.y - r.top, t: t, band: band || "paper" };
+    var off = svgUserToOffset(svg, bx(t), y);
+    return { x: off.x, y: off.y, t: t, band: band || "paper" };
   }
 
   function srcPair(a, au, b, bu) {
@@ -340,8 +347,12 @@
       ev.preventDefault();
       clickPart(k);
     });
-    hg.addEventListener("pointerenter", function () { previewPart(k); });
-    hg.addEventListener("pointerleave", function () { previewPart(null); });
+    hg.addEventListener("pointerenter", function (ev) {
+      previewPart(k);
+      showHitTip(ev, { key: k, name: PARTS[k].name });
+    });
+    hg.addEventListener("pointermove", function (ev) { showHitTip(ev, { key: k, name: PARTS[k].name }); });
+    hg.addEventListener("pointerleave", function () { previewPart(null); hideHitTip(); });
   }
 
   function drawBeat() {
@@ -479,8 +490,10 @@
     paperHit.addEventListener("pointermove", function (ev) {
       var k = paperPart(ev);
       previewPart(k);
+      if (k) showHitTip(ev, { key: k, name: PARTS[k].name });
+      else hideHitTip();
     });
-    paperHit.addEventListener("pointerleave", function () { previewPart(null); });
+    paperHit.addEventListener("pointerleave", function () { previewPart(null); hideHitTip(); });
     paperHit.addEventListener("pointerdown", function (ev) {
       ev.preventDefault();
       var k = paperPart(ev);
@@ -609,7 +622,8 @@
     calA: 0.04,
     calB: 0.24,
     focus: "A",
-    dragging: null
+    dragging: null,
+    hover: null
   };
   var QG = { x0: 12, y0: 0, u: 10, tStart: -0.08, tEnd: 1.2, gy: 8, gh: 0, paperBottom: 0 };
 
@@ -667,6 +681,206 @@
       qt1: qt1,
       j: q1
     };
+  }
+
+  function foldToCycle(t, rr) {
+    rr = rr || RR;
+    if (!isFinite(t) || !rr) return t;
+    var x = t - rr * Math.floor(t / rr);
+    if (x < 0) x += rr;
+    if (x >= rr) x -= rr;
+    return x;
+  }
+
+  function waveWindows(beat) {
+    var tm = timesFrom(beat);
+    var list = [
+      { key: "P", t0: tm.P[0], t1: tm.P[1] },
+      { key: "PRs", t0: tm.PRs[0], t1: tm.PRs[1] },
+      { key: "QRS", t0: tm.QRS[0], t1: tm.QRS[1] },
+      { key: "ST", t0: tm.ST[0], t1: tm.ST[1] },
+      { key: "T", t0: tm.T[0], t1: tm.T[1] }
+    ];
+    if (beat && beat.u) list.push({ key: "U", t0: tm.U[0], t1: tm.U[1] });
+    return list;
+  }
+
+  function preferKeyForItem(item) {
+    if (!item) return null;
+    if (item.type === "spot" && item.abnormality && item.abnormality !== "normal") return item.abnormality;
+    if (item.type === "click" && (item.target === "PRi" || item.target === "QT" || item.target === "J")) return item.target;
+    return null;
+  }
+
+  function partLabel(key) {
+    if (key === "baseline") return "Baseline (T-P segment)";
+    if (key === "normal") return "This beat is normal";
+    if (key === "J") return "J point";
+    if (PARTS[key] && PARTS[key].name) return PARTS[key].name;
+    var i;
+    if (typeof CLICK_PARTS !== "undefined") {
+      for (i = 0; i < CLICK_PARTS.length; i++) if (CLICK_PARTS[i].key === key) return CLICK_PARTS[i].name;
+    }
+    return key;
+  }
+
+  /* Single hit-test used for hover highlight and click scoring, on the
+     labelled beat and on every drill, with that beat's actual timings. */
+  function hitAtTime(t, beat, rr, prefer) {
+    beat = beat || BEAT_P;
+    rr = rr || RR;
+    var x = foldToCycle(t, rr);
+    var n = Math.round((t - x) / rr);
+    var tm = timesFrom(beat);
+    var key = null, range = null, i, w, d, best = null, bestD = 0.04;
+    if (prefer === "PRi" && x >= tm.PRi[0] && x <= tm.PRi[1]) {
+      key = "PRi";
+      range = tm.PRi;
+    } else if (prefer === "QT" && x >= tm.QT[0] && x <= tm.QT[1]) {
+      key = "QT";
+      range = tm.QT;
+    } else if (prefer === "QRS" && x >= tm.QRS[0] && x <= tm.QRS[1]) {
+      key = "QRS";
+      range = tm.QRS;
+    } else if (prefer === "J" && Math.abs(x - tm.j) <= 0.02) {
+      key = "J";
+      range = tm.J;
+    } else {
+      var wins = waveWindows(beat);
+      for (i = 0; i < wins.length; i++) {
+        w = wins[i];
+        if (x >= w.t0 && x < w.t1) {
+          key = w.key;
+          range = [w.t0, w.t1];
+          bestD = 0;
+          break;
+        }
+        d = x < w.t0 ? w.t0 - x : x - w.t1;
+        if (d < bestD) {
+          bestD = d;
+          best = w;
+        }
+      }
+      if (!key && best) {
+        key = best.key;
+        range = [best.t0, best.t1];
+      }
+    }
+    if (!key) {
+      return { key: "baseline", name: partLabel("baseline"), t0: null, t1: null, cycle: x, beatIndex: n };
+    }
+    return {
+      key: key,
+      name: partLabel(key),
+      t0: range[0] + n * rr,
+      t1: range[1] + n * rr,
+      cycle: x,
+      beatIndex: n
+    };
+  }
+
+  function svgViewBox(svg) {
+    var vb = svg.viewBox && svg.viewBox.baseVal;
+    if (vb && vb.width && vb.height) return { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
+    return { x: 0, y: 0, w: svg.clientWidth || 1, h: svg.clientHeight || 1 };
+  }
+
+  /* Map a pointer event to SVG user space. Uses the element's box and
+     viewBox (xMidYMid meet) so CSS scale, browser zoom and devicePixelRatio
+     stay consistent for hover and click. */
+  function svgEventToUser(svg, ev) {
+    var rect = svg.getBoundingClientRect();
+    var cx = ev.clientX, cy = ev.clientY;
+    if (rect.width > 0 && rect.height > 0) {
+      var vb = svgViewBox(svg);
+      var sx = rect.width / vb.w, sy = rect.height / vb.h;
+      var s = Math.min(sx, sy);
+      var ox = (rect.width - vb.w * s) / 2;
+      var oy = (rect.height - vb.h * s) / 2;
+      return { x: vb.x + (cx - rect.left - ox) / s, y: vb.y + (cy - rect.top - oy) / s };
+    }
+    if (svg.getScreenCTM) {
+      var pt = svg.createSVGPoint();
+      pt.x = cx;
+      pt.y = cy;
+      var loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+      return { x: loc.x, y: loc.y };
+    }
+    return null;
+  }
+
+  function svgUserToOffset(svg, x, y) {
+    var rect = svg.getBoundingClientRect();
+    var vb = svgViewBox(svg);
+    var sx = rect.width / vb.w, sy = rect.height / vb.h;
+    var s = Math.min(sx, sy);
+    var ox = (rect.width - vb.w * s) / 2;
+    var oy = (rect.height - vb.h * s) / 2;
+    return { x: ox + (x - vb.x) * s, y: oy + (y - vb.y) * s, left: rect.left, top: rect.top };
+  }
+
+  function geomX0(G) { return G.paperX0 != null ? G.paperX0 : G.x0; }
+
+  function timeFromSvgX(G, x) {
+    return G.tStart + (x - geomX0(G)) / (25 * G.u);
+  }
+
+  function svgXFromTime(G, t) {
+    return geomX0(G) + (t - G.tStart) * 25 * G.u;
+  }
+
+  function clientToTime(svg, ev, G) {
+    var loc = svgEventToUser(svg, ev);
+    if (!loc || !G) return null;
+    return timeFromSvgX(G, loc.x);
+  }
+
+  function beatGeom() {
+    return { x0: BG.x0, paperX0: BG.x0 + 8 * BG.u, tStart: BG.tStart, u: BG.u };
+  }
+
+  function quizGeom() {
+    return { x0: QG.x0, tStart: QG.tStart, u: QG.u };
+  }
+
+  function hitFromEvent(svg, ev, beat, rr, prefer, G) {
+    var t = clientToTime(svg, ev, G);
+    if (t == null) return { key: "baseline", name: partLabel("baseline"), t0: null, t1: null };
+    return hitAtTime(t, beat, rr, prefer);
+  }
+
+  function tipEl() {
+    var n = $("ecgHitTip");
+    if (!n) {
+      n = document.createElement("div");
+      n.id = "ecgHitTip";
+      n.className = "ecg-hit-tip";
+      n.hidden = true;
+      n.setAttribute("role", "status");
+      document.body.appendChild(n);
+    }
+    return n;
+  }
+
+  function showHitTip(ev, hit) {
+    var n = tipEl();
+    if (!hit) {
+      n.hidden = true;
+      n.textContent = "";
+      return;
+    }
+    n.hidden = false;
+    n.textContent = hit.name || partLabel(hit.key);
+    n.style.left = Math.round(ev.clientX) + "px";
+    n.style.top = Math.round(ev.clientY) + "px";
+  }
+
+  function hideHitTip() {
+    var n = $("ecgHitTip");
+    if (n) {
+      n.hidden = true;
+      n.textContent = "";
+    }
   }
 
   function defaultBeat(extra) {
@@ -887,42 +1101,24 @@
   }
 
   function quizTtoX(t) {
-    return QG.x0 + (t - QG.tStart) * 25 * QG.u;
+    return svgXFromTime(QG, t);
   }
   function quizXtoT(x) {
-    return QG.tStart + (x - QG.x0) / (25 * QG.u);
+    return timeFromSvgX(QG, x);
   }
-  function quizClientToT(svg, clientX) {
-    var pt = svg.createSVGPoint();
-    pt.x = clientX;
-    pt.y = 0;
-    var ctm = svg.getScreenCTM();
-    if (!ctm) return 0;
-    return quizXtoT(pt.matrixTransform(ctm.inverse()).x);
+  function quizClientToT(svg, evOrX, evY) {
+    var ev = (evOrX && typeof evOrX === "object") ? evOrX : { clientX: evOrX, clientY: evY || 0 };
+    var t = clientToTime(svg, ev, quizGeom());
+    return t == null ? 0 : t;
   }
 
   function partAtTime(item, t) {
-    var tm = timesFrom(item.beat);
-    function inR(k) { return t >= tm[k][0] && t <= tm[k][1]; }
-    if (inR("J")) return "J";
-    if (inR("PRs")) return "PRs";
-    if (inR("P")) return "P";
-    if (inR("QRS")) return "QRS";
-    if (inR("ST")) return "ST";
-    if (inR("T")) return "T";
-    if (item.beat.u && inR("U")) return "U";
-    if (inR("PRi")) return "PRi";
-    if (inR("QT")) return "QT";
-    return "baseline";
+    return hitAtTime(t, item.beat, item.rr || 1, preferKeyForItem(item)).key;
   }
 
   function partName(key) {
     if (key === "baseline") return "the baseline (the T-P segment)";
-    if (key === "normal") return "This beat is normal";
-    if (key === "J") return "J point";
-    var i;
-    for (i = 0; i < CLICK_PARTS.length; i++) if (CLICK_PARTS[i].key === key) return CLICK_PARTS[i].name;
-    return key;
+    return partLabel(key);
   }
 
   function clickMatches(item, key) {
@@ -984,10 +1180,11 @@
   }
 
   function setScore() {
-    var s = $("testBannerScore");
-    if (!s) return;
-    s.hidden = !QZ.on;
-    s.textContent = QZ.on ? ("Score " + QZ.score + " / " + QZ.items.length) : "";
+    var text = QZ.on ? ("Score " + QZ.score + " / " + QZ.items.length) : "";
+    document.querySelectorAll(".test-banner-score-sync").forEach(function (s) {
+      s.hidden = !QZ.on;
+      s.textContent = text;
+    });
   }
 
   function setupQuizGeometry(item) {
@@ -1028,35 +1225,75 @@
     }, g);
   }
 
-  function highlightRange(g, item, key, cls) {
-    var tm = timesFrom(item.beat);
-    var t = T();
-    var range;
-    if (key === "J") {
-      var jx = quizTtoX(tm.j);
-      el("circle", {
-        cx: jx, cy: QG.y0, r: 7, fill: "none", stroke: t.a, "stroke-width": 2.5,
-        "stroke-dasharray": "3 2", class: cls || "hl-mark"
-      }, g);
+  function eachCopyRange(item, key, t0, t1, fn) {
+    var rr = item.rr || 1;
+    var a, b, n, n0, n1, tm;
+    if (t0 != null && t1 != null) {
+      fn(t0, t1);
       return;
     }
-    if (key === "normal" || key === "baseline" || !tm[key]) return;
-    range = tm[key];
-    var x0 = quizTtoX(Math.max(range[0], QG.tStart));
-    var x1 = quizTtoX(Math.min(range[1], QG.tEnd));
-    el("rect", {
-      x: x0, y: QG.gy, width: Math.max(x1 - x0, 2), height: QG.gh,
-      fill: "url(#qz-hatch)", stroke: t.a, "stroke-width": 1.5, "stroke-dasharray": "5 3",
-      class: cls || "hl-band"
-    }, g);
-    var bumps = beatBumps(item.beat);
-    var f = function (tt) { return voltageSeries(bumps, tt, item.rr); };
-    if (key !== "PRi" && key !== "QT") {
-      el("path", {
-        d: fnPath(f, range[0], range[1], quizTtoX(range[0]), QG.y0, 25 * QG.u, 10 * QG.u, 0.002),
-        fill: "none", stroke: t.a, "stroke-width": 5.5, "stroke-linejoin": "round", "stroke-linecap": "round",
-        class: cls || "hl-trace"
+    tm = timesFrom(item.beat);
+    if (key === "J") {
+      n0 = Math.floor((item.tStart - tm.j) / rr) - 1;
+      n1 = Math.ceil((item.tEnd - tm.j) / rr) + 1;
+      for (n = n0; n <= n1; n++) {
+        a = tm.j + n * rr;
+        if (a >= item.tStart && a <= item.tEnd) fn(a, a);
+      }
+      return;
+    }
+    if (!tm[key]) return;
+    a = tm[key][0];
+    b = tm[key][1];
+    n0 = Math.floor((item.tStart - b) / rr) - 1;
+    n1 = Math.ceil((item.tEnd - a) / rr) + 1;
+    for (n = n0; n <= n1; n++) {
+      if (b + n * rr > item.tStart && a + n * rr < item.tEnd) fn(a + n * rr, b + n * rr);
+    }
+  }
+
+  function highlightRange(g, item, key, cls, t0, t1) {
+    var tok = T();
+    var bumps, f;
+    if (key === "normal" || key === "baseline" || !key) return;
+    bumps = beatBumps(item.beat);
+    f = function (tt) { return voltageSeries(bumps, tt, item.rr); };
+    eachCopyRange(item, key, t0, t1, function (a, b) {
+      if (key === "J") {
+        el("circle", {
+          cx: quizTtoX(a), cy: QG.y0, r: 7, fill: "none", stroke: tok.a, "stroke-width": 2.5,
+          "stroke-dasharray": "3 2", class: cls || "hl-mark", "data-hit": "J"
+        }, g);
+        return;
+      }
+      var x0 = quizTtoX(Math.max(a, QG.tStart));
+      var x1 = quizTtoX(Math.min(b, QG.tEnd));
+      el("rect", {
+        x: x0, y: QG.gy, width: Math.max(x1 - x0, 2), height: QG.gh,
+        fill: "url(#qz-hatch)", stroke: tok.a, "stroke-width": 1.5, "stroke-dasharray": "5 3",
+        class: cls || "hl-band", "data-hit": key, "pointer-events": "none"
       }, g);
+      if (key !== "PRi" && key !== "QT") {
+        el("path", {
+          d: fnPath(f, a, b, quizTtoX(a), QG.y0, 25 * QG.u, 10 * QG.u, 0.002),
+          fill: "none", stroke: tok.a, "stroke-width": 5.5, "stroke-linejoin": "round", "stroke-linecap": "round",
+          class: cls || "hl-trace", "pointer-events": "none"
+        }, g);
+      }
+    });
+  }
+
+  function updateQuizHover(hit) {
+    var svg = $("quizSvg");
+    var item = currentItem();
+    if (!svg || !item) return;
+    var g = svg.querySelector("#quizHoverLayer");
+    if (!g) {
+      g = el("g", { id: "quizHoverLayer", "aria-hidden": "true" }, svg);
+    }
+    while (g.firstChild) g.removeChild(g.firstChild);
+    if (hit && hit.key && hit.key !== "baseline") {
+      highlightRange(g, item, hit.key, "hl-hover", hit.t0, hit.t1);
     }
   }
 
@@ -1132,6 +1369,9 @@
       if ((item.type === "click" || item.type === "spot") && QZ.pick && !QZ.ok && QZ.pick !== "baseline" && QZ.pick !== "normal") {
         markGuess(g, item, QZ.pick);
       }
+    } else if ((item.type === "click" || item.type === "spot") && QZ.hover && QZ.hover.key && QZ.hover.key !== "baseline") {
+      var hoverG = el("g", { id: "quizHoverLayer", "aria-hidden": "true" }, g);
+      highlightRange(hoverG, item, QZ.hover.key, "hl-hover", QZ.hover.t0, QZ.hover.t1);
     }
 
     if (item.type === "calipers" || item.type === "rate") {
@@ -1162,13 +1402,7 @@
       var small = squaresOf(span);
       var large = (span / 0.20);
       var largeTxt = (Math.abs(large - Math.round(large)) < 0.05) ? String(Math.round(large)) : large.toFixed(1);
-      if (item.type === "calipers") {
-        elr.textContent = "Calipers: " + msOf(span) + " ms (" + small + " small squares).";
-      } else {
-        var r = (span >= 0.40) ? rateFromCalipers() : null;
-        var largeLabel = (largeTxt === "1") ? "1 large square" : (largeTxt + " large squares");
-        elr.textContent = "Calipers: " + largeLabel + (r ? (", rate " + r + " /min.") : ". Drag them onto two R waves to read the rate.");
-      }
+      elr.textContent = "Calipers: " + formatCaliperSpan(span) + ".";
     } else {
       elr.textContent = "";
     }
@@ -1234,10 +1468,10 @@
 
   function bindQuizSvg(svg, item) {
     svg.addEventListener("pointerdown", function (ev) {
-      if (QZ.answered) return;
-      if (item.type === "calipers" || item.type === "rate") {
-        var t = quizClientToT(svg, ev.clientX);
-        t = clampT(t);
+      var it = currentItem() || item;
+      if (!it || QZ.answered) return;
+      if (it.type === "calipers" || it.type === "rate") {
+        var t = clampT(quizClientToT(svg, ev));
         var dA = Math.abs(t - QZ.calA), dB = Math.abs(t - QZ.calB);
         var tol = 0.08;
         var which = null;
@@ -1250,31 +1484,45 @@
         drawQuizTrace();
         return;
       }
-      if (item.type === "click" || item.type === "spot") {
-        var tt = quizClientToT(svg, ev.clientX);
-        var key = partAtTime(item, tt);
+      if (it.type === "click" || it.type === "spot") {
+        var hit = hitFromEvent(svg, ev, it.beat, it.rr || 1, preferKeyForItem(it), quizGeom());
         ev.preventDefault();
-        submitClick(key);
+        hideHitTip();
+        submitClick(hit.key);
       }
     });
     svg.addEventListener("pointermove", function (ev) {
-      if (!QZ.dragging || QZ.answered) return;
-      var t = clampT(quizClientToT(svg, ev.clientX));
+      var it = currentItem() || item;
+      if (!it || QZ.answered) {
+        hideHitTip();
+        return;
+      }
+      if ((it.type === "click" || it.type === "spot") && !QZ.dragging) {
+        var hv = hitFromEvent(svg, ev, it.beat, it.rr || 1, preferKeyForItem(it), quizGeom());
+        showHitTip(ev, hv);
+        if (!QZ.hover || QZ.hover.key !== hv.key || QZ.hover.t0 !== hv.t0 || QZ.hover.t1 !== hv.t1) {
+          QZ.hover = hv;
+          updateQuizHover(hv);
+        }
+        return;
+      }
+      if (!QZ.dragging) return;
+      var t = clampT(quizClientToT(svg, ev));
       if (QZ.dragging === "A") QZ.calA = t;
       else QZ.calB = t;
-      if (item.type === "rate") {
-        var r = rateFromCalipers();
-        if (r) {
-          QZ.rateInput = String(r);
-          var inp = $("quizRate");
-          if (inp && document.activeElement !== inp) inp.value = QZ.rateInput;
-        }
-      }
       ev.preventDefault();
       drawQuizTrace();
     });
     svg.addEventListener("pointerup", function () { QZ.dragging = null; });
     svg.addEventListener("pointercancel", function () { QZ.dragging = null; });
+    svg.addEventListener("pointerleave", function () {
+      if (QZ.dragging) return;
+      hideHitTip();
+      if (QZ.hover) {
+        QZ.hover = null;
+        updateQuizHover(null);
+      }
+    });
     svg.addEventListener("keydown", function (ev) {
       if (QZ.answered) return;
       if (item.type === "calipers" || item.type === "rate") {
@@ -1285,14 +1533,6 @@
           var dir = ev.key === "ArrowLeft" ? -step : step;
           if (QZ.focus === "A") QZ.calA = clampT(QZ.calA + dir);
           else QZ.calB = clampT(QZ.calB + dir);
-          if (item.type === "rate") {
-            var rr = rateFromCalipers();
-            if (rr) {
-              QZ.rateInput = String(rr);
-              var inp2 = $("quizRate");
-              if (inp2) inp2.value = QZ.rateInput;
-            }
-          }
           ev.preventDefault();
           drawQuizTrace();
         }
@@ -1314,14 +1554,6 @@
     if (which === "A") QZ.calA = clampT(QZ.calA + step);
     else QZ.calB = clampT(QZ.calB + step);
     var item = currentItem();
-    if (item && item.type === "rate") {
-      var r = rateFromCalipers();
-      if (r) {
-        QZ.rateInput = String(r);
-        var inp = $("quizRate");
-        if (inp) inp.value = QZ.rateInput;
-      }
-    }
     drawQuizTrace();
   }
 
@@ -1332,7 +1564,9 @@
     QZ.classify = null;
     QZ.rateInput = "";
     QZ.dragging = null;
+    QZ.hover = null;
     QZ.focus = "A";
+    hideHitTip();
     if (item && (item.type === "calipers" || item.type === "rate")) {
       QZ.calA = item.tStart + 0.04;
       QZ.calB = item.tStart + 0.24;
@@ -1398,7 +1632,7 @@
     if (QZ.i >= QZ.items.length) {
       root.innerHTML =
         "<p class='quiz-end'><strong>Finished.</strong> You scored " + QZ.score + " out of " + QZ.items.length + ".</p>" +
-        "<div class='quiz-nav'><button type='button' class='t-btn' id='quizAgain'>Try again</button></div>";
+        actionRow(secondaryBtn('quizAgain', 'Try again'));
       var again = $("quizAgain");
       if (again) again.addEventListener("click", function () {
         startRound();
@@ -1411,8 +1645,7 @@
     var html = "<p class='quiz-progress'><span class='quiz-type'>" + esc(TYPE_LABEL[item.type]) + "</span> · Drill " + (QZ.i + 1) + " of " + QZ.items.length + "</p>";
     html += "<h3 class='quiz-q' id='quizQ' tabindex='-1'>" + esc(item.q) + "</h3>";
     html += "<p class='quiz-help'>" + esc(item.help) + "</p>";
-    html += "<svg id='quizSvg' class='quiz-svg' viewBox='0 0 800 200' role='application' tabindex='0' aria-labelledby='quizQ quizSvgTitle quizSvgDesc'>";
-    html += "<title id='quizSvgTitle'>" + esc("Teaching ECG strip for this drill") + "</title>";
+    html += "<svg id='quizSvg' class='quiz-svg' viewBox='0 0 800 200' role='application' tabindex='0' aria-label='Teaching ECG strip for this drill' aria-describedby='quizSvgDesc quizQ'>";
     html += "<desc id='quizSvgDesc'>" + esc(item.help) + "</desc></svg>";
     html += "<p class='quiz-help'>Standard paper at 25 mm/s and 10 mm/mV. One small square is 0.04 s; one large square is 0.20 s.</p>";
     html += "<p class='quiz-readout' id='quizReadout'></p>";
@@ -1455,11 +1688,11 @@
       html += "</div>";
     }
     if (!QZ.answered && (item.type === "calipers" || item.type === "rate")) {
-      html += "<div class='quiz-nav'><button type='button' class='t-btn' id='quizCheck'>Check</button></div>";
+      html += actionRow(primaryBtn("quizCheck", "Check"));
     }
     if (QZ.answered) {
       html += feedbackHtml(item);
-      html += "<div class='quiz-nav'><button type='button' class='t-btn' id='quizNext'>" + (QZ.i === QZ.items.length - 1 ? "See score" : "Next drill") + "</button></div>";
+      html += actionRow(primaryBtn("quizNext", QZ.i === QZ.items.length - 1 ? "See score" : "Next drill"));
     }
     root.innerHTML = html;
     drawQuizTrace();
@@ -1496,22 +1729,31 @@
     QZ.on = on;
     if (on) startRound(forcedItems);
     var banner = $("testBanner");
+    var top = $("topTestBanner");
     var panel = $("quizPanel");
-    var btn = $("testToggle");
     if (banner) banner.classList.toggle("is-on", on);
+    if (top) top.classList.toggle("is-on", on);
     if (panel) panel.hidden = !on;
-    if (btn) {
+    document.querySelectorAll(".test-toggle").forEach(function (btn) {
       btn.setAttribute("aria-pressed", on ? "true" : "false");
       var lab = btn.querySelector(".test-cta-label");
       if (lab) lab.textContent = on ? "Close" : "Start";
-    }
+    });
     setScore();
     if (on) renderQuiz();
   }
 
   function initQuiz() {
-    var btn = $("testToggle");
-    if (btn) btn.addEventListener("click", function () { setTest(!QZ.on); });
+    document.querySelectorAll(".test-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var next = !QZ.on;
+        setTest(next);
+        if (next) {
+          var target = $("testBanner") || $("quizPanel");
+          if (target) target.scrollIntoView({ block: "start", behavior: "instant" });
+        }
+      });
+    });
   }
 
   function quizState() {
@@ -1684,12 +1926,10 @@
 
   function stripTtoX(G, t) { return G.x0 + (t - G.tStart) * 25 * G.u; }
   function stripXtoT(G, x) { return G.tStart + (x - G.x0) / (25 * G.u); }
-  function stripClientToT(svg, G, clientX) {
-    var pt = svg.createSVGPoint();
-    pt.x = clientX; pt.y = 0;
-    var ctm = svg.getScreenCTM();
-    if (!ctm) return 0;
-    return stripXtoT(G, pt.matrixTransform(ctm.inverse()).x);
+  function stripClientToT(svg, G, evOrX, evY) {
+    var ev = (evOrX && typeof evOrX === "object") ? evOrX : { clientX: evOrX, clientY: evY || 0 };
+    var t = clientToTime(svg, ev, G);
+    return t == null ? 0 : t;
   }
 
   function nearestR(times, t) {
@@ -1723,7 +1963,7 @@
     svg.addEventListener("pointerdown", function (ev) {
       st = getState();
       if (!st) return;
-      var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev.clientX)));
+      var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev)));
       var dA = Math.abs(t - st.calA), dB = Math.abs(t - st.calB);
       var which = null;
       if (dA <= 0.10 || dB <= 0.10) which = dA <= dB ? "A" : "B";
@@ -1737,7 +1977,7 @@
     svg.addEventListener("pointermove", function (ev) {
       st = getState();
       if (!st || !st.dragging) return;
-      var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev.clientX)));
+      var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev)));
       if (st.dragging === "A") st.calA = t; else st.calB = t;
       ev.preventDefault();
       onChange();
@@ -1800,7 +2040,9 @@
     item.marks.forEach(function (mt, i) {
       var x = stripTtoX(G, mt);
       el("path", { d: "M" + x + " " + (G.y0 - 14 * G.u) + "V" + (G.y0 - 11 * G.u), stroke: tok.a, "stroke-width": 2.2 }, g);
-      el("text", { x: x, y: G.y0 - 14 * G.u - 2, "text-anchor": "middle", fill: tok.a, "font-family": fam, class: "lab-small" }, g, String(i + 1));
+      if (item.revealed) {
+        el("text", { x: x, y: G.y0 - 14 * G.u - 2, "text-anchor": "middle", fill: tok.a, "font-family": fam, class: "lab-small" }, g, String(i + 1));
+      }
     });
     drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam);
     RS._rateG = G;
@@ -1811,12 +2053,8 @@
     var elr = $("rateReadout"), item = RS.rate;
     if (!elr || !item) return;
     var span = Math.abs(item.calB - item.calA);
-    var large = span / 0.20;
-    var largeTxt = (Math.abs(large - Math.round(large)) < 0.05) ? String(Math.round(large)) : large.toFixed(1);
-    var largeLabel = (largeTxt === "1") ? "1 large square" : (largeTxt + " large squares");
-    var calRate = (span >= 0.36) ? Math.round(300 / large) : null;
-    var parts = ["Calipers: " + largeLabel + (calRate ? (", rate " + calRate + " /min") : "") + "."];
-    if (item.marks.length) parts.push("Marked R waves: " + item.marks.length + " (count in 10 s × 6 = " + (item.marks.length * 6) + " /min).");
+    var parts = ["Calipers: " + formatCaliperSpan(span) + "."];
+    if (item.marks.length) parts.push("R waves marked: " + item.marks.length + ".");
     elr.textContent = parts.join(" ");
   }
 
@@ -1846,7 +2084,7 @@
     svg.addEventListener("pointerdown", function (ev) {
       var G = getG(), state = getState();
       if (!G || !state) return;
-      var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev.clientX)));
+      var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev)));
       var dA = Math.abs(t - state.calA), dB = Math.abs(t - state.calB);
       var which = null;
       if (dA <= 0.10 || dB <= 0.10) which = dA <= dB ? "A" : "B";
@@ -1866,7 +2104,7 @@
       st = getState();
       var G = getG();
       if (!st || !st.dragging || !G) return;
-      var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev.clientX)));
+      var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev)));
       if (st.dragging === "A") st.calA = t; else st.calB = t;
       ev.preventDefault();
       onChange();
@@ -1883,7 +2121,7 @@
       var G = getG(), state = getState();
       if (!G || !state) return;
       if (state._skipClick) { state._skipClick = false; return; }
-      var t = stripClientToT(svg, G, ev.clientX);
+      var t = stripClientToT(svg, G, ev);
       onMark(t);
     });
     svg.addEventListener("keydown", function (ev) {
@@ -1931,9 +2169,8 @@
       "<button type='button' class='t-btn' id='rateClear'>Clear marks</button>" +
       "<label for='rateInput'>Rate (/min)</label>" +
       "<input id='rateInput' type='number' inputmode='numeric' min='20' max='250' step='1' value='" + esc(item.entered) + "'>" +
-      "<button type='button' class='t-btn' id='rateCheck'>Check</button>" +
-      "<button type='button' class='t-btn' id='rateAnother'>Try another strip</button>" +
-      "<p class='quiz-feedback' id='rateFeedback' hidden></p>";
+      "<p class='quiz-feedback' id='rateFeedback' hidden></p>" +
+      actionRow(primaryBtn("rateCheck", "Check") + secondaryBtn("rateAnother", "Try another strip"));
     box.querySelectorAll("[data-cal]").forEach(function (b) {
       b.addEventListener("click", function () {
         var G = RS._rateG, st = RS.rate;
@@ -1982,10 +2219,13 @@
     fb.className = "quiz-feedback" + (ok ? "" : " is-wrong");
     fb.innerHTML = "<p><strong>" + (ok ? "Correct." : "Not quite.") + "</strong> " + esc(msg) + (guess != null && !ok ? " You entered " + guess + " /min." : "") + "</p>";
     if (live) live.textContent = (ok ? "Correct. " : "Not quite. ") + msg;
+    item.revealed = true;
+    renderRate();
   }
 
   function startRate(spec) {
     RS.rate = makeRateCase(spec);
+    RS.rate.revealed = false;
     var task = $("rateTask");
     if (task) task.textContent = rateTaskText(RS.rate);
     fillRateControls();
@@ -2052,7 +2292,7 @@
     var span = Math.abs(item.calB - item.calA);
     var large = span / 0.20;
     var largeTxt = (Math.abs(large - Math.round(large)) < 0.05) ? String(Math.round(large)) : large.toFixed(1);
-    elr.textContent = "Calipers: " + largeTxt + (largeTxt === "1" ? " large square" : " large squares") + ". Use March to copy that interval along the strip.";
+    elr.textContent = "Calipers: " + formatCaliperSpan(Math.abs(item.calB - item.calA)) + ".";
   }
 
   function fillRhythmControls() {
@@ -2073,9 +2313,8 @@
       "<span class='quiz-controls-label'>Is there a P wave before every QRS?</span>" +
       "<button type='button' class='t-btn' data-p='yes' aria-pressed='" + pressed("yes", item.pGuess) + "'>Yes, a P before every QRS</button>" +
       "<button type='button' class='t-btn' data-p='no' aria-pressed='" + pressed("no", item.pGuess) + "'>No P waves</button>" +
-      "<button type='button' class='t-btn' id='rhythmCheck'>Check</button>" +
-      "<button type='button' class='t-btn' id='rhythmAnother'>Try another strip</button>" +
-      "<p class='quiz-feedback' id='rhythmFeedback' hidden></p>";
+      "<p class='quiz-feedback' id='rhythmFeedback' hidden></p>" +
+      actionRow(primaryBtn("rhythmCheck", "Check") + secondaryBtn("rhythmAnother", "Try another strip"));
     box.querySelectorAll("[data-cal]").forEach(function (b) {
       b.addEventListener("click", function () {
         var st = RS.rhythm;
@@ -2164,25 +2403,85 @@
     return net > 0 ? "positive" : "negative";
   }
 
+  function axisRegionKey(deg) {
+    var info = axisLabel(deg);
+    if (info.name === "normal axis") return "normal";
+    if (info.name === "left axis deviation") return "lad";
+    if (info.name === "right axis deviation") return "rad";
+    return "extreme";
+  }
+
+  function axisPatterns(svg) {
+    var tok = T(), ink = cssVar("--ecg-ink") || "#111";
+    var rust = cssVar("--btn-secondary") || tok.c || "#9A3412";
+    var defs = el("defs", null, svg);
+    var h = el("pattern", { id: "ax-hatch", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
+    el("rect", { width: 8, height: 8, fill: tok.a, "fill-opacity": 0.10 }, h);
+    el("path", { d: "M0 8 L8 0 M-2 2 L2 -2 M6 10 L10 6", stroke: tok.a, "stroke-width": 1.2, fill: "none" }, h);
+    var d = el("pattern", { id: "ax-dots", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
+    el("rect", { width: 8, height: 8, fill: rust, "fill-opacity": 0.08 }, d);
+    el("circle", { cx: 4, cy: 4, r: 1.45, fill: rust }, d);
+    var xh = el("pattern", { id: "ax-cross", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
+    el("rect", { width: 8, height: 8, fill: ink, "fill-opacity": 0.05 }, xh);
+    el("path", { d: "M0 8 L8 0 M0 0 L8 8 M-2 2 L2 -2 M6 10 L10 6 M-2 6 L2 10 M6 -2 L10 2", stroke: ink, "stroke-width": 1.1, fill: "none" }, xh);
+    var pl = el("pattern", { id: "ax-plain", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
+    el("rect", { width: 8, height: 8, fill: tok.e || "#595959", "fill-opacity": 0.18 }, pl);
+    el("path", { d: "M0 4 H8", stroke: tok.e || "#595959", "stroke-width": 1.1, fill: "none" }, pl);
+  }
+
   function renderAxisWheel() {
     var svg = $("axisSvg");
     if (!svg) return;
     var tok = T(), ink = cssVar("--ecg-ink") || "#111", fam = fontSans();
-    var cx = 180, cy = 180, r = 132;
+    var cx = 210, cy = 210, r = 128;
+    svg.setAttribute("viewBox", "0 0 420 420");
     clearSvg(svg);
     var g = el("g", null, svg);
-    patterns(svg, "ax");
+    axisPatterns(svg);
     el("circle", { cx: cx, cy: cy, r: r, fill: tok.surface, stroke: tok.border || ink, "stroke-width": 1.5 }, g);
-    /* Normal sector -30 to +90, marked with hatch plus a label, not colour alone. */
     function polar(deg, rad) {
       return [cx + rad * Math.cos(deg * DEG), cy + rad * Math.sin(deg * DEG)];
     }
     function arcPath(a0, a1, rad) {
       var p0 = polar(a0, rad), p1 = polar(a1, rad);
-      var large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+      var dlt = a1 - a0;
+      while (dlt < 0) dlt += 360;
+      while (dlt >= 360) dlt -= 360;
+      var large = dlt > 180 ? 1 : 0;
       return "M" + cx + " " + cy + "L" + p0[0] + " " + p0[1] + "A" + rad + " " + rad + " 0 " + large + " 1 " + p1[0] + " " + p1[1] + "Z";
     }
-    el("path", { d: arcPath(-30, 90, r - 2), fill: "url(#ax-hatch)", stroke: "none" }, g);
+    var regions = [
+      { key: "normal", a0: -30, a1: 90, fill: "url(#ax-hatch)", mid: 30, lines: ["Normal", "-30° to +90°"] },
+      { key: "rad", a0: 90, a1: 180, fill: "url(#ax-cross)", mid: 135, lines: ["Right axis", "deviation", "+90° to 180°"] },
+      { key: "extreme", a0: 180, a1: -90, fill: "url(#ax-plain)", mid: 225, lines: ["Extreme /", "northwest", "-90° to 180°"] },
+      { key: "lad", a0: -90, a1: -30, fill: "url(#ax-dots)", mid: -60, lines: ["Left axis", "deviation", "-30° to -90°"] }
+    ];
+    var current = axisRegionKey(RS.axis);
+    regions.forEach(function (rg) {
+      el("path", {
+        d: arcPath(rg.a0, rg.a1, r - 2),
+        fill: rg.fill,
+        stroke: ink,
+        "stroke-width": rg.key === current ? 3.4 : 0.8,
+        class: rg.key === current ? "axis-region is-current" : "axis-region",
+        "data-region": rg.key
+      }, g);
+    });
+    function sectorLabel(rg, rad) {
+      var pt = polar(rg.mid, rad);
+      var tg = el("text", {
+        x: pt[0], y: pt[1], "text-anchor": "middle", fill: tok.text,
+        "font-family": fam, class: "lab-small", "data-region-label": rg.key
+      }, g);
+      rg.lines.forEach(function (ln, i) {
+        var dy = (i === 0 ? -((rg.lines.length - 1) * 0.55) : 1.15) + "em";
+        el("tspan", { x: pt[0], dy: dy }, tg, ln);
+      });
+    }
+    regions.forEach(function (rg) {
+      /* LAD is a narrow wedge: sit the label a little further out so it stays readable. */
+      sectorLabel(rg, 0.50 * r);
+    });
     var leads = [
       { name: "I", deg: 0 },
       { name: "II", deg: 60 },
@@ -2194,30 +2493,29 @@
     leads.forEach(function (ld) {
       var a = polar(ld.deg, r), b = polar(ld.deg, 18);
       el("path", { d: "M" + b[0] + " " + b[1] + "L" + a[0] + " " + a[1], stroke: ink, "stroke-width": 1.2, "stroke-dasharray": "3 3" }, g);
-      var lab = polar(ld.deg, r + 20);
+      var lab = polar(ld.deg, r + 24);
       el("text", { x: lab[0], y: lab[1] + 5, "text-anchor": "middle", fill: tok.text, "font-family": fam, class: "lab-int" }, g, ld.name);
     });
-    /* Tick every 30°. */
     var tdeg;
     for (tdeg = -180; tdeg < 180; tdeg += 30) {
       var p0 = polar(tdeg, r - 8), p1 = polar(tdeg, r);
       el("path", { d: "M" + p0[0] + " " + p0[1] + "L" + p1[0] + " " + p1[1], stroke: ink, "stroke-width": 1.4 }, g);
     }
-    /* Axis arrow */
-    var tip = polar(RS.axis, r - 16), tail = polar(RS.axis + 180, 22);
+    [{ deg: 0, lab: "0°" }, { deg: 90, lab: "+90°" }, { deg: 180, lab: "180°" }, { deg: -90, lab: "-90°" }].forEach(function (tk) {
+      var p = polar(tk.deg, r - 22);
+      el("text", { x: p[0], y: p[1] + 4, "text-anchor": "middle", fill: tok.text, "font-family": fam, class: "lab-small" }, g, tk.lab);
+    });
+    var tip = polar(RS.axis, r - 18), tail = polar(RS.axis + 180, 22);
     el("path", {
       d: "M" + tail[0] + " " + tail[1] + "L" + tip[0] + " " + tip[1],
       stroke: tok.a, "stroke-width": 5, "stroke-linecap": "round", class: "axis-shaft"
     }, g);
-    var left = polar(RS.axis + 160, 18), right = polar(RS.axis - 160, 18);
-    /* arrowhead at tip */
     var ah1 = [tip[0] - 16 * Math.cos((RS.axis + 25) * DEG), tip[1] - 16 * Math.sin((RS.axis + 25) * DEG)];
     var ah2 = [tip[0] - 16 * Math.cos((RS.axis - 25) * DEG), tip[1] - 16 * Math.sin((RS.axis - 25) * DEG)];
     el("polygon", {
       points: tip[0] + "," + tip[1] + " " + ah1[0] + "," + ah1[1] + " " + ah2[0] + "," + ah2[1],
       fill: tok.a, stroke: tok.a, class: "axis-head"
     }, g);
-    /* Drag handle: large circle at the tip, labelled. */
     el("circle", { cx: tip[0], cy: tip[1], r: 16, fill: tok.surface, stroke: tok.a, "stroke-width": 3, class: "axis-handle" }, g);
     el("text", { x: tip[0], y: tip[1] + 5, "text-anchor": "middle", fill: tok.a, "font-family": fam, class: "lab-small" }, g, "A");
     el("circle", { cx: cx, cy: cy, r: 5, fill: ink }, g);
@@ -2245,17 +2543,47 @@
     var vbW = x0 + gw + 10, vbH = top + 3 * gh + 2 * gap + 8;
     svg.setAttribute("viewBox", "0 0 " + Math.ceil(vbW) + " " + Math.ceil(vbH));
     var g = el("g", null, svg);
+    var fit = [];
     leads.forEach(function (ld) {
       paper(g, x0, ld.gy, gw, gh, u);
       var f = function (tt) { return voltageLead(bumps, tt, 1.0, leadDir(ld.deg)); };
+      var mn = 0, mx = 0, tt, v;
+      for (tt = t0; tt <= t1 + 1e-12; tt += 0.002) {
+        v = f(tt);
+        if (v < mn) mn = v;
+        if (v > mx) mx = v;
+      }
+      var margin = 1 * u;
+      var span = Math.max(mx - mn, 0.4);
+      var sy = (gh - 2 * margin) / span;
+      var y0 = ld.gy + margin + mx * sy;
       el("path", {
-        d: fnPath(f, t0, t1, x0, ld.y0, 25 * u, 7 * u, 0.002),
-        fill: "none", stroke: ink, "stroke-width": 2.4, "stroke-linejoin": "round"
+        d: fnPath(f, t0, t1, x0, y0, 25 * u, sy, 0.002),
+        fill: "none", stroke: ink, "stroke-width": 2.2, "stroke-linejoin": "round",
+        "data-lead": ld.name
       }, g);
       var sign = leadSign(RS.axis, ld.deg);
-      el("text", { x: 6, y: ld.y0 - 6, "text-anchor": "start", fill: tok.text, "font-family": fam, class: "lab-int" }, g, ld.name);
-      el("text", { x: 6, y: ld.y0 + 12, "text-anchor": "start", fill: tok.muted, "font-family": fam, class: "lab-small" }, g, sign);
+      el("text", { x: 6, y: ld.gy + 14, "text-anchor": "start", fill: tok.text, "font-family": fam, class: "lab-int" }, g, ld.name);
+      el("text", { x: 6, y: ld.gy + 30, "text-anchor": "start", fill: tok.muted, "font-family": fam, class: "lab-small" }, g, sign);
+      fit.push({ name: ld.name, gy: ld.gy, gh: gh, y0: y0, sy: sy, min: mn, max: mx, top: ld.gy + margin, bot: ld.gy + gh - margin });
     });
+    RS._leadFit = fit;
+  }
+
+  function leadFitReport(deg) {
+    var prev = RS.axis;
+    if (deg != null) setAxis(deg);
+    var out = (RS._leadFit || []).map(function (row) {
+      var overflow = [];
+      /* top/bot already include 1 small-square margin; compare extrema in user units */
+      var yTop = row.y0 - row.max * row.sy;
+      var yBot = row.y0 - row.min * row.sy;
+      if (yTop < row.gy + 0.5) overflow.push("top");
+      if (yBot > row.gy + row.gh - 0.5) overflow.push("bottom");
+      return { name: row.name, overflow: overflow, yTop: yTop, yBot: yBot, gy: row.gy, gh: row.gh };
+    });
+    if (deg != null && prev !== RS.axis) { /* already at deg */ }
+    return out;
   }
 
   function updateAxisReadout() {
@@ -2292,12 +2620,10 @@
     svg.dataset.bound = "1";
     function degFromEvent(ev) {
       var w = RS._axisWheel;
-      if (!w || !svg.getScreenCTM) return RS.axis;
-      var pt = svg.createSVGPoint();
-      pt.x = ev.clientX; pt.y = ev.clientY;
-      var loc = pt.matrixTransform(svg.getScreenCTM().inverse());
-      var ang = Math.atan2(loc.y - w.cy, loc.x - w.cx) / DEG;
-      return ang;
+      if (!w) return RS.axis;
+      var loc = svgEventToUser(svg, ev);
+      if (!loc) return RS.axis;
+      return Math.atan2(loc.y - w.cy, loc.x - w.cx) / DEG;
     }
     svg.addEventListener("pointerdown", function (ev) {
       RS.axisDragging = true;
@@ -2385,6 +2711,7 @@
       };
     },
     waveAtTime: waveAtTime,
+    hitAtTime: hitAtTime,
     svgPoint: beatSvgPoint,
     clickAtTime: function (t) {
       var k = waveAtTime(t);
@@ -2408,6 +2735,8 @@
         };
       },
       markRateAt: function (t) { if (RS.rate) { toggleMark(RS.rate, t); renderRate(); } },
+      leadFitReport: leadFitReport,
+      formatCaliperSpan: formatCaliperSpan,
       checkRate: checkRate,
       checkRhythm: checkRhythm,
       march: function () { if (RS.rhythm) { RS.rhythm.marched = true; renderRhythm(); } },
@@ -2425,6 +2754,20 @@
       }
     },
     quiz: {
+      hitAtTime: function (t, item) {
+        item = item || currentItem();
+        if (!item) return null;
+        return hitAtTime(t, item.beat, item.rr || 1, preferKeyForItem(item));
+      },
+      svgPoint: function (t, band) {
+        var svg = $("quizSvg");
+        if (!svg) return null;
+        var y = (band === "paper" || !band) ? (QG.gy + QG.gh * 0.55) : (QG.gy + QG.gh * 0.55);
+        var off = svgUserToOffset(svg, quizTtoX(t), y);
+        return { x: off.x, y: off.y, t: t, clientX: off.left + off.x, clientY: off.top + off.y };
+      },
+      hover: function () { return QZ.hover; },
+      prefer: function (item) { return preferKeyForItem(item || currentItem()); },
       specToItem: function (it) {
         if (!it) return null;
         if (it.type === "click") return makeClick(it.target);
