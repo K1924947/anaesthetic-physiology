@@ -43,18 +43,106 @@
   function actionRow(inner) {
     return "<div class='action-row quiz-nav'>" + inner + "</div>";
   }
-  function formatCaliperSpan(span) {
-    var smallN = Math.round((span / 0.04) * 10) / 10;
-    var largeWhole = Math.floor((smallN + 1e-9) / 5);
-    var smallRem = Math.round((smallN - largeWhole * 5) * 10) / 10;
-    if (smallRem < 0) { largeWhole -= 1; smallRem += 5; }
-    if (Math.abs(smallRem) < 0.05) smallRem = 0;
-    function qty(n, singular, plural) {
-      var txt = (Math.abs(n - Math.round(n)) < 0.05) ? String(Math.round(n)) : n.toFixed(1);
-      return txt + " " + (Math.abs(n - 1) < 0.05 ? singular : plural);
+  function caliperNudgeHtml() {
+    return (
+      "<div class='caliper-nudges'>" +
+        "<div class='caliper-nudge-group' role='group' aria-label='Start marker'>" +
+          "<p class='caliper-nudge-label'><span class='cal-icon cal-icon-start' aria-hidden='true'>▲</span> Start marker</p>" +
+          "<button type='button' class='t-btn' data-cal='A' data-dir='-1' aria-label='Move start marker left 1 small square'>◀ Move left</button>" +
+          "<button type='button' class='t-btn' data-cal='A' data-dir='1' aria-label='Move start marker right 1 small square'>Move right ▶</button>" +
+        "</div>" +
+        "<div class='caliper-nudge-group' role='group' aria-label='End marker'>" +
+          "<p class='caliper-nudge-label'><span class='cal-icon cal-icon-end' aria-hidden='true'>△</span> End marker</p>" +
+          "<button type='button' class='t-btn' data-cal='B' data-dir='-1' aria-label='Move end marker left 1 small square'>◀ Move left</button>" +
+          "<button type='button' class='t-btn' data-cal='B' data-dir='1' aria-label='Move end marker right 1 small square'>Move right ▶</button>" +
+        "</div>" +
+        "<p class='caliper-nudge-hint'>Each press moves 1 small square. You can also drag the markers.</p>" +
+      "</div>"
+    );
+  }
+  function flashStrip(svg) {
+    if (!svg) return;
+    svg.classList.remove("is-fresh");
+    void svg.getBoundingClientRect();
+    svg.classList.add("is-fresh");
+  }
+  function setStripLabel(id, n) {
+    var node = $(id);
+    if (node) node.textContent = "Strip " + n;
+  }
+  function pickAvoid(list, avoid) {
+    var rest = list.filter(function (x) { return avoid == null || x !== avoid; });
+    var src = rest.length ? rest : list;
+    return src[Math.floor(Math.random() * src.length)];
+  }
+  function interleaveByType(items) {
+    var buckets = {}, types = [], i, t, out = [], guard = 0;
+    for (i = 0; i < items.length; i++) {
+      t = items[i].type;
+      if (!buckets[t]) { buckets[t] = []; types.push(t); }
+      buckets[t].push(items[i]);
     }
-    var total = (Math.abs(smallN - Math.round(smallN)) < 0.05) ? String(Math.round(smallN)) : smallN.toFixed(1);
-    return qty(largeWhole, "large square", "large squares") + " + " + qty(smallRem, "small square", "small squares") + " (" + total + " small squares)";
+    types = shuffle(types);
+    function leftover() {
+      return types.some(function (u) { return buckets[u].length; });
+    }
+    function canSkip(tp) {
+      return out.length && out[out.length - 1].type === tp && types.some(function (u) { return u !== tp && buckets[u].length; });
+    }
+    while (leftover() && guard < 200) {
+      guard += 1;
+      var placed = false;
+      for (i = 0; i < types.length; i++) {
+        t = types[i];
+        if (!buckets[t].length || canSkip(t)) continue;
+        out.push(buckets[t].shift());
+        placed = true;
+        break;
+      }
+      if (!placed) {
+        for (i = 0; i < types.length; i++) {
+          if (buckets[types[i]].length) { out.push(buckets[types[i]].shift()); break; }
+        }
+      }
+    }
+    return out;
+  }
+  function rTimesInWindow(beat, rr, tStart, tEnd) {
+    var peak = timesFrom(beat).rPeak, times = [], n, tt;
+    var n0 = Math.floor((tStart - peak) / rr) - 1;
+    var n1 = Math.ceil((tEnd - peak) / rr) + 1;
+    for (n = n0; n <= n1; n++) {
+      tt = peak + n * rr;
+      if (tt >= tStart - 1e-9 && tt <= tEnd + 1e-9) times.push(tt);
+    }
+    return times;
+  }
+  function drawRMarks(g, xOf, marks, yTop, revealed, tok, fam) {
+    marks.forEach(function (mt, i) {
+      var x = xOf(mt);
+      el("polygon", {
+        points: x + "," + (yTop + 16) + " " + (x - 9) + "," + yTop + " " + (x + 9) + "," + yTop,
+        fill: tok.a, stroke: tok.a, "stroke-width": 1.8, class: "r-mark"
+      }, g);
+      el("path", {
+        d: "M" + x + " " + (yTop + 16) + "V" + (yTop + 28),
+        stroke: tok.a, "stroke-width": 2.2, "stroke-linecap": "round", class: "r-mark-stem"
+      }, g);
+      if (revealed) {
+        el("text", {
+          x: x, y: yTop - 2, "text-anchor": "middle", fill: tok.a,
+          "font-family": fam, class: "lab-small r-mark-num"
+        }, g, String(i + 1));
+      }
+    });
+  }
+  function formatCaliperSpan(span) {
+    var smallN = Math.round((Math.abs(Number(span) || 0) / 0.04) * 10) / 10;
+    var largeN = Math.round((smallN / 5) * 10) / 10;
+    function qty(n, singular, plural) {
+      return n.toFixed(1) + " " + (Math.abs(n - 1) < 0.05 ? singular : plural);
+    }
+    return qty(largeN, "large square", "large squares") + " (" + qty(smallN, "small square", "small squares") + ")";
   }
   function T() {
     return window.PhysioTheme ? PhysioTheme.tokens() : {
@@ -630,13 +718,11 @@
   var CLICK_PARTS = [
     { key: "P", name: "P wave" },
     { key: "PRs", name: "PR segment" },
-    { key: "PRi", name: "PR interval" },
     { key: "QRS", name: "QRS complex" },
     { key: "J", name: "J point" },
     { key: "ST", name: "ST segment" },
     { key: "T", name: "T wave" },
-    { key: "U", name: "U wave" },
-    { key: "QT", name: "QT interval" }
+    { key: "U", name: "U wave" }
   ];
   var TYPE_LABEL = {
     click: "Click the part",
@@ -938,6 +1024,61 @@
     return { tStart: tStart, tEnd: tEnd, rr: rr };
   }
 
+  function bazettQtcMs(qtSec, rate) {
+    var rr = 60 / rate;
+    return Math.round((qtSec / Math.sqrt(rr)) * 1000);
+  }
+  function qtcCutoff(sex) { return sex === "woman" ? 460 : 440; }
+  function qtcIsBorderline(qtcMs, sex) {
+    return Math.abs(qtcMs - qtcCutoff(sex)) <= 10 || Math.abs(qtcMs - 500) <= 10;
+  }
+  function qtcVerdict(qtcMs, sex) {
+    return qtcMs >= qtcCutoff(sex) ? "long" : "normal";
+  }
+  function rateTolerance(trueRate) {
+    return Math.max(5, 0.10 * trueRate);
+  }
+  function rateVoltageFn(item) {
+    var rPeak = item.beat.pr + 0.040 * ((item.beat.qrs || 0.08) / 0.09);
+    var list;
+    if (item.kind === "irregular") {
+      list = item.times.map(function (rt) {
+        var b = defaultBeat({ pr: 0, qrs: 0.08, qt: 0.32, u: false });
+        var bm = beatBumps(b).filter(function (x) { return x.part === "QRS" || x.part === "T"; });
+        return { t0: rt - (0.040 * (b.qrs / 0.09)), bumps: bm };
+      });
+      return function (tt) { return irregVoltage(list, tt) + afWobble(tt); };
+    }
+    var bumps = beatBumps(item.beat);
+    list = item.times.map(function (rt) { return { t0: rt - rPeak, bumps: bumps }; });
+    return function (tt) { return irregVoltage(list, tt); };
+  }
+  function drawNeutralMarker(g, x, tok) {
+    if (x == null || isNaN(x)) return;
+    el("path", {
+      d: "M" + x + " " + QG.gy + "V" + (QG.gy + QG.gh),
+      fill: "none", stroke: tok.text, "stroke-width": 1.2, "stroke-dasharray": "3 3",
+      "pointer-events": "none", opacity: "0.55", class: "quiz-crosshair"
+    }, g);
+    var y = QG.y0;
+    el("path", {
+      d: "M" + (x - 9) + " " + y + "H" + (x + 9) + "M" + x + " " + (y - 9) + "V" + (y + 9),
+      fill: "none", stroke: tok.text, "stroke-width": 1.6, "stroke-linecap": "square",
+      "pointer-events": "none", class: "quiz-crosshair"
+    }, g);
+  }
+  function labelQuizPart(g, item, key, tok) {
+    if (!key || key === "baseline" || key === "normal") return;
+    var tm = timesFrom(item.beat), mid, name = partLabel(key);
+    if (key === "J") mid = tm.j;
+    else if (tm[key]) mid = (tm[key][0] + tm[key][1]) / 2;
+    else return;
+    el("text", {
+      x: quizTtoX(mid), y: QG.gy + 14, "text-anchor": "middle",
+      fill: tok.text, "font-family": fontSans(), class: "lab-small"
+    }, g, name);
+  }
+
   function makeClick(targetKey) {
     var part = null, i;
     if (targetKey) {
@@ -951,7 +1092,7 @@
       target: part.key,
       targetName: part.name,
       q: "Click the " + part.name + " on this strip.",
-      help: "Tap the trace, or use the buttons under it. The paper is unlabelled on purpose.",
+      help: "Click the part on the trace. You can also focus the strip, move the marker with the arrow keys, and press Enter to choose. Nothing is labelled until you answer.",
       beat: beat,
       rr: 1.0,
       tStart: win.tStart,
@@ -960,6 +1101,7 @@
   }
 
   function makeCalipers(preset) {
+    if (preset && preset.measure === "QT") return makeQTCalipers(preset);
     var pool = [
       { measure: "PRi", pr: 0.10, qrs: 0.08, qt: 0.40, verdict: "short", name: "PR interval" },
       { measure: "PRi", pr: 0.14, qrs: 0.08, qt: 0.40, verdict: "normal", name: "PR interval" },
@@ -971,11 +1113,7 @@
       { measure: "QRS", pr: 0.16, qrs: 0.08, qt: 0.40, verdict: "normal", name: "QRS complex" },
       { measure: "QRS", pr: 0.16, qrs: 0.10, qt: 0.40, verdict: "normal", name: "QRS complex" },
       { measure: "QRS", pr: 0.16, qrs: 0.14, qt: 0.42, verdict: "long", name: "QRS complex" },
-      { measure: "QRS", pr: 0.16, qrs: 0.16, qt: 0.44, verdict: "long", name: "QRS complex" },
-      { measure: "QT", pr: 0.16, qrs: 0.08, qt: 0.36, verdict: "normal", name: "QT interval" },
-      { measure: "QT", pr: 0.16, qrs: 0.08, qt: 0.40, verdict: "normal", name: "QT interval" },
-      { measure: "QT", pr: 0.16, qrs: 0.08, qt: 0.52, verdict: "long", name: "QT interval" },
-      { measure: "QT", pr: 0.16, qrs: 0.08, qt: 0.56, verdict: "long", name: "QT interval" }
+      { measure: "QRS", pr: 0.16, qrs: 0.16, qt: 0.44, verdict: "long", name: "QRS complex" }
     ];
     var spec = preset || null;
     if (spec && spec.measure && (spec.pr == null)) {
@@ -985,15 +1123,15 @@
       spec = matched.length ? pickOne(matched) : pickOne(pool);
     }
     if (!spec) spec = pickOne(pool);
+    if (spec.measure === "QT") return makeQTCalipers(spec);
     if (!spec.name) {
-      spec.name = spec.measure === "PRi" ? "PR interval" : (spec.measure === "QRS" ? "QRS complex" : "QT interval");
+      spec.name = spec.measure === "PRi" ? "PR interval" : "QRS complex";
     }
     var beat = defaultBeat({ pr: spec.pr, qrs: spec.qrs, qt: spec.qt, u: false });
     var tm = timesFrom(beat);
     var t0, t1;
     if (spec.measure === "PRi") { t0 = tm.PRi[0]; t1 = tm.PRi[1]; }
-    else if (spec.measure === "QRS") { t0 = tm.QRS[0]; t1 = tm.QRS[1]; }
-    else { t0 = tm.QT[0]; t1 = tm.QT[1]; }
+    else { t0 = tm.QRS[0]; t1 = tm.QRS[1]; }
     var win = beatWindow(beat, 1.0, "calipers");
     var options = (spec.measure === "PRi")
       ? [{ id: "short", label: "Too short" }, { id: "normal", label: "Normal" }, { id: "long", label: "Too long" }]
@@ -1007,7 +1145,7 @@
       verdict: spec.verdict,
       options: options,
       q: "Measure the " + spec.name + " with the calipers, then say whether it is normal.",
-      help: "Drag the two markers, or focus the strip and use the arrow keys. Press 1 or 2 to choose a marker, or use the buttons.",
+      help: "Drag the start and end markers, or use the buttons. Each press moves 1 small square. Focus the strip and use the arrow keys if you prefer.",
       beat: beat,
       rr: 1.0,
       tStart: win.tStart,
@@ -1015,31 +1153,110 @@
     };
   }
 
-  function makeRate(largeSq) {
-    var pool = [2, 3, 4, 5, 6];
-    var sq = largeSq || pickOne(pool);
-    var rr = sq * 0.20;
-    var rate = Math.round(300 / sq);
-    var qt = Math.max(0.28, Math.min(0.44, 0.40 * Math.sqrt(rr)));
-    var beat = defaultBeat({ qt: qt, u: false });
-    var win = beatWindow(beat, rr, "rate");
+  function makeQTCalipers(preset) {
+    var pool = [
+      { sex: "man", rate: 60, qt: 0.36 },
+      { sex: "woman", rate: 60, qt: 0.40 },
+      { sex: "man", rate: 60, qt: 0.48 },
+      { sex: "woman", rate: 60, qt: 0.52 },
+      { sex: "man", rate: 75, qt: 0.32 },
+      { sex: "woman", rate: 75, qt: 0.36 },
+      { sex: "man", rate: 75, qt: 0.46 },
+      { sex: "woman", rate: 75, qt: 0.43 },
+      { sex: "woman", rate: 75, qt: 0.46 },
+      { sex: "woman", rate: 75, qt: 0.34 },
+      { sex: "man", rate: 80, qt: 0.32 },
+      { sex: "woman", rate: 80, qt: 0.36 },
+      { sex: "man", rate: 80, qt: 0.42 },
+      { sex: "woman", rate: 80, qt: 0.46 },
+      { sex: "man", rate: 50, qt: 0.40 },
+      { sex: "woman", rate: 50, qt: 0.44 },
+      { sex: "man", rate: 50, qt: 0.52 },
+      { sex: "woman", rate: 50, qt: 0.56 },
+      { sex: "man", rate: 100, qt: 0.28 },
+      { sex: "woman", rate: 100, qt: 0.30 },
+      { sex: "man", rate: 100, qt: 0.36 },
+      { sex: "woman", rate: 100, qt: 0.40 }
+    ];
+    var safe = pool.filter(function (c) {
+      var qtc = bazettQtcMs(c.qt, c.rate);
+      return !qtcIsBorderline(qtc, c.sex);
+    });
+    if (preset && (preset.sex || preset.rate || preset.qt || preset.verdict)) {
+      var filtered = safe.filter(function (c) {
+        if (preset.sex && c.sex !== preset.sex) return false;
+        if (preset.rate && c.rate !== preset.rate) return false;
+        if (preset.qt && Math.abs(c.qt - preset.qt) > 0.005) return false;
+        if (preset.verdict && qtcVerdict(bazettQtcMs(c.qt, c.rate), c.sex) !== preset.verdict) return false;
+        return true;
+      });
+      if (filtered.length) safe = filtered;
+    }
+    var chosen = pickOne(safe);
+    var rate = chosen.rate, sex = chosen.sex, qt = chosen.qt;
+    var qtcMs = bazettQtcMs(qt, rate);
+    var verdict = qtcVerdict(qtcMs, sex);
+    var rr = 60 / rate;
+    var beat = defaultBeat({ pr: 0.16, qrs: 0.08, qt: qt, u: false });
+    var tm = timesFrom(beat);
+    var winStart = tm.rPeak - 0.36;
+    var winEnd = tm.rPeak + rr + 0.36;
+    var sexLab = sex === "woman" ? "Woman" : "Man";
     return {
-      type: "rate",
-      largeSq: sq,
+      type: "calipers",
+      measure: "QT",
+      measureName: "QT interval",
+      t0: tm.QT[0],
+      t1: tm.QT[1],
+      verdict: verdict,
+      qtcMs: qtcMs,
       rate: rate,
-      q: "What is the heart rate on this strip?",
-      help: "Count the large squares between two consecutive R waves. At 25 mm/s, rate = 300 / large squares. Drag the calipers from R to R, or type the rate.",
+      sex: sex,
+      risk: qtcMs > 500,
+      options: [{ id: "normal", label: "Normal" }, { id: "long", label: "Prolonged" }],
+      q: sexLab + ", heart rate " + rate + " /min. Measure the QT interval with the calipers, then say whether the QTc is normal or prolonged.",
+      help: "Measure from the start of the QRS to the end of the T wave. Then classify the QTc. Calipers are accepted if each end is within 1 small square, or if the measured duration is within 40 ms of the true QT.",
       beat: beat,
       rr: rr,
-      tStart: win.tStart,
-      tEnd: win.tEnd
+      tStart: winStart,
+      tEnd: winEnd
+    };
+  }
+
+  function makeRate(spec) {
+    if (typeof spec === "number") spec = { kind: "regular", largeSq: spec };
+    spec = spec || {};
+    var kind = spec.kind || pickOne(["regular", "irregular"]);
+    var caseSpec = { kind: kind };
+    if (kind === "regular") {
+      caseSpec.largeSq = spec.largeSq != null ? spec.largeSq : pickOne([2.5, 3, 3.5, 4, 4.5, 5, 6]);
+    } else {
+      caseSpec.mean = spec.mean != null ? spec.mean : pickOne([0.50, 0.72, 0.95]);
+    }
+    if (spec.seed != null) caseSpec.seed = spec.seed;
+    var c = makeRateCase(caseSpec);
+    return {
+      type: "rate",
+      kind: c.kind,
+      largeSq: c.largeSq,
+      mean: c.mean,
+      rate: c.rate,
+      duration: 10,
+      times: c.times,
+      marks: [],
+      beat: c.beat,
+      rr: c.rr,
+      tStart: 0,
+      tEnd: 10,
+      q: "This is a 10-second lead II strip. What is the heart rate?",
+      help: "Type the rate in /min. For a regular rhythm, rate = 300 / large squares between R waves (or 1500 / small squares). For an irregular rhythm, count the QRS complexes in 10 s and multiply by 6. Calipers are only a measuring aid; they do not enter the rate for you."
     };
   }
 
   function makeSpot(kind) {
     var pool = ["normal", "PRi", "QRS", "QT"];
     var ab = kind || pickOne(pool);
-    var beat, why, qExtra;
+    var beat, why, qExtra, rate = 60, sex = null, qtcMs = null, rr = 1.0, qtCase = null;
     if (ab === "PRi") {
       beat = defaultBeat({ pr: 0.28, u: false });
       why = "The PR interval is 0.28 s (7 small squares, 280 ms). The usual range is 0.12 to 0.20 s, so this PR interval is long.";
@@ -1049,8 +1266,13 @@
       why = "The QRS is 0.16 s (4 small squares, 160 ms). A usual normal duration is under 0.12 s, so this QRS is broad.";
       qExtra = "If something is abnormal, click that part.";
     } else if (ab === "QT") {
-      beat = defaultBeat({ qt: 0.52, u: false });
-      why = "The QT interval is 0.52 s (13 small squares, 520 ms). The rate is 60 /min, so QTc is 520 ms. That is over 500 ms, which carries a high risk of torsades de pointes, so the QT is prolonged.";
+      qtCase = makeQTCalipers({ verdict: "long" });
+      beat = qtCase.beat;
+      rate = qtCase.rate;
+      sex = qtCase.sex;
+      qtcMs = qtCase.qtcMs;
+      rr = qtCase.rr;
+      why = "The QT interval is " + msOf(qtCase.t1 - qtCase.t0) + " ms (" + squaresOf(qtCase.t1 - qtCase.t0) + " small squares). The heart rate is " + rate + " /min, so RR is " + (60 / rate).toFixed(2) + " s. By Bazett, QTc = QT ÷ √RR = " + qtcMs + " ms. For a " + sex + " the usual upper limit is " + qtcCutoff(sex) + " ms" + (qtcMs > 500 ? ", and over 500 ms carries a high risk of torsades de pointes" : "") + ", so the QT is prolonged.";
       qExtra = "If something is abnormal, click that part.";
     } else {
       beat = defaultBeat({ u: false });
@@ -1058,42 +1280,43 @@
       qExtra = "If the beat is normal, use the button below the strip.";
       ab = "normal";
     }
-    var win = beatWindow(beat, 1.0, "spot");
+    var win = beatWindow(beat, rr, "spot");
+    var q = "Is this beat abnormal? " + qExtra;
+    if (ab === "QT" && sex) {
+      q = (sex === "woman" ? "Woman" : "Man") + ", heart rate " + rate + " /min. " + q;
+    }
     return {
       type: "spot",
       abnormality: ab,
-      q: "Is this beat abnormal? " + qExtra,
-      help: "Click the abnormal part on the trace, or use the buttons. Choose \"This beat is normal\" if nothing is out of range.",
+      q: q,
+      help: "Click the abnormal part on the trace. Parts are not labelled until you answer. Choose \"This beat is normal\" if nothing is out of range. You can also move the marker with the arrow keys and press Enter.",
       why: why,
       beat: beat,
-      rr: 1.0,
-      tStart: win.tStart,
-      tEnd: win.tEnd
+      rr: rr,
+      rate: rate,
+      sex: sex,
+      qtcMs: qtcMs,
+      tStart: ab === "QT" && qtCase ? qtCase.tStart : win.tStart,
+      tEnd: ab === "QT" && qtCase ? qtCase.tEnd : win.tEnd
     };
   }
 
   function buildRound() {
     var clicks = shuffle(CLICK_PARTS.slice());
-    var calA = makeCalipers();
-    var calB = makeCalipers();
-    var guard = 0;
-    while (calB.measure === calA.measure && calB.verdict === calA.verdict && guard < 12) {
-      calB = makeCalipers();
-      guard += 1;
-    }
-    var rates = shuffle([2, 3, 4, 5, 6]);
+    var calA = makeCalipers(pickOne([{ measure: "PRi" }, { measure: "QRS" }]));
+    var calB = makeQTCalipers();
     var spots = shuffle(["normal", "PRi", "QRS", "QT"]);
     var items = [
       makeClick(clicks[0].key),
       makeClick(clicks[1].key),
       calA,
       calB,
-      makeRate(rates[0]),
-      makeRate(rates[1]),
+      makeRate({ kind: "regular" }),
+      makeRate({ kind: "irregular" }),
       makeSpot(spots[0]),
       makeSpot(spots[1])
     ];
-    return shuffle(items);
+    return interleaveByType(items);
   }
 
   function currentItem() {
@@ -1145,11 +1368,15 @@
     return Math.abs(QZ.calB - QZ.calA);
   }
 
-  function calipersPlacedWell(item) {
+  function caliperPlacement(item) {
     var a = Math.min(QZ.calA, QZ.calB);
     var b = Math.max(QZ.calA, QZ.calB);
-    var tol = 0.04;
-    return Math.abs(a - item.t0) <= tol && Math.abs(b - item.t1) <= tol;
+    var endsOk = Math.abs(a - item.t0) <= 0.04 && Math.abs(b - item.t1) <= 0.04;
+    var spanOk = Math.abs((b - a) - (item.t1 - item.t0)) <= 0.04;
+    return { a: a, b: b, endsOk: endsOk, spanOk: spanOk, ok: endsOk || spanOk, span: b - a };
+  }
+  function calipersPlacedWell(item) {
+    return caliperPlacement(item).ok;
   }
 
   function rateFromCalipers() {
@@ -1162,12 +1389,12 @@
   function rateEntered() {
     var typed = parseInt(QZ.rateInput, 10);
     if (!isNaN(typed) && typed > 0) return typed;
-    return rateFromCalipers();
+    return null;
   }
 
   function rateIsClose(guess, trueRate) {
     if (guess == null || isNaN(guess)) return false;
-    return Math.abs(guess - trueRate) <= 5;
+    return Math.abs(guess - trueRate) <= rateTolerance(trueRate);
   }
 
   function classifyCorrect(item) {
@@ -1188,9 +1415,23 @@
   }
 
   function setupQuizGeometry(item) {
+    if (item.type === "rate") {
+      var G = setupStripGeom(item.duration || 10);
+      QG.x0 = G.x0;
+      QG.u = G.u;
+      QG.tStart = 0;
+      QG.tEnd = item.duration || 10;
+      QG.gy = G.gy;
+      QG.gh = G.gh;
+      QG.y0 = G.y0;
+      QG.paperBottom = G.gy + G.gh;
+      QG.gw = G.gw;
+      QG.head = G.gy;
+      return;
+    }
     var u = 10;
     var span = item.tEnd - item.tStart;
-    var head = (item.type === "calipers" || item.type === "rate") ? 26 : 8;
+    var head = item.type === "calipers" ? 36 : 8;
     var gy = head;
     var gh = 20 * u;
     QG.x0 = 10;
@@ -1322,21 +1563,16 @@
       el("rect", { x: x - 8, y: y0, width: 16, height: 16, fill: tok.surface, stroke: ink, "stroke-width": 2 }, g);
       el("text", { x: x, y: y0 + 13, "text-anchor": "middle", fill: ink, "font-family": fam, class: "lab-small" }, g, which === "A" ? "A" : "B");
     } else {
-      var pts = focused
-        ? (x + "," + y0 + " " + (x - 11) + "," + (y0 + 16) + " " + (x + 11) + "," + (y0 + 16))
-        : (x + "," + y0 + " " + (x - 11) + "," + (y0 + 16) + " " + (x + 11) + "," + (y0 + 16));
+      var pts = x + "," + y0 + " " + (x - 11) + "," + (y0 + 16) + " " + (x + 11) + "," + (y0 + 16);
+      var isStart = which === "A";
       el("polygon", {
         points: pts,
-        fill: focused ? col : tok.surface,
+        fill: isStart ? col : tok.surface,
         stroke: col,
-        "stroke-width": 2.2,
+        "stroke-width": focused ? 3.2 : 2.2,
         class: "cal-head",
         "data-which": which
       }, g);
-      el("text", {
-        x: x, y: y0 + 14, "text-anchor": "middle",
-        fill: focused ? tok.surface : col, "font-family": fam, class: "lab-small"
-      }, g, which === "A" ? "1" : "2");
     }
   }
 
@@ -1356,26 +1592,42 @@
     patterns(svg, "qz");
     var g = el("g", null, svg);
     paper(g, QG.x0, QG.gy, QG.gw, QG.gh, u);
-    var bumps = beatBumps(item.beat);
-    var f = function (tt) { return voltageSeries(bumps, tt, item.rr); };
+    var f = (item.type === "rate" && item.times)
+      ? rateVoltageFn(item)
+      : (function () {
+          var bumps = beatBumps(item.beat);
+          return function (tt) { return voltageSeries(bumps, tt, item.rr); };
+        }());
     el("path", {
       d: fnPath(f, QG.tStart, QG.tEnd, quizTtoX(QG.tStart), QG.y0, 25 * u, 10 * u, 0.002),
       fill: "none", stroke: ink, "stroke-width": 2.6, "stroke-linejoin": "round", "stroke-linecap": "round"
     }, g);
 
     if (QZ.answered) {
-      if (item.type === "click") highlightRange(g, item, item.target, "hl-true");
-      if (item.type === "spot" && item.abnormality !== "normal") highlightRange(g, item, item.abnormality, "hl-true");
+      if (item.type === "click") {
+        highlightRange(g, item, item.target, "hl-true");
+        labelQuizPart(g, item, item.target, t);
+      }
+      if (item.type === "spot" && item.abnormality !== "normal") {
+        highlightRange(g, item, item.abnormality, "hl-true");
+        labelQuizPart(g, item, item.abnormality, t);
+      }
       if ((item.type === "click" || item.type === "spot") && QZ.pick && !QZ.ok && QZ.pick !== "baseline" && QZ.pick !== "normal") {
         markGuess(g, item, QZ.pick);
       }
-    } else if ((item.type === "click" || item.type === "spot") && QZ.hover && QZ.hover.key && QZ.hover.key !== "baseline") {
-      var hoverG = el("g", { id: "quizHoverLayer", "aria-hidden": "true" }, g);
-      highlightRange(hoverG, item, QZ.hover.key, "hl-hover", QZ.hover.t0, QZ.hover.t1);
+    } else if (item.type === "click" || item.type === "spot") {
+      var cx = null;
+      if (QZ.markerT != null) cx = quizTtoX(QZ.markerT);
+      else if (QZ.pointerT != null) cx = quizTtoX(QZ.pointerT);
+      if (cx != null) drawNeutralMarker(g, cx, t);
+    }
+
+    if (item.type === "rate" && item.marks && item.marks.length) {
+      drawRMarks(g, quizTtoX, item.marks, 18, QZ.answered, t, fam);
     }
 
     if (item.type === "calipers" || item.type === "rate") {
-      var yTop = 4;
+      var yTop = 2;
       var yBot = QG.paperBottom;
       drawCaliperLine(g, QZ.calA, "A", yTop, yBot, QZ.focus === "A", "user");
       drawCaliperLine(g, QZ.calB, "B", yTop, yBot, QZ.focus === "B", "user");
@@ -1399,10 +1651,9 @@
     if (!elr || !item) return;
     if (item.type === "calipers" || item.type === "rate") {
       var span = caliperSpan();
-      var small = squaresOf(span);
-      var large = (span / 0.20);
-      var largeTxt = (Math.abs(large - Math.round(large)) < 0.05) ? String(Math.round(large)) : large.toFixed(1);
-      elr.textContent = "Calipers: " + formatCaliperSpan(span) + ".";
+      var parts = ["Calipers: " + formatCaliperSpan(span) + "."];
+      if (item.type === "rate") parts.push("R waves marked: " + (item.marks ? item.marks.length : 0) + ".");
+      elr.textContent = parts.join(" ");
     } else {
       elr.textContent = "";
     }
@@ -1420,25 +1671,39 @@
       else body = "You clicked " + guessName + ". The " + item.targetName + " is marked on the strip.";
     } else if (item.type === "calipers") {
       var span = caliperSpan();
-      var placed = calipersPlacedWell(item);
+      var place = caliperPlacement(item);
       var judged = classifyCorrect(item);
       body = "The " + item.measureName + " is " + msOf(item.t1 - item.t0) + " ms (" + squaresOf(item.t1 - item.t0) + " small squares). ";
       body += caliperFeedbackRule(item) + " ";
-      if (!placed) {
-        body += "Your calipers span " + msOf(span) + " ms (" + squaresOf(span) + " small squares) and are not close enough to the true start and end (within 1 small square). ";
+      body += "Calipers are accepted if each end is within 1 small square of the true start and end, or if the measured duration is within 40 ms of the true interval. ";
+      if (!place.ok) {
+        body += "Your calipers span " + msOf(place.span) + " ms (" + squaresOf(place.span) + " small squares) and do not meet either rule. ";
       } else if (!ok) {
         body += "Your calipers were well placed. ";
       }
       if (!judged && QZ.classify) {
-        body += "The interval is " + verdictPhrase(item.verdict) + ", not " + verdictPhrase(QZ.classify) + ".";
+        body += "The interval is " + verdictPhrase(item.verdict, item) + ", not " + verdictPhrase(QZ.classify, item) + ".";
       } else if (!QZ.classify) {
-        body += "You still needed to say whether it is normal.";
+        body += "You still needed to say whether it is " + (item.measure === "QT" ? "normal or prolonged" : "normal") + ".";
       }
     } else if (item.type === "rate") {
       var guess = rateEntered();
-      body = "There are " + item.largeSq + " large squares between consecutive R waves, so the rate is 300 / " + item.largeSq + " = " + item.rate + " /min.";
+      var nQrs = item.times ? item.times.length : 0;
+      if (item.kind === "irregular") {
+        body = "The rhythm is irregular, so the 300 / large-squares method is not reliable. There are " + nQrs + " QRS complexes in this 10-second strip, so the rate is " + nQrs + " × 6 = " + item.rate + " /min.";
+      } else {
+        var large = item.largeSq;
+        var small = Math.round(large * 5 * 10) / 10;
+        var exact = 300 / large;
+        body = "The rhythm is regular. There are " + large.toFixed(1) + " large squares (" + small.toFixed(1) + " small squares) between consecutive R waves, so the rate is 300 / " + large.toFixed(1) + " = " + (Math.round(exact * 10) / 10);
+        if (Math.abs(exact - item.rate) > 0.05) body += ", which rounds to " + item.rate;
+        body += " /min. Equivalently, 1500 / " + small.toFixed(1) + " small squares gives the same result. The 10-second count is " + nQrs + " × 6 = " + (nQrs * 6) + " /min";
+        body += (Math.abs(nQrs * 6 - item.rate) <= rateTolerance(item.rate))
+          ? ", which agrees for a regular rhythm."
+          : ". For a regular rhythm the 300 / large-squares method is the one to use.";
+      }
       if (!ok && guess != null) body += " You entered " + guess + " /min.";
-      if (!ok && (guess == null)) body += " Enter a rate, or drag the calipers from one R wave to the next.";
+      if (!ok && guess == null) body += " Type the rate in /min, then check.";
     } else if (item.type === "spot") {
       body = item.why;
       if (!ok) {
@@ -1450,20 +1715,26 @@
     return "<div class='" + cls + "'><p><strong>" + head + "</strong> " + esc(body.trim()) + "</p></div>";
   }
 
-  function verdictPhrase(v) {
+  function verdictPhrase(v, item) {
     if (v === "short") return "too short";
-    if (v === "long") return "too long";
+    if (v === "long") return (item && item.measure === "QT") ? "prolonged" : "too long";
     return "normal";
   }
 
   function caliperFeedbackRule(item) {
     if (item.measure === "PRi") {
-      return "The usual PR interval is 0.12 to 0.20 s (3 to 5 small squares), so this one is " + verdictPhrase(item.verdict) + ".";
+      return "The usual PR interval is 0.12 to 0.20 s (3 to 5 small squares), so this one is " + verdictPhrase(item.verdict, item) + ".";
     }
     if (item.measure === "QRS") {
-      return "A usual normal QRS is under 0.12 s (3 small squares), so this one is " + verdictPhrase(item.verdict) + ".";
+      return "A usual normal QRS is under 0.12 s (3 small squares), so this one is " + verdictPhrase(item.verdict, item) + ".";
     }
-    return "The rate is 60 /min, so QTc equals the QT interval. QTc is usually under 440 ms in men and under 460 ms in women, and over 500 ms carries a high risk of torsades de pointes, so this QT is " + verdictPhrase(item.verdict) + ".";
+    var rr = 60 / item.rate;
+    var cut = qtcCutoff(item.sex);
+    var sexWord = item.sex === "woman" ? "woman" : "man";
+    var msg = "The heart rate is " + item.rate + " /min, so RR is " + rr.toFixed(2) + " s. By Bazett, QTc = QT ÷ √RR = " + item.qtcMs + " ms. For a " + sexWord + " the usual upper limit is " + cut + " ms";
+    if (item.qtcMs > 500) msg += ", and over 500 ms carries a high risk of torsades de pointes";
+    msg += ", so this QTc is " + verdictPhrase(item.verdict, item) + ".";
+    return msg;
   }
 
   function bindQuizSvg(svg, item) {
@@ -1474,20 +1745,26 @@
         var t = clampT(quizClientToT(svg, ev));
         var dA = Math.abs(t - QZ.calA), dB = Math.abs(t - QZ.calB);
         var tol = 0.08;
-        var which = null;
-        if (dA <= tol || dB <= tol) which = (dA <= dB) ? "A" : "B";
-        if (!which) return;
-        QZ.dragging = which;
-        QZ.focus = which;
-        try { svg.setPointerCapture(ev.pointerId); } catch (err) {}
-        ev.preventDefault();
-        drawQuizTrace();
+        var pt = svgEventToUser(svg, ev);
+        var inHead = pt && pt.y < (QG.gy + 2);
+        var nearCal = Math.min(dA, dB) <= tol;
+        var nR = (it.type === "rate" && it.times) ? nearestR(it.times, t) : { dist: 1e9 };
+        var nearR = nR.t && nR.dist <= 0.12;
+        if (nearCal && (inHead || !nearR || it.type === "calipers")) {
+          QZ.dragging = (dA <= dB) ? "A" : "B";
+          QZ.focus = QZ.dragging;
+          try { svg.setPointerCapture(ev.pointerId); } catch (err) {}
+          ev.preventDefault();
+          drawQuizTrace();
+        }
         return;
       }
       if (it.type === "click" || it.type === "spot") {
+        var tClick = clampT(quizClientToT(svg, ev));
         var hit = hitFromEvent(svg, ev, it.beat, it.rr || 1, preferKeyForItem(it), quizGeom());
         ev.preventDefault();
         hideHitTip();
+        QZ.pointerT = tClick;
         submitClick(hit.key);
       }
     });
@@ -1497,13 +1774,11 @@
         hideHitTip();
         return;
       }
+      hideHitTip();
       if ((it.type === "click" || it.type === "spot") && !QZ.dragging) {
-        var hv = hitFromEvent(svg, ev, it.beat, it.rr || 1, preferKeyForItem(it), quizGeom());
-        showHitTip(ev, hv);
-        if (!QZ.hover || QZ.hover.key !== hv.key || QZ.hover.t0 !== hv.t0 || QZ.hover.t1 !== hv.t1) {
-          QZ.hover = hv;
-          updateQuizHover(hv);
-        }
+        QZ.pointerT = clampT(quizClientToT(svg, ev));
+        QZ.markerT = null;
+        drawQuizTrace();
         return;
       }
       if (!QZ.dragging) return;
@@ -1513,8 +1788,18 @@
       ev.preventDefault();
       drawQuizTrace();
     });
-    svg.addEventListener("pointerup", function () { QZ.dragging = null; });
+    svg.addEventListener("pointerup", function () {
+      QZ._skipClick = !!QZ.dragging;
+      QZ.dragging = null;
+    });
     svg.addEventListener("pointercancel", function () { QZ.dragging = null; });
+    svg.addEventListener("click", function (ev) {
+      var it = currentItem() || item;
+      if (!it || QZ.answered || it.type !== "rate") return;
+      if (QZ._skipClick) { QZ._skipClick = false; return; }
+      toggleMark(it, quizClientToT(svg, ev));
+      drawQuizTrace();
+    });
     svg.addEventListener("pointerleave", function () {
       if (QZ.dragging) return;
       hideHitTip();
@@ -1525,7 +1810,8 @@
     });
     svg.addEventListener("keydown", function (ev) {
       if (QZ.answered) return;
-      if (item.type === "calipers" || item.type === "rate") {
+      var it = currentItem() || item;
+      if (it.type === "calipers" || it.type === "rate") {
         if (ev.key === "1") { QZ.focus = "A"; ev.preventDefault(); drawQuizTrace(); return; }
         if (ev.key === "2") { QZ.focus = "B"; ev.preventDefault(); drawQuizTrace(); return; }
         var step = ev.shiftKey ? 0.02 : 0.04;
@@ -1535,6 +1821,24 @@
           else QZ.calB = clampT(QZ.calB + dir);
           ev.preventDefault();
           drawQuizTrace();
+        }
+        return;
+      }
+      if (it.type === "click" || it.type === "spot") {
+        if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") {
+          var stepK = ev.shiftKey ? 0.02 : 0.04;
+          if (QZ.markerT == null) QZ.markerT = (QG.tStart + QG.tEnd) / 2;
+          QZ.markerT = clampT(QZ.markerT + (ev.key === "ArrowLeft" ? -stepK : stepK));
+          QZ.pointerT = null;
+          ev.preventDefault();
+          drawQuizTrace();
+        }
+        if (ev.key === "Enter") {
+          var tEnter = QZ.markerT != null ? QZ.markerT : (QZ.pointerT != null ? QZ.pointerT : (QG.tStart + QG.tEnd) / 2);
+          var chosen = hitAtTime(tEnter, it.beat, it.rr || 1, preferKeyForItem(it));
+          ev.preventDefault();
+          hideHitTip();
+          submitClick(chosen.key);
         }
       }
     });
@@ -1565,6 +1869,8 @@
     QZ.rateInput = "";
     QZ.dragging = null;
     QZ.hover = null;
+    QZ.pointerT = null;
+    QZ.markerT = null;
     QZ.focus = "A";
     hideHitTip();
     if (item && (item.type === "calipers" || item.type === "rate")) {
@@ -1572,6 +1878,7 @@
       QZ.calB = item.tStart + 0.24;
       if (QZ.calB > item.tEnd) QZ.calB = (item.tStart + item.tEnd) / 2;
     }
+    if (item && item.type === "rate") item.marks = [];
   }
 
   function submitClick(key) {
@@ -1594,12 +1901,22 @@
       if (!QZ.classify) {
         speakQuiz("Say whether the interval is normal before checking.");
         var box = $("quizClassifyHint");
-        if (box) box.textContent = "Choose too short, normal or too long first.";
+        if (box) {
+          box.textContent = item.measure === "QT"
+            ? "Choose normal or prolonged first."
+            : "Choose too short, normal or too long first.";
+        }
         return;
       }
       QZ.ok = calipersPlacedWell(item) && classifyCorrect(item);
     } else if (item.type === "rate") {
       var g = rateEntered();
+      if (g == null) {
+        speakQuiz("Type the rate in /min before checking.");
+        var rateBox = $("quizRate");
+        if (rateBox) rateBox.focus();
+        return;
+      }
       QZ.ok = rateIsClose(g, item.rate);
     } else {
       return;
@@ -1645,18 +1962,16 @@
     var html = "<p class='quiz-progress'><span class='quiz-type'>" + esc(TYPE_LABEL[item.type]) + "</span> · Drill " + (QZ.i + 1) + " of " + QZ.items.length + "</p>";
     html += "<h3 class='quiz-q' id='quizQ' tabindex='-1'>" + esc(item.q) + "</h3>";
     html += "<p class='quiz-help'>" + esc(item.help) + "</p>";
-    html += "<svg id='quizSvg' class='quiz-svg' viewBox='0 0 800 200' role='application' tabindex='0' aria-label='Teaching ECG strip for this drill' aria-describedby='quizSvgDesc quizQ'>";
-    html += "<desc id='quizSvgDesc'>" + esc(item.help) + "</desc></svg>";
-    html += "<p class='quiz-help'>Standard paper at 25 mm/s and 10 mm/mV. One small square is 0.04 s; one large square is 0.20 s.</p>";
+    if (item.type === "rate") html += "<p class='strip-indicator'>10 s strip</p>";
+    html += "<div class='strip-wrap quiz-strip-wrap'>";
+    html += "<svg id='quizSvg' class='quiz-svg" + (item.type === "rate" ? " quiz-rate-svg" : "") + "' viewBox='0 0 800 200' role='application' tabindex='0' aria-label='" + (item.type === "rate" ? "Ten-second lead II rhythm strip" : "Teaching ECG strip for this drill") + "' aria-describedby='quizSvgDesc quizQ'>";
+    html += "<desc id='quizSvgDesc'>" + esc(item.help) + "</desc></svg></div>";
+    html += "<p class='quiz-help'>Standard paper at 25 mm/s and 10 mm/mV. One small square is 0.04 s; one large square is 0.20 s." + (item.type === "rate" ? " Scroll sideways to see the whole 10 seconds." : "") + "</p>";
     html += "<p class='quiz-readout' id='quizReadout'></p>";
 
     if (item.type === "calipers" || item.type === "rate") {
       html += "<div class='quiz-controls' role='group' aria-label='Move calipers'>";
-      html += "<p class='quiz-controls-label'>Move the calipers (or use arrow keys when the strip is focused)</p>";
-      html += "<button type='button' class='t-btn' data-cal='A' data-dir='-1' aria-label='Move marker 1 left'>1 left</button>";
-      html += "<button type='button' class='t-btn' data-cal='A' data-dir='1' aria-label='Move marker 1 right'>1 right</button>";
-      html += "<button type='button' class='t-btn' data-cal='B' data-dir='-1' aria-label='Move marker 2 left'>2 left</button>";
-      html += "<button type='button' class='t-btn' data-cal='B' data-dir='1' aria-label='Move marker 2 right'>2 right</button>";
+      html += caliperNudgeHtml();
       html += "</div>";
     }
     if (item.type === "rate") {
@@ -1666,8 +1981,9 @@
       html += "</div>";
     }
     if (item.type === "calipers") {
-      html += "<div class='quiz-classify' role='group' aria-label='Is this interval normal?'>";
-      html += "<p class='quiz-classify-label'>Is this interval normal?</p>";
+      var classLabel = item.measure === "QT" ? "Is this QTc normal or prolonged?" : "Is this interval normal?";
+      html += "<div class='quiz-classify' role='group' aria-label='" + esc(classLabel) + "'>";
+      html += "<p class='quiz-classify-label'>" + esc(classLabel) + "</p>";
       item.options.forEach(function (op) {
         var pressed = QZ.classify === op.id ? "true" : "false";
         html += "<button type='button' class='t-btn' data-class='" + op.id + "' aria-pressed='" + pressed + "'" + (QZ.answered ? " disabled" : "") + ">" + esc(op.label) + "</button>";
@@ -1675,16 +1991,9 @@
       html += "<p class='quiz-help' id='quizClassifyHint'></p>";
       html += "</div>";
     }
-    if (item.type === "click" || item.type === "spot") {
-      html += "<div class='quiz-fallback' role='group' aria-label='Choose a part'>";
-      html += "<p class='quiz-fallback-label'>Or pick a part with these buttons</p>";
-      var keys = item.type === "spot"
-        ? [{ key: "PRi", name: "PR interval" }, { key: "QRS", name: "QRS complex" }, { key: "QT", name: "QT interval" }, { key: "normal", name: "This beat is normal" }]
-        : CLICK_PARTS;
-      keys.forEach(function (p) {
-        var k = p.key, name = p.name;
-        html += "<button type='button' class='t-btn' data-part='" + k + "'" + (QZ.answered ? " disabled" : "") + ">" + esc(name) + "</button>";
-      });
+    if (item.type === "spot") {
+      html += "<div class='quiz-fallback' role='group' aria-label='This beat is normal'>";
+      html += "<button type='button' class='t-btn' data-part='normal'" + (QZ.answered ? " disabled" : "") + ">This beat is normal</button>";
       html += "</div>";
     }
     if (!QZ.answered && (item.type === "calipers" || item.type === "rate")) {
@@ -1697,7 +2006,10 @@
     root.innerHTML = html;
     drawQuizTrace();
     var svg = $("quizSvg");
-    if (svg) bindQuizSvg(svg, item);
+    if (svg) {
+      bindQuizSvg(svg, item);
+      flashStrip(svg);
+    }
     root.querySelectorAll(".quiz-controls .t-btn").forEach(function (b) {
       b.addEventListener("click", function () {
         moveCaliper(b.getAttribute("data-cal"), parseInt(b.getAttribute("data-dir"), 10));
@@ -1778,8 +2090,12 @@
         t0: item.t0,
         t1: item.t1,
         verdict: item.verdict || null,
-        rate: item.rate || null,
-        largeSq: item.largeSq || null,
+        rate: item.rate != null ? item.rate : null,
+        largeSq: item.largeSq != null ? item.largeSq : null,
+        kind: item.kind || null,
+        times: item.times ? item.times.slice() : null,
+        sex: item.sex || null,
+        qtcMs: item.qtcMs != null ? item.qtcMs : null,
         abnormality: item.abnormality || null
       } : null
     };
@@ -1856,7 +2172,8 @@
       times = rateTimesRegular(rr, duration);
       rate = Math.round(300 / largeSq);
     } else {
-      times = rateTimesIrregular(rng, duration, spec.mean || 0.72);
+      var mean = spec.mean || 0.72;
+      times = rateTimesIrregular(rng, duration, mean);
       rate = times.length * 6;
       beat = defaultBeat({ u: false });
       beat.pr = 0.16;
@@ -1867,6 +2184,7 @@
       times: times,
       rr: rr,
       largeSq: largeSq,
+      mean: kind === "irregular" ? mean : null,
       rate: rate,
       beat: beat,
       seed: seed,
@@ -1885,17 +2203,18 @@
     var duration = 6;
     var seed = spec.seed != null ? spec.seed : Math.floor(Math.random() * 1e9);
     var rng = seeded(seed);
-    var times, beat, rr = null, rate;
+    var times, beat, rr = null, rate, largeSq = null, mean = null;
     if (kind === "sinus") {
-      var largeSq = spec.largeSq || 4;
+      largeSq = spec.largeSq || 4;
       rr = largeSq * 0.20;
       beat = defaultBeat({ u: false, qt: Math.max(0.28, 0.40 * Math.sqrt(rr)) });
       times = rateTimesRegular(rr, duration);
       rate = Math.round(300 / largeSq);
     } else {
       kind = "af";
+      mean = spec.mean || 0.68;
       beat = defaultBeat({ u: false, qt: 0.32 });
-      times = rateTimesIrregular(rng, duration, 0.68);
+      times = rateTimesIrregular(rng, duration, mean);
       rate = Math.round((times.length / duration) * 60);
     }
     return {
@@ -1903,12 +2222,15 @@
       duration: duration,
       times: times,
       rr: rr,
+      largeSq: largeSq,
+      mean: mean,
       rate: rate,
       beat: beat,
       seed: seed,
       calA: 0.08,
       calB: 0.48,
       focus: "A",
+      marks: [],
       marched: false,
       regularGuess: null,
       pGuess: null
@@ -1916,7 +2238,7 @@
   }
 
   function setupStripGeom(duration) {
-    var u = 8, head = 22;
+    var u = 8, head = 36;
     return {
       x0: 8, gy: head, u: u, tStart: 0, tEnd: duration,
       gh: 20 * u, y0: head + 14 * u,
@@ -1945,12 +2267,12 @@
     var yTop = 2, yBot = G.gy + G.gh, col = tok.a, ink = cssVar("--ecg-ink") || "#111";
     function one(tVal, which, focused) {
       var x = stripTtoX(G, tVal);
+      var isStart = which === "A";
       el("path", { d: "M" + x + " " + (yTop + 14) + "V" + yBot, fill: "none", stroke: col, "stroke-width": focused ? 3.2 : 2.2 }, g);
       el("polygon", {
         points: x + "," + yTop + " " + (x - 10) + "," + (yTop + 14) + " " + (x + 10) + "," + (yTop + 14),
-        fill: focused ? col : tok.surface, stroke: col, "stroke-width": 2
+        fill: isStart ? col : tok.surface, stroke: col, "stroke-width": focused ? 3.2 : 2
       }, g);
-      el("text", { x: x, y: yTop + 13, "text-anchor": "middle", fill: focused ? tok.surface : col, "font-family": fam, class: "lab-small" }, g, which === "A" ? "1" : "2");
     }
     one(a, "A", focus === "A");
     one(b, "B", focus === "B");
@@ -2036,14 +2358,8 @@
       d: fnPath(f, 0, item.duration, stripTtoX(G, 0), G.y0, 25 * G.u, 10 * G.u, 0.003),
       fill: "none", stroke: ink, "stroke-width": 2.2, "stroke-linejoin": "round", "stroke-linecap": "round"
     }, g);
-    /* Mark clicked R waves with numbered ticks, not colour alone. */
-    item.marks.forEach(function (mt, i) {
-      var x = stripTtoX(G, mt);
-      el("path", { d: "M" + x + " " + (G.y0 - 14 * G.u) + "V" + (G.y0 - 11 * G.u), stroke: tok.a, "stroke-width": 2.2 }, g);
-      if (item.revealed) {
-        el("text", { x: x, y: G.y0 - 14 * G.u - 2, "text-anchor": "middle", fill: tok.a, "font-family": fam, class: "lab-small" }, g, String(i + 1));
-      }
-    });
+    /* Visible marks as soon as an R is clicked; sequence numbers only after Check. */
+    drawRMarks(g, function (mt) { return stripTtoX(G, mt); }, item.marks, 18, item.revealed, tok, fam);
     drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam);
     RS._rateG = G;
     updateRateReadout();
@@ -2054,7 +2370,7 @@
     if (!elr || !item) return;
     var span = Math.abs(item.calB - item.calA);
     var parts = ["Calipers: " + formatCaliperSpan(span) + "."];
-    if (item.marks.length) parts.push("R waves marked: " + item.marks.length + ".");
+    parts.push("R waves marked: " + item.marks.length + ".");
     elr.textContent = parts.join(" ");
   }
 
@@ -2062,7 +2378,7 @@
     if (item.kind === "regular") {
       return "This 10-second strip is a regular rhythm. Measure one R-R interval with the calipers, or click two consecutive R waves, then check the rate. Rate = 300 / large squares.";
     }
-    return "This 10-second strip is irregular. Click every R wave (or use Mark all), then read the rate as the QRS count × 6.";
+    return "This 10-second strip is irregular. Click every R wave to mark it, then read the rate as the QRS count × 6.";
   }
 
   function bindRateSvg() {
@@ -2086,18 +2402,18 @@
       if (!G || !state) return;
       var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev)));
       var dA = Math.abs(t - state.calA), dB = Math.abs(t - state.calB);
-      var which = null;
-      if (dA <= 0.10 || dB <= 0.10) which = dA <= dB ? "A" : "B";
-      if (which) {
-        state.dragging = which;
-        state.focus = which;
+      var pt = svgEventToUser(svg, ev);
+      var inHead = pt && pt.y < G.gy + 2;
+      var nearCal = Math.min(dA, dB) <= 0.10;
+      var nR = (state.times && onMark) ? nearestR(state.times, t) : { dist: 1e9 };
+      var nearR = nR.t && nR.dist <= 0.12;
+      if (nearCal && (inHead || !nearR)) {
+        state.dragging = dA <= dB ? "A" : "B";
+        state.focus = state.dragging;
         try { svg.setPointerCapture(ev.pointerId); } catch (err) {}
         ev.preventDefault();
         onChange();
         return;
-      }
-      if (onMark && ev.target && ev.target.tagName) {
-        /* click on paper (not a caliper) marks an R if close */
       }
     });
     svg.addEventListener("pointermove", function (ev) {
@@ -2161,11 +2477,8 @@
     if (!box || !item) return;
     if (task) task.textContent = rateTaskText(item);
     box.innerHTML =
-      "<button type='button' class='t-btn' data-cal='A' data-dir='-1' aria-label='Move marker 1 left'>1 left</button>" +
-      "<button type='button' class='t-btn' data-cal='A' data-dir='1' aria-label='Move marker 1 right'>1 right</button>" +
-      "<button type='button' class='t-btn' data-cal='B' data-dir='-1' aria-label='Move marker 2 left'>2 left</button>" +
-      "<button type='button' class='t-btn' data-cal='B' data-dir='1' aria-label='Move marker 2 right'>2 right</button>" +
-      "<button type='button' class='t-btn' id='rateMarkAll'>Mark all R waves</button>" +
+      caliperNudgeHtml() +
+      (item.revealed ? "<button type='button' class='t-btn' id='rateMarkAll'>Mark all R waves</button>" : "") +
       "<button type='button' class='t-btn' id='rateClear'>Clear marks</button>" +
       "<label for='rateInput'>Rate (/min)</label>" +
       "<input id='rateInput' type='number' inputmode='numeric' min='20' max='250' step='1' value='" + esc(item.entered) + "'>" +
@@ -2182,10 +2495,12 @@
         renderRate();
       });
     });
-    $("rateMarkAll").addEventListener("click", function () {
-      RS.rate.marks = RS.rate.times.slice();
-      renderRate();
-    });
+    if ($("rateMarkAll")) {
+      $("rateMarkAll").addEventListener("click", function () {
+        RS.rate.marks = RS.rate.times.slice();
+        renderRate();
+      });
+    }
     $("rateClear").addEventListener("click", function () {
       RS.rate.marks = [];
       renderRate();
@@ -2208,7 +2523,7 @@
     var item = RS.rate, fb = $("rateFeedback"), live = $("rateLive");
     if (!item || !fb) return;
     var guess = rateGuess(item);
-    var ok = guess != null && Math.abs(guess - item.rate) <= 8;
+    var ok = guess != null && Math.abs(guess - item.rate) <= rateTolerance(item.rate);
     var msg;
     if (item.kind === "regular") {
       msg = "There are " + item.largeSq + " large squares between consecutive R waves, so the rate is 300 / " + item.largeSq + " = " + item.rate + " /min. The 10-second count is " + item.times.length + " × 6 = " + (item.times.length * 6) + " /min, which agrees for a regular rhythm.";
@@ -2220,16 +2535,53 @@
     fb.innerHTML = "<p><strong>" + (ok ? "Correct." : "Not quite.") + "</strong> " + esc(msg) + (guess != null && !ok ? " You entered " + guess + " /min." : "") + "</p>";
     if (live) live.textContent = (ok ? "Correct. " : "Not quite. ") + msg;
     item.revealed = true;
+    if (!$("rateMarkAll") && $("rateClear")) {
+      var allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.className = "t-btn";
+      allBtn.id = "rateMarkAll";
+      allBtn.textContent = "Mark all R waves";
+      $("rateClear").parentNode.insertBefore(allBtn, $("rateClear"));
+      allBtn.addEventListener("click", function () {
+        RS.rate.marks = RS.rate.times.slice();
+        renderRate();
+      });
+    }
     renderRate();
   }
 
+  function nextRateSpec(prev) {
+    var kind = prev && prev.kind === "regular" ? "irregular" : "regular";
+    if (!prev) kind = Math.random() < 0.5 ? "regular" : "irregular";
+    var spec = { kind: kind };
+    if (kind === "regular") {
+      spec.largeSq = pickAvoid([3, 4, 5], RS.lastRateSq);
+      RS.lastRateSq = spec.largeSq;
+    } else {
+      spec.mean = pickAvoid([0.50, 0.72, 0.95], RS.lastRateMean);
+      RS.lastRateMean = spec.mean;
+    }
+    return spec;
+  }
+
   function startRate(spec) {
+    var another = !spec;
+    if (another) {
+      spec = nextRateSpec(RS.rate);
+      RS.rateStrip = (RS.rateStrip || 1) + 1;
+    } else {
+      RS.rateStrip = 1;
+      if (spec.kind === "regular" && spec.largeSq) RS.lastRateSq = spec.largeSq;
+      if (spec.kind === "irregular" && spec.mean) RS.lastRateMean = spec.mean;
+    }
     RS.rate = makeRateCase(spec);
     RS.rate.revealed = false;
     var task = $("rateTask");
     if (task) task.textContent = rateTaskText(RS.rate);
+    setStripLabel("rateStripLabel", RS.rateStrip);
     fillRateControls();
     renderRate();
+    flashStrip($("rateSvg"));
     bindLiveStrip($("rateSvg"), function () { return RS._rateG; }, function () { return RS.rate; }, function () { renderRate(); }, function (t) {
       toggleMark(RS.rate, t);
       renderRate();
@@ -2281,6 +2633,7 @@
         }
       }
     }
+    drawRMarks(g, function (mt) { return stripTtoX(G, mt); }, item.marks || [], 18, !!item.revealed, tok, fam);
     drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam);
     RS._rhythmG = G;
     updateRhythmReadout();
@@ -2290,9 +2643,9 @@
     var elr = $("rhythmReadout"), item = RS.rhythm;
     if (!elr || !item) return;
     var span = Math.abs(item.calB - item.calA);
-    var large = span / 0.20;
-    var largeTxt = (Math.abs(large - Math.round(large)) < 0.05) ? String(Math.round(large)) : large.toFixed(1);
-    elr.textContent = "Calipers: " + formatCaliperSpan(Math.abs(item.calB - item.calA)) + ".";
+    var parts = ["Calipers: " + formatCaliperSpan(span) + "."];
+    parts.push("R waves marked: " + ((item.marks && item.marks.length) || 0) + ".");
+    elr.textContent = parts.join(" ");
   }
 
   function fillRhythmControls() {
@@ -2301,10 +2654,7 @@
     if (task) task.textContent = "Set the calipers on one R-R interval, press March, then decide if the rhythm is regular and whether a P wave precedes every QRS.";
     function pressed(val, cur) { return val === cur ? "true" : "false"; }
     box.innerHTML =
-      "<button type='button' class='t-btn' data-cal='A' data-dir='-1' aria-label='Move marker 1 left'>1 left</button>" +
-      "<button type='button' class='t-btn' data-cal='A' data-dir='1' aria-label='Move marker 1 right'>1 right</button>" +
-      "<button type='button' class='t-btn' data-cal='B' data-dir='-1' aria-label='Move marker 2 left'>2 left</button>" +
-      "<button type='button' class='t-btn' data-cal='B' data-dir='1' aria-label='Move marker 2 right'>2 right</button>" +
+      caliperNudgeHtml() +
       "<button type='button' class='t-btn' id='rhythmSnap'>Snap to two R waves</button>" +
       "<button type='button' class='t-btn' id='rhythmMarch' aria-pressed='" + (item.marched ? "true" : "false") + "'>March</button>" +
       "<span class='quiz-controls-label'>Is the rhythm regular?</span>" +
@@ -2375,13 +2725,44 @@
     fb.className = "quiz-feedback" + (ok ? "" : " is-wrong");
     fb.innerHTML = "<p><strong>" + (ok ? "Correct." : "Not quite.") + "</strong> " + esc(msg) + "</p>";
     if (live) live.textContent = (ok ? "Correct. " : "Not quite. ") + msg;
+    item.revealed = true;
+    renderRhythm();
+  }
+
+  function nextRhythmSpec(prev) {
+    var kind = prev && prev.kind === "sinus" ? "af" : "sinus";
+    if (!prev) kind = Math.random() < 0.5 ? "sinus" : "af";
+    var spec = { kind: kind };
+    if (kind === "sinus") {
+      spec.largeSq = pickAvoid([3, 4, 5], RS.lastRhythmSq);
+      RS.lastRhythmSq = spec.largeSq;
+    } else {
+      spec.mean = pickAvoid([0.50, 0.68, 0.90], RS.lastRhythmMean);
+      RS.lastRhythmMean = spec.mean;
+    }
+    return spec;
   }
 
   function startRhythm(spec) {
+    var another = !spec;
+    if (another) {
+      spec = nextRhythmSpec(RS.rhythm);
+      RS.rhythmStrip = (RS.rhythmStrip || 1) + 1;
+    } else {
+      RS.rhythmStrip = 1;
+      if (spec.kind === "sinus" && spec.largeSq) RS.lastRhythmSq = spec.largeSq;
+      if (spec.kind === "af" && spec.mean) RS.lastRhythmMean = spec.mean;
+    }
     RS.rhythm = makeRhythmCase(spec);
+    RS.rhythm.revealed = false;
+    setStripLabel("rhythmStripLabel", RS.rhythmStrip);
     fillRhythmControls();
     renderRhythm();
-    bindLiveStrip($("rhythmSvg"), function () { return RS._rhythmG; }, function () { return RS.rhythm; }, function () { renderRhythm(); }, null);
+    flashStrip($("rhythmSvg"));
+    bindLiveStrip($("rhythmSvg"), function () { return RS._rhythmG; }, function () { return RS.rhythm; }, function () { renderRhythm(); }, function (t) {
+      toggleMark(RS.rhythm, t);
+      renderRhythm();
+    });
   }
 
   /* ---- Axis ---- */
@@ -2788,6 +3169,7 @@
         };
       },
       markRateAt: function (t) { if (RS.rate) { toggleMark(RS.rate, t); renderRate(); } },
+      markRhythmAt: function (t) { if (RS.rhythm) { toggleMark(RS.rhythm, t); renderRhythm(); } },
       leadFitReport: leadFitReport,
       formatCaliperSpan: formatCaliperSpan,
       checkRate: checkRate,
@@ -2823,9 +3205,10 @@
       prefer: function (item) { return preferKeyForItem(item || currentItem()); },
       specToItem: function (it) {
         if (!it) return null;
+        if (it.type === "click" && (it.target === "PRi" || it.target === "QT")) return makeCalipers({ measure: it.target });
         if (it.type === "click") return makeClick(it.target);
         if (it.type === "calipers") return makeCalipers(it.measure ? it : null);
-        if (it.type === "rate") return makeRate(it.largeSq);
+        if (it.type === "rate") return makeRate({ kind: it.kind, largeSq: it.largeSq, mean: it.mean, seed: it.seed });
         if (it.type === "spot") return makeSpot(it.abnormality);
         return it;
       },
@@ -2866,7 +3249,13 @@
           x.setAttribute("aria-pressed", x.getAttribute("data-class") === v ? "true" : "false");
         });
       },
-      move: moveCaliper
+      move: moveCaliper,
+      markAt: function (t) {
+        var it = currentItem();
+        if (!it || it.type !== "rate") return;
+        toggleMark(it, t);
+        drawQuizTrace();
+      }
     }
   };
 

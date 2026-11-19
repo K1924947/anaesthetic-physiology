@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119j">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119m">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -111,6 +111,7 @@
         <h3 id="step-rate-h">1. Rate</h3>
         <p>On standard paper (25 mm/s), a 10-second lead II rhythm strip is 50 large squares long. For a regular rhythm, rate = 300 / the number of large squares between two R waves. For an irregular rhythm, count the QRS complexes in the 10-second strip and multiply by 6.</p>
         <p class="read-task" id="rateTask"></p>
+        <p class="strip-indicator" aria-live="polite"><span id="rateStripLabel">Strip 1</span> · 10 s strip</p>
         <div class="strip-wrap" id="rateWrap">
           <svg id="rateSvg" class="read-svg" viewBox="0 0 800 200" role="application" tabindex="0" aria-label="Ten-second lead II rhythm strip for measuring the heart rate">
           </svg>
@@ -139,6 +140,7 @@
         <h3 id="step-rhythm-h">2. Rhythm</h3>
         <p>Ask two questions. Is the rhythm regular or irregular? And is there a P wave before every QRS? March the calipers from R to R: if they keep landing on each R wave, the rhythm is regular. A regular rhythm with a P wave before every QRS is consistent with sinus rhythm. An irregularly irregular rhythm with no P waves is atrial fibrillation.</p>
         <p class="read-task" id="rhythmTask"></p>
+        <p class="strip-indicator" id="rhythmStripLabel" aria-live="polite">Strip 1</p>
         <div class="strip-wrap" id="rhythmWrap">
           <svg id="rhythmSvg" class="read-svg" viewBox="0 0 800 200" role="application" tabindex="0" aria-label="Lead II rhythm strip for deciding if the rhythm is regular and whether a P wave precedes each QRS">
           </svg>
@@ -303,6 +305,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-basics.js?v=20261119j"></script>
+<script src="assets/ecg-basics.js?v=20261119m"></script>
 </body>
 </html>
