@@ -2657,19 +2657,14 @@
     var span = Math.abs(item.calB - item.calA);
     var parts = ["Calipers: " + formatCaliperSpan(span) + "."];
     parts.push("R waves marked: " + item.marks.length + ".");
-    if (item.marks.length && item.marks.length === item.times.length) {
-      var n = item.times.length;
-      elr.innerHTML = parts.join(" ") + " <span class='formula-chip'><strong>" + n + " QRS complexes in 10 s × 6 = " + (n * 6) + " /min</strong></span>.";
-      return;
-    }
     elr.textContent = parts.join(" ");
   }
 
   function rateTaskHtml(item) {
     if (item.kind === "regular") {
-      return "This 10-second strip is a regular rhythm. Measure one R-R interval with the calipers, or click two consecutive R waves, then check the rate. <span class='formula-chip'><strong>Rate = 300 / large squares</strong> (or 1500 / small squares)</span>.";
+      return "This 10-second strip is a regular rhythm. Measure one R-R interval with the calipers, or click two consecutive R waves, then check the rate. <strong>Rate = 300 / large squares</strong> (or 1500 / small squares).";
     }
-    return "This 10-second strip is irregular. Click every R wave to mark it, then read the rate as <span class='formula-chip'><strong>number of QRS complexes in 10 s × 6</strong></span>.";
+    return "This 10-second strip is irregular. Click every R wave to mark it, then read the rate as <strong>number of QRS complexes in 10 s × 6</strong>.";
   }
 
   function bindRateSvg() {
@@ -2827,9 +2822,6 @@
   function rateGuess(item) {
     var typed = parseInt(item.entered, 10);
     if (!isNaN(typed) && typed > 0) return typed;
-    if (item.kind === "irregular" && item.marks.length) return item.marks.length * 6;
-    var span = Math.abs(item.calB - item.calA);
-    if (span >= 0.36) return Math.round(300 / (span / 0.20));
     return null;
   }
 
@@ -2837,18 +2829,27 @@
     var item = RS.rate, fb = $("rateFeedback"), live = $("rateLive");
     if (!item || !fb) return;
     var guess = rateGuess(item);
-    var ok = guess != null && Math.abs(guess - item.rate) <= rateTolerance(item.rate);
+    if (guess == null) {
+      fb.hidden = false;
+      fb.className = "quiz-feedback is-wrong";
+      fb.innerHTML = "<p>Type the rate in /min before checking.</p>";
+      if (live) live.textContent = "Type the rate in /min before checking.";
+      var inp = $("rateInput");
+      if (inp) inp.focus();
+      return;
+    }
+    var ok = Math.abs(guess - item.rate) <= rateTolerance(item.rate);
     var msg, msgHtml;
     if (item.kind === "regular") {
       msg = "There are " + item.largeSq + " large squares between consecutive R waves, so the rate is 300 / " + item.largeSq + " = " + item.rate + " /min. The 10-second count is " + item.times.length + " × 6 = " + (item.times.length * 6) + " /min, which agrees for a regular rhythm.";
-      msgHtml = "There are " + item.largeSq + " large squares between consecutive R waves, so the rate is <span class='formula-chip'><strong>300 / " + item.largeSq + " = " + item.rate + " /min</strong></span>. The 10-second count is <span class='formula-chip'><strong>" + item.times.length + " × 6 = " + (item.times.length * 6) + " /min</strong></span>, which agrees for a regular rhythm.";
+      msgHtml = "There are " + item.largeSq + " large squares between consecutive R waves, so the rate is <strong>300 / " + item.largeSq + " = " + item.rate + " /min</strong>. The 10-second count is <strong>" + item.times.length + " × 6 = " + (item.times.length * 6) + " /min</strong>, which agrees for a regular rhythm.";
     } else {
       msg = "There are " + item.times.length + " QRS complexes in this 10-second strip, so the rate is " + item.times.length + " × 6 = " + item.rate + " /min. The 300 / large-squares method is not reliable here because the R-R intervals vary.";
-      msgHtml = "There are " + item.times.length + " QRS complexes in this 10-second strip, so the rate is <span class='formula-chip'><strong>" + item.times.length + " × 6 = " + item.rate + " /min</strong></span>. The 300 / large-squares method is not reliable here because the R-R intervals vary.";
+      msgHtml = "There are " + item.times.length + " QRS complexes in this 10-second strip, so the rate is <strong>" + item.times.length + " × 6 = " + item.rate + " /min</strong>. The 300 / large-squares method is not reliable here because the R-R intervals vary.";
     }
     fb.hidden = false;
     fb.className = "quiz-feedback" + (ok ? "" : " is-wrong");
-    fb.innerHTML = "<p><strong>" + (ok ? "Correct." : "Not quite.") + "</strong> " + msgHtml + (guess != null && !ok ? " You entered " + guess + " /min." : "") + "</p>";
+    fb.innerHTML = "<p><strong>" + (ok ? "Correct." : "Not quite.") + "</strong> " + msgHtml + (!ok ? " You entered " + guess + " /min." : "") + "</p>";
     if (live) live.textContent = (ok ? "Correct. " : "Not quite. ") + msg;
     item.revealed = true;
     renderRate();

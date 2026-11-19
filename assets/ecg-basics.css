@@ -1115,18 +1115,6 @@ html[data-theme="colour-blind"] {
   }
 }
 
-.formula-chip {
-  display: inline-block;
-  font-weight: 700;
-  padding: 0.1em 0.5em;
-  margin: 0.12em 0.05em;
-  border: 2px solid var(--text);
-  border-radius: 7px;
-  background: var(--surface-2);
-  box-shadow: inset 0 -2px 0 var(--border);
-  line-height: 1.4;
-  vertical-align: baseline;
-}
 .strip-mark-hint {
   font-family: var(--font-sans);
   font-size: 14px;
