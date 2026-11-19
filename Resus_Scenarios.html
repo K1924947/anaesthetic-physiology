@@ -618,6 +618,98 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 }
 .graph-card.scn-card-main .scn-pending { margin: 12px 0 0; }
 body.scn-popup-open { overflow: hidden; }
+
+/* Drugs and fluids panel */
+.scn-drug-panel { display: flex; flex-direction: column; }
+@media (min-width: 700px) {
+  .scn-popup-panel.scn-drug-panel {
+    width: min(36rem, calc(100vw - 32px));
+    max-height: min(80vh, 44rem);
+  }
+}
+.scn-drug-recent {
+  margin: 0 0 10px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2, var(--bg));
+  font-size: 14px;
+}
+.scn-drug-recent strong { font-weight: 700; }
+.scn-drug-recent ol { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.scn-drug-group { margin: 0 0 12px; }
+.scn-drug-group-title {
+  position: sticky; top: 0; z-index: 2;
+  margin: 0 0 6px; padding: 6px 0 4px;
+  background: var(--surface);
+  font-family: var(--font-serif); font-size: 1.05rem; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.scn-drug-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.scn-drug-btn {
+  width: 100%; box-sizing: border-box;
+  display: flex; align-items: flex-start; gap: 10px;
+  text-align: left; min-height: 44px; padding: 8px 10px;
+  border: 2px solid var(--text); border-radius: 12px;
+  background: var(--surface); color: var(--text); cursor: pointer;
+  font-family: var(--font-sans); font-size: 15px; font-weight: 600; line-height: 1.3;
+}
+.scn-drug-btn:hover { background: var(--surface-2, var(--bg)); }
+.scn-drug-btn:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.scn-drug-btn[aria-expanded="true"] { background: var(--surface-2, var(--bg)); }
+.scn-drug-shape {
+  flex: none; width: 18px; height: 18px; margin-top: 2px;
+  background: currentColor;
+}
+.drug-fam-arrest { color: var(--series-a); }
+.drug-fam-anti { color: var(--series-b); }
+.drug-fam-brady { color: var(--series-c); }
+.drug-fam-electro { color: var(--series-d); }
+.drug-fam-fluid { color: var(--series-e); }
+.drug-fam-other { color: var(--series-e); }
+.drug-shape-circle { border-radius: 50%; }
+.drug-shape-diamond { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.drug-shape-triangle { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.drug-shape-square { border-radius: 2px; }
+.drug-shape-circle-open, .drug-shape-square-open {
+  background: transparent; border: 2px solid currentColor; box-sizing: border-box;
+}
+.drug-shape-circle-open { border-radius: 50%; }
+.drug-shape-square-open { border-radius: 2px; }
+.scn-drug-btn-text { flex: 1; min-width: 0; }
+.scn-drug-btn-name { display: block; }
+.scn-drug-btn-fam {
+  display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.scn-drug-chooser {
+  margin: 6px 0 8px 28px; padding: 10px;
+  border: 2px solid var(--text); border-radius: 12px;
+  background: var(--surface-2, var(--bg));
+}
+.scn-drug-chooser fieldset { border: 0; margin: 0; padding: 0; }
+.scn-drug-chooser legend { font-weight: 700; font-size: 14px; margin: 0 0 6px; }
+.scn-drug-opt {
+  display: flex; align-items: flex-start; gap: 8px;
+  min-height: 44px; padding: 6px 4px; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.scn-drug-opt input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+.scn-drug-note { margin: 0 0 8px; font-size: 14px; color: var(--text); }
+.scn-drug-footer {
+  position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 8px;
+  margin: 8px 0 0; padding: 8px 0 0; background: var(--surface-2, var(--bg));
+}
+.scn-drug-give, .scn-drug-back {
+  min-height: 44px; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+  font-family: var(--font-sans); font-size: 15px; font-weight: 700;
+}
+.scn-drug-give {
+  border: 2px solid var(--primary); background: var(--primary); color: var(--on-primary);
+}
+.scn-drug-give:disabled { opacity: 0.5; cursor: not-allowed; }
+.scn-drug-give:focus-visible, .scn-drug-back:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.scn-drug-back {
+  border: 2px solid var(--text); background: var(--surface); color: var(--text);
+}
+.act-btn[data-a="drugs"] { font-weight: 700; }
+
 .scn-alg-link { margin: 10px 0 0; }
 .scn-alg-link a { color: var(--text); font-weight: 700; font-size: 16px; text-decoration: underline; text-underline-offset: 3px; }
 .scn-alg-link a:hover { text-decoration-thickness: 2px; }
@@ -868,6 +960,21 @@ body.scn-popup-open { overflow: hidden; }
           </div>
         </div>
 
+        <div class="scn-popup" id="scnDrugPopup" hidden>
+          <div class="scn-popup-backdrop" id="scnDrugBackdrop" tabindex="-1"></div>
+          <div class="scn-popup-panel scn-drug-panel" id="scnDrugList" role="dialog" aria-modal="true" aria-labelledby="scnDrugTitle">
+            <div class="scn-popup-head">
+              <h2 class="scn-popup-title" id="scnDrugTitle">Drugs and fluids</h2>
+              <button type="button" class="scn-popup-close" id="scnDrugClose" aria-label="Close Drugs and fluids">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <p class="scn-popup-lead">Choose the drug, then the dose and route. Nothing is given until you press Give. Opening this panel does not advance the clock.</p>
+            <div class="scn-drug-recent" id="scnDrugRecent" hidden></div>
+            <div id="scnDrugBrowse"></div>
+          </div>
+        </div>
+
           <div class="card explain-panel scn-debrief hidden" id="scnDebrief"></div>
         </div>
         <div class="visually-hidden" aria-live="polite" id="scnLive"></div>
@@ -878,6 +985,6 @@ body.scn-popup-open { overflow: hidden; }
     </section>
   </main>
 </div>
-<script src="assets/ecg-app.js?v=20261119d"></script>
+<script src="assets/ecg-app.js?v=20261119e"></script>
 </body>
 </html>
