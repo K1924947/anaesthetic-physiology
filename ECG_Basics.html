@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119m">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119o">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -55,7 +55,7 @@
         <span class="test-banner-icon" aria-hidden="true">?</span>
         <div class="test-banner-copy">
           <h2 class="test-banner-title">Test yourself</h2>
-          <p class="test-banner-tag">Short drills on a teaching trace: find a part, measure an interval, work out the rate, or spot an abnormal beat.</p>
+          <p class="test-banner-tag">Short drills on a teaching trace: find a part, measure an interval, work out the rate, estimate the axis, or spot an abnormal beat.</p>
         </div>
         <p class="test-banner-score test-banner-score-sync" hidden></p>
         <button type="button" class="test-banner-cta test-toggle" id="testToggleTop" aria-pressed="false" aria-label="Start Test yourself">
@@ -167,7 +167,7 @@
 
       <article class="read-step" id="step-axis" aria-labelledby="step-axis-h">
         <h3 id="step-axis-h">3. Axis</h3>
-        <p>Cardiac axis is the net direction of ventricular depolarisation in the frontal plane. Usual normal is -30° to +90°. Drag the arrow on the hexaxial wheel, or use the buttons and arrow keys, and watch leads I, II and aVF change. The quadrant method uses I and aVF: if both are positive, the axis is between 0° and +90°. Lead II then separates a still-normal axis (-30° to 0°) from left axis deviation (less than -30°).</p>
+        <p>Cardiac axis is the net direction of ventricular depolarisation in the frontal plane. Usual normal is -30° to +90°. Drag the arrow on the hexaxial wheel, or use the buttons and arrow keys, and watch leads I, II and aVF change. The quadrant method uses I and aVF: if both are positive, the axis is between 0° and +90°. Lead II then separates a still-normal axis (-30° to 0°) from left axis deviation (less than -30°). Then have a go at a tracing below: set the arrow to your estimate and check.</p>
         <div class="axis-layout">
           <div class="axis-wheel-col">
             <svg id="axisSvg" class="axis-svg" viewBox="0 0 500 500" role="application" tabindex="0" aria-label="Hexaxial reference wheel. Drag the arrow to change the QRS axis.">
@@ -185,6 +185,28 @@
           </div>
         </div>
         <p class="visually-hidden" id="axisLive" aria-live="polite"></p>
+
+        <div class="axis-practice" id="axisPractice" aria-labelledby="axisPracticeH">
+          <h4 id="axisPracticeH">Practise the axis</h4>
+          <p>Here are leads I, II and aVF from a teaching tracing. Drag the arrow on the wheel to your estimate of the QRS axis, then check. You can also use the arrow keys (hold Shift for 5° steps).</p>
+          <p class="read-task" id="axisPracticeTask">Set the arrow to the QRS axis, then press Check.</p>
+          <p class="strip-indicator" aria-live="polite"><span id="axisStripLabel">Strip 1</span></p>
+          <div class="axis-layout axis-practice-layout">
+            <div class="axis-wheel-col">
+              <svg id="axisPracticeSvg" class="axis-svg" viewBox="0 0 500 500" role="application" tabindex="0" aria-label="Hexaxial reference wheel. Drag the arrow to your estimate of the QRS axis.">
+              </svg>
+            </div>
+            <div class="axis-leads-col">
+              <svg id="axisPracticeLeadsSvg" class="read-svg axis-leads-svg" viewBox="0 0 400 280" role="img" aria-label="Leads I, II and aVF for this tracing">
+              </svg>
+              <p class="axis-caption">Leads I, II and aVF share one amplitude scale, so a near-isoelectric lead looks small. Polarities are shown after you check.</p>
+            </div>
+          </div>
+          <p class="quiz-readout" id="axisPracticeReadout"></p>
+          <div class="read-controls" id="axisPracticeControls"></div>
+          <p class="visually-hidden" id="axisPracticeLive" aria-live="polite"></p>
+        </div>
+
         <div class="read-notes">
           <div class="panel-block">
             <h4>Usual normal</h4>
@@ -206,7 +228,7 @@
       <span class="test-banner-icon" aria-hidden="true">?</span>
       <div class="test-banner-copy">
         <h2 class="test-banner-title" id="test-label">Test yourself</h2>
-        <p class="test-banner-tag">Short drills on a teaching trace: find a part, measure an interval, work out the rate, or spot an abnormal beat.</p>
+        <p class="test-banner-tag">Short drills on a teaching trace: find a part, measure an interval, work out the rate, estimate the axis, or spot an abnormal beat.</p>
       </div>
       <p class="test-banner-score test-banner-score-sync" id="testBannerScore" hidden></p>
       <button type="button" class="test-banner-cta test-toggle" id="testToggle" aria-pressed="false" aria-describedby="test-label">
@@ -305,6 +327,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-basics.js?v=20261119m"></script>
+<script src="assets/ecg-basics.js?v=20261119o"></script>
 </body>
 </html>

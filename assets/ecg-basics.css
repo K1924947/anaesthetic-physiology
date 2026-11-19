@@ -447,6 +447,52 @@ html[data-theme="colour-blind"] {
   color: var(--muted);
   margin: 6px 0 0;
 }
+.axis-practice {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.axis-practice h4 {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.axis-practice-layout,
+.quiz-axis-layout {
+  margin-top: 8px;
+}
+#axisPracticeControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+#axisPracticeControls .t-btn { width: auto; min-width: 5.5rem; }
+#axisPracticeControls .action-row { width: 100%; }
+#axisPracticeControls .quiz-feedback { width: 100%; }
+
+@media (max-width: 600px) {
+  .axis-leads-svg,
+  #axisLeadsSvg,
+  #axisPracticeLeadsSvg,
+  #quizAxisLeadsSvg {
+    max-height: 240px;
+  }
+}
+
+.quiz-axis-layout .axis-svg {
+  background: var(--surface);
+}
+@media (min-width: 900px) {
+  .quiz-axis-layout {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  }
+  .quiz-axis-layout .axis-svg {
+    max-width: 360px;
+  }
+}
+
 
 .beat-svg {
   display: block;
@@ -1024,6 +1070,15 @@ html[data-theme="colour-blind"] {
   color: var(--series-a);
   font-size: 14px;
   line-height: 1;
+}
+.quiz-svg text.cal-label,
+.read-svg text.cal-label {
+  font-weight: 800;
+  font-family: var(--font-sans);
+  pointer-events: none;
+}
+.cal-label-bg {
+  pointer-events: none;
 }
 @media (max-width: 600px) {
   .caliper-nudges {

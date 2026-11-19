@@ -144,6 +144,103 @@
     }
     return qty(largeN, "large square", "large squares") + " (" + qty(smallN, "small square", "small squares") + ")";
   }
+
+  function wrapAxis(deg) {
+    var d = ((Number(deg) + 180) % 360) - 180;
+    if (isNaN(d)) return 0;
+    if (d === -180) d = 180;
+    return d;
+  }
+  function axisDelta(a, b) {
+    return Math.abs(wrapAxis(a - b));
+  }
+  function formatAxisDeg(deg) {
+    var d = Math.round(wrapAxis(deg));
+    if (d === -180) d = 180;
+    return (d > 0 ? "+" : "") + d + "°";
+  }
+  function caliperLabelFont(svg, vbW) {
+    var cssW = (svg && svg.clientWidth) ? svg.clientWidth : 0;
+    if (cssW < 40) cssW = vbW > 900 ? 1200 : 720;
+    var px = 13.5 * (vbW / cssW);
+    if (px < 13) px = 13;
+    if (px > 44) px = 44;
+    return px;
+  }
+  function caliperHeadRoom(svg, vbW) {
+    var fs = caliperLabelFont(svg, vbW);
+    return Math.max(46, Math.ceil(fs + 26));
+  }
+  function measureSvgText(g, text, fam, fs) {
+    var tg = el("text", {
+      x: -4000, y: -4000, "font-family": fam, "font-size": String(fs),
+      "font-weight": "800", class: "cal-label"
+    }, g, text);
+    var w = 0, h = 0;
+    try {
+      var b = tg.getBBox();
+      w = b.width;
+      h = b.height;
+    } catch (err) {}
+    g.removeChild(tg);
+    if (!(w > 1)) w = fs * 0.62 * text.length;
+    if (!(h > 1)) h = fs * 0.95;
+    return { w: w, h: h };
+  }
+  function drawCaliperCaptions(g, xA, xB, tok, fam, svg, xMin, xMax) {
+    var vbW = Math.max(40, xMax - xMin);
+    var fs = caliperLabelFont(svg, vbW);
+    var mA = measureSvgText(g, "Start", fam, fs);
+    var mB = measureSvgText(g, "End", fam, fs);
+    var padX = Math.max(4, fs * 0.32);
+    var padY = Math.max(2, fs * 0.18);
+    var wA = mA.w + padX * 2, hA = mA.h + padY * 2;
+    var wB = mB.w + padX * 2, hB = mB.h + padY * 2;
+    var y = 2;
+    function clampX(gx, w) {
+      if (gx < xMin + 2) gx = xMin + 2;
+      if (gx + w > xMax - 2) gx = xMax - 2 - w;
+      return gx;
+    }
+    function overlaps(a, wa, b, wb) {
+      return a < b + wb + 2 && b < a + wa + 2;
+    }
+    function outerX(x, w, toLeft) {
+      return clampX(toLeft ? (x - 11 - w) : (x + 11), w);
+    }
+    var aLeft = xA <= xB;
+    var gxA = outerX(xA, wA, aLeft);
+    var gxB = outerX(xB, wB, !aLeft);
+    if (overlaps(gxA, wA, gxB, wB)) {
+      var leftX = Math.min(xA, xB), rightX = Math.max(xA, xB);
+      var leftW = aLeft ? wA : wB, rightW = aLeft ? wB : wA;
+      var leftGx = clampX(leftX - 11 - leftW, leftW);
+      var rightGx = clampX(rightX + 11, rightW);
+      if (overlaps(leftGx, leftW, rightGx, rightW)) {
+        leftGx = clampX(xMin + 2, leftW);
+        rightGx = clampX(Math.max(leftGx + leftW + 4, rightX + 11), rightW);
+      }
+      if (aLeft) { gxA = leftGx; gxB = rightGx; }
+      else { gxB = leftGx; gxA = rightGx; }
+    }
+    function paint(gx, w, h, midX, text, which) {
+      var bg = el("rect", {
+        x: gx, y: y, width: w, height: h, rx: Math.min(6, h / 2),
+        fill: tok.surface, stroke: tok.a, "stroke-width": 1.6,
+        class: "cal-label-bg", "data-cal-label-bg": which
+      }, g);
+      var tx = gx + w / 2;
+      var ty = y + h / 2 + mA.h * 0.35;
+      el("text", {
+        x: tx, y: ty, "text-anchor": "middle", fill: tok.a,
+        "font-family": fam, "font-size": String(fs), "font-weight": "800",
+        class: "cal-label", "data-cal-label": which
+      }, g, text);
+    }
+    paint(gxA, wA, hA, xA, "Start", "start");
+    paint(gxB, wB, hB, xB, "End", "end");
+    return Math.ceil(y + Math.max(hA, hB) + 3);
+  }
   function T() {
     return window.PhysioTheme ? PhysioTheme.tokens() : {
       a: "#184A63", b: "#0B6B5F", c: "#9A3412", d: "#1A2330", e: "#5C4A2E",
@@ -728,6 +825,7 @@
     click: "Click the part",
     calipers: "Calipers",
     rate: "Rate",
+    axis: "Axis",
     spot: "Spot the abnormality"
   };
 
@@ -1223,6 +1321,21 @@
     };
   }
 
+
+  function makeAxis(preset) {
+    var c = makeAxisCase(preset || {});
+    return {
+      type: "axis",
+      trueAxis: c.deg,
+      category: c.category,
+      isoLead: c.isoLead,
+      guess: c.startGuess,
+      startGuess: c.startGuess,
+      q: "These are leads I, II and aVF. What is the QRS axis?",
+      help: "Drag the arrow on the hexaxial wheel to your estimate, or use the arrow keys (hold Shift for 5° steps). Then press Check. The traces stay still while you move the arrow. Estimates within 30° count as correct."
+    };
+  }
+
   function makeRate(spec) {
     if (typeof spec === "number") spec = { kind: "regular", largeSq: spec };
     spec = spec || {};
@@ -1306,6 +1419,8 @@
     var calA = makeCalipers(pickOne([{ measure: "PRi" }, { measure: "QRS" }]));
     var calB = makeQTCalipers();
     var spots = shuffle(["normal", "PRi", "QRS", "QT"]);
+    var axA = makeAxis();
+    var axB = makeAxis({ avoid: axA.category });
     var items = [
       makeClick(clicks[0].key),
       makeClick(clicks[1].key),
@@ -1313,6 +1428,8 @@
       calB,
       makeRate({ kind: "regular" }),
       makeRate({ kind: "irregular" }),
+      axA,
+      axB,
       makeSpot(spots[0]),
       makeSpot(spots[1])
     ];
@@ -1414,9 +1531,9 @@
     });
   }
 
-  function setupQuizGeometry(item) {
+  function setupQuizGeometry(item, svg) {
     if (item.type === "rate") {
-      var G = setupStripGeom(item.duration || 10);
+      var G = setupStripGeom(item.duration || 10, svg);
       QG.x0 = G.x0;
       QG.u = G.u;
       QG.tStart = 0;
@@ -1431,7 +1548,8 @@
     }
     var u = 10;
     var span = item.tEnd - item.tStart;
-    var head = item.type === "calipers" ? 36 : 8;
+    var gwTmp = span * 25 * u;
+    var head = item.type === "calipers" ? caliperHeadRoom(svg, 10 + gwTmp + 10) : 8;
     var gy = head;
     var gh = 20 * u;
     QG.x0 = 10;
@@ -1578,9 +1696,14 @@
 
   function drawQuizTrace() {
     var item = currentItem();
+    if (!item) return;
+    if (item.type === "axis") {
+      renderQuizAxis();
+      return;
+    }
     var svg = $("quizSvg");
-    if (!item || !svg) return;
-    setupQuizGeometry(item);
+    if (!svg) return;
+    setupQuizGeometry(item, svg);
     var t = T(), ink = cssVar("--ecg-ink") || "#111";
     var fam = fontSans();
     var u = QG.u;
@@ -1627,7 +1750,10 @@
     }
 
     if (item.type === "calipers" || item.type === "rate") {
-      var yTop = 2;
+      var capBottom = drawCaliperCaptions(
+        g, quizTtoX(QZ.calA), quizTtoX(QZ.calB), t, fam, svg, 0, vbW
+      );
+      var yTop = capBottom;
       var yBot = QG.paperBottom;
       drawCaliperLine(g, QZ.calA, "A", yTop, yBot, QZ.focus === "A", "user");
       drawCaliperLine(g, QZ.calB, "B", yTop, yBot, QZ.focus === "B", "user");
@@ -1654,6 +1780,12 @@
       var parts = ["Calipers: " + formatCaliperSpan(span) + "."];
       if (item.type === "rate") parts.push("R waves marked: " + (item.marks ? item.marks.length : 0) + ".");
       elr.textContent = parts.join(" ");
+    } else if (item.type === "axis") {
+      if (QZ.answered) {
+        elr.textContent = "Your estimate: " + formatAxisDeg(item.guess) + ". True axis: " + formatAxisDeg(item.trueAxis) + " (" + axisLabel(item.trueAxis).name + ").";
+      } else {
+        elr.textContent = "Your estimate: " + formatAxisDeg(item.guess) + ".";
+      }
     } else {
       elr.textContent = "";
     }
@@ -1704,6 +1836,8 @@
       }
       if (!ok && guess != null) body += " You entered " + guess + " /min.";
       if (!ok && guess == null) body += " Type the rate in /min, then check.";
+    } else if (item.type === "axis") {
+      body = axisFeedbackText(item.trueAxis, item.guess, ok);
     } else if (item.type === "spot") {
       body = item.why;
       if (!ok) {
@@ -1879,6 +2013,7 @@
       if (QZ.calB > item.tEnd) QZ.calB = (item.tStart + item.tEnd) / 2;
     }
     if (item && item.type === "rate") item.marks = [];
+    if (item && item.type === "axis") item.guess = item.startGuess;
   }
 
   function submitClick(key) {
@@ -1918,6 +2053,8 @@
         return;
       }
       QZ.ok = rateIsClose(g, item.rate);
+    } else if (item.type === "axis") {
+      QZ.ok = axisDelta(item.guess, item.trueAxis) <= 30;
     } else {
       return;
     }
@@ -1943,6 +2080,43 @@
     resetInteraction(QZ.items[0]);
   }
 
+
+  function renderQuizAxis() {
+    var item = currentItem();
+    if (!item || item.type !== "axis") return;
+    renderAxisWheelOn($("quizAxisSvg"), {
+      axis: item.guess,
+      trueAxis: item.trueAxis,
+      showTrue: !!QZ.answered,
+      prefix: "axq",
+      highlight: QZ.answered ? item.category : null,
+      teach: false,
+      store: "_quizAxisWheel"
+    });
+    renderAxisLeadsOn($("quizAxisLeadsSvg"), item.trueAxis, { showSigns: !!QZ.answered });
+    updateQuizReadout();
+  }
+
+  function setQuizAxisGuess(deg) {
+    var item = currentItem();
+    if (!item || item.type !== "axis" || QZ.answered) return;
+    item.guess = wrapAxis(deg);
+    renderQuizAxis();
+  }
+
+  function bindQuizAxis() {
+    var svg = $("quizAxisSvg");
+    if (!svg) return;
+    delete svg.dataset.bound;
+    bindAxisPointer(svg, "_quizAxisWheel", function () {
+      var it = currentItem();
+      return it && it.type === "axis" ? it.guess : 0;
+    }, function (d) { setQuizAxisGuess(d); }, function () { return QZ.answered; });
+    var minus = $("quizAxisMinus"), plus = $("quizAxisPlus");
+    if (minus) minus.addEventListener("click", function () { setQuizAxisGuess((currentItem() || {}).guess - 15); });
+    if (plus) plus.addEventListener("click", function () { setQuizAxisGuess((currentItem() || {}).guess + 15); });
+  }
+
   function renderQuiz() {
     var root = $("quizBody");
     if (!root) return;
@@ -1963,10 +2137,21 @@
     html += "<h3 class='quiz-q' id='quizQ' tabindex='-1'>" + esc(item.q) + "</h3>";
     html += "<p class='quiz-help'>" + esc(item.help) + "</p>";
     if (item.type === "rate") html += "<p class='strip-indicator'>10 s strip</p>";
-    html += "<div class='strip-wrap quiz-strip-wrap'>";
-    html += "<svg id='quizSvg' class='quiz-svg" + (item.type === "rate" ? " quiz-rate-svg" : "") + "' viewBox='0 0 800 200' role='application' tabindex='0' aria-label='" + (item.type === "rate" ? "Ten-second lead II rhythm strip" : "Teaching ECG strip for this drill") + "' aria-describedby='quizSvgDesc quizQ'>";
-    html += "<desc id='quizSvgDesc'>" + esc(item.help) + "</desc></svg></div>";
-    html += "<p class='quiz-help'>Standard paper at 25 mm/s and 10 mm/mV. One small square is 0.04 s; one large square is 0.20 s." + (item.type === "rate" ? " Scroll sideways to see the whole 10 seconds." : "") + "</p>";
+    if (item.type === "axis") {
+      html += "<div class='axis-layout quiz-axis-layout'>";
+      html += "<div class='axis-wheel-col'>";
+      html += "<svg id='quizAxisSvg' class='axis-svg' viewBox='0 0 500 500' role='application' tabindex='0' aria-label='Hexaxial reference wheel. Drag the arrow to your estimate of the QRS axis.'></svg>";
+      html += "</div>";
+      html += "<div class='axis-leads-col'>";
+      html += "<svg id='quizAxisLeadsSvg' class='read-svg axis-leads-svg' viewBox='0 0 400 280' role='img' aria-label='Leads I, II and aVF for this tracing'></svg>";
+      html += "<p class='axis-caption'>Leads I, II and aVF share one amplitude scale, so a near-isoelectric lead looks small. Polarities are shown after you check.</p>";
+      html += "</div></div>";
+    } else {
+      html += "<div class='strip-wrap quiz-strip-wrap'>";
+      html += "<svg id='quizSvg' class='quiz-svg" + (item.type === "rate" ? " quiz-rate-svg" : "") + "' viewBox='0 0 800 200' role='application' tabindex='0' aria-label='" + (item.type === "rate" ? "Ten-second lead II rhythm strip" : "Teaching ECG strip for this drill") + "' aria-describedby='quizSvgDesc quizQ'>";
+      html += "<desc id='quizSvgDesc'>" + esc(item.help) + "</desc></svg></div>";
+      html += "<p class='quiz-help'>Standard paper at 25 mm/s and 10 mm/mV. One small square is 0.04 s; one large square is 0.20 s." + (item.type === "rate" ? " Scroll sideways to see the whole 10 seconds." : "") + "</p>";
+    }
     html += "<p class='quiz-readout' id='quizReadout'></p>";
 
     if (item.type === "calipers" || item.type === "rate") {
@@ -1991,12 +2176,18 @@
       html += "<p class='quiz-help' id='quizClassifyHint'></p>";
       html += "</div>";
     }
+    if (item.type === "axis" && !QZ.answered) {
+      html += "<div class='quiz-controls' role='group' aria-label='Adjust axis estimate'>";
+      html += "<button type='button' class='t-btn' id='quizAxisMinus' aria-label='Decrease estimate by 15 degrees'>-15°</button>";
+      html += "<button type='button' class='t-btn' id='quizAxisPlus' aria-label='Increase estimate by 15 degrees'>+15°</button>";
+      html += "</div>";
+    }
     if (item.type === "spot") {
       html += "<div class='quiz-fallback' role='group' aria-label='This beat is normal'>";
       html += "<button type='button' class='t-btn' data-part='normal'" + (QZ.answered ? " disabled" : "") + ">This beat is normal</button>";
       html += "</div>";
     }
-    if (!QZ.answered && (item.type === "calipers" || item.type === "rate")) {
+    if (!QZ.answered && (item.type === "calipers" || item.type === "rate" || item.type === "axis")) {
       html += actionRow(primaryBtn("quizCheck", "Check"));
     }
     if (QZ.answered) {
@@ -2009,6 +2200,10 @@
     if (svg) {
       bindQuizSvg(svg, item);
       flashStrip(svg);
+    }
+    if (item.type === "axis") {
+      bindQuizAxis();
+      flashStrip($("quizAxisLeadsSvg"));
     }
     root.querySelectorAll(".quiz-controls .t-btn").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -2095,6 +2290,10 @@
         kind: item.kind || null,
         times: item.times ? item.times.slice() : null,
         sex: item.sex || null,
+        trueAxis: item.trueAxis != null ? item.trueAxis : null,
+        guess: item.guess != null ? item.guess : null,
+        category: item.category || null,
+        isoLead: item.isoLead || null,
         qtcMs: item.qtcMs != null ? item.qtcMs : null,
         abnormality: item.abnormality || null
       } : null
@@ -2237,12 +2436,15 @@
     };
   }
 
-  function setupStripGeom(duration) {
-    var u = 8, head = 36;
+  function setupStripGeom(duration, svg) {
+    var u = 8;
+    var gw = duration * 25 * u;
+    var vbW = 8 + gw + 8;
+    var head = caliperHeadRoom(svg, vbW);
     return {
       x0: 8, gy: head, u: u, tStart: 0, tEnd: duration,
       gh: 20 * u, y0: head + 14 * u,
-      gw: duration * 25 * u
+      gw: gw
     };
   }
 
@@ -2263,8 +2465,13 @@
     return { t: best, dist: d, i: times.indexOf(best) };
   }
 
-  function drawStripCalipers(g, G, a, b, focus, tok, fam) {
-    var yTop = 2, yBot = G.gy + G.gh, col = tok.a, ink = cssVar("--ecg-ink") || "#111";
+  function drawStripCalipers(g, G, a, b, focus, tok, fam, svg) {
+    var yBot = G.gy + G.gh, col = tok.a;
+    var vbW = (G.x0 + G.gw + 8);
+    var capBottom = drawCaliperCaptions(
+      g, stripTtoX(G, a), stripTtoX(G, b), tok, fam, svg, 0, vbW
+    );
+    var yTop = capBottom;
     function one(tVal, which, focused) {
       var x = stripTtoX(G, tVal);
       var isStart = which === "A";
@@ -2325,7 +2532,7 @@
   function renderRate() {
     var svg = $("rateSvg"), item = RS.rate, tok = T(), ink = cssVar("--ecg-ink") || "#111", fam = fontSans();
     if (!svg || !item) return;
-    var G = setupStripGeom(item.duration);
+    var G = setupStripGeom(item.duration, svg);
     G.calRoom = 28;
     var vbW = G.x0 + G.gw + 8, vbH = G.gy + G.gh + G.calRoom;
     clearSvg(svg);
@@ -2360,7 +2567,7 @@
     }, g);
     /* Visible marks as soon as an R is clicked; sequence numbers only after Check. */
     drawRMarks(g, function (mt) { return stripTtoX(G, mt); }, item.marks, 18, item.revealed, tok, fam);
-    drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam);
+    drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam, svg);
     RS._rateG = G;
     updateRateReadout();
   }
@@ -2593,7 +2800,7 @@
   function renderRhythm() {
     var svg = $("rhythmSvg"), item = RS.rhythm, tok = T(), ink = cssVar("--ecg-ink") || "#111", fam = fontSans();
     if (!svg || !item) return;
-    var G = setupStripGeom(item.duration);
+    var G = setupStripGeom(item.duration, svg);
     G.calRoom = 28;
     var vbW = G.x0 + G.gw + 8, vbH = G.gy + G.gh + G.calRoom;
     clearSvg(svg);
@@ -2634,7 +2841,7 @@
       }
     }
     drawRMarks(g, function (mt) { return stripTtoX(G, mt); }, item.marks || [], 18, !!item.revealed, tok, fam);
-    drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam);
+    drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam, svg);
     RS._rhythmG = G;
     updateRhythmReadout();
   }
@@ -2765,6 +2972,85 @@
     });
   }
 
+
+  var AXIS_CASES = {
+    normal: [
+      { deg: 60 }, { deg: 45 }, { deg: 30 }, { deg: 15 }, { deg: 75 }, { deg: -15 },
+      { deg: 0, iso: "aVF" }, { deg: 90, iso: "I" }
+    ],
+    lad: [
+      { deg: -45 }, { deg: -60 }, { deg: -75 }, { deg: -50 }
+    ],
+    rad: [
+      { deg: 105 }, { deg: 120 }, { deg: 135 }, { deg: 165 },
+      { deg: 150, iso: "II" }
+    ],
+    extreme: [
+      { deg: -120 }, { deg: -135 }, { deg: -150 }, { deg: -165 },
+      { deg: 180, iso: "aVF" }, { deg: -90, iso: "I" }
+    ]
+  };
+  var AXIS_CATS = ["normal", "lad", "rad", "extreme"];
+
+  function makeAxisCase(spec) {
+    spec = spec || {};
+    var avoid = spec.avoid || spec.category === undefined && RS.lastAxisCat;
+    var cat;
+    if (spec.category && (!avoid || spec.category !== avoid || spec.deg != null)) {
+      cat = spec.category;
+    } else if (spec.deg != null) {
+      cat = axisRegionKey(spec.deg);
+    } else {
+      cat = pickAvoid(AXIS_CATS, avoid);
+    }
+    var pool = AXIS_CASES[cat] || AXIS_CASES.normal;
+    var chosen;
+    if (spec.deg != null) {
+      chosen = { deg: wrapAxis(spec.deg) };
+      var i;
+      for (i = 0; i < pool.length; i++) {
+        if (Math.abs(wrapAxis(pool[i].deg) - chosen.deg) < 0.5) { chosen = pool[i]; break; }
+      }
+    } else if (spec.iso) {
+      var isoPool = pool.filter(function (c) { return c.iso; });
+      chosen = (isoPool.length ? pickOne(isoPool) : pickOne(pool));
+    } else {
+      chosen = pickOne(pool);
+    }
+    var deg = wrapAxis(chosen.deg);
+    cat = axisRegionKey(deg);
+    var startGuess = (cat === "normal") ? 180 : 60;
+    if (axisDelta(startGuess, deg) <= 30) startGuess = wrapAxis(startGuess + 120);
+    return {
+      deg: deg,
+      category: cat,
+      isoLead: chosen.iso || null,
+      startGuess: startGuess
+    };
+  }
+
+  function axisReasoning(deg) {
+    var info = axisLabel(deg);
+    var sI = leadSign(info.deg, 0), sII = leadSign(info.deg, 60), sAVF = leadSign(info.deg, 90);
+    var q = "Lead I is " + sI + ", lead aVF is " + sAVF + ", and lead II is " + sII + ".";
+    if (sI === "positive" && sAVF === "positive") q += " Both I and aVF are positive, so the quadrant is 0° to +90° (normal).";
+    else if (sI === "positive" && sAVF === "negative") {
+      if (sII !== "negative") q += " Lead I is positive and aVF is negative, but lead II is not negative, so the axis is still in the usual range (about -30° to 0°).";
+      else q += " Lead I is positive and both aVF and lead II are negative, so this is left axis deviation (less than -30°).";
+    } else if (sI === "negative" && sAVF === "positive") q += " Lead I is negative and aVF is positive, so this is right axis deviation (greater than +90°).";
+    else if (sI === "isoelectric" || sAVF === "isoelectric") q += " Use the isoelectric lead to refine the quadrant.";
+    else q += " Leads I and aVF are both negative, so this is an extreme (northwest) axis.";
+    var iso = null, isoDeg = null;
+    if (sI === "isoelectric") { iso = "I"; isoDeg = 0; }
+    else if (sAVF === "isoelectric") { iso = "aVF"; isoDeg = 90; }
+    else if (sII === "isoelectric") { iso = "II"; isoDeg = 60; }
+    if (iso) {
+      var c1 = formatAxisDeg(isoDeg + 90), c2 = formatAxisDeg(isoDeg - 90);
+      q += " The QRS in lead " + iso + " is near-isoelectric, so the axis is roughly at right angles to that lead, at about " + c1 + " or " + c2 + ". The polarity of the other leads points to " + formatAxisDeg(info.deg) + ".";
+    }
+    return q;
+  }
+
   /* ---- Axis ---- */
 
   function axisLabel(deg) {
@@ -2792,33 +3078,104 @@
     return "extreme";
   }
 
-  function axisPatterns(svg) {
+  function axisPatterns(svg, prefix) {
+    prefix = prefix || "ax";
     var tok = T(), ink = cssVar("--ecg-ink") || "#111";
     var rust = cssVar("--btn-secondary") || tok.c || "#9A3412";
     var defs = el("defs", null, svg);
-    var h = el("pattern", { id: "ax-hatch", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
+    var h = el("pattern", { id: prefix + "-hatch", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
     el("rect", { width: 8, height: 8, fill: tok.a, "fill-opacity": 0.10 }, h);
     el("path", { d: "M0 8 L8 0 M-2 2 L2 -2 M6 10 L10 6", stroke: tok.a, "stroke-width": 1.2, fill: "none" }, h);
-    var d = el("pattern", { id: "ax-dots", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
+    var d = el("pattern", { id: prefix + "-dots", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
     el("rect", { width: 8, height: 8, fill: rust, "fill-opacity": 0.08 }, d);
     el("circle", { cx: 4, cy: 4, r: 1.45, fill: rust }, d);
-    var xh = el("pattern", { id: "ax-cross", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
+    var xh = el("pattern", { id: prefix + "-cross", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
     el("rect", { width: 8, height: 8, fill: ink, "fill-opacity": 0.05 }, xh);
     el("path", { d: "M0 8 L8 0 M0 0 L8 8 M-2 2 L2 -2 M6 10 L10 6 M-2 6 L2 10 M6 -2 L10 2", stroke: ink, "stroke-width": 1.1, fill: "none" }, xh);
-    var pl = el("pattern", { id: "ax-plain", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
+    var pl = el("pattern", { id: prefix + "-plain", patternUnits: "userSpaceOnUse", width: 8, height: 8 }, defs);
     el("rect", { width: 8, height: 8, fill: tok.e || "#595959", "fill-opacity": 0.18 }, pl);
     el("path", { d: "M0 4 H8", stroke: tok.e || "#595959", "stroke-width": 1.1, fill: "none" }, pl);
   }
 
-  function renderAxisWheel() {
-    var svg = $("axisSvg");
+  function drawAxisArrow(g, cx, cy, r, deg, style, tok, ink, fam, caption, capShift) {
+    function polar(d, rad) {
+      return [cx + rad * Math.cos(d * DEG), cy + rad * Math.sin(d * DEG)];
+    }
+    var isTrue = style === "true";
+    var col = isTrue ? ink : tok.a;
+    var tip = polar(deg, r - 18), tail = polar(deg + 180, 22);
+    el("path", {
+      d: "M" + tail[0] + " " + tail[1] + "L" + tip[0] + " " + tip[1],
+      stroke: col, "stroke-width": isTrue ? 4 : 5, "stroke-linecap": "round",
+      "stroke-dasharray": isTrue ? "7 5" : "none",
+      class: isTrue ? "axis-shaft axis-shaft-true" : "axis-shaft",
+      "pointer-events": isTrue ? "none" : "none"
+    }, g);
+    var ah1 = [tip[0] - 16 * Math.cos((deg + 25) * DEG), tip[1] - 16 * Math.sin((deg + 25) * DEG)];
+    var ah2 = [tip[0] - 16 * Math.cos((deg - 25) * DEG), tip[1] - 16 * Math.sin((deg - 25) * DEG)];
+    el("polygon", {
+      points: tip[0] + "," + tip[1] + " " + ah1[0] + "," + ah1[1] + " " + ah2[0] + "," + ah2[1],
+      fill: isTrue ? "none" : col, stroke: col, "stroke-width": isTrue ? 2.4 : 1,
+      class: isTrue ? "axis-head axis-head-true" : "axis-head"
+    }, g);
+    if (isTrue) {
+      el("rect", {
+        x: tip[0] - 13, y: tip[1] - 13, width: 26, height: 26,
+        fill: tok.surface, stroke: ink, "stroke-width": 3, "transform": "rotate(45 " + tip[0] + " " + tip[1] + ")",
+        class: "axis-handle axis-handle-true"
+      }, g);
+      el("text", {
+        x: tip[0], y: tip[1] + 4, "text-anchor": "middle", fill: ink,
+        "font-family": fam, class: "lab-small"
+      }, g, "T");
+    } else {
+      el("circle", {
+        cx: tip[0], cy: tip[1], r: 16, fill: tok.surface, stroke: col,
+        "stroke-width": 3, class: "axis-handle"
+      }, g);
+      if (style === "teach") {
+        el("text", {
+          x: tip[0], y: tip[1] + 5, "text-anchor": "middle", fill: col,
+          "font-family": fam, class: "lab-small"
+        }, g, "A");
+      }
+    }
+    if (caption) {
+      var outward = polar(deg + (capShift || 0), r + 14);
+      var fs = 13;
+      var tw = caption.length * fs * 0.62 + 10;
+      var th = 18;
+      var lx = outward[0] - tw / 2;
+      var ly = outward[1] - th / 2;
+      if (lx < 8) lx = 8;
+      if (lx + tw > 492) lx = 492 - tw;
+      if (ly < 8) ly = 8;
+      if (ly + th > 492) ly = 492 - th;
+      el("rect", {
+        x: lx, y: ly, width: tw, height: th, rx: 4,
+        fill: tok.surface, stroke: col, "stroke-width": 1.6,
+        "pointer-events": "none"
+      }, g);
+      el("text", {
+        x: lx + tw / 2, y: ly + th * 0.72, "text-anchor": "middle", fill: col,
+        "font-family": fam, "font-size": "13", "font-weight": "800",
+        class: "lab-small", "pointer-events": "none"
+      }, g, caption);
+    }
+  }
+
+  function renderAxisWheelOn(svg, opts) {
     if (!svg) return;
+    opts = opts || {};
     var tok = T(), ink = cssVar("--ecg-ink") || "#111", fam = fontSans();
     var cx = 250, cy = 250, r = 200;
+    var prefix = opts.prefix || "ax";
+    var axis = wrapAxis(opts.axis == null ? 60 : opts.axis);
+    var highlight = opts.highlight || null;
     svg.setAttribute("viewBox", "0 0 500 500");
     clearSvg(svg);
     var g = el("g", null, svg);
-    axisPatterns(svg);
+    axisPatterns(svg, prefix);
     el("circle", { cx: cx, cy: cy, r: r, fill: tok.surface, stroke: tok.border || ink, "stroke-width": 1.5 }, g);
     function polar(deg, rad) {
       return [cx + rad * Math.cos(deg * DEG), cy + rad * Math.sin(deg * DEG)];
@@ -2832,19 +3189,18 @@
       return "M" + cx + " " + cy + "L" + p0[0] + " " + p0[1] + "A" + rad + " " + rad + " 0 " + large + " 1 " + p1[0] + " " + p1[1] + "Z";
     }
     var regions = [
-      { key: "normal", a0: -30, a1: 90, fill: "url(#ax-hatch)", mid: 30, lines: ["Normal", "-30° to +90°"] },
-      { key: "rad", a0: 90, a1: 180, fill: "url(#ax-cross)", mid: 135, lines: ["RAD", "+90° to 180°"] },
-      { key: "extreme", a0: 180, a1: -90, fill: "url(#ax-plain)", mid: 225, lines: ["Extreme", "-90° to 180°"] },
-      { key: "lad", a0: -90, a1: -30, fill: "url(#ax-dots)", mid: -60, lines: ["LAD", "-30° to -90°"] }
+      { key: "normal", a0: -30, a1: 90, fill: "url(#" + prefix + "-hatch)", mid: 30, lines: ["Normal", "-30° to +90°"] },
+      { key: "rad", a0: 90, a1: 180, fill: "url(#" + prefix + "-cross)", mid: 135, lines: ["RAD", "+90° to 180°"] },
+      { key: "extreme", a0: 180, a1: -90, fill: "url(#" + prefix + "-plain)", mid: 225, lines: ["Extreme", "-90° to 180°"] },
+      { key: "lad", a0: -90, a1: -30, fill: "url(#" + prefix + "-dots)", mid: -60, lines: ["LAD", "-30° to -90°"] }
     ];
-    var current = axisRegionKey(RS.axis);
     regions.forEach(function (rg) {
       el("path", {
         d: arcPath(rg.a0, rg.a1, r - 2),
         fill: rg.fill,
         stroke: ink,
-        "stroke-width": rg.key === current ? 3.4 : 0.8,
-        class: rg.key === current ? "axis-region is-current" : "axis-region",
+        "stroke-width": rg.key === highlight ? 3.4 : 0.8,
+        class: rg.key === highlight ? "axis-region is-current" : "axis-region",
         "data-region": rg.key
       }, g);
     });
@@ -2903,21 +3259,76 @@
       var p = polar(tk.deg, r - 22);
       el("text", { x: p[0], y: p[1] + 4, "text-anchor": "middle", fill: tok.text, "font-family": fam, class: "lab-small" }, g, tk.lab);
     });
-    var tip = polar(RS.axis, r - 18), tail = polar(RS.axis + 180, 22);
-    el("path", {
-      d: "M" + tail[0] + " " + tail[1] + "L" + tip[0] + " " + tip[1],
-      stroke: tok.a, "stroke-width": 5, "stroke-linecap": "round", class: "axis-shaft"
-    }, g);
-    var ah1 = [tip[0] - 16 * Math.cos((RS.axis + 25) * DEG), tip[1] - 16 * Math.sin((RS.axis + 25) * DEG)];
-    var ah2 = [tip[0] - 16 * Math.cos((RS.axis - 25) * DEG), tip[1] - 16 * Math.sin((RS.axis - 25) * DEG)];
-    el("polygon", {
-      points: tip[0] + "," + tip[1] + " " + ah1[0] + "," + ah1[1] + " " + ah2[0] + "," + ah2[1],
-      fill: tok.a, stroke: tok.a, class: "axis-head"
-    }, g);
-    el("circle", { cx: tip[0], cy: tip[1], r: 16, fill: tok.surface, stroke: tok.a, "stroke-width": 3, class: "axis-handle" }, g);
-    el("text", { x: tip[0], y: tip[1] + 5, "text-anchor": "middle", fill: tok.a, "font-family": fam, class: "lab-small" }, g, "A");
+    var trueDeg = opts.showTrue && opts.trueAxis != null ? wrapAxis(opts.trueAxis) : null;
+    var close = trueDeg != null && axisDelta(axis, trueDeg) < 40;
+    var shift = close ? 22 : 0;
+    if (trueDeg != null) {
+      drawAxisArrow(g, cx, cy, r, trueDeg, "true", tok, ink, fam, "True", shift);
+    }
+    drawAxisArrow(g, cx, cy, r, axis, opts.teach ? "teach" : "guess", tok, ink, fam, opts.showTrue ? "Yours" : null, -shift);
     el("circle", { cx: cx, cy: cy, r: 5, fill: ink }, g);
-    RS._axisWheel = { cx: cx, cy: cy, r: r };
+    var store = opts.store || "_axisWheel";
+    RS[store] = { cx: cx, cy: cy, r: r, svg: svg };
+    return RS[store];
+  }
+
+  function renderAxisLeadsOn(svg, axisDeg, opts) {
+    if (!svg) return;
+    opts = opts || {};
+    var tok = T(), ink = cssVar("--ecg-ink") || "#111", fam = fontSans();
+    var bumps = beatBumps(defaultBeat({ axis: axisDeg, u: false }));
+    clearSvg(svg);
+    var u = 8, t0 = -0.15, t1 = 1.88, x0 = 96, gw = 25 * u * (t1 - t0);
+    var gh = 14 * u, gap = 8, top = 8;
+    var scale = axisCommonScale(gh, u);
+    var sy = scale.sy, margin = scale.margin;
+    var leads = [
+      { name: "I", deg: 0 },
+      { name: "II", deg: 60 },
+      { name: "aVF", deg: 90 }
+    ];
+    leads.forEach(function (ld, i) {
+      ld.gy = top + i * (gh + gap);
+    });
+    var vbW = x0 + gw + 10, vbH = top + 3 * gh + 2 * gap + 8;
+    svg.setAttribute("viewBox", "0 0 " + Math.ceil(vbW) + " " + Math.ceil(vbH));
+    var g = el("g", null, svg);
+    var fit = [];
+    leads.forEach(function (ld) {
+      paper(g, x0, ld.gy, gw, gh, u);
+      var f = function (tt) { return voltageLead(bumps, tt, 1.0, leadDir(ld.deg)); };
+      var mn = 0, mx = 0, tt, v;
+      for (tt = t0; tt <= t1 + 1e-12; tt += 0.002) {
+        v = f(tt);
+        if (v < mn) mn = v;
+        if (v > mx) mx = v;
+      }
+      var y0 = ld.gy + gh / 2;
+      el("path", {
+        d: fnPath(f, t0, t1, x0, y0, 25 * u, sy, 0.002),
+        fill: "none", stroke: ink, "stroke-width": 2.2, "stroke-linejoin": "round",
+        "data-lead": ld.name
+      }, g);
+      var sign = leadSign(axisDeg, ld.deg);
+      el("text", { x: 6, y: ld.gy + 14, "text-anchor": "start", fill: tok.text, "font-family": fam, class: "lab-int" }, g, ld.name);
+      if (opts.showSigns) {
+        el("text", { x: 6, y: ld.gy + 30, "text-anchor": "start", fill: tok.muted, "font-family": fam, class: "lab-small", "data-lead-sign": ld.name }, g, sign);
+      }
+      fit.push({ name: ld.name, gy: ld.gy, gh: gh, y0: y0, sy: sy, min: mn, max: mx, peak: scale.peak, top: ld.gy + margin, bot: ld.gy + gh - margin });
+    });
+    return fit;
+  }
+
+  function renderAxisWheel() {
+    var svg = $("axisSvg");
+    if (!svg) return;
+    renderAxisWheelOn(svg, {
+      axis: RS.axis,
+      prefix: "ax",
+      highlight: axisRegionKey(RS.axis),
+      teach: true,
+      store: "_axisWheel"
+    });
     updateAxisReadout();
     fillAxisLegend();
   }
@@ -2962,46 +3373,7 @@
   function renderAxisLeads() {
     var svg = $("axisLeadsSvg");
     if (!svg) return;
-    var tok = T(), ink = cssVar("--ecg-ink") || "#111", fam = fontSans();
-    var bumps = beatBumps(defaultBeat({ axis: RS.axis, u: false }));
-    clearSvg(svg);
-    var u = 8, t0 = -0.15, t1 = 1.88, x0 = 96, gw = 25 * u * (t1 - t0);
-    var gh = 14 * u, gap = 8, top = 8;
-    var scale = axisCommonScale(gh, u);
-    var sy = scale.sy, margin = scale.margin;
-    var leads = [
-      { name: "I", deg: 0 },
-      { name: "II", deg: 60 },
-      { name: "aVF", deg: 90 }
-    ];
-    leads.forEach(function (ld, i) {
-      ld.gy = top + i * (gh + gap);
-    });
-    var vbW = x0 + gw + 10, vbH = top + 3 * gh + 2 * gap + 8;
-    svg.setAttribute("viewBox", "0 0 " + Math.ceil(vbW) + " " + Math.ceil(vbH));
-    var g = el("g", null, svg);
-    var fit = [];
-    leads.forEach(function (ld) {
-      paper(g, x0, ld.gy, gw, gh, u);
-      var f = function (tt) { return voltageLead(bumps, tt, 1.0, leadDir(ld.deg)); };
-      var mn = 0, mx = 0, tt, v;
-      for (tt = t0; tt <= t1 + 1e-12; tt += 0.002) {
-        v = f(tt);
-        if (v < mn) mn = v;
-        if (v > mx) mx = v;
-      }
-      var y0 = ld.gy + gh / 2;
-      el("path", {
-        d: fnPath(f, t0, t1, x0, y0, 25 * u, sy, 0.002),
-        fill: "none", stroke: ink, "stroke-width": 2.2, "stroke-linejoin": "round",
-        "data-lead": ld.name
-      }, g);
-      var sign = leadSign(RS.axis, ld.deg);
-      el("text", { x: 6, y: ld.gy + 14, "text-anchor": "start", fill: tok.text, "font-family": fam, class: "lab-int" }, g, ld.name);
-      el("text", { x: 6, y: ld.gy + 30, "text-anchor": "start", fill: tok.muted, "font-family": fam, class: "lab-small" }, g, sign);
-      fit.push({ name: ld.name, gy: ld.gy, gh: gh, y0: y0, sy: sy, min: mn, max: mx, peak: scale.peak, top: ld.gy + margin, bot: ld.gy + gh - margin });
-    });
-    RS._leadFit = fit;
+    RS._leadFit = renderAxisLeadsOn(svg, RS.axis, { showSigns: true });
   }
 
   function leadFitReport(deg) {
@@ -3111,10 +3483,155 @@
     bindAxisWheel();
   }
 
+
+  function bindAxisPointer(svg, storeKey, getDeg, setDeg, isLocked) {
+    if (!svg || svg.dataset.bound) return;
+    svg.dataset.bound = "1";
+    var dragFlag = storeKey + "Dragging";
+    function degFromEvent(ev) {
+      var w = RS[storeKey];
+      if (!w) return getDeg();
+      var loc = svgEventToUser(svg, ev);
+      if (!loc) return getDeg();
+      return Math.atan2(loc.y - w.cy, loc.x - w.cx) / DEG;
+    }
+    svg.addEventListener("pointerdown", function (ev) {
+      if (isLocked && isLocked()) return;
+      RS[dragFlag] = true;
+      try { svg.setPointerCapture(ev.pointerId); } catch (err) {}
+      setDeg(degFromEvent(ev));
+      ev.preventDefault();
+    });
+    svg.addEventListener("pointermove", function (ev) {
+      if (!RS[dragFlag]) return;
+      if (isLocked && isLocked()) return;
+      setDeg(degFromEvent(ev));
+      ev.preventDefault();
+    });
+    svg.addEventListener("pointerup", function () { RS[dragFlag] = false; });
+    svg.addEventListener("pointercancel", function () { RS[dragFlag] = false; });
+    svg.addEventListener("keydown", function (ev) {
+      if (isLocked && isLocked()) return;
+      var step = ev.shiftKey ? 5 : 15;
+      if (ev.key === "ArrowLeft" || ev.key === "ArrowDown") {
+        setDeg(getDeg() - step);
+        ev.preventDefault();
+      } else if (ev.key === "ArrowRight" || ev.key === "ArrowUp") {
+        setDeg(getDeg() + step);
+        ev.preventDefault();
+      }
+    });
+  }
+
+  function renderAxisPractice() {
+    var st = RS.axisPractice;
+    if (!st) return;
+    var wheel = $("axisPracticeSvg");
+    var leads = $("axisPracticeLeadsSvg");
+    renderAxisWheelOn(wheel, {
+      axis: st.guess,
+      trueAxis: st.trueAxis,
+      showTrue: !!st.answered,
+      prefix: "axp",
+      highlight: st.answered ? st.category : null,
+      teach: false,
+      store: "_axisPracticeWheel"
+    });
+    renderAxisLeadsOn(leads, st.trueAxis, { showSigns: !!st.answered });
+    var elr = $("axisPracticeReadout");
+    if (elr) {
+      if (st.answered) {
+        elr.textContent = "Your estimate: " + formatAxisDeg(st.guess) + ". True axis: " + formatAxisDeg(st.trueAxis) + " (" + axisLabel(st.trueAxis).name + ").";
+      } else {
+        elr.textContent = "Your estimate: " + formatAxisDeg(st.guess) + ".";
+      }
+    }
+  }
+
+  function fillAxisPracticeControls() {
+    var box = $("axisPracticeControls");
+    var st = RS.axisPractice;
+    if (!box || !st) return;
+    var html = "";
+    if (!st.answered) {
+      html += "<button type='button' class='t-btn' id='axisPMinus' aria-label='Decrease estimate by 15 degrees'>-15°</button>";
+      html += "<button type='button' class='t-btn' id='axisPPlus' aria-label='Increase estimate by 15 degrees'>+15°</button>";
+      html += actionRow(primaryBtn("axisPCheck", "Check") + secondaryBtn("axisPAnother", "Try another strip"));
+    } else {
+      html += "<div class='quiz-feedback" + (st.ok ? "" : " is-wrong") + "' id='axisPFeedback'><p><strong>" + (st.ok ? "Correct." : "Not quite.") + "</strong> " + esc(st.feedback) + "</p></div>";
+      html += actionRow(secondaryBtn("axisPAnother", "Try another strip"));
+    }
+    box.innerHTML = html;
+    if ($("axisPMinus")) $("axisPMinus").addEventListener("click", function () { setAxisPracticeGuess(st.guess - 15); });
+    if ($("axisPPlus")) $("axisPPlus").addEventListener("click", function () { setAxisPracticeGuess(st.guess + 15); });
+    if ($("axisPCheck")) $("axisPCheck").addEventListener("click", checkAxisPractice);
+    if ($("axisPAnother")) $("axisPAnother").addEventListener("click", function () { startAxisPractice(); });
+  }
+
+  function setAxisPracticeGuess(deg) {
+    var st = RS.axisPractice;
+    if (!st || st.answered) return;
+    st.guess = wrapAxis(deg);
+    renderAxisPractice();
+  }
+
+  function axisFeedbackText(trueDeg, guess, ok) {
+    var info = axisLabel(trueDeg);
+    var msg = "The axis is " + formatAxisDeg(trueDeg) + " (" + info.name + ").";
+    msg += " Your estimate was " + formatAxisDeg(guess) + ".";
+    if (!ok) msg += " Estimates within 30° count as correct.";
+    msg += " " + axisReasoning(trueDeg);
+    return msg;
+  }
+
+  function checkAxisPractice() {
+    var st = RS.axisPractice;
+    if (!st || st.answered) return;
+    st.ok = axisDelta(st.guess, st.trueAxis) <= 30;
+    st.answered = true;
+    st.feedback = axisFeedbackText(st.trueAxis, st.guess, st.ok);
+    var live = $("axisPracticeLive");
+    if (live) live.textContent = (st.ok ? "Correct. " : "Not quite. ") + st.feedback;
+    fillAxisPracticeControls();
+    renderAxisPractice();
+    flashStrip($("axisPracticeLeadsSvg"));
+  }
+
+  function startAxisPractice(spec) {
+    var another = !spec;
+    if (another) {
+      RS.axisStrip = (RS.axisStrip || 1) + 1;
+    } else {
+      RS.axisStrip = 1;
+    }
+    var c = makeAxisCase(spec || { avoid: RS.lastAxisCat });
+    RS.lastAxisCat = c.category;
+    RS.axisPractice = {
+      trueAxis: c.deg,
+      category: c.category,
+      isoLead: c.isoLead,
+      guess: c.startGuess,
+      answered: false,
+      ok: false,
+      feedback: ""
+    };
+    setStripLabel("axisStripLabel", RS.axisStrip);
+    fillAxisPracticeControls();
+    renderAxisPractice();
+    bindAxisPointer($("axisPracticeSvg"), "_axisPracticeWheel", function () {
+      return RS.axisPractice ? RS.axisPractice.guess : 0;
+    }, function (d) { setAxisPracticeGuess(d); }, function () {
+      return !!(RS.axisPractice && RS.axisPractice.answered);
+    });
+    flashStrip($("axisPracticeLeadsSvg"));
+  }
+
+
   function initRead() {
     startRate({ kind: "regular", largeSq: 4, seed: 1 });
     startRhythm({ kind: "sinus", largeSq: 4, seed: 2 });
     startAxis(60);
+    startAxisPractice({ category: "normal", deg: 0 });
   }
 
   function redrawRead() {
@@ -3122,6 +3639,7 @@
     if (RS.rhythm) renderRhythm();
     renderAxisWheel();
     renderAxisLeads();
+    if (RS.axisPractice) renderAxisPractice();
   }
 
 
@@ -3157,6 +3675,9 @@
       startRate: startRate,
       startRhythm: startRhythm,
       setAxis: setAxis,
+      startAxisPractice: startAxisPractice,
+      checkAxisPractice: checkAxisPractice,
+      setAxisPracticeGuess: setAxisPracticeGuess,
       state: function () {
         return {
           rate: RS.rate ? { kind: RS.rate.kind, rate: RS.rate.rate, largeSq: RS.rate.largeSq, n: RS.rate.times.length, marks: RS.rate.marks.slice(), calA: RS.rate.calA, calB: RS.rate.calB, entered: RS.rate.entered } : null,
@@ -3165,7 +3686,16 @@
           axisInfo: axisLabel(RS.axis),
           leadI: leadSign(axisLabel(RS.axis).deg, 0),
           leadII: leadSign(axisLabel(RS.axis).deg, 60),
-          leadAVF: leadSign(axisLabel(RS.axis).deg, 90)
+          leadAVF: leadSign(axisLabel(RS.axis).deg, 90),
+          practice: RS.axisPractice ? {
+            trueAxis: RS.axisPractice.trueAxis,
+            guess: RS.axisPractice.guess,
+            category: RS.axisPractice.category,
+            isoLead: RS.axisPractice.isoLead,
+            answered: RS.axisPractice.answered,
+            ok: RS.axisPractice.ok,
+            strip: RS.axisStrip || 1
+          } : null
         };
       },
       markRateAt: function (t) { if (RS.rate) { toggleMark(RS.rate, t); renderRate(); } },
@@ -3210,6 +3740,7 @@
         if (it.type === "calipers") return makeCalipers(it.measure ? it : null);
         if (it.type === "rate") return makeRate({ kind: it.kind, largeSq: it.largeSq, mean: it.mean, seed: it.seed });
         if (it.type === "spot") return makeSpot(it.abnormality);
+        if (it.type === "axis") return makeAxis(it);
         return it;
       },
       open: function (itemOrItems) {
@@ -3255,7 +3786,8 @@
         if (!it || it.type !== "rate") return;
         toggleMark(it, t);
         drawQuizTrace();
-      }
+      },
+      setAxisGuess: setQuizAxisGuess
     }
   };
 
