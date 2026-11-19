@@ -4223,7 +4223,7 @@ if (typeof SRC === "object") {
   SRC.ecg12Sim = "Simulation simplification: 12-lead descriptions are scripted to match each case. Delta waves and flutter waves are mentioned only when they belong in that case. Peaked T waves and QRS broadening in hyperkalaemia are common teaching; the saved RCUK 2025 special circumstances text mentions ECG changes but does not list those morphologies.";
   SRC.refRanges = REF_RANGE_NOTE;
   SRC.harmAden = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features (including shock and immediately post-ROSC) lead to synchronised shock, not adenosine. Adenosine is on the stable regular narrow (or selected regular monomorphic) pathway. Treating an unstable tachycardia with adenosine instead of cardioversion was treated as a dangerous error in this simulation.";
-  SRC.harmShockPulse = "RCUK 2025 Adult ALS guideline and tachyarrhythmia algorithm: unsynchronised defibrillation is for VF or pulseless VT. A tachyarrhythmia with a pulse is treated with synchronised cardioversion when unstable.";
+  SRC.harmShockPulse = "RCUK 2025 Adult ALS guideline and tachyarrhythmia algorithm: unsynchronised defibrillation is for VF or pulseless VT. A tachyarrhythmia with a pulse is treated with synchronised cardioversion when unstable. In this simulation an unsynchronised shock in a patient with a pulse ends the case, whether Show solution is on or off, because it would fail the ALS assessment.";
   SRC.harmCprPulse = "RCUK 2025 Adult ALS guideline: CPR is for cardiac arrest (unresponsive, not breathing normally). Chest compressions in a patient with a pulse were treated as a dangerous error in this simulation.";
   SRC.harmAsys = "RCUK 2025 Adult ALS algorithm: asystole is a non-shockable rhythm. Do not shock asystole.";
   SRC.harmAdenAF = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features lead to synchronised shock. Adenosine is for a stable, regular narrow-complex tachycardia without pre-excitation, not for unstable atrial fibrillation.";
@@ -5924,13 +5924,14 @@ function doAction(a) {
   if (harm) {
     o.harm = harm;
     o.keys = [harm.id].concat(o.keys || []);
-    if (!hintsOn()) {
-      o.v = "bad";
+    o.v = "bad";
+    // An unsynchronised shock with a pulse would fail the ALS assessment, so the case always ends.
+    var alwaysEnd = harm.id === "harm_shockPulse";
+    if (alwaysEnd || !hintsOn()) {
       o.end = true;
       o.endReason = "harm";
       o.verdictText = "Patient harmed: scenario ended";
     } else {
-      o.v = "bad";
       o.end = false;
       o.endReason = "";
     }
@@ -6012,7 +6013,7 @@ function renderFeedback(o, changed) {
   var ic = o.v === "ok" ? ICON_OK : o.v === "late" ? ICON_LATE : o.v === "bad" ? ICON_NO : "<span class='verdict-glyph' aria-hidden='true'>" + (VERD[o.v] ? VERD[o.v][0] : "") + "</span>";
   var verdict = o.verdictText ? (ic + esc(o.verdictText)) : (ic + VERD[o.v][1] + ": " + esc(o.label));
   var html = "<p class='explain-kicker'>Feedback</p><p class='verdict-line'>" + verdict + "</p>";
-  if (o.harm && o.endReason === "harm" && !hintsOn()) {
+  if (o.harm && o.endReason === "harm") {
     var harmWhy = (typeof firstWhyWrong === "function" && firstWhyWrong(o)) || (o.harm && o.harm.label) || "";
     if (harmWhy) html += "<p class='scn-fb'>" + esc(harmWhy) + "</p>";
     $("scnFeedback").innerHTML = html;
