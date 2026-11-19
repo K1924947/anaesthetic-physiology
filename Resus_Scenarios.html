@@ -762,7 +762,7 @@ body.scn-popup-open { overflow: hidden; }
             </summary>
             <ol class="scn-guide-steps">
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random picks from all of the cases in the list. The name of a random case is revealed in the debrief, not while you are playing.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Each opens as a pop-up, so you do not have to scroll the actions list. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. After the first Cycle NIBP, the cuff then repeats every 2 minutes of simulated time; a further Cycle NIBP now resets that interval. Nothing you should have to request is shown up front.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify reversible causes and Ask for / check when you need a list of causes or a test result. Each opens as a pop-up, so you do not have to scroll the actions list. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. After the first Cycle NIBP, the cuff then repeats every 2 minutes of simulated time; a further Cycle NIBP now resets that interval. Nothing you should have to request is shown up front.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>CPR for 2 minutes performs two minutes of CPR and shows the rhythm on the monitor. Skip time only advances the clock and does not count as an action. Check rhythm and pulse is a separate step.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback still gives a short reason when an action is not quite or partly right, and a one-line reason if a dangerous error ends the case. It will not show the full model answer or tell you the next step.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends. The debrief names the missed step and the correct action; the live nudges stay vague.</span></li>
@@ -845,8 +845,8 @@ body.scn-popup-open { overflow: hidden; }
           <div class="scn-popup-backdrop" id="scnCauseBackdrop" tabindex="-1"></div>
           <div class="scn-popup-panel" id="scnCauseList" role="dialog" aria-modal="true" aria-labelledby="scnCauseTitle">
             <div class="scn-popup-head">
-              <h2 class="scn-popup-title" id="scnCauseTitle">Identify and treat reversible causes</h2>
-              <button type="button" class="scn-popup-close" id="scnCauseClose" aria-label="Close Identify and treat reversible causes">
+              <h2 class="scn-popup-title" id="scnCauseTitle">Identify reversible causes</h2>
+              <button type="button" class="scn-popup-close" id="scnCauseClose" aria-label="Close Identify reversible causes">
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
@@ -878,6 +878,6 @@ body.scn-popup-open { overflow: hidden; }
     </section>
   </main>
 </div>
-<script src="assets/ecg-app.js?v=20261119c"></script>
+<script src="assets/ecg-app.js?v=20261119d"></script>
 </body>
 </html>

@@ -2783,11 +2783,11 @@ var TXT = {
     nextStep: "Monitor, treat the underlying cause and consider transvenous pacing."
   },
   s3_causes: {
-    full: "Right to identify and treat reversible causes, for example electrolyte abnormalities, or beta-blockers or calcium channel blockers as a cause.",
+    full: "Right to identify the reversible causes, for example electrolyte abnormalities, or beta-blockers or calcium channel blockers as a cause.",
     guideline: "Bradyarrhythmia: identify and treat reversible causes",
     src: "brady",
     flag: 1,
-    outcome: "Right to identify and treat reversible causes, for example electrolyte abnormalities, or beta-blockers or calcium channel blockers as a cause.",
+    outcome: "Right to identify the reversible causes, for example electrolyte abnormalities, or beta-blockers or calcium channel blockers as a cause.",
     whyWrong: "",
     nextStep: ""
   },
@@ -3047,11 +3047,11 @@ var TXT = {
     nextStep: ""
   },
   s6_causes: {
-    full: "Right: identify and treat reversible causes, here the low potassium and the QT-prolonging drugs.",
+    full: "Right: identify the reversible causes, here the low potassium and the QT-prolonging drugs.",
     guideline: "Tachyarrhythmia: identify and treat reversible causes",
     src: "tdpCauses",
     flag: 1,
-    outcome: "Right: identify and treat reversible causes, here the low potassium and the QT-prolonging drugs.",
+    outcome: "Right: identify the reversible causes, here the low potassium and the QT-prolonging drugs.",
     whyWrong: "",
     nextStep: ""
   },
@@ -4243,8 +4243,8 @@ if (typeof TXT === "object") {
   TXT.harm_adenUnstable = Tfb("Adenosine was given in an unstable tachycardia. The algorithm's unstable path is synchronised cardioversion, not adenosine.", "Tachyarrhythmia: unstable, synchronised shock", "harmAden", { whyWrong: "Adenosine is not the treatment for an unstable tachycardia.", event: "Adenosine given." });
   TXT.harm_adenUnstableAF = Tfb("Adenosine was given in unstable atrial fibrillation. This is an irregular narrow-complex tachycardia with life-threatening features. The algorithm's unstable path is synchronised cardioversion, not adenosine.", "Tachyarrhythmia: unstable, synchronised shock", "harmAdenAF", { whyWrong: "Adenosine is not the treatment for unstable, irregular atrial fibrillation.", event: "Adenosine given." });
   TXT.harm_other = Tfb("This action was treated as a dangerous error in this simulation.", "Simulation: dangerous error", "harmOther", { whyWrong: "This action was treated as a dangerous error in this simulation.", event: "A dangerous action was recorded." });
-  TXT.cause_ok = Tfb("The cause named fits this case.", "Identify and treat reversible causes", "causesList", { outcome: "The cause named fits this case.", event: "A reversible cause was named." });
-  TXT.cause_bad = Tfb("Nothing in this scene supports that reversible cause.", "Identify and treat reversible causes", "causesList", { whyWrong: "Nothing in this scene supports that reversible cause.", event: "A reversible cause was named." });
+  TXT.cause_ok = Tfb("The cause named fits this case.", "Identify reversible causes", "causesList", { outcome: "The cause named fits this case.", event: "A reversible cause was named." });
+  TXT.cause_bad = Tfb("Nothing in this scene supports that reversible cause.", "Identify reversible causes", "causesList", { whyWrong: "Nothing in this scene supports that reversible cause.", event: "A reversible cause was named." });
   TXT.n_skipTime = Tfb("Simulated time advanced by 1 minute. Skip time is not an algorithm action and does not count as performing CPR.", "Simulation clock", "alsPriority", { event: "Simulated time advanced by 1 minute." });
 }
 
@@ -4372,7 +4372,7 @@ function pickCause(cid) {
   } else {
     o = O("bad", "cause_bad", { event: item.label + " named as a reversible cause." });
   }
-  o.label = "Identify and treat reversible causes: " + item.label;
+  o.label = "Identify reversible causes: " + item.label;
   finishPickedAction("causes", o, 30);
 }
 
@@ -4562,7 +4562,7 @@ function deliverPending(p) {
     }
     var askEvent = p.text;
     if (p.relevant) {
-      askEvent = p.text + " This result may help you identify a reversible cause. Name and treat it using Identify and treat reversible causes.";
+      askEvent = p.text + " This result may help you identify a reversible cause. Name it using Identify reversible causes.";
     }
     var o = O("info", keys, { event: askEvent, notAction: true });
     o.label = p.label;
@@ -4687,7 +4687,7 @@ function missedStepLine(d) {
 var ACTIONS = [
   { id: "assess", label: "Check rhythm and pulse", g: "Assess and call" },
   { id: "expert", label: "Seek expert help", g: "Assess and call" },
-  { id: "causes", label: "Identify and treat reversible causes", g: "Assess and call" },
+  { id: "causes", label: "Identify reversible causes", g: "Assess and call" },
   { id: "ask", label: "Ask for / check", g: "Assess and call" },
   { id: "nibp", label: "Cycle NIBP now", g: "Assess and call" },
   { id: "observe", label: "Observe and reassess later", g: "Assess and call" },
@@ -5209,7 +5209,7 @@ var SCENARIOS = [
     blurb: "Repeated light-headed spells in an inpatient on several drugs.",
     scene: "A 71-year-old inpatient taking several QT-prolonging drugs has repeated brief spells of light-headedness. The monitor alarms.",
     start: { rhythm: { gen: "torsades", opts: { runLen: 2.4 } }, pulse: true, vit: { pulse: "Present between runs", bp: "104/62 mmHg between runs", consc: "Alert, light-headed during runs", threats: "None sustained; runs are self-terminating" } },
-    req: [["mg", "Magnesium 8 mmol IV over 10 min", "tdp"], ["causes", "Identify and treat reversible causes (low potassium, QT-prolonging drugs)", "tdpCauses"]],
+    req: [["mg", "Magnesium 8 mmol IV over 10 min", "tdp"], ["causes", "Identify reversible causes (low potassium, QT-prolonging drugs)", "tdpCauses"]],
     idleNudge: true,
     step: function (a, st) {
       var done = function (o) { if (st.mg && st.cause && !st.arrest) o.end = true; return o; };
@@ -5580,7 +5580,7 @@ function outstandingSteps(st) {
         out.push(dueItem("mg", "Magnesium 8 mmol IV over 10 min", "Review the first-line treatment for this rhythm", "Have you thought about the first-line treatment for this rhythm?", "tdp", "Tachyarrhythmia: Mg2+ 8 mmol IV over 10 min"));
       }
       if (!st.cause && hadChance) {
-        out.push(dueItem("causes", "Identify and treat reversible causes (low potassium, QT-prolonging drugs)", "Think about reversible causes", "Have you thought about reversible causes?", "tdpCauses", "Tachyarrhythmia: identify and treat reversible causes"));
+        out.push(dueItem("causes", "Identify reversible causes (low potassium, QT-prolonging drugs)", "Think about reversible causes", "Have you thought about reversible causes?", "tdpCauses", "Tachyarrhythmia: identify and treat reversible causes"));
       }
     }
   }
@@ -6561,7 +6561,7 @@ var IDEAL_PATHS = {
   s6: [
     IP("assess", "Check rhythm and pulse", "Confirm self-terminating polymorphic VT (torsades de pointes).", SRC_TACHY),
     IP("mg", "Magnesium 8 mmol IV over 10 min", "Torsades is triggered activity from early afterdepolarisations during a prolonged plateau. Magnesium is thought to suppress them, so the runs stop.", SRC_TACHY),
-    IP("causes", "Identify and treat reversible causes", "Look for low potassium and QT-prolonging drugs, and treat the cause. This can be done at any time once the rhythm is recognised.", SRC_TACHY, { orderFree: true })
+    IP("causes", "Identify reversible causes", "Look for low potassium and QT-prolonging drugs, and treat the cause. This can be done at any time once the rhythm is recognised.", SRC_TACHY, { orderFree: true })
   ],
   h1: [
     IP("assess", "Check rhythm and pulse", "Confirm asystole before you treat.", SRC_ALS_A),
