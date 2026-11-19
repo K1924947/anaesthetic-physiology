@@ -6,8 +6,8 @@
   var DEG = Math.PI / 180;
   var BEAT_P = { pr: 0.16, qrs: 0.09, qt: 0.40, axis: 60, u: true };
   var RR = 1.0;
-  var BS = { part: "P", hover: null };
-  var BG = { x0: 20, y0: 242, u: 16, tStart: -0.08, tEnd: 1.30 };
+  var BS = { part: "P", hover: null, locked: false };
+  var BG = { x0: 20, y0: 242, u: 16, tStart: -0.08, tEnd: 1.80 };
 
   function $(id) { return document.getElementById(id); }
   function el(tag, attrs, parent, text) {
@@ -134,6 +134,7 @@
     u: "https://litfl.com/u-wave-ecg-library/",
     qt: "https://litfl.com/qt-interval-ecg-library/",
     rate: "https://litfl.com/ecg-rate-interpretation/",
+    rhythm: "https://litfl.com/ecg-rhythm-evaluation/",
     klab: "https://cvphysiology.com/arrhythmias/a009"
   };
 
@@ -143,15 +144,24 @@
       short: "P wave",
       t: [0.0, 0.105],
       event: "Atrial depolarisation. The impulse leaves the SA node and spreads through the right atrium, then the left.",
-      normal: "LITFL: duration under 0.12 s (3 small squares); height under 2.5 mm (0.25 mV) in the limb leads. Upright in I and II, inverted in aVR; often biphasic in V1. Klabunde gives a usual duration of 0.08 to 0.10 s.",
-      srcHtml: srcPair("LITFL, P wave", LINKS.p, "Klabunde, Electrocardiogram", LINKS.klab)
+      normal: "Duration under 0.12 s; height under 2.5 mm in the limb leads. Upright in I and II, inverted in aVR; often biphasic in V1.",
+      clinical: [
+        "Absent in atrial fibrillation.",
+        "Peaked P waves in lead II (P pulmonale) in right atrial enlargement.",
+        "Broad, notched P waves in lead II (P mitrale) in left atrial enlargement."
+      ],
+      srcHtml: srcTrio("LITFL, P wave", LINKS.p, "LITFL, rhythm evaluation", LINKS.rhythm, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     PRs: {
       name: "PR segment",
       short: "PR seg",
       t: [0.105, 0.16],
       event: "The flat line after the P wave. The impulse is delayed in the AV node, then travels through the bundle of His and the bundle branches. Too little tissue depolarises to write a wave, so the line stays isoelectric. Atrial repolarisation is usually hidden in the QRS.",
-      normal: "Flat and isoelectric, judged against the T-P segment (LITFL). Klabunde describes this brief isoelectric period as the time the impulse is travelling in the AV node and the bundle of His.",
+      normal: "Flat and isoelectric, judged against the T-P segment.",
+      clinical: [
+        "PR segment depression is a characteristic change in pericarditis.",
+        "PR elevation or depression in infarction can indicate atrial ischaemia."
+      ],
       srcHtml: srcPair("LITFL, PR segment", LINKS.prs, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     PRi: {
@@ -160,7 +170,11 @@
       t: [0.0, 0.16],
       bracket: true,
       event: "From the start of the P wave to the start of the QRS: atrial depolarisation plus the delay at the AV node (the P wave plus the PR segment).",
-      normal: "0.12 to 0.20 s (3 to 5 small squares). Over 0.20 s: first degree AV block. Under 0.12 s: pre-excitation or a junctional rhythm. LITFL and Klabunde agree on this range.",
+      normal: "0.12 to 0.20 s (3 to 5 small squares).",
+      clinical: [
+        "A long PR interval (over 0.20 s) is first degree AV block.",
+        "A short PR interval (under 0.12 s) suggests pre-excitation, including WPW, or a junctional rhythm."
+      ],
       srcHtml: srcPair("LITFL, PR interval", LINKS.pr, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     QRS: {
@@ -168,31 +182,47 @@
       short: "QRS",
       t: [0.16, 0.25],
       event: "Ventricular depolarisation. The septum depolarises first, left to right (a small q in left-sided leads), then the main mass of both ventricles via the bundle branches and Purkinje fibres.",
-      normal: "LITFL: 70 to 100 ms is normal; over 100 ms is abnormal; over 120 ms is required to diagnose bundle branch block or a ventricular rhythm. Klabunde: normally 0.06 to 0.10 s, and prolonged if over 0.10 s. A common UK teaching figure is under 0.12 s (Hampton, The ECG Made Easy).",
+      normal: "Under 0.12 s (3 small squares).",
+      clinical: [
+        "A QRS over 0.12 s is used to diagnose bundle branch block or a ventricular rhythm.",
+        "Broad complexes also occur in hyperkalaemia, tricyclic antidepressant poisoning, and pre-excitation."
+      ],
       srcHtml: srcTrio("LITFL, QRS interval", LINKS.qrs, "LITFL, Q wave", LINKS.q, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     ST: {
       name: "ST segment",
       short: "ST",
       t: [0.25, 0.34],
-      event: "The ventricles are fully depolarised, so there is little voltage difference and the line is flat. It runs from the end of the QRS (the J point) to the start of the T wave. Klabunde notes that this roughly corresponds to the plateau (phase 2) of the ventricular action potential.",
-      normal: "Isoelectric, level with the baseline. Elevation or depression is judged at the J point against the T-P segment (LITFL).",
+      event: "The ventricles are fully depolarised, so there is little voltage difference and the line is flat. It runs from the end of the QRS (the J point) to the start of the T wave. This roughly corresponds to the plateau (phase 2) of the ventricular action potential.",
+      normal: "Isoelectric at the J point, judged against the T-P segment.",
+      clinical: [
+        "The most important cause of ST elevation or depression is myocardial ischaemia or infarction.",
+        "Pericarditis can cause widespread concave ST elevation, often with PR segment depression."
+      ],
       srcHtml: srcPair("LITFL, ST segment", LINKS.st, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     T: {
       name: "T wave",
       short: "T wave",
       t: [0.34, 0.56],
-      event: "Ventricular repolarisation. It usually points the same way as the QRS because the last cells to depolarise (in the subepicardium) are the first to repolarise (Klabunde).",
-      normal: "Upright in all leads except aVR and V1. Height under 5 mm in the limb leads and under 10 mm in the chest leads (LITFL; 10 mm in men and 8 mm in women in the precordial leads).",
+      event: "Ventricular repolarisation. It usually points the same way as the QRS because the last cells to depolarise (in the subepicardium) are the first to repolarise.",
+      normal: "Upright in all leads except aVR and V1. Height under 5 mm in the limb leads and under 10 mm in the chest leads.",
+      clinical: [
+        "Tall, narrow, peaked T waves are characteristic of hyperkalaemia.",
+        "Inverted T waves in contiguous leads occur with myocardial ischaemia and infarction."
+      ],
       srcHtml: srcPair("LITFL, T wave", LINKS.tw, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     U: {
       name: "U wave",
       short: "U wave",
       t: [0.59, 0.72],
-      event: "A small wave after the T wave. LITFL notes that its origin is uncertain. Klabunde describes it as the last remnants of ventricular repolarisation.",
-      normal: "Small (about 0.5 mm), same direction as the T wave, best seen in V2 and V3, and usually visible only at slower rates (LITFL).",
+      event: "A small wave after the T wave. Its origin is uncertain; it may represent the last remnants of ventricular repolarisation.",
+      normal: "Small, same direction as the T wave, best seen in V2 and V3, and usually visible only at slower rates.",
+      clinical: [
+        "Prominent U waves are most often due to severe hypokalaemia.",
+        "Digoxin is also associated with prominent U waves."
+      ],
       srcHtml: srcPair("LITFL, U wave", LINKS.u, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     QT: {
@@ -201,7 +231,11 @@
       t: [0.16, 0.56],
       bracket: true,
       event: "From the start of the QRS to the end of the T wave: the whole of ventricular depolarisation and repolarisation. It shortens as the heart rate rises, so it is usually quoted as a rate-corrected value (QTc).",
-      normal: "LITFL: QTc is prolonged if over 440 ms in men or over 460 ms in women; over 500 ms is linked to torsades de pointes; under 350 ms is abnormally short. Klabunde: a normal QTc is 0.44 s or less (one cut-off, not split by sex). Rule of thumb: a normal QT is under half the preceding RR (LITFL). On this trace the rate is 60 /min and QT is 0.40 s, so Bazett QTc is 0.40 s.",
+      normal: "QTc under 440 ms in men and under 460 ms in women. Over 500 ms carries a high risk of torsades de pointes. On this trace the rate is 60 /min and QT is 0.40 s, so Bazett QTc is 0.40 s.",
+      clinical: [
+        "A prolonged QT is associated with an increased risk of torsades de pointes, especially if QTc is over 500 ms.",
+        "Causes include low potassium, magnesium or calcium, and some drugs."
+      ],
       srcHtml: srcPair("LITFL, QT interval", LINKS.qt, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     RR: {
@@ -211,11 +245,25 @@
       bracket: true,
       bracketY: "rr",
       event: "The RR interval is the time from one R wave to the next: the cycle length of the ventricular rhythm. It is how you work out the heart rate on paper.",
-      normal: "LITFL (adults): a normal rate is 50 to 100 /min, bradycardia under 50 /min and tachycardia over 100 /min. Many textbooks still use 60 to 100 /min as the normal range. At 25 mm/s, rate = 300 divided by the number of large squares between consecutive R waves (or 1500 divided by the number of small squares). For an irregular rhythm, count the QRS complexes in 10 seconds and multiply by 6. On this trace RR is 1.00 s (5 large squares), so the rate is 60 /min.",
-      srcHtml: srcPair("LITFL, ECG rate interpretation", LINKS.rate, "Klabunde, Electrocardiogram", LINKS.klab)
+      normal: "60 to 100 /min. At 25 mm/s, rate = 300 divided by the number of large squares between consecutive R waves. On this trace RR is 1.00 s (5 large squares), so the rate is 60 /min.",
+      clinical: [
+        "A rate under 60 /min is bradycardia; over 100 /min is tachycardia.",
+        "Irregularly irregular RR intervals, with no P waves, occur in atrial fibrillation."
+      ],
+      srcHtml: srcTrio("LITFL, ECG rate interpretation", LINKS.rate, "LITFL, rhythm evaluation", LINKS.rhythm, "Klabunde, Electrocardiogram", LINKS.klab)
     }
   };
+
   var PART_ORDER = ["P", "PRs", "PRi", "QRS", "ST", "T", "U", "QT", "RR"];
+  function displayedPart() {
+    if (BS.locked) return BS.part;
+    return BS.hover || BS.part;
+  }
+  function partRanges(p, key) {
+    var ranges = [{ t0: p.t[0], t1: p.t[1], copy: 0 }];
+    if (key !== "RR") ranges.push({ t0: p.t[0] + RR, t1: p.t[1] + RR, copy: 1 });
+    return ranges.filter(function (r) { return r.t1 > BG.tStart && r.t0 < BG.tEnd; });
+  }
 
   function srcPair(a, au, b, bu) {
     return '<a href="' + au + '" target="_blank" rel="noopener">' + esc(a) + '</a> · <a href="' + bu + '" target="_blank" rel="noopener">' + esc(b) + '</a>.';
@@ -224,7 +272,18 @@
     return '<a href="' + au + '" target="_blank" rel="noopener">' + esc(a) + '</a> · <a href="' + bu + '" target="_blank" rel="noopener">' + esc(b) + '</a> · <a href="' + cu + '" target="_blank" rel="noopener">' + esc(c) + '</a>.';
   }
 
-  function activeKey() { return BS.hover || BS.part; }
+  function activeKey() { return displayedPart(); }
+
+  function addHit(g, r, k) {
+    var hg = el("g", { class: "hit", "aria-hidden": "true", style: "cursor:pointer" }, g);
+    el("rect", Object.assign({ fill: "transparent" }, r), hg);
+    hg.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      clickPart(k);
+    });
+    hg.addEventListener("pointerenter", function () { previewPart(k); });
+    hg.addEventListener("pointerleave", function () { previewPart(null); });
+  }
 
   function drawBeat() {
     var svg = $("beatSvg");
@@ -255,13 +314,17 @@
     }, g);
     el("text", { x: cx + 2.5 * u, y: y0 - 10 * u - 8, "text-anchor": "middle", fill: t.muted, "font-family": fam, class: "lab-small" }, g, "1 mV");
 
-    var key = activeKey(), P = PARTS[key];
-    var hx0 = bx(P.t[0]), hx1 = bx(P.t[1]);
-    if (P.bracket && P.bracketY !== "rr") {
-      el("rect", { x: hx0, y: gy, width: hx1 - hx0, height: gh, fill: "url(#bt-hatch)", stroke: t.a, "stroke-width": 1.5, "stroke-dasharray": "5 3" }, g);
-    } else if (!P.bracket) {
-      el("rect", { x: hx0, y: gy, width: Math.max(hx1 - hx0, 2), height: gh, fill: "url(#bt-hatch)", stroke: t.a, "stroke-width": 1.5, "stroke-dasharray": "5 3" }, g);
-    }
+    var key = displayedPart(), P = PARTS[key];
+    var ranges = partRanges(P, key);
+    ranges.forEach(function (rg) {
+      var hx0 = bx(Math.max(rg.t0, BG.tStart));
+      var hx1 = bx(Math.min(rg.t1, BG.tEnd));
+      el("rect", {
+        x: hx0, y: gy, width: Math.max(hx1 - hx0, 2), height: gh,
+        fill: "url(#bt-hatch)", stroke: t.a, "stroke-width": 1.5, "stroke-dasharray": "5 3",
+        class: "hl-band", "data-copy": String(rg.copy)
+      }, g);
+    });
 
     var bumps = beatBumps(BEAT_P);
     var f = function (tt) { return voltage(bumps, tt); };
@@ -270,10 +333,14 @@
       fill: "none", stroke: ink, "stroke-width": 2.8, "stroke-linejoin": "round", "stroke-linecap": "round"
     }, g);
     if (!P.bracket) {
-      el("path", {
-        d: fnPath(f, P.t[0], P.t[1], hx0, y0, 25 * u, 10 * u, 0.002),
-        fill: "none", stroke: t.a, "stroke-width": 6.5, "stroke-linejoin": "round", "stroke-linecap": "round"
-      }, g);
+      ranges.forEach(function (rg) {
+        var hx0 = bx(rg.t0);
+        el("path", {
+          d: fnPath(f, rg.t0, rg.t1, hx0, y0, 25 * u, 10 * u, 0.002),
+          fill: "none", stroke: t.a, "stroke-width": 6.5, "stroke-linejoin": "round", "stroke-linecap": "round",
+          class: "hl-trace", "data-copy": String(rg.copy)
+        }, g);
+      });
     }
 
     var lab = [
@@ -283,7 +350,12 @@
       ["S", 0.240, -0.16],
       ["T", 0.455, 0.42],
       ["U", 0.635, 0.16],
-      ["R", 1.205, 1.32]
+      ["P", 1.05, 0.2],
+      ["Q", 1.168, -0.16],
+      ["R", 1.205, 1.32],
+      ["S", 1.240, -0.16],
+      ["T", 1.455, 0.42],
+      ["U", 1.635, 0.16]
     ];
     lab.forEach(function (l) {
       el("text", {
@@ -296,8 +368,10 @@
       }, g, l[0]);
     });
     el("text", { x: bx(0.33), y: y0 - 12, "text-anchor": "middle", fill: t.muted, "font-family": fam, class: "lab-small" }, g, "ST");
+    el("text", { x: bx(1.33), y: y0 - 12, "text-anchor": "middle", fill: t.muted, "font-family": fam, class: "lab-small" }, g, "ST");
     el("text", { x: bx(0.25) + 28, y: y0 + 28, "text-anchor": "start", fill: t.muted, "font-family": fam, class: "lab-small" }, g, "J point");
     el("circle", { cx: bx(0.25), cy: y0, r: 3.5, fill: t.text }, g);
+    el("circle", { cx: bx(1.25), cy: y0, r: 3.5, fill: t.text }, g);
 
     function bracket(t0, t1, y, text, partKey, labelSide) {
       var x0 = bx(t0), x1 = bx(t1), on = key === partKey;
@@ -326,20 +400,20 @@
     bracket(0.205, 1.205, rrY, "RR interval (1.00 s)", "RR", "below");
 
     PART_ORDER.forEach(function (k) {
-      var p = PARTS[k], x0 = bx(p.t[0]), x1 = bx(p.t[1]);
-      var r;
-      if (k === "RR") r = { x: x0, y: rrY - 16, width: x1 - x0, height: 40 };
-      else if (k === "PRi") r = { x: x0, y: prY - 28, width: Math.max(x1 - x0, 8), height: 36 };
-      else if (k === "QT") r = { x: x0, y: qtY - 28, width: Math.max(x1 - x0, 8), height: 36 };
-      else r = { x: x0, y: gy, width: Math.max(x1 - x0, 8), height: gh };
-      var hg = el("g", { class: "hit", "aria-hidden": "true", style: "cursor:pointer" }, g);
-      el("rect", Object.assign({ fill: "transparent" }, r), hg);
-      hg.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        selectPart(k);
+      var p = PARTS[k];
+      if (k === "RR") {
+        addHit(g, { x: bx(p.t[0]), y: rrY - 16, width: bx(p.t[1]) - bx(p.t[0]), height: 40 }, k);
+        return;
+      }
+      if (k === "PRi") {
+        addHit(g, { x: bx(p.t[0]), y: prY - 28, width: Math.max(bx(p.t[1]) - bx(p.t[0]), 8), height: 36 }, k);
+      } else if (k === "QT") {
+        addHit(g, { x: bx(p.t[0]), y: qtY - 28, width: Math.max(bx(p.t[1]) - bx(p.t[0]), 8), height: 36 }, k);
+      }
+      partRanges(p, k).forEach(function (rg) {
+        var x0 = bx(rg.t0), x1 = bx(rg.t1);
+        addHit(g, { x: x0, y: gy, width: Math.max(x1 - x0, 8), height: gh }, k);
       });
-      hg.addEventListener("pointerenter", function () { previewPart(k); });
-      hg.addEventListener("pointerleave", function () { previewPart(null); });
     });
   }
 
@@ -348,35 +422,77 @@
     var box = $("beatPanel");
     if (!box) return;
     var kicker = (preview ? "Preview · " : "") + (P.bracket ? "Interval" : "Part of the beat");
+    var clinical = "";
+    if (P.clinical && P.clinical.length) {
+      clinical = "<div class='clinical'><h3>Why it matters clinically</h3><ul>" +
+        P.clinical.map(function (line) { return "<li>" + esc(line) + "</li>"; }).join("") +
+        "</ul></div>";
+    }
     box.innerHTML =
       "<p class='kicker'>" + esc(kicker) + "</p>" +
       "<h3 class='explain-title tool-title'>" + esc(P.name) + "</h3>" +
       "<div class='panel-block'><h3>What it represents</h3><p>" + esc(P.event) + "</p></div>" +
       "<div class='panel-block'><h3>Normal values</h3><p>" + esc(P.normal) + "</p></div>" +
+      clinical +
       "<p class='src-line'>Sources: " + P.srcHtml + "</p>";
+  }
+
+  function syncHint() {
+    var hint = $("lockHint");
+    if (!hint) return;
+    if (BS.locked) {
+      hint.hidden = false;
+      hint.textContent = "Locked: " + PARTS[BS.part].name + " (click again to unlock)";
+    } else {
+      hint.hidden = true;
+      hint.textContent = "";
+    }
   }
 
   function syncBtns() {
     document.querySelectorAll("#partBtns .t-btn").forEach(function (b) {
-      b.setAttribute("aria-pressed", b.dataset.part === BS.part ? "true" : "false");
+      b.setAttribute("aria-pressed", (BS.locked && b.dataset.part === BS.part) ? "true" : "false");
     });
+    syncHint();
   }
 
-  function selectPart(k) {
-    BS.part = k;
-    BS.hover = null;
+  function render() {
     syncBtns();
     drawBeat();
-    beatPanel(k, false);
+    var shown = displayedPart();
+    beatPanel(shown, !BS.locked && !!BS.hover && BS.hover !== BS.part);
+  }
+
+  function clickPart(k) {
+    if (BS.locked && BS.part === k) {
+      BS.locked = false;
+      BS.hover = null;
+    } else {
+      BS.part = k;
+      BS.locked = true;
+      BS.hover = null;
+    }
+    render();
     var live = $("beatLive");
-    if (live) live.textContent = PARTS[k].name + " selected.";
+    if (live) {
+      live.textContent = BS.locked
+        ? PARTS[k].name + " locked. Click again to unlock."
+        : PARTS[k].name + " unlocked. Hover to preview other parts.";
+    }
   }
 
   function previewPart(k) {
+    if (BS.locked) return;
     if (window.matchMedia && window.matchMedia("(hover: none)").matches && k) return;
     BS.hover = k;
-    drawBeat();
-    beatPanel(k || BS.part, !!k && k !== BS.part);
+    render();
+  }
+
+  function showPart(k, locked) {
+    BS.part = k;
+    BS.locked = !!locked;
+    BS.hover = null;
+    render();
   }
 
   function initBeat() {
@@ -389,22 +505,23 @@
       b.textContent = PARTS[k].short;
       b.setAttribute("aria-label", PARTS[k].name);
       b.setAttribute("aria-pressed", "false");
-      b.addEventListener("click", function () { selectPart(k); });
+      b.addEventListener("click", function () { clickPart(k); });
       box.appendChild(b);
     });
     box.addEventListener("keydown", function (ev) {
       var keys = { ArrowRight: 1, ArrowLeft: -1, Home: "first", End: "last" };
       if (!(ev.key in keys)) return;
       ev.preventDefault();
-      var i = PART_ORDER.indexOf(BS.part);
+      var i = PART_ORDER.indexOf(displayedPart());
+      if (i < 0) i = 0;
       if (keys[ev.key] === "first") i = 0;
       else if (keys[ev.key] === "last") i = PART_ORDER.length - 1;
       else i = (i + keys[ev.key] + PART_ORDER.length) % PART_ORDER.length;
-      selectPart(PART_ORDER[i]);
+      clickPart(PART_ORDER[i]);
       var next = box.querySelector('[data-part="' + PART_ORDER[i] + '"]');
       if (next) next.focus();
     });
-    selectPart("P");
+    showPart("P", false);
   }
 
   var QUIZ = [
@@ -426,7 +543,7 @@
       q: "The QRS complex represents:",
       o: ["Ventricular depolarisation", "Atrial depolarisation", "Ventricular repolarisation", "The action potential plateau"],
       a: 0,
-      why: "The QRS is ventricular depolarisation. Sources disagree slightly on the exact upper limit of a normal duration: see the table above.",
+      why: "The QRS is ventricular depolarisation. A usual normal duration is under 0.12 s.",
       src: srcPair("LITFL, QRS interval", LINKS.qrs, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     {
@@ -452,7 +569,7 @@
       q: "At 25 mm/s, a regular rhythm with 4 large squares between consecutive R waves has a rate of:",
       o: ["75 /min", "60 /min", "100 /min", "150 /min"],
       a: 0,
-      why: "Rate = 300 divided by the number of large squares between R waves. 300 divided by 4 is 75 /min. (LITFL also gives adult bradycardia as under 50 /min, not under 60 /min.)",
+      why: "Rate = 300 divided by the number of large squares between R waves. 300 divided by 4 is 75 /min.",
       src: '<a href="' + LINKS.rate + '" target="_blank" rel="noopener">LITFL, ECG rate interpretation</a>.'
     }
   ];
@@ -549,19 +666,27 @@
     if (btn) btn.addEventListener("click", function () { setTest(!QZ.on); });
   }
 
-  function redraw() {
-    drawBeat();
-    beatPanel(activeKey(), !!BS.hover && BS.hover !== BS.part);
-  }
+  function redraw() { render(); }
+
+  window.__ecgBasics = {
+    state: function () {
+      return { part: BS.part, hover: BS.hover, locked: BS.locked, shown: displayedPart() };
+    },
+    click: clickPart,
+    preview: previewPart,
+    show: showPart,
+    highlightCopies: function () {
+      return {
+        bands: document.querySelectorAll("#beatSvg .hl-band").length,
+        traces: document.querySelectorAll("#beatSvg .hl-trace").length
+      };
+    }
+  };
 
   document.addEventListener("DOMContentLoaded", function () {
     initBeat();
     initQuiz();
     window.addEventListener("themechange", redraw);
-    var lastCompact = window.matchMedia("(max-width: 639px)").matches;
-    window.addEventListener("resize", function () {
-      var c = window.matchMedia("(max-width: 639px)").matches;
-      if (c !== lastCompact) { lastCompact = c; redraw(); }
-    });
+    window.addEventListener("resize", redraw);
   });
 })();

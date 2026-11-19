@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119c">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119d">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -55,19 +55,13 @@
         <div class="tool-stage">
           <div class="graph-card">
             <h2 class="tool-title">One labelled beat</h2>
-            <p class="tool-intro">Hover or tap a wave, segment or bracket, or use the buttons. A hatched band and a thicker line mark the selected part, so colour is never the only cue.</p>
+            <p class="tool-intro">Hover or tap a part, or use the buttons. Click to lock; click the same part again to unlock.</p>
             <svg id="beatSvg" class="beat-svg" viewBox="0 0 720 360" role="img" tabindex="0" aria-labelledby="beat-svg-title" aria-describedby="beat-svg-desc">
-              <title id="beat-svg-title">Synthetic lead II complex on standard ECG paper, with the P wave, QRS, T wave, U wave, PR, QT and RR intervals labelled</title>
-              <desc id="beat-svg-desc">A teaching trace at 60 per minute, not a patient recording. Use the buttons under the trace to choose a part and read its explanation.</desc>
+              <title id="beat-svg-title">Two synthetic lead II complexes on standard ECG paper, with the P wave, QRS, T wave, U wave, PR, QT and RR intervals labelled</title>
+              <desc id="beat-svg-desc">A teaching trace at 60 per minute, not a patient recording. Two beats are shown so each part can be compared and the RR interval measured. Use the buttons under the trace to choose a part and read its explanation. Click to lock a part; click again to unlock.</desc>
             </svg>
             <div class="part-btns" id="partBtns" role="group" aria-label="Parts of the beat"></div>
-            <div class="grid-facts" aria-label="ECG paper standards">
-              <div class="stat"><div class="stat-val">25 mm/s</div><div class="stat-label">Paper speed</div></div>
-              <div class="stat"><div class="stat-val">0.04 s</div><div class="stat-label">1 small square (1 mm)</div></div>
-              <div class="stat"><div class="stat-val">0.20 s</div><div class="stat-label">1 large square (5 mm)</div></div>
-              <div class="stat"><div class="stat-val">10 mm/mV</div><div class="stat-label">Calibration</div></div>
-            </div>
-            <p class="svg-cap">Synthetic lead II at 60 /min, drawn to scale on standard paper. The square pulse on the left is the 1 mV calibration mark. A second R wave is shown so the RR interval can be measured. One small square is 0.04 s and 0.1 mV; one large square is 0.20 s and 0.5 mV.</p>
+            <p class="lock-hint" id="lockHint" hidden></p>
           </div>
         </div>
         <aside class="tool-side">
@@ -75,12 +69,24 @@
           <p class="visually-hidden" id="beatLive" aria-live="polite"></p>
         </aside>
       </div>
+      <details class="about-paper">
+        <summary>About the paper</summary>
+        <div class="grid-facts" aria-label="ECG paper standards">
+          <div class="stat"><div class="stat-val">25 mm/s</div><div class="stat-label">Paper speed</div></div>
+          <div class="stat"><div class="stat-val">0.04 s</div><div class="stat-label">1 small square (1 mm)</div></div>
+          <div class="stat"><div class="stat-val">0.20 s</div><div class="stat-label">1 large square (5 mm)</div></div>
+          <div class="stat"><div class="stat-val">10 mm/mV</div><div class="stat-label">Calibration</div></div>
+        </div>
+        <p class="svg-cap">Synthetic lead II at 60 /min, drawn to scale on standard paper. The square pulse on the left is the 1 mV calibration mark. Two beats are shown so each part can be compared and the RR interval measured. One small square is 0.04 s and 0.1 mV; one large square is 0.20 s and 0.5 mV. A hatched band and a thicker line mark the selected part, so colour is never the only cue.</p>
+      </details>
     </section>
+
+    <!-- Reserved for a later "Read an ECG step by step" section (rate, rhythm, axis, intervals). Not built yet. -->
+    <section id="read-ecg" class="read-ecg-slot" hidden aria-hidden="true"></section>
 
     <section class="card values-card" aria-labelledby="values-heading">
       <h2 class="tool-title" id="values-heading">Normal values at a glance</h2>
-      <p class="tool-intro">Where sources disagree, both figures are given. Those rows are flagged for review before teaching with this page.</p>
-      <div class="values-wrap" tabindex="0">
+            <div class="values-wrap" tabindex="0">
         <table class="values-table">
           <caption class="visually-hidden">Normal values for the main parts of an ECG beat, with the source for each figure</caption>
           <thead>
@@ -94,31 +100,31 @@
           <tbody>
             <tr><th scope="row">P wave</th>
               <td data-label="Represents">Atrial depolarisation</td>
-              <td data-label="Usual normal">LITFL: duration under 0.12 s; height under 2.5 mm in the limb leads. Klabunde: usual duration 0.08 to 0.10 s.</td>
+              <td data-label="Usual normal">Duration under 0.12 s; height under 2.5 mm in the limb leads.</td>
               <td data-label="Source"><a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">LITFL, P wave</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
             <tr><th scope="row">PR interval</th>
               <td data-label="Represents">Start of P to start of QRS (atrial depolarisation plus AV delay)</td>
-              <td data-label="Usual normal">0.12 to 0.20 s (3 to 5 small squares). Over 0.20 s: first degree AV block.</td>
+              <td data-label="Usual normal">0.12 to 0.20 s (3 to 5 small squares).</td>
               <td data-label="Source"><a href="https://litfl.com/pr-interval-ecg-library/" target="_blank" rel="noopener">LITFL, PR interval</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
             <tr><th scope="row">QRS complex</th>
               <td data-label="Represents">Ventricular depolarisation</td>
-              <td data-label="Usual normal">LITFL: 70 to 100 ms normal; over 100 ms abnormal; over 120 ms for bundle branch block or a ventricular rhythm. Klabunde: 0.06 to 0.10 s, prolonged if over 0.10 s. A common UK teaching figure is under 0.12 s (Hampton, The ECG Made Easy).</td>
+              <td data-label="Usual normal">Under 0.12 s (3 small squares).</td>
               <td data-label="Source"><a href="https://litfl.com/qrs-interval-ecg-library/" target="_blank" rel="noopener">LITFL, QRS interval</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
             <tr><th scope="row">ST segment</th>
               <td data-label="Represents">Ventricles fully depolarised; roughly the action potential plateau</td>
-              <td data-label="Usual normal">Isoelectric, judged at the J point against the T-P segment.</td>
+              <td data-label="Usual normal">Isoelectric at the J point, judged against the T-P segment.</td>
               <td data-label="Source"><a href="https://litfl.com/st-segment-ecg-library/" target="_blank" rel="noopener">LITFL, ST segment</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
             <tr><th scope="row">T wave</th>
               <td data-label="Represents">Ventricular repolarisation</td>
-              <td data-label="Usual normal">Upright in all leads except aVR and V1. Height under 5 mm in the limb leads and under 10 mm in the chest leads (10 mm in men, 8 mm in women in the precordial leads).</td>
+              <td data-label="Usual normal">Upright in all leads except aVR and V1. Height under 5 mm in the limb leads and under 10 mm in the chest leads.</td>
               <td data-label="Source"><a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">LITFL, T wave</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
             <tr><th scope="row">QT and QTc</th>
               <td data-label="Represents">Ventricular depolarisation and repolarisation, corrected for rate</td>
-              <td data-label="Usual normal">LITFL: QTc prolonged over 440 ms in men or 460 ms in women; over 500 ms linked to torsades; under 350 ms short. Klabunde: normal QTc 0.44 s or less.</td>
+              <td data-label="Usual normal">QTc under 440 ms in men and under 460 ms in women. Over 500 ms carries a high risk of torsades de pointes.</td>
               <td data-label="Source"><a href="https://litfl.com/qt-interval-ecg-library/" target="_blank" rel="noopener">LITFL, QT interval</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
             <tr><th scope="row">RR and rate</th>
               <td data-label="Represents">Time from one R wave to the next; used to calculate rate</td>
-              <td data-label="Usual normal">LITFL (adults): normal 50 to 100 /min. Many texts still use 60 to 100 /min. At 25 mm/s: rate = 300 / large squares between R waves.</td>
+              <td data-label="Usual normal">60 to 100 /min. At 25 mm/s: rate = 300 / large squares between R waves.</td>
               <td data-label="Source"><a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">LITFL, rate interpretation</a></td></tr>
           </tbody>
         </table>
@@ -127,8 +133,8 @@
 
       <div class="qtc-box">
         <h3>QTc, briefly</h3>
-        <p>The uncorrected QT shortens as the heart rate rises, so we estimate what the QT would be at 60 /min. The most commonly used formula is Bazett: <span class="formula">QTc = QT &#247; &#8730;RR</span>, with RR in seconds (LITFL; Klabunde uses the same formula).</p>
-        <p>Bazett over-corrects above 100 /min and under-corrects below 60 /min. Outside 60 to 100 /min, LITFL prefers Fridericia or Framingham. A useful rule of thumb is that a normal QT is under half the preceding RR interval. Do not use a single QTc value alone to make clinical decisions.</p>
+        <p>The uncorrected QT shortens as the heart rate rises, so we estimate what the QT would be at 60 /min. The most commonly used formula is Bazett: <span class="formula">QTc = QT &#247; &#8730;RR</span>, with RR in seconds.</p>
+        <p>Bazett over-corrects above 100 /min and under-corrects below 60 /min. Outside that range, Fridericia or Framingham is often used instead. A useful rule of thumb is that a normal QT is under half the preceding RR interval. Do not use a single QTc value alone to make clinical decisions.</p>
       </div>
     </section>
 
@@ -159,11 +165,11 @@
     <details class="card revise-sources">
       <summary>Sources</summary>
       <ul class="source-list">
-        <li>Life in the Fast Lane (LITFL), ECG Library. <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a>, <a href="https://litfl.com/pr-interval-ecg-library/" target="_blank" rel="noopener">PR interval</a>, <a href="https://litfl.com/pr-segment-ecg-library/" target="_blank" rel="noopener">PR segment</a>, <a href="https://litfl.com/qrs-interval-ecg-library/" target="_blank" rel="noopener">QRS interval</a>, <a href="https://litfl.com/q-wave-ecg-library/" target="_blank" rel="noopener">Q wave</a>, <a href="https://litfl.com/st-segment-ecg-library/" target="_blank" rel="noopener">ST segment</a>, <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a>, <a href="https://litfl.com/u-wave-ecg-library/" target="_blank" rel="noopener">U wave</a>, <a href="https://litfl.com/qt-interval-ecg-library/" target="_blank" rel="noopener">QT interval</a>, and <a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">rate interpretation</a>. Fetched 17 November 2026.</li>
-        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Electrocardiogram (EKG, ECG)</a> (revised 1 November 2023). Used for the physiology of each wave and interval, including the ST segment as the action potential plateau, and for Klabunde's own normal ranges.</li>
+        <li>Life in the Fast Lane (LITFL), ECG Library. <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a>, <a href="https://litfl.com/pr-interval-ecg-library/" target="_blank" rel="noopener">PR interval</a>, <a href="https://litfl.com/pr-segment-ecg-library/" target="_blank" rel="noopener">PR segment</a>, <a href="https://litfl.com/qrs-interval-ecg-library/" target="_blank" rel="noopener">QRS interval</a>, <a href="https://litfl.com/q-wave-ecg-library/" target="_blank" rel="noopener">Q wave</a>, <a href="https://litfl.com/st-segment-ecg-library/" target="_blank" rel="noopener">ST segment</a>, <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a>, <a href="https://litfl.com/u-wave-ecg-library/" target="_blank" rel="noopener">U wave</a>, <a href="https://litfl.com/qt-interval-ecg-library/" target="_blank" rel="noopener">QT interval</a>, <a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">rate interpretation</a>, and <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">rhythm evaluation</a>. Fetched 17 November 2026.</li>
+        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Electrocardiogram (EKG, ECG)</a> (revised 1 November 2023). Used for the physiology of each wave and interval, including the ST segment as the action potential plateau.</li>
         <li>Hampton J. <cite>The ECG Made Easy</cite>. Cited for the common UK teaching figure of a QRS under 0.12 s.</li>
       </ul>
-      <p class="caveat">The beat is a synthetic teaching trace from a simple vector model, not a patient recording. Paper scale follows LITFL rate interpretation (25 mm/s, 10 mm/mV). Statements where sources disagree are listed in the table and should be checked with an anaesthetist before this page is used for teaching.</p>
+      <p class="caveat">The beat is a synthetic teaching trace from a simple vector model, not a patient recording. Paper scale is the standard 25 mm/s and 10 mm/mV.</p>
     </details>
   </main>
 
@@ -177,6 +183,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-basics.js?v=20261119c"></script>
+<script src="assets/ecg-basics.js?v=20261119d"></script>
 </body>
 </html>

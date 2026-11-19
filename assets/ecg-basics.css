@@ -25,26 +25,154 @@ html[data-theme="colour-blind"] {
   font-size: 14px;
 }
 
-/* The labelled beat is the hero: full width, panel underneath. */
+/* Desktop: beat + buttons on the left, explanation on the right, one screen. */
+.page-ecg-basics #tool {
+  scroll-margin-top: 0;
+}
 @media (min-width: 900px) {
+  .page-ecg-basics .tool-hero {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 12px;
+    max-height: 100vh;
+  }
+  .page-ecg-basics .tool-stage,
+  .page-ecg-basics .tool-side {
+    min-height: 0;
+    max-height: 100%;
+  }
+  .page-ecg-basics .graph-card {
+    padding: 10px 12px 12px;
+    gap: 6px;
+    height: 100%;
+    min-height: 0;
+  }
+  .page-ecg-basics .graph-card .tool-title {
+    font-size: 22px;
+    margin: 0;
+  }
+  .page-ecg-basics .graph-card .tool-intro {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .page-ecg-basics .beat-svg {
+    max-height: calc(100vh - 200px);
+  }
+  .page-ecg-basics .part-btns {
+    margin: 4px 0 0;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
+  .page-ecg-basics .part-btns .t-btn {
+    min-height: 40px;
+    font-size: 13px;
+    padding: 4px 4px;
+  }
+  .page-ecg-basics .tool-side {
+    position: static;
+    height: 100%;
+  }
+  .page-ecg-basics .explain-panel {
+    max-width: none;
+    max-height: 100% !important;
+    overflow: auto !important;
+    height: 100%;
+    min-height: 0;
+    padding: 12px 14px;
+  }
+  .page-ecg-basics .explain-panel .src-line {
+    font-size: 13px;
+    margin: 8px 0 0;
+  }
+}
+@media (max-width: 899px) {
   .page-ecg-basics .tool-hero {
     grid-template-columns: 1fr;
   }
-}
-.page-ecg-basics .explain-panel {
-  max-height: none !important;
-  overflow: visible !important;
-  min-height: 0;
-  max-width: 70ch;
-}
-.page-ecg-basics .tool-side {
-  position: static;
+  .page-ecg-basics .tool-side {
+    position: static;
+  }
+  .page-ecg-basics .explain-panel {
+    max-width: none;
+    max-height: none !important;
+    overflow: visible !important;
+  }
 }
 .page-ecg-basics .explain-panel .kicker,
 .page-ecg-basics .explain-panel .explain-title,
 .page-ecg-basics .explain-panel .tool-title {
   text-align: left;
 }
+.page-ecg-basics .explain-panel .kicker {
+  margin: 0 0 2px;
+  font-size: 12px;
+}
+.page-ecg-basics .explain-panel .explain-title,
+.page-ecg-basics .explain-panel .tool-title {
+  font-size: 22px;
+  margin: 0 0 6px;
+}
+.page-ecg-basics .explain-panel .panel-block h3,
+.page-ecg-basics .clinical h3 {
+  font-size: 13px;
+  margin: 0 0 2px;
+}
+.page-ecg-basics .explain-panel .panel-block p {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.page-ecg-basics .clinical {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.page-ecg-basics .clinical ul {
+  margin: 0;
+  padding-left: 1.15em;
+}
+.page-ecg-basics .clinical li {
+  font-size: 14px;
+  line-height: 1.35;
+  margin: 0 0 4px;
+}
+.page-ecg-basics .clinical li:last-child { margin-bottom: 0; }
+
+.lock-hint {
+  margin: 4px 0 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  min-height: 1.2em;
+}
+.lock-hint[hidden] { display: none; }
+
+.about-paper {
+  margin: 12px 0 0;
+  padding: 8px 14px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+.about-paper > summary {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+.about-paper > summary::-webkit-details-marker { display: none; }
+.about-paper > summary::before { content: "+  "; }
+.about-paper[open] > summary::before { content: "\2212  "; }
+
+.read-ecg-slot {
+  margin-top: 16px;
+}
+.read-ecg-slot[hidden] { display: none; }
 
 .beat-svg {
   display: block;
