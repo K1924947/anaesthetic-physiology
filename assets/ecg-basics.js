@@ -7,7 +7,7 @@
   var BEAT_P = { pr: 0.16, qrs: 0.09, qt: 0.40, axis: 60, u: true };
   var RR = 1.0;
   var BS = { part: "P", hover: null };
-  var BG = { x0: 28, y0: 230, u: 12, tStart: -0.08, tEnd: 1.30 };
+  var BG = { x0: 20, y0: 242, u: 16, tStart: -0.08, tEnd: 1.30 };
 
   function $(id) { return document.getElementById(id); }
   function el(tag, attrs, parent, text) {
@@ -168,7 +168,7 @@
       short: "QRS",
       t: [0.16, 0.25],
       event: "Ventricular depolarisation. The septum depolarises first, left to right (a small q in left-sided leads), then the main mass of both ventricles via the bundle branches and Purkinje fibres.",
-      normal: "LITFL: 70 to 100 ms is normal; over 100 ms is abnormal; over 120 ms is required to diagnose bundle branch block or a ventricular rhythm. Klabunde: normally 0.06 to 0.10 s, and prolonged if over 0.10 s. A common UK teaching figure is under 0.12 s (Hampton, The ECG Made Easy); a page reference was not checked in this build.",
+      normal: "LITFL: 70 to 100 ms is normal; over 100 ms is abnormal; over 120 ms is required to diagnose bundle branch block or a ventricular rhythm. Klabunde: normally 0.06 to 0.10 s, and prolonged if over 0.10 s. A common UK teaching figure is under 0.12 s (Hampton, The ECG Made Easy).",
       srcHtml: srcTrio("LITFL, QRS interval", LINKS.qrs, "LITFL, Q wave", LINKS.q, "Klabunde, Electrocardiogram", LINKS.klab)
     },
     ST: {
@@ -231,24 +231,29 @@
     if (!svg) return;
     var t = T(), ink = cssVar("--ecg-ink") || "#111";
     var fam = fontSans();
-    var compact = window.matchMedia("(max-width: 639px)").matches;
-    var fsWave = compact ? 22 : 16;
-    var fsSmall = compact ? 16 : 12;
-    var fsInt = compact ? 18 : 13;
-    clearSvg(svg);
-    svg.setAttribute("viewBox", compact ? "0 0 720 390" : "0 0 720 370");
-    patterns(svg, "bt");
-    var u = BG.u, g = el("g", null, svg);
+    var u = BG.u;
     var gx = BG.x0, gy = 16;
     var gw = 8 * u + (BG.tEnd - BG.tStart) * 25 * u, gh = 20 * u;
+    var y0 = gy + 14 * u;
+    BG.y0 = y0;
+    var paperBottom = gy + gh;
+    var prY = paperBottom + 32;
+    var qtY = prY + 32;
+    var rrY = qtY + 36;
+    var vbW = gx + gw + 16;
+    var vbH = rrY + 24;
+    clearSvg(svg);
+    svg.setAttribute("viewBox", "0 0 " + Math.ceil(vbW) + " " + Math.ceil(vbH));
+    patterns(svg, "bt");
+    var g = el("g", null, svg);
     paper(g, gx, gy, gw, gh, u);
 
-    var cx = gx + u, y0 = BG.y0;
+    var cx = gx + u;
     el("path", {
       d: "M" + gx + " " + y0 + "H" + cx + "V" + (y0 - 10 * u) + "H" + (cx + 5 * u) + "V" + y0 + "H" + (cx + 7 * u),
-      fill: "none", stroke: ink, "stroke-width": 2
+      fill: "none", stroke: ink, "stroke-width": 2.4
     }, g);
-    el("text", { x: cx + 2.5 * u, y: y0 - 10 * u - 5, "text-anchor": "middle", "font-size": fsSmall, fill: t.muted, "font-family": fam }, g, "1 mV");
+    el("text", { x: cx + 2.5 * u, y: y0 - 10 * u - 8, "text-anchor": "middle", fill: t.muted, "font-family": fam, class: "lab-small" }, g, "1 mV");
 
     var key = activeKey(), P = PARTS[key];
     var hx0 = bx(P.t[0]), hx1 = bx(P.t[1]);
@@ -262,12 +267,12 @@
     var f = function (tt) { return voltage(bumps, tt); };
     el("path", {
       d: fnPath(f, BG.tStart, BG.tEnd, bx(BG.tStart), y0, 25 * u, 10 * u, 0.002),
-      fill: "none", stroke: ink, "stroke-width": 2.2, "stroke-linejoin": "round", "stroke-linecap": "round"
+      fill: "none", stroke: ink, "stroke-width": 2.8, "stroke-linejoin": "round", "stroke-linecap": "round"
     }, g);
     if (!P.bracket) {
       el("path", {
         d: fnPath(f, P.t[0], P.t[1], hx0, y0, 25 * u, 10 * u, 0.002),
-        fill: "none", stroke: t.a, "stroke-width": 5, "stroke-linejoin": "round", "stroke-linecap": "round"
+        fill: "none", stroke: t.a, "stroke-width": 6.5, "stroke-linejoin": "round", "stroke-linecap": "round"
       }, g);
     }
 
@@ -283,48 +288,49 @@
     lab.forEach(function (l) {
       el("text", {
         x: bx(l[1]),
-        y: y0 - l[2] * 10 * u + (l[2] < 0 ? 10 : -6),
+        y: y0 - l[2] * 10 * u + (l[2] < 0 ? 16 : -8),
         "text-anchor": "middle",
-        "font-size": fsWave,
-        "font-weight": 700,
         fill: t.text,
-        "font-family": fam
+        "font-family": fam,
+        class: "lab-wave"
       }, g, l[0]);
     });
-    el("text", { x: bx(0.32), y: y0 - 10, "text-anchor": "middle", "font-size": fsSmall, fill: t.muted, "font-family": fam }, g, "ST");
-    el("text", { x: bx(0.25) + (compact ? 36 : 22), y: y0 + (compact ? 28 : 24), "font-size": fsSmall, fill: t.muted, "font-family": fam }, g, compact ? "J" : "J point");
-    el("circle", { cx: bx(0.25), cy: y0, r: 3, fill: t.text }, g);
+    el("text", { x: bx(0.33), y: y0 - 12, "text-anchor": "middle", fill: t.muted, "font-family": fam, class: "lab-small" }, g, "ST");
+    el("text", { x: bx(0.25) + 28, y: y0 + 28, "text-anchor": "start", fill: t.muted, "font-family": fam, class: "lab-small" }, g, "J point");
+    el("circle", { cx: bx(0.25), cy: y0, r: 3.5, fill: t.text }, g);
 
-    function bracket(t0, t1, y, text, partKey, labelWhere) {
+    function bracket(t0, t1, y, text, partKey, labelSide) {
       var x0 = bx(t0), x1 = bx(t1), on = key === partKey;
+      var tick = 12;
       el("path", {
-        d: "M" + x0 + " " + (y - 6) + "V" + y + "H" + x1 + "V" + (y - 6),
+        d: "M" + x0 + " " + (y - tick) + "V" + y + "H" + x1 + "V" + (y - tick),
         fill: "none",
         stroke: on ? t.a : t.text,
-        "stroke-width": on ? 3.5 : 1.6
+        "stroke-width": on ? 3.6 : 2,
+        "stroke-linecap": "square",
+        "stroke-linejoin": "miter"
       }, g);
       var labelY, anchor, lx;
-      if (labelWhere === "left-up") {
-        labelY = y - 8; anchor = "end"; lx = x1 - 6;
-      } else if (labelWhere === "right-up") {
-        labelY = y - 8; anchor = "start"; lx = x0 + 6;
+      if (labelSide === "below") {
+        labelY = y + 18; anchor = "middle"; lx = (x0 + x1) / 2;
       } else {
-        labelY = y + (compact ? 20 : 16); anchor = "middle"; lx = (x0 + x1) / 2;
+        labelY = y - tick - 4; anchor = "middle"; lx = (x0 + x1) / 2;
       }
       el("text", {
         x: lx, y: labelY, "text-anchor": anchor,
-        "font-size": fsInt, "font-weight": 700, fill: on ? t.a : t.text, "font-family": fam
+        fill: on ? t.a : t.text, "font-family": fam, class: "lab-int"
       }, g, text);
     }
-    bracket(0, 0.16, 300, "PR interval", "PRi", "left-up");
-    bracket(0.16, 0.56, 300, "QT interval", "QT", "right-up");
-    bracket(0.205, 1.205, 332, "RR interval (1.00 s)", "RR");
+    bracket(0, 0.16, prY, "PR interval", "PRi");
+    bracket(0.16, 0.56, qtY, "QT interval", "QT");
+    bracket(0.205, 1.205, rrY, "RR interval (1.00 s)", "RR", "below");
 
     PART_ORDER.forEach(function (k) {
       var p = PARTS[k], x0 = bx(p.t[0]), x1 = bx(p.t[1]);
       var r;
-      if (p.bracketY === "rr") r = { x: x0, y: 314, width: x1 - x0, height: 36 };
-      else if (p.bracket) r = { x: x0, y: 278, width: Math.max(x1 - x0, 8), height: 32 };
+      if (k === "RR") r = { x: x0, y: rrY - 16, width: x1 - x0, height: 40 };
+      else if (k === "PRi") r = { x: x0, y: prY - 28, width: Math.max(x1 - x0, 8), height: 36 };
+      else if (k === "QT") r = { x: x0, y: qtY - 28, width: Math.max(x1 - x0, 8), height: 36 };
       else r = { x: x0, y: gy, width: Math.max(x1 - x0, 8), height: gh };
       var hg = el("g", { class: "hit", "aria-hidden": "true", style: "cursor:pointer" }, g);
       el("rect", Object.assign({ fill: "transparent" }, r), hg);

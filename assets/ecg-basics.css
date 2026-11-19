@@ -25,14 +25,25 @@ html[data-theme="colour-blind"] {
   font-size: 14px;
 }
 
-/* Keep the explanation fully on screen: do not clip it in a sticky column. */
+/* The labelled beat is the hero: full width, panel underneath. */
+@media (min-width: 900px) {
+  .page-ecg-basics .tool-hero {
+    grid-template-columns: 1fr;
+  }
+}
 .page-ecg-basics .explain-panel {
   max-height: none !important;
   overflow: visible !important;
   min-height: 0;
+  max-width: 70ch;
 }
 .page-ecg-basics .tool-side {
   position: static;
+}
+.page-ecg-basics .explain-panel .kicker,
+.page-ecg-basics .explain-panel .explain-title,
+.page-ecg-basics .explain-panel .tool-title {
+  text-align: left;
 }
 
 .beat-svg {
@@ -43,6 +54,21 @@ html[data-theme="colour-blind"] {
   background: var(--ecg-paper);
   border: 1px solid var(--border);
   border-radius: 12px;
+}
+/* CSS px so labels stay at least 14px whatever the viewBox scale. */
+.beat-svg text {
+  font-family: var(--font-sans);
+}
+.beat-svg text.lab-wave {
+  font-size: 17px;
+  font-weight: 700;
+}
+.beat-svg text.lab-small {
+  font-size: 14px;
+}
+.beat-svg text.lab-int {
+  font-size: 14px;
+  font-weight: 700;
 }
 .beat-svg:focus-visible {
   outline: 3px solid var(--focus);
