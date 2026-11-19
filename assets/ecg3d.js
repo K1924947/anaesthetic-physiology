@@ -1,4 +1,4 @@
-/* ECG Basics in 3D (prototype).
+/* ECG in 3D (prototype).
    Body axes: +x = patient's left, +y = head, +z = anterior (towards you in the frontal view).
    Pipeline:  conduction config -> activation times (atria, AV node, His-Purkinje, ventricles)
               -> mean electrical vector D(t) from every muscle element's wavefront

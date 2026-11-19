@@ -3,27 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ECG Basics in 3D (layout mock-up) · The Physio Lab</title>
-<meta name="robots" content="noindex, nofollow">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261120a">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261120a">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261120a">
+<title>ECG Basics · The Physio Lab</title>
+<meta name="description" content="A really basic ECG page: what the P wave, PR interval, QRS, ST segment, T wave, QT interval, QTc, RR interval and rate mean, with normal values.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=20261120a">
-<link rel="stylesheet" href="assets/layout.css?v=20261120a">
-<link rel="stylesheet" href="assets/ecg3d.css?v=20261120a">
-<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261120a">
-<script src="assets/theme.js?v=20261120a"></script>
+<link rel="stylesheet" href="assets/site.css?v=20261118">
+<link rel="stylesheet" href="assets/layout.css?v=20261118">
+<link rel="stylesheet" href="assets/pv-core.css?v=20261118">
+<link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119b">
+<script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
-<a class="skip-link" href="#tool">Skip to the 3D model</a>
-<div class="page page-wide page-tool page-ecg3d page-ecg3d-revamp">
+<a class="skip-link" href="#tool">Skip to the labelled beat</a>
+<div class="page page-wide page-tool page-ecg-basics">
   <header class="site-header tool-view-header">
     <div class="site-header-top">
       <a class="site-mark" href="index.html">
-        <img class="site-logo" src="assets/logo.svg?v=20261120a" width="20" height="20" alt="">
+        <img class="site-logo" src="assets/logo.svg?v=20261118" width="20" height="20" alt="">
         <span class="site-mark-name">The Physio Lab</span>
       </a>
       <div class="header-actions">
@@ -39,231 +41,129 @@
       <span class="crumb-sep" aria-hidden="true">/</span>
       <a href="cardiac.html">Cardiac</a>
       <span class="crumb-sep" aria-hidden="true">/</span>
-      <span aria-current="page">ECG Basics in 3D</span>
+      <span aria-current="page">ECG Basics</span>
     </nav>
-    <h1>ECG Basics in 3D</h1>
-    <p class="subtitle">Each lead shows how much of the heart's electrical vector points towards it: towards is upwards, away is downwards, and side-on is flat.</p>
+    <h1>ECG Basics</h1>
+    <p class="subtitle">What each part of a beat is, its usual normal value, and what it represents.</p>
   </header>
 
   <main>
-    <p class="proto-banner" role="note"><strong>Layout mock-up.</strong> A simplified teaching model for review; not published. Pathophysiology will live on a later, separate page.</p>
-    <section id="tool" aria-label="Interactive 3D ECG model">
-      <div class="tool-hero ecg3d-hero">
+    <p class="proto-banner" role="note"><strong>Draft: not yet on the homepage.</strong> Content is still being reviewed. This page is a teaching tool, not clinical guidance.</p>
+
+    <section id="tool" aria-label="Interactive labelled ECG beat">
+      <div class="tool-hero">
         <div class="tool-stage">
-          <div class="graph-card stage-card">
-            <div class="stage-bar">
-              <div class="ctrl-group view-group">
-                <span class="ctrl-label" id="viewGroupLabel">View</span>
-                <div class="view-btns segment" role="group" aria-labelledby="viewGroupLabel">
-                  <button type="button" class="t-btn view-btn" data-view="frontal" aria-pressed="true">
-                    <span class="btn-text"><span class="btn-main">Front</span><span class="btn-sub">limb leads</span></span>
-                  </button>
-                  <button type="button" class="t-btn view-btn" data-view="transverse" aria-pressed="false">
-                    <span class="btn-text"><span class="btn-main">Chest leads</span><span class="btn-sub">from above</span></span>
-                  </button>
-                  <button type="button" class="t-btn view-btn" data-view="oblique" aria-pressed="false">
-                    <span class="btn-text"><span class="btn-main">Free rotate</span><span class="btn-sub">drag the heart</span></span>
-                  </button>
-                </div>
-              </div>
-              <div class="ctrl-group show-group">
-                <div class="labels-wrap">
-                  <button type="button" class="t-btn labels-btn" id="labelsBtn" aria-expanded="false" aria-controls="labelsPanel" aria-haspopup="dialog">Labels</button>
-                  <div class="labels-panel" id="labelsPanel" role="dialog" aria-labelledby="labelsPanelTitle" hidden>
-                    <p class="labels-panel-title" id="labelsPanelTitle">Labels</p>
-                    <p class="labels-panel-help">Guided shows a label when that structure is active in the beat. Or pick which groups stay on. The labels sit in columns beside the heart.</p>
-                    <div class="labels-quick" role="group" aria-label="Label presets">
-                      <button type="button" class="t-btn" id="labelsGuided" aria-pressed="false">Guided</button>
-                      <button type="button" class="t-btn" id="labelsAll">All</button>
-                      <button type="button" class="t-btn" id="labelsNone">None</button>
-                    </div>
-                    <div class="labels-groups" role="group" aria-label="Label groups">
-                      <label class="labels-opt"><input type="checkbox" id="lab-chambers" data-group="chambers"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Chambers</strong> RA, LA, RV, LV, septum, SVC</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-conduction" data-group="conduction"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Conduction system</strong> SA node, Bachmann's bundle, AV node, His, bundles, fascicles, moderator band, Purkinje</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-leads" data-group="leads"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Leads and axes</strong> lead name tags (Show all rods, in More, draws the rods)</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-vectors" data-group="vectors"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Vectors</strong> mean vector, lead projection value</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-walls" data-group="walls"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Wall regions</strong> inferior, anterior, lateral or septum, for the selected lead</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-orientation" data-group="orientation"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Orientation</strong> apex, base, anterior (the corner gizmo and the R and L marks always stay on)</span></label>
-                    </div>
-                    <button type="button" class="t-btn labels-panel-close" id="labelsPanelClose">Close</button>
-                  </div>
-                </div>
-                <button type="button" class="t-btn toggle-btn" id="guidedBtn" aria-pressed="false">Guided</button>
-                <div class="more-wrap">
-                  <button type="button" class="t-btn more-btn" id="moreBtn" aria-expanded="false" aria-controls="morePanel" aria-haspopup="true">More</button>
-                  <div class="more-panel" id="morePanel" hidden>
-                    <p class="more-title">More options</p>
-                    <button type="button" class="t-btn toggle-btn" id="toggleCut" aria-pressed="true">Cut-away</button>
-                    <button type="button" class="t-btn toggle-btn" id="toggleLoop" aria-pressed="false">Vector loop</button>
-                    <button type="button" class="t-btn view-btn more-view" data-view="section" aria-pressed="false">Cut face-on</button>
-                    <button type="button" class="t-btn toggle-btn" id="toggleLeads" aria-pressed="true">Show all rods</button>
-                    <button type="button" class="t-btn" id="resetView">Reset view</button>
-                    <button type="button" class="t-btn more-close" id="moreClose">Close</button>
-                  </div>
-                </div>
-              </div>
+          <div class="graph-card">
+            <h2 class="tool-title">One labelled beat</h2>
+            <p class="tool-intro">Hover or tap a wave, segment or bracket, or use the buttons. A hatched band and a thicker line mark the selected part, so colour is never the only cue.</p>
+            <svg id="beatSvg" class="beat-svg" viewBox="0 0 720 360" role="img" tabindex="0" aria-labelledby="beat-svg-title" aria-describedby="beat-svg-desc">
+              <title id="beat-svg-title">Synthetic lead II complex on standard ECG paper, with the P wave, QRS, T wave, U wave, PR, QT and RR intervals labelled</title>
+              <desc id="beat-svg-desc">A teaching trace at 60 per minute, not a patient recording. Use the buttons under the trace to choose a part and read its explanation.</desc>
+            </svg>
+            <div class="part-btns" id="partBtns" role="group" aria-label="Parts of the beat"></div>
+            <div class="grid-facts" aria-label="ECG paper standards">
+              <div class="stat"><div class="stat-val">25 mm/s</div><div class="stat-label">Paper speed</div></div>
+              <div class="stat"><div class="stat-val">0.04 s</div><div class="stat-label">1 small square (1 mm)</div></div>
+              <div class="stat"><div class="stat-val">0.20 s</div><div class="stat-label">1 large square (5 mm)</div></div>
+              <div class="stat"><div class="stat-val">10 mm/mV</div><div class="stat-label">Calibration</div></div>
             </div>
-
-            <div class="stage" id="stage">
-              <canvas id="scene" tabindex="0" role="img" aria-label="3D model of the heart inside a faint upper-torso outline, with the conduction system, lead axes and the mean electrical vector arrow" aria-describedby="sceneHelp"></canvas>
-              <div class="labels" id="labels"></div>
-              <div class="body-rl" id="bodyRL" aria-hidden="true">
-                <span class="body-rl-mark" id="markR">R</span>
-                <span class="body-rl-mark" id="markL">L</span>
-              </div>
-              <div class="orient-gizmo" id="orientGizmo" aria-hidden="true">
-                <svg viewBox="0 0 96 96" width="96" height="96" id="orientSvg">
-                  <circle class="orient-bg" cx="48" cy="48" r="45.5"/>
-                  <g id="orientAxes"></g>
-                </svg>
-                <p class="orient-caption">Front: anterior (towards the chest wall)</p>
-              </div>
-              <div class="stage-overlay" id="stageOverlay">
-                <p class="stage-overlay-line" id="viewNote"></p>
-                <button type="button" class="t-btn stage-info-btn" id="stageInfoBtn" aria-expanded="false" aria-controls="stageInfo">Info</button>
-                <div class="stage-info" id="stageInfo" hidden>
-                  <p id="stageInfoText"></p>
-                  <p id="stageHint">Drag to rotate, scroll or pinch to zoom. Click a lead to see it close up on the right.</p>
-                </div>
-              </div>
-              <div class="fallback" id="fallback" hidden>
-                <p><strong>3D graphics are not available in this browser.</strong></p>
-                <p>WebGL could not start, so the 3D model cannot be shown. The 12-lead ECG, timeline and phase descriptions still work.</p>
-              </div>
-            </div>
-            <p id="sceneHelp" class="stage-help visually-hidden">Drag to rotate, scroll or pinch to zoom, click a lead line or lead button to select it. Keyboard: focus the model, then arrow keys rotate, + and - zoom, R resets.</p>
-
-            <div class="timeline">
-              <button type="button" class="t-btn play-btn" id="playBtn" aria-pressed="false"><span class="play-icon" aria-hidden="true"></span><span class="play-label">Play</span></button>
-              <div class="scrub-wrap">
-                <label for="scrub" class="visually-hidden">Time through one beat</label>
-                <input type="range" id="scrub" min="0" max="800" step="1" value="250">
-                <div class="phase-strip" id="phaseStrip" aria-hidden="true"></div>
-              </div>
-              <output id="timeOut" for="scrub">250 ms</output>
-              <label class="speed-label" for="speed">Speed
-                <select id="speed">
-                  <option value="0.01">0.01×</option>
-                  <option value="0.02">0.02×</option>
-                  <option value="0.05">0.05×</option>
-                  <option value="0.1" selected>0.1×</option>
-                  <option value="0.25">0.25×</option>
-                  <option value="0.5">0.5×</option>
-                  <option value="1">Real time</option>
-                </select>
-              </label>
-            </div>
-            <div class="steps" id="stepRow" role="group" aria-label="Guided steps through one beat">
-              <button type="button" class="t-btn step-nav" id="stepBack"><span aria-hidden="true">&#8592;</span> Back</button>
-              <div class="step-chips" id="stepChips"></div>
-              <button type="button" class="t-btn step-nav" id="stepNext">Next <span aria-hidden="true">&#8594;</span></button>
-            </div>
+            <p class="svg-cap">Synthetic lead II at 60 /min, drawn to scale on standard paper. The square pulse on the left is the 1 mV calibration mark. A second R wave is shown so the RR interval can be measured. One small square is 0.04 s and 0.1 mV; one large square is 0.20 s and 0.5 mV.</p>
           </div>
         </div>
-
         <aside class="tool-side">
-          <div class="card explain-card" id="explainCard">
-            <div class="explain-scroll" id="explainScroll" tabindex="0" role="region" aria-labelledby="phaseTitle">
-              <div class="explain-head">
-                <p class="phase-kicker" id="phaseKicker">Now <span class="step-count" id="stepCount"></span></p>
-                <button type="button" class="t-btn key-open-btn" id="keyOpenBtn" aria-expanded="false" aria-haspopup="dialog" aria-controls="keyDialog">Colour key</button>
-              </div>
-              <h2 class="phase-title" id="phaseTitle">Main ventricular depolarisation</h2>
-              <p class="phase-text" id="phaseText"></p>
-              <div class="lead-explain" id="leadExplain"></div>
-              <p class="visually-hidden" id="live" aria-live="polite"></p>
-            </div>
-          </div>
-          <div class="card lead-closeup-card" id="leadCloseupCard">
-            <h2 class="tool-section-title" id="leadCloseupHeading">Selected lead: <span id="leadCloseupName">II</span></h2>
-            <div class="lead-closeup-frame" id="leadCloseupFrame" tabindex="0" role="region" aria-labelledby="leadCloseupHeading">
-              <canvas id="leadCloseup" role="img" aria-label="Close-up of the selected lead on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. About four beats; the cursor sweeps left to right, then the window advances. The QRS is fitted so it is not cut off."></canvas>
-            </div>
-            <p class="side-note lead-closeup-gain" id="leadCloseupGain">10 mm/mV (full gain), 25 mm/s</p>
-          </div>
+          <div class="card explain-panel" id="beatPanel"></div>
+          <p class="visually-hidden" id="beatLive" aria-live="polite"></p>
         </aside>
       </div>
+    </section>
 
-      <div class="key-dialog" id="keyDialog" role="dialog" aria-modal="true" aria-labelledby="keyHeading" hidden>
-        <div class="key-dialog-backdrop" id="keyBackdrop" tabindex="-1"></div>
-        <div class="key-dialog-panel" id="keyPanel" role="document" tabindex="-1">
-          <div class="key-dialog-head">
-            <h2 class="key-title" id="keyHeading">Colour key</h2>
-            <button type="button" class="t-btn key-dialog-close" id="keyCloseBtn">Close</button>
-          </div>
-          <ul class="key key-details-list" id="keyDetailsList">
-            <li><span class="sw sw-rest" aria-hidden="true"></span><span><b>Resting</b> flat grey</span></li>
-            <li><span class="sw sw-front" aria-hidden="true"></span><span><b>Depolarisation front</b> orange, dark edges</span></li>
-            <li><span class="sw sw-depol" aria-hidden="true"></span><span><b>Depolarised</b> magenta, dotted</span></li>
-            <li><span class="sw sw-repol" aria-hidden="true"></span><span><b>Repolarising</b> striped</span></li>
-            <li><span class="sw sw-cond" aria-hidden="true"></span><span><b>Conduction system</b> blue tubes; a white bead and bulge is the impulse travelling</span></li>
-            <li><span class="sw sw-arrow" aria-hidden="true"></span><span><b>Mean electrical vector</b> solid black arrow</span></li>
-            <li><span class="sw sw-sel" aria-hidden="true"></span><span><b>Selected lead</b> thick blue rod; the lead name is a black filled pill. Thin grey rods are the other lead axes; a dashed half is the negative end.</span></li>
-            <li><span class="sw sw-nodes" aria-hidden="true"></span><span>Diamond: SA node. Cube with filling ring: AV node delay</span></li>
-            <li><span class="sw sw-lead" aria-hidden="true"></span><span>Thin grey rod: other lead axes</span></li>
-            <li><span class="sw sw-mesh" aria-hidden="true"></span><span>Black wire mesh (More, when wall regions are on): wall the selected lead faces</span></li>
-            <li><span class="sw sw-trail" aria-hidden="true"></span><span>Dotted grey (Vector loop path): path of the arrow tip</span></li>
-          </ul>
-        </div>
+    <section class="card values-card" aria-labelledby="values-heading">
+      <h2 class="tool-title" id="values-heading">Normal values at a glance</h2>
+      <p class="tool-intro">Where sources disagree, both figures are given. Those rows are flagged for review before teaching with this page.</p>
+      <div class="values-wrap" tabindex="0">
+        <table class="values-table">
+          <caption class="visually-hidden">Normal values for the main parts of an ECG beat, with the source for each figure</caption>
+          <thead>
+            <tr>
+              <th scope="col">Part</th>
+              <th scope="col">Represents</th>
+              <th scope="col">Usual normal</th>
+              <th scope="col">Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">P wave</th>
+              <td data-label="Represents">Atrial depolarisation</td>
+              <td data-label="Usual normal">LITFL: duration under 0.12 s; height under 2.5 mm in the limb leads. Klabunde: usual duration 0.08 to 0.10 s.</td>
+              <td data-label="Source"><a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">LITFL, P wave</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
+            <tr><th scope="row">PR interval</th>
+              <td data-label="Represents">Start of P to start of QRS (atrial depolarisation plus AV delay)</td>
+              <td data-label="Usual normal">0.12 to 0.20 s (3 to 5 small squares). Over 0.20 s: first degree AV block.</td>
+              <td data-label="Source"><a href="https://litfl.com/pr-interval-ecg-library/" target="_blank" rel="noopener">LITFL, PR interval</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
+            <tr><th scope="row">QRS complex</th>
+              <td data-label="Represents">Ventricular depolarisation</td>
+              <td data-label="Usual normal">LITFL: 70 to 100 ms normal; over 100 ms abnormal; over 120 ms for bundle branch block or a ventricular rhythm. Klabunde: 0.06 to 0.10 s, prolonged if over 0.10 s. Often taught in the UK as under 0.12 s (Hampton, The ECG Made Easy; page not checked here).</td>
+              <td data-label="Source"><a href="https://litfl.com/qrs-interval-ecg-library/" target="_blank" rel="noopener">LITFL, QRS interval</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
+            <tr><th scope="row">ST segment</th>
+              <td data-label="Represents">Ventricles fully depolarised; roughly the action potential plateau</td>
+              <td data-label="Usual normal">Isoelectric, judged at the J point against the T-P segment.</td>
+              <td data-label="Source"><a href="https://litfl.com/st-segment-ecg-library/" target="_blank" rel="noopener">LITFL, ST segment</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
+            <tr><th scope="row">T wave</th>
+              <td data-label="Represents">Ventricular repolarisation</td>
+              <td data-label="Usual normal">Upright in all leads except aVR and V1. Height under 5 mm in the limb leads and under 10 mm in the chest leads (10 mm in men, 8 mm in women in the precordial leads).</td>
+              <td data-label="Source"><a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">LITFL, T wave</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
+            <tr><th scope="row">QT and QTc</th>
+              <td data-label="Represents">Ventricular depolarisation and repolarisation, corrected for rate</td>
+              <td data-label="Usual normal">LITFL: QTc prolonged over 440 ms in men or 460 ms in women; over 500 ms linked to torsades; under 350 ms short. Klabunde: normal QTc 0.44 s or less.</td>
+              <td data-label="Source"><a href="https://litfl.com/qt-interval-ecg-library/" target="_blank" rel="noopener">LITFL, QT interval</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a></td></tr>
+            <tr><th scope="row">RR and rate</th>
+              <td data-label="Represents">Time from one R wave to the next; used to calculate rate</td>
+              <td data-label="Usual normal">LITFL (adults): normal 50 to 100 /min. Many texts still use 60 to 100 /min. At 25 mm/s: rate = 300 / large squares between R waves.</td>
+              <td data-label="Source"><a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">LITFL, rate interpretation</a></td></tr>
+          </tbody>
+        </table>
       </div>
+      <p class="values-note">The PR segment (the flat line between the P wave and the QRS) is covered on the labelled beat. The small U wave after the T wave is included there too, but it is not needed to read a basic ECG.</p>
 
-      <div class="card ecg12-card" id="ecg12Panel">
-        <div class="ecg12-side">
-          <div class="ecg12-head">
-            <h2 class="tool-section-title" id="ecgHeading">Standard 12-lead ECG</h2>
-            <p class="ecg12-sync-note">All 12 leads recorded at the same moment.</p>
-            <div class="lead-btns" id="leadBtns" role="group" aria-label="Select a lead"></div>
-          </div>
-          <p class="ecg12-caption" id="ecgCaption" aria-live="off"></p>
-          <p class="side-note ecg12-hint" id="ecg12Note">Click a lead to see it close up on the right.</p>
-          <details class="ecg12-about">
-            <summary>About this ECG</summary>
-            <p>All 12 leads are recorded at the same moment, as on a live 12-lead monitor. Each of the four columns shows the same 2.5 s window, time-aligned, with a cursor at the same place in every column. When that window ends, all four columns advance together to the next 2.5 s. The lead II rhythm strip below shows 10 s, and its cursor is at the same absolute time. The close-up and the heart share that clock. 25 mm/s. Limb leads and the rhythm strip are at 10 mm/mV; chest leads V1 to V6 are at 5 mm/mV, as on many real ECG machines. A full-height 1 mV calibration pulse starts each row; a half-height 1 mV pulse and a 5 mm/mV label mark the chest-lead columns. The close-up of any lead is always at 10 mm/mV. One small square is 40 ms (0.1 mV at 10 mm/mV, 0.2 mV at 5 mm/mV). The model computes a normal adult tracing at 75 beats/min. Click a lead, or its name on the heart, to see it close up on the right.</p>
-          </details>
-        </div>
-        <div class="ecg12-frame" tabindex="0" role="region" aria-labelledby="ecgHeading">
-          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model. All 12 leads show the same moment: four columns share one 2.5 second window, with a cursor at the same place in each column, and a 10 second lead II rhythm strip whose cursor is at the same time. Limb leads at 10 millimetres per millivolt, chest leads at 5 millimetres per millivolt. Click a lead to select it and see it close up on the right."></canvas>
-        </div>
-      </div>
-
-      <div class="visually-hidden" hidden>
-        <div class="mini-wrap"><p class="mini-label" id="miniLabel">Lead II, 5 s at 25 mm/s</p><div class="mini-frame"><canvas id="miniStrip"></canvas></div></div>
-        <div class="card zoom-card" hidden>
-          <h2 id="zoomHeading">Close-up: lead <span id="zoomLead">II</span></h2>
-          <canvas id="zoomECG"></canvas>
-        </div>
+      <div class="qtc-box">
+        <h3>QTc, briefly</h3>
+        <p>The uncorrected QT shortens as the heart rate rises, so we estimate what the QT would be at 60 /min. The most commonly used formula is Bazett: <span class="formula">QTc = QT &#247; &#8730;RR</span>, with RR in seconds (LITFL; Klabunde uses the same formula).</p>
+        <p>Bazett over-corrects above 100 /min and under-corrects below 60 /min. Outside 60 to 100 /min, LITFL prefers Fridericia or Framingham. A useful rule of thumb is that a normal QT is under half the preceding RR interval. Do not use a single QTc value alone to make clinical decisions.</p>
       </div>
     </section>
 
-    <section class="card model-notes" aria-labelledby="notes-heading">
-      <h2 id="notes-heading" class="tool-section-title">About this model</h2>
-      <ul>
-        <li><strong>This is a simplified teaching model, not a patient recording.</strong> The heart is made of about 10,000 small muscle elements. The impulse starts at the SA node, spreads through the atria cell to cell, is held in the AV node, races down the His bundle (through the top of the septum), the right bundle branch on the right side of the septum (with a branch across the moderator band to the right ventricular free wall) and the left bundle branch on the left side, which divides into anterior and posterior fascicles. The Purkinje fibres then spread over the apex and up the inner walls towards the base, and the wave crosses the ventricular wall from the inside (endocardium) outwards. In the atria, a fast band (Bachmann's bundle) carries the impulse from the right to the left atrium. The drawn fibres are a simplified few; the model's Purkinje network covers the lower inner walls.</li>
-        <li>Each element adds a small dipole as its wavefront passes. Their sum at each moment is the mean electrical vector (the black arrow). The limb leads record the arrow's component along their own line; the chest leads are computed from the nearby muscle, because they sit close to the heart.</li>
-        <li>Conduction speeds follow published values for a real heart (atrial muscle about 0.5 m/s, AV node about 0.05 m/s, His and bundle branches about 2 m/s, Purkinje fibres about 4 m/s), scaled to the model. Shapes, sizes, the ventricular muscle speed and a slower His bundle (because the model heart is small, this gives a normal His-to-ventricle time of about 40 ms) are model choices, tuned so that the normal 12-lead falls within normal limits.</li>
-        <li>The limb leads use the hexaxial angles: I 0°, II +60°, aVF +90°, aVR −150° (positive angles point downwards). The augmented leads are drawn at 0.87 times the size of I and II. Chest electrodes sit on the chest wall of the torso outline: V1 at the 4th intercostal space, right sternal edge; V2 at the 4th intercostal space, left sternal edge; V4 at the 5th intercostal space, mid-clavicular line; V3 midway between V2 and V4; V5 at the anterior axillary line at the same level as V4; V6 at the mid-axillary line at the same level as V4.</li>
-        <li>Anatomy labels are anchored on the model, not by hand-tuned screen positions: chambers use the ellipsoid centroid or a point 0.6 of the way from that centroid to the surface along an anatomical direction (LV posterior-left towards the apex, RV anterior and to the patient's right, LA posterior and superior, RA anterior and to the patient's right, septum at its model centre). The SA node is at the model's SVC–RA junction, the AV node at the inferior interatrial septum, Bachmann's bundle and the His–Purkinje tree follow the drawn paths, and the Purkinje label sits at the mid-point of the left-ventricular apical fibre. The chambers themselves are tapered ellipsoids, and the conduction tree is a simplified few fibres, so a label marks a representative point on that structure, not a dissected heart. These anchors should be reviewed by an anaesthetist, especially the AV node relative to the coronary sinus, the fascicle paths towards the papillary muscles, and where the moderator band meets the RV free wall.</li>
-        <li>The model beat runs at 75 per minute.</li>
-      </ul>
-    </section>
+    <div class="test-banner" id="testBanner">
+      <span class="test-banner-icon" aria-hidden="true">?</span>
+      <div class="test-banner-copy">
+        <h2 class="test-banner-title" id="test-label">Test yourself</h2>
+        <p class="test-banner-tag">Six short questions on what each part means and its usual normal value.</p>
+      </div>
+      <p class="test-banner-score" id="testBannerScore" hidden></p>
+      <button type="button" class="test-banner-cta" id="testToggle" aria-pressed="false" aria-describedby="test-label">
+        <span class="test-cta-label">Start</span>
+      </button>
+    </div>
+    <div class="card quiz-wrap quiz-card" id="quizPanel" hidden>
+      <div id="quizBody"></div>
+    </div>
+
+    <div class="next-card">
+      <span class="next-icon" aria-hidden="true"><svg width="26" height="18" viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 14c3-1 5-7 6-7 2 6 3 9 5 9 2 0 3-6 7-10"/><circle cx="5" cy="14" r="1.2" fill="currentColor" stroke="none"/></svg></span>
+      <div class="test-banner-copy">
+        <h2 class="test-banner-title">Next: see it in 3D</h2>
+        <p class="test-banner-tag">Watch how these waves are written as the impulse travels through a 3D heart, and how each lead sees that same beat.</p>
+      </div>
+      <a class="next-link" href="ECG_3D.html">Open ECG in 3D</a>
+    </div>
 
     <details class="card revise-sources">
-      <summary>Sources and credits</summary>
+      <summary>Sources</summary>
       <ul class="source-list">
-        <li>Life in the Fast Lane (LITFL). <a href="https://litfl.com/ecg-lead-positioning/" target="_blank" rel="noopener">ECG lead positioning</a> (chest electrode positions; inferior, lateral and anterior lead groups).</li>
-        <li>LITFL. <a href="https://litfl.com/ecg-axis-interpretation/" target="_blank" rel="noopener">ECG axis interpretation</a> (hexaxial angles; normal axis −30° to +90°).</li>
-        <li>LITFL. <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a> (biphasic P in V1: right atrium first, then left atrium).</li>
-        <li>LITFL. <a href="https://litfl.com/q-wave-ecg-library/" target="_blank" rel="noopener">Q wave</a> (small septal q waves in I, aVL, V5 and V6; none in V1 to V3).</li>
-        <li>LITFL. <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a> (upright in all leads except aVR and V1).</li>
-        <li>LITFL. <a href="https://litfl.com/anterior-myocardial-infarction-ecg-library/" target="_blank" rel="noopener">Anterior myocardial infarction</a> (septal leads V1 and V2).</li>
-        <li>LITFL. <a href="https://litfl.com/lateral-stemi-ecg-library/" target="_blank" rel="noopener">Lateral STEMI</a> (lateral wall of the left ventricle).</li>
-        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a003" target="_blank" rel="noopener">Normal and abnormal electrical conduction</a> (SA node, AV node in the inferior-posterior interatrial septum, His bundle, bundle branches and Purkinje fibres; conduction velocities).</li>
-        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Electrocardiogram</a> (P wave from the SA node; PR segment and AV node delay; ST segment; T wave and the direction of repolarisation).</li>
-        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a014" target="_blank" rel="noopener">Volume conductor principles and ECG rules of interpretation</a> (towards, away and at right angles; amplitude and muscle mass; repolarisation direction).</li>
-        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a015" target="_blank" rel="noopener">Mean electrical vector</a>.</li>
-        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a016" target="_blank" rel="noopener">Ventricular depolarization and the mean electrical axis</a> (septum left to right, then towards the apex, last regions giving the S wave).</li>
-        <li>3D graphics: <a href="https://threejs.org/" target="_blank" rel="noopener">three.js</a> r160, © 2010-2023 three.js authors, MIT licence (<a href="assets/vendor/three/LICENSE.txt">licence text</a>). Served from this site, not a third-party CDN.</li>
+        <li>Life in the Fast Lane (LITFL), ECG Library. <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a>, <a href="https://litfl.com/pr-interval-ecg-library/" target="_blank" rel="noopener">PR interval</a>, <a href="https://litfl.com/pr-segment-ecg-library/" target="_blank" rel="noopener">PR segment</a>, <a href="https://litfl.com/qrs-interval-ecg-library/" target="_blank" rel="noopener">QRS interval</a>, <a href="https://litfl.com/q-wave-ecg-library/" target="_blank" rel="noopener">Q wave</a>, <a href="https://litfl.com/st-segment-ecg-library/" target="_blank" rel="noopener">ST segment</a>, <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a>, <a href="https://litfl.com/u-wave-ecg-library/" target="_blank" rel="noopener">U wave</a>, <a href="https://litfl.com/qt-interval-ecg-library/" target="_blank" rel="noopener">QT interval</a>, and <a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">rate interpretation</a>. Fetched 17 November 2026.</li>
+        <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Electrocardiogram (EKG, ECG)</a> (revised 1 November 2023). Used for the physiology of each wave and interval, including the ST segment as the action potential plateau, and for Klabunde's own normal ranges.</li>
+        <li>Hampton J. <cite>The ECG Made Easy</cite>. Cited only for the common UK teaching figure of a QRS under 0.12 s. No online copy was fetched, so this figure is flagged for review and is not given a link.</li>
       </ul>
+      <p class="caveat">The beat is a synthetic teaching trace from a simple vector model, not a patient recording. Paper scale follows LITFL rate interpretation (25 mm/s, 10 mm/mV). Statements where sources disagree are listed in the table and should be checked with an anaesthetist before this page is used for teaching.</p>
     </details>
   </main>
 
@@ -273,12 +173,10 @@
       <span class="footer-item">The Physio Lab<span class="footer-dot" aria-hidden="true">·</span></span>
       <span class="footer-break" aria-hidden="true"></span>
       <span class="footer-item">Built for teaching<span class="footer-dot" aria-hidden="true">·</span></span>
-      <span class="footer-item">3D by three.js (MIT)<span class="footer-dot" aria-hidden="true">·</span></span>
       <span class="footer-item"><a class="footer-feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="Give feedback, opens Google Forms in a new tab">Give feedback</a></span>
     </p>
   </footer>
 </div>
-
-<script type="module" src="assets/ecg3d.js?v=20261120a"></script>
+<script src="assets/ecg-basics.js?v=20261119b"></script>
 </body>
 </html>
