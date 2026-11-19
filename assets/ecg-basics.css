@@ -343,7 +343,7 @@ html[data-theme="colour-blind"] {
 }
 @media (min-width: 900px) {
   .axis-layout {
-    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    grid-template-columns: minmax(340px, 380px) minmax(0, 1fr);
   }
   .axis-leads-svg,
   #axisLeadsSvg {
@@ -353,7 +353,7 @@ html[data-theme="colour-blind"] {
 .axis-svg {
   display: block;
   width: 100%;
-  max-width: 360px;
+  max-width: none;
   height: auto;
   margin: 0 auto;
   background: var(--surface);
@@ -361,11 +361,83 @@ html[data-theme="colour-blind"] {
   border-radius: 12px;
   touch-action: none;
 }
+@media (min-width: 900px) {
+  .axis-svg {
+    max-width: 380px;
+  }
+}
+.axis-svg text.lab-axis-region {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+}
+.axis-svg text.lab-axis-lead {
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font-sans);
+}
+.axis-legend {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.axis-legend li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  line-height: 1.25;
+}
+.axis-legend li.is-current {
+  border-width: 2.5px;
+  border-color: var(--text);
+}
+.axis-legend-range {
+  display: block;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ax-swatch {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 16px;
+  margin-top: 1px;
+  border: 1.5px solid var(--text);
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+.ax-swatch-normal {
+  background: repeating-linear-gradient(-45deg, var(--series-a) 0 1.5px, color-mix(in srgb, var(--series-a) 12%, var(--surface)) 1.5px 6px);
+}
+.ax-swatch-lad {
+  background-color: color-mix(in srgb, var(--btn-secondary) 10%, var(--surface));
+  background-image: radial-gradient(circle, var(--btn-secondary) 1.3px, transparent 1.4px);
+  background-size: 6px 6px;
+  background-position: 50% 50%;
+}
+.ax-swatch-rad {
+  background: repeating-linear-gradient(-45deg, var(--text) 0 1.2px, transparent 1.2px 6px),
+    repeating-linear-gradient(45deg, var(--text) 0 1.2px, color-mix(in srgb, var(--text) 6%, var(--surface)) 1.2px 6px);
+}
+.ax-swatch-extreme {
+  background: repeating-linear-gradient(0deg, var(--series-e) 0 1.4px, color-mix(in srgb, var(--series-e) 18%, var(--surface)) 1.4px 6px);
+}
 .axis-leads-svg,
 #axisLeadsSvg {
   min-width: 0 !important;
   width: 100%;
-  max-height: 360px;
+  max-height: 420px;
 }
 .axis-caption,
 .strip-hint {
@@ -374,9 +446,6 @@ html[data-theme="colour-blind"] {
   font-weight: 600;
   color: var(--muted);
   margin: 6px 0 0;
-}
-.axis-svg {
-  max-width: 300px;
 }
 
 .beat-svg {

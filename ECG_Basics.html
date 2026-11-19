@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119i">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119j">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -168,8 +168,9 @@
         <p>Cardiac axis is the net direction of ventricular depolarisation in the frontal plane. Usual normal is -30° to +90°. Drag the arrow on the hexaxial wheel, or use the buttons and arrow keys, and watch leads I, II and aVF change. The quadrant method uses I and aVF: if both are positive, the axis is between 0° and +90°. Lead II then separates a still-normal axis (-30° to 0°) from left axis deviation (less than -30°).</p>
         <div class="axis-layout">
           <div class="axis-wheel-col">
-            <svg id="axisSvg" class="axis-svg" viewBox="0 0 420 420" role="application" tabindex="0" aria-label="Hexaxial reference wheel. Drag the arrow to change the QRS axis.">
+            <svg id="axisSvg" class="axis-svg" viewBox="0 0 500 500" role="application" tabindex="0" aria-label="Hexaxial reference wheel. Drag the arrow to change the QRS axis.">
             </svg>
+            <ul class="axis-legend" id="axisLegend"></ul>
             <p class="axis-caption">Each sector has its own pattern. The thicker outline is the region the arrow sits in.</p>
             <p class="quiz-readout" id="axisReadout"></p>
             <div class="read-controls" id="axisControls"></div>
@@ -177,7 +178,7 @@
           <div class="axis-leads-col">
             <svg id="axisLeadsSvg" class="read-svg axis-leads-svg" viewBox="0 0 400 280" role="img" aria-label="Leads I, II and aVF for the chosen axis">
             </svg>
-            <p class="axis-caption">Traces are scaled so the whole QRS stays on the paper. Read polarity, not height.</p>
+            <p class="axis-caption">Leads I, II and aVF share one amplitude scale, so a near-isoelectric lead looks small.</p>
             <p class="quiz-readout" id="axisLeadReadout"></p>
           </div>
         </div>
@@ -302,6 +303,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-basics.js?v=20261119i"></script>
+<script src="assets/ecg-basics.js?v=20261119j"></script>
 </body>
 </html>

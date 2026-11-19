@@ -2433,8 +2433,8 @@
     var svg = $("axisSvg");
     if (!svg) return;
     var tok = T(), ink = cssVar("--ecg-ink") || "#111", fam = fontSans();
-    var cx = 210, cy = 210, r = 128;
-    svg.setAttribute("viewBox", "0 0 420 420");
+    var cx = 250, cy = 250, r = 200;
+    svg.setAttribute("viewBox", "0 0 500 500");
     clearSvg(svg);
     var g = el("g", null, svg);
     axisPatterns(svg);
@@ -2452,9 +2452,9 @@
     }
     var regions = [
       { key: "normal", a0: -30, a1: 90, fill: "url(#ax-hatch)", mid: 30, lines: ["Normal", "-30° to +90°"] },
-      { key: "rad", a0: 90, a1: 180, fill: "url(#ax-cross)", mid: 135, lines: ["Right axis", "deviation", "+90° to 180°"] },
-      { key: "extreme", a0: 180, a1: -90, fill: "url(#ax-plain)", mid: 225, lines: ["Extreme /", "northwest", "-90° to 180°"] },
-      { key: "lad", a0: -90, a1: -30, fill: "url(#ax-dots)", mid: -60, lines: ["Left axis", "deviation", "-30° to -90°"] }
+      { key: "rad", a0: 90, a1: 180, fill: "url(#ax-cross)", mid: 135, lines: ["RAD", "+90° to 180°"] },
+      { key: "extreme", a0: 180, a1: -90, fill: "url(#ax-plain)", mid: 225, lines: ["Extreme", "-90° to 180°"] },
+      { key: "lad", a0: -90, a1: -30, fill: "url(#ax-dots)", mid: -60, lines: ["LAD", "-30° to -90°"] }
     ];
     var current = axisRegionKey(RS.axis);
     regions.forEach(function (rg) {
@@ -2469,18 +2469,32 @@
     });
     function sectorLabel(rg, rad) {
       var pt = polar(rg.mid, rad);
+      var grp = el("g", { class: "axis-region-label", "data-region-label": rg.key, "pointer-events": "none" }, g);
       var tg = el("text", {
         x: pt[0], y: pt[1], "text-anchor": "middle", fill: tok.text,
-        "font-family": fam, class: "lab-small", "data-region-label": rg.key
-      }, g);
+        "font-family": fam, class: "lab-axis-region"
+      }, grp);
       rg.lines.forEach(function (ln, i) {
-        var dy = (i === 0 ? -((rg.lines.length - 1) * 0.55) : 1.15) + "em";
+        var dy = (i === 0 ? -((rg.lines.length - 1) * 0.58) : 1.2) + "em";
         el("tspan", { x: pt[0], dy: dy }, tg, ln);
       });
+      var bbox = tg.getBBox();
+      var padX = 5, padY = 3;
+      var rect = el("rect", {
+        x: bbox.x - padX,
+        y: bbox.y - padY,
+        width: bbox.width + padX * 2,
+        height: bbox.height + padY * 2,
+        rx: 4,
+        fill: tok.surface,
+        "fill-opacity": 0.94,
+        stroke: tok.border || ink,
+        "stroke-width": 0.6
+      });
+      grp.insertBefore(rect, tg);
     }
     regions.forEach(function (rg) {
-      /* LAD is a narrow wedge: sit the label a little further out so it stays readable. */
-      sectorLabel(rg, 0.50 * r);
+      sectorLabel(rg, 0.52 * r);
     });
     var leads = [
       { name: "I", deg: 0 },
@@ -2491,10 +2505,13 @@
       { name: "aVF", deg: 90 }
     ];
     leads.forEach(function (ld) {
-      var a = polar(ld.deg, r), b = polar(ld.deg, 18);
+      var a = polar(ld.deg, r), b = polar(ld.deg, 22);
       el("path", { d: "M" + b[0] + " " + b[1] + "L" + a[0] + " " + a[1], stroke: ink, "stroke-width": 1.2, "stroke-dasharray": "3 3" }, g);
-      var lab = polar(ld.deg, r + 24);
-      el("text", { x: lab[0], y: lab[1] + 5, "text-anchor": "middle", fill: tok.text, "font-family": fam, class: "lab-int" }, g, ld.name);
+      var lab = polar(ld.deg, r + 30);
+      el("text", {
+        x: lab[0], y: lab[1] + 5, "text-anchor": "middle", fill: tok.text,
+        "font-family": fam, class: "lab-axis-lead"
+      }, g, ld.name);
     });
     var tdeg;
     for (tdeg = -180; tdeg < 180; tdeg += 30) {
@@ -2521,6 +2538,44 @@
     el("circle", { cx: cx, cy: cy, r: 5, fill: ink }, g);
     RS._axisWheel = { cx: cx, cy: cy, r: r };
     updateAxisReadout();
+    fillAxisLegend();
+  }
+
+  function fillAxisLegend() {
+    var box = $("axisLegend");
+    if (!box) return;
+    var current = axisRegionKey(RS.axis);
+    var items = [
+      { key: "normal", sw: "ax-swatch-normal", name: "Normal", range: "-30° to +90°" },
+      { key: "lad", sw: "ax-swatch-lad", name: "Left axis deviation", range: "-30° to -90°" },
+      { key: "rad", sw: "ax-swatch-rad", name: "Right axis deviation", range: "+90° to 180°" },
+      { key: "extreme", sw: "ax-swatch-extreme", name: "Extreme / northwest", range: "-90° to 180°" }
+    ];
+    box.innerHTML = items.map(function (it) {
+      var cur = it.key === current ? " is-current" : "";
+      return "<li class=\"" + it.key + cur + "\"><span class=\"ax-swatch " + it.sw + "\" aria-hidden=\"true\"></span><span><strong>" + it.name + "</strong> <span class=\"axis-legend-range\">" + it.range + "</span></span></li>";
+    }).join("");
+  }
+
+  function axisCommonScale(gh, u) {
+    if (RS._axisScale && RS._axisScale.gh === gh && RS._axisScale.u === u) return RS._axisScale;
+    var t0 = -0.15, t1 = 1.88, peak = 0;
+    var leadDegs = [0, 60, 90];
+    var axis, i, tt, v, bumps, dir;
+    for (axis = -180; axis <= 180; axis += 5) {
+      bumps = beatBumps(defaultBeat({ axis: axis, u: false }));
+      for (i = 0; i < leadDegs.length; i++) {
+        dir = leadDir(leadDegs[i]);
+        for (tt = t0; tt <= t1 + 1e-12; tt += 0.004) {
+          v = Math.abs(voltageLead(bumps, tt, 1.0, dir));
+          if (v > peak) peak = v;
+        }
+      }
+    }
+    var margin = 1 * u;
+    var sy = (gh / 2 - margin) / Math.max(peak, 0.5);
+    RS._axisScale = { peak: peak, sy: sy, margin: margin, gh: gh, u: u };
+    return RS._axisScale;
   }
 
   function renderAxisLeads() {
@@ -2531,6 +2586,8 @@
     clearSvg(svg);
     var u = 8, t0 = -0.15, t1 = 1.88, x0 = 96, gw = 25 * u * (t1 - t0);
     var gh = 14 * u, gap = 8, top = 8;
+    var scale = axisCommonScale(gh, u);
+    var sy = scale.sy, margin = scale.margin;
     var leads = [
       { name: "I", deg: 0 },
       { name: "II", deg: 60 },
@@ -2538,7 +2595,6 @@
     ];
     leads.forEach(function (ld, i) {
       ld.gy = top + i * (gh + gap);
-      ld.y0 = ld.gy + 10 * u;
     });
     var vbW = x0 + gw + 10, vbH = top + 3 * gh + 2 * gap + 8;
     svg.setAttribute("viewBox", "0 0 " + Math.ceil(vbW) + " " + Math.ceil(vbH));
@@ -2553,10 +2609,7 @@
         if (v < mn) mn = v;
         if (v > mx) mx = v;
       }
-      var margin = 1 * u;
-      var span = Math.max(mx - mn, 0.4);
-      var sy = (gh - 2 * margin) / span;
-      var y0 = ld.gy + margin + mx * sy;
+      var y0 = ld.gy + gh / 2;
       el("path", {
         d: fnPath(f, t0, t1, x0, y0, 25 * u, sy, 0.002),
         fill: "none", stroke: ink, "stroke-width": 2.2, "stroke-linejoin": "round",
@@ -2565,7 +2618,7 @@
       var sign = leadSign(RS.axis, ld.deg);
       el("text", { x: 6, y: ld.gy + 14, "text-anchor": "start", fill: tok.text, "font-family": fam, class: "lab-int" }, g, ld.name);
       el("text", { x: 6, y: ld.gy + 30, "text-anchor": "start", fill: tok.muted, "font-family": fam, class: "lab-small" }, g, sign);
-      fit.push({ name: ld.name, gy: ld.gy, gh: gh, y0: y0, sy: sy, min: mn, max: mx, top: ld.gy + margin, bot: ld.gy + gh - margin });
+      fit.push({ name: ld.name, gy: ld.gy, gh: gh, y0: y0, sy: sy, min: mn, max: mx, peak: scale.peak, top: ld.gy + margin, bot: ld.gy + gh - margin });
     });
     RS._leadFit = fit;
   }
@@ -2580,7 +2633,7 @@
       var yBot = row.y0 - row.min * row.sy;
       if (yTop < row.gy + 0.5) overflow.push("top");
       if (yBot > row.gy + row.gh - 0.5) overflow.push("bottom");
-      return { name: row.name, overflow: overflow, yTop: yTop, yBot: yBot, gy: row.gy, gh: row.gh };
+      return { name: row.name, overflow: overflow, yTop: yTop, yBot: yBot, gy: row.gy, gh: row.gh, sy: row.sy, min: row.min, max: row.max, y0: row.y0, peak: row.peak };
     });
     if (deg != null && prev !== RS.axis) { /* already at deg */ }
     return out;
