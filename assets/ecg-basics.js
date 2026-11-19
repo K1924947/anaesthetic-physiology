@@ -117,22 +117,52 @@
     }
     return times;
   }
-  function drawRMarks(g, xOf, marks, yTop, revealed, tok, fam) {
+  function rMarkFontSize(svg, vbW) {
+    if (!svg && !vbW) return 22;
+    var cssW = (svg && svg.clientWidth) || 0;
+    var w = vbW || (svg && svgViewBox(svg).w) || 0;
+    var scale = (cssW > 40 && w) ? cssW / w : 1;
+    return Math.max(18, Math.round(15 / Math.max(scale, 0.2)));
+  }
+
+  function rMarkBand(svg, vbW) {
+    return rMarkFontSize(svg, vbW) + 16;
+  }
+
+  function drawRMarks(g, xOf, marks, yTop, revealed, tok, fam, opts) {
+    opts = opts || {};
+    var yNum = opts.yNum;
+    var fs = opts.fontSize || 22;
     marks.forEach(function (mt, i) {
       var x = xOf(mt);
-      el("polygon", {
-        points: x + "," + (yTop + 16) + " " + (x - 9) + "," + yTop + " " + (x + 9) + "," + yTop,
-        fill: tok.a, stroke: tok.a, "stroke-width": 1.8, class: "r-mark"
-      }, g);
-      el("path", {
-        d: "M" + x + " " + (yTop + 16) + "V" + (yTop + 28),
-        stroke: tok.a, "stroke-width": 2.2, "stroke-linecap": "round", class: "r-mark-stem"
-      }, g);
+      var pinTop = (yNum != null) ? Math.max(2, yNum - fs - 10) : yTop;
+      if (!revealed) {
+        el("polygon", {
+          points: x + "," + (pinTop + 16) + " " + (x - 9) + "," + pinTop + " " + (x + 9) + "," + pinTop,
+          fill: tok.a, stroke: tok.a, "stroke-width": 1.8, class: "r-mark"
+        }, g);
+        el("path", {
+          d: "M" + x + " " + (pinTop + 16) + "V" + (pinTop + 28),
+          stroke: tok.a, "stroke-width": 2.2, "stroke-linecap": "round", class: "r-mark-stem"
+        }, g);
+      }
       if (revealed) {
+        var label = String(i + 1);
+        var bh = fs + 8;
+        var bw = Math.max(bh, label.length * fs * 0.72 + 10);
+        var ny = (yNum != null) ? yNum : (yTop - 2);
+        var by = ny - bh;
+        if (by < 2) by = 2;
+        el("rect", {
+          x: x - bw / 2, y: by, width: bw, height: bh, rx: 4,
+          fill: tok.surface, stroke: tok.a, "stroke-width": 1.8,
+          class: "r-mark-num-bg"
+        }, g);
         el("text", {
-          x: x, y: yTop - 2, "text-anchor": "middle", fill: tok.a,
-          "font-family": fam, class: "lab-small r-mark-num"
-        }, g, String(i + 1));
+          x: x, y: by + bh - Math.round(fs * 0.28), "text-anchor": "middle", fill: tok.a,
+          "font-family": fam, "font-size": fs, "font-weight": 700,
+          class: "r-mark-num"
+        }, g, label);
       }
     });
   }
@@ -187,7 +217,7 @@
     if (!(h > 1)) h = fs * 0.95;
     return { w: w, h: h };
   }
-  function drawCaliperCaptions(g, xA, xB, tok, fam, svg, xMin, xMax) {
+  function drawCaliperCaptions(g, xA, xB, tok, fam, svg, xMin, xMax, yTop) {
     var vbW = Math.max(40, xMax - xMin);
     var fs = caliperLabelFont(svg, vbW);
     var mA = measureSvgText(g, "Start", fam, fs);
@@ -196,7 +226,7 @@
     var padY = Math.max(2, fs * 0.18);
     var wA = mA.w + padX * 2, hA = mA.h + padY * 2;
     var wB = mB.w + padX * 2, hB = mB.h + padY * 2;
-    var y = 2;
+    var y = yTop != null ? yTop : 2;
     function clampX(gx, w) {
       if (gx < xMin + 2) gx = xMin + 2;
       if (gx + w > xMax - 2) gx = xMax - 2 - w;
@@ -534,9 +564,9 @@
     });
     hg.addEventListener("pointerenter", function (ev) {
       previewPart(k);
-      showHitTip(ev, { key: k, name: PARTS[k].name });
+      showHitTip(ev, { key: k, name: PARTS[k].name }, $("beatSvg"));
     });
-    hg.addEventListener("pointermove", function (ev) { showHitTip(ev, { key: k, name: PARTS[k].name }); });
+    hg.addEventListener("pointermove", function (ev) { showHitTip(ev, { key: k, name: PARTS[k].name }, $("beatSvg")); });
     hg.addEventListener("pointerleave", function () { previewPart(null); hideHitTip(); });
   }
 
@@ -675,7 +705,7 @@
     paperHit.addEventListener("pointermove", function (ev) {
       var k = paperPart(ev);
       previewPart(k);
-      if (k) showHitTip(ev, { key: k, name: PARTS[k].name });
+      if (k) showHitTip(ev, { key: k, name: PARTS[k].name }, $("beatSvg"));
       else hideHitTip();
     });
     paperHit.addEventListener("pointerleave", function () { previewPart(null); hideHitTip(); });
@@ -791,6 +821,13 @@
       if (next) next.focus();
     });
     showPart("P", false);
+    bindHitTipDismiss();
+    var beatSvg = $("beatSvg");
+    if (beatSvg && !beatSvg.dataset.tipBound) {
+      beatSvg.dataset.tipBound = "1";
+      beatSvg.addEventListener("pointerleave", function () { previewPart(null); hideHitTip(); });
+      beatSvg.addEventListener("mouseleave", function () { previewPart(null); hideHitTip(); });
+    }
   }
 
   var DRILL_N = 8;
@@ -1033,6 +1070,8 @@
     return hitAtTime(t, beat, rr, prefer);
   }
 
+  var HIT_TIP = { host: null, observer: null, bound: false };
+
   function tipEl() {
     var n = $("ecgHitTip");
     if (!n) {
@@ -1046,17 +1085,43 @@
     return n;
   }
 
-  function showHitTip(ev, hit) {
+  function bindHitTipDismiss() {
+    if (HIT_TIP.bound) return;
+    HIT_TIP.bound = true;
+    var hide = function () { hideHitTip(); };
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("wheel", hide, { capture: true, passive: true });
+    window.addEventListener("touchend", hide, true);
+    window.addEventListener("pointercancel", hide, true);
+    window.addEventListener("blur", hide);
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) hideHitTip();
+    });
+    HIT_TIP.observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) hideHitTip();
+      });
+    }, { threshold: 0 });
+  }
+
+  function showHitTip(ev, hit, host) {
+    bindHitTipDismiss();
     var n = tipEl();
     if (!hit) {
-      n.hidden = true;
-      n.textContent = "";
+      hideHitTip();
       return;
     }
     n.hidden = false;
     n.textContent = hit.name || partLabel(hit.key);
     n.style.left = Math.round(ev.clientX) + "px";
     n.style.top = Math.round(ev.clientY) + "px";
+    var elHost = host || (ev && ev.currentTarget && ev.currentTarget.ownerSVGElement) || $("beatSvg");
+    if (elHost && elHost.ownerSVGElement) elHost = elHost.ownerSVGElement;
+    HIT_TIP.host = elHost || null;
+    if (HIT_TIP.observer && HIT_TIP.host) {
+      HIT_TIP.observer.disconnect();
+      HIT_TIP.observer.observe(HIT_TIP.host);
+    }
   }
 
   function hideHitTip() {
@@ -1065,6 +1130,8 @@
       n.hidden = true;
       n.textContent = "";
     }
+    HIT_TIP.host = null;
+    if (HIT_TIP.observer) HIT_TIP.observer.disconnect();
   }
 
   function defaultBeat(extra) {
@@ -1544,6 +1611,7 @@
       QG.paperBottom = G.gy + G.gh;
       QG.gw = G.gw;
       QG.head = G.gy;
+      QG.markBand = G.markBand;
       return;
     }
     var u = 10;
@@ -1746,12 +1814,13 @@
     }
 
     if (item.type === "rate" && item.marks && item.marks.length) {
-      drawRMarks(g, quizTtoX, item.marks, 18, QZ.answered, t, fam);
+      drawRMarks(g, quizTtoX, item.marks, 18, QZ.answered, t, fam, { yNum: (QG.markBand || 32) - 2, fontSize: rMarkFontSize(svg, QG.x0 + QG.gw + 8) });
     }
 
     if (item.type === "calipers" || item.type === "rate") {
       var capBottom = drawCaliperCaptions(
-        g, quizTtoX(QZ.calA), quizTtoX(QZ.calB), t, fam, svg, 0, vbW
+        g, quizTtoX(QZ.calA), quizTtoX(QZ.calB), t, fam, svg, 0, vbW,
+        item.type === "rate" ? (QG.markBand || 0) : 0
       );
       var yTop = capBottom;
       var yBot = QG.paperBottom;
@@ -1884,7 +1953,7 @@
         var inHead = pt && pt.y < (QG.gy + 2);
         var nearCal = Math.min(dA, dB) <= tol;
         var nR = (it.type === "rate" && it.times) ? nearestR(it.times, t) : { dist: 1e9 };
-        var nearR = nR.t && nR.dist <= 0.12;
+        var nearR = nR.t && nR.dist <= markSnapTol(svg, QG);
         if (nearCal && (inHead || !nearR || it.type === "calipers")) {
           QZ.dragging = (dA <= dB) ? "A" : "B";
           QZ.focus = QZ.dragging;
@@ -1955,6 +2024,12 @@
           if (QZ.focus === "A") QZ.calA = clampT(QZ.calA + dir);
           else QZ.calB = clampT(QZ.calB + dir);
           ev.preventDefault();
+          drawQuizTrace();
+          return;
+        }
+        if (it.type === "rate" && (ev.key === "Enter" || ev.key === " ")) {
+          ev.preventDefault();
+          toggleMark(it, QZ.focus === "B" ? QZ.calB : QZ.calA, svg, QG);
           drawQuizTrace();
         }
         return;
@@ -2290,6 +2365,7 @@
         largeSq: item.largeSq != null ? item.largeSq : null,
         kind: item.kind || null,
         times: item.times ? item.times.slice() : null,
+        marks: item.marks ? item.marks.slice() : null,
         sex: item.sex || null,
         trueAxis: item.trueAxis != null ? item.trueAxis : null,
         guess: item.guess != null ? item.guess : null,
@@ -2441,11 +2517,13 @@
     var u = 8;
     var gw = duration * 25 * u;
     var vbW = 8 + gw + 8;
-    var head = caliperHeadRoom(svg, vbW);
+    var markBand = rMarkBand(svg, vbW);
+    var head = caliperHeadRoom(svg, vbW) + markBand;
     return {
       x0: 8, gy: head, u: u, tStart: 0, tEnd: duration,
       gh: 20 * u, y0: head + 14 * u,
-      gw: gw
+      gw: gw,
+      markBand: markBand
     };
   }
 
@@ -2470,7 +2548,7 @@
     var yBot = G.gy + G.gh, col = tok.a;
     var vbW = (G.x0 + G.gw + 8);
     var capBottom = drawCaliperCaptions(
-      g, stripTtoX(G, a), stripTtoX(G, b), tok, fam, svg, 0, vbW
+      g, stripTtoX(G, a), stripTtoX(G, b), tok, fam, svg, 0, vbW, G.markBand || 0
     );
     var yTop = capBottom;
     function one(tVal, which, focused) {
@@ -2566,8 +2644,8 @@
       d: fnPath(f, 0, item.duration, stripTtoX(G, 0), G.y0, 25 * G.u, 10 * G.u, 0.003),
       fill: "none", stroke: ink, "stroke-width": 2.2, "stroke-linejoin": "round", "stroke-linecap": "round"
     }, g);
-    /* Visible marks as soon as an R is clicked; sequence numbers only after Check. */
-    drawRMarks(g, function (mt) { return stripTtoX(G, mt); }, item.marks, 18, item.revealed, tok, fam);
+    /* Learning section: marks and 1, 2, 3… numbers appear as soon as an R is clicked. */
+    drawRMarks(g, function (mt) { return stripTtoX(G, mt); }, item.marks, 18, true, tok, fam, { yNum: (G.markBand || 32) - 2, fontSize: rMarkFontSize(svg, G.x0 + G.gw + 8) });
     drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam, svg);
     RS._rateG = G;
     updateRateReadout();
@@ -2579,14 +2657,19 @@
     var span = Math.abs(item.calB - item.calA);
     var parts = ["Calipers: " + formatCaliperSpan(span) + "."];
     parts.push("R waves marked: " + item.marks.length + ".");
+    if (item.marks.length && item.marks.length === item.times.length) {
+      var n = item.times.length;
+      elr.innerHTML = parts.join(" ") + " <span class='formula-chip'><strong>" + n + " QRS complexes in 10 s × 6 = " + (n * 6) + " /min</strong></span>.";
+      return;
+    }
     elr.textContent = parts.join(" ");
   }
 
-  function rateTaskText(item) {
+  function rateTaskHtml(item) {
     if (item.kind === "regular") {
-      return "This 10-second strip is a regular rhythm. Measure one R-R interval with the calipers, or click two consecutive R waves, then check the rate. Rate = 300 / large squares.";
+      return "This 10-second strip is a regular rhythm. Measure one R-R interval with the calipers, or click two consecutive R waves, then check the rate. <span class='formula-chip'><strong>Rate = 300 / large squares</strong> (or 1500 / small squares)</span>.";
     }
-    return "This 10-second strip is irregular. Click every R wave to mark it, then read the rate as the QRS count × 6.";
+    return "This 10-second strip is irregular. Click every R wave to mark it, then read the rate as <span class='formula-chip'><strong>number of QRS complexes in 10 s × 6</strong></span>.";
   }
 
   function bindRateSvg() {
@@ -2614,7 +2697,7 @@
       var inHead = pt && pt.y < G.gy + 2;
       var nearCal = Math.min(dA, dB) <= 0.10;
       var nR = (state.times && onMark) ? nearestR(state.times, t) : { dist: 1e9 };
-      var nearR = nR.t && nR.dist <= 0.12;
+      var nearR = nR.t && nR.dist <= markSnapTol(svg, G);
       if (nearCal && (inHead || !nearR)) {
         state.dragging = dA <= dB ? "A" : "B";
         state.focus = state.dragging;
@@ -2661,13 +2744,36 @@
         else st.calB = Math.max(G.tStart, Math.min(G.tEnd, st.calB + dir));
         ev.preventDefault();
         onChange();
+        return;
+      }
+      if (onMark && (ev.key === "Enter" || ev.key === " ")) {
+        ev.preventDefault();
+        onMark(st.focus === "B" ? st.calB : st.calA);
       }
     });
   }
 
-  function toggleMark(item, t) {
+  function markSnapTol(svg, G) {
+    var cssW = (svg && svg.clientWidth) || 0;
+    var vbW = G ? (G.x0 + G.gw + 8) : 0;
+    var pxPerSec = (cssW > 40 && vbW > 0) ? (cssW / vbW) * 25 * ((G && G.u) || 8) : 200;
+    return Math.max(0.12, 16 / Math.max(pxPerSec, 1));
+  }
+
+  function toggleMark(item, t, svg, G) {
+    if (!item || !item.times) return;
+    if (!svg) {
+      if (item === RS.rate) svg = $("rateSvg");
+      else if (item === RS.rhythm) svg = $("rhythmSvg");
+      else svg = $("quizSvg");
+    }
+    if (!G) {
+      if (item === RS.rate) G = RS._rateG;
+      else if (item === RS.rhythm) G = RS._rhythmG;
+      else G = QG;
+    }
     var n = nearestR(item.times, t);
-    if (!n.t || n.dist > 0.10) return;
+    if (!n.t || n.dist > markSnapTol(svg, G)) return;
     var i = item.marks.indexOf(n.t);
     if (i >= 0) item.marks.splice(i, 1);
     else {
@@ -2683,10 +2789,10 @@
   function fillRateControls() {
     var box = $("rateControls"), item = RS.rate, task = $("rateTask");
     if (!box || !item) return;
-    if (task) task.textContent = rateTaskText(item);
+    if (task) task.innerHTML = rateTaskHtml(item);
     box.innerHTML =
       caliperNudgeHtml() +
-      (item.revealed ? "<button type='button' class='t-btn' id='rateMarkAll'>Mark all R waves</button>" : "") +
+      "<button type='button' class='t-btn' id='rateMarkAll'>Mark all R waves</button>" +
       "<button type='button' class='t-btn' id='rateClear'>Clear marks</button>" +
       "<label for='rateInput'>Rate (/min)</label>" +
       "<input id='rateInput' type='number' inputmode='numeric' min='20' max='250' step='1' value='" + esc(item.entered) + "'>" +
@@ -2732,29 +2838,19 @@
     if (!item || !fb) return;
     var guess = rateGuess(item);
     var ok = guess != null && Math.abs(guess - item.rate) <= rateTolerance(item.rate);
-    var msg;
+    var msg, msgHtml;
     if (item.kind === "regular") {
       msg = "There are " + item.largeSq + " large squares between consecutive R waves, so the rate is 300 / " + item.largeSq + " = " + item.rate + " /min. The 10-second count is " + item.times.length + " × 6 = " + (item.times.length * 6) + " /min, which agrees for a regular rhythm.";
+      msgHtml = "There are " + item.largeSq + " large squares between consecutive R waves, so the rate is <span class='formula-chip'><strong>300 / " + item.largeSq + " = " + item.rate + " /min</strong></span>. The 10-second count is <span class='formula-chip'><strong>" + item.times.length + " × 6 = " + (item.times.length * 6) + " /min</strong></span>, which agrees for a regular rhythm.";
     } else {
       msg = "There are " + item.times.length + " QRS complexes in this 10-second strip, so the rate is " + item.times.length + " × 6 = " + item.rate + " /min. The 300 / large-squares method is not reliable here because the R-R intervals vary.";
+      msgHtml = "There are " + item.times.length + " QRS complexes in this 10-second strip, so the rate is <span class='formula-chip'><strong>" + item.times.length + " × 6 = " + item.rate + " /min</strong></span>. The 300 / large-squares method is not reliable here because the R-R intervals vary.";
     }
     fb.hidden = false;
     fb.className = "quiz-feedback" + (ok ? "" : " is-wrong");
-    fb.innerHTML = "<p><strong>" + (ok ? "Correct." : "Not quite.") + "</strong> " + esc(msg) + (guess != null && !ok ? " You entered " + guess + " /min." : "") + "</p>";
+    fb.innerHTML = "<p><strong>" + (ok ? "Correct." : "Not quite.") + "</strong> " + msgHtml + (guess != null && !ok ? " You entered " + guess + " /min." : "") + "</p>";
     if (live) live.textContent = (ok ? "Correct. " : "Not quite. ") + msg;
     item.revealed = true;
-    if (!$("rateMarkAll") && $("rateClear")) {
-      var allBtn = document.createElement("button");
-      allBtn.type = "button";
-      allBtn.className = "t-btn";
-      allBtn.id = "rateMarkAll";
-      allBtn.textContent = "Mark all R waves";
-      $("rateClear").parentNode.insertBefore(allBtn, $("rateClear"));
-      allBtn.addEventListener("click", function () {
-        RS.rate.marks = RS.rate.times.slice();
-        renderRate();
-      });
-    }
     renderRate();
   }
 
@@ -2785,7 +2881,7 @@
     RS.rate = makeRateCase(spec);
     RS.rate.revealed = false;
     var task = $("rateTask");
-    if (task) task.textContent = rateTaskText(RS.rate);
+    if (task) task.innerHTML = rateTaskHtml(RS.rate);
     setStripLabel("rateStripLabel", RS.rateStrip);
     fillRateControls();
     renderRate();
@@ -2841,7 +2937,7 @@
         }
       }
     }
-    drawRMarks(g, function (mt) { return stripTtoX(G, mt); }, item.marks || [], 18, !!item.revealed, tok, fam);
+    drawRMarks(g, function (mt) { return stripTtoX(G, mt); }, item.marks || [], 18, !!item.revealed, tok, fam, { yNum: (G.markBand || 32) - 2, fontSize: rMarkFontSize(svg, G.x0 + G.gw + 8) });
     drawStripCalipers(g, G, item.calA, item.calB, item.focus, tok, fam, svg);
     RS._rhythmG = G;
     updateRhythmReadout();
@@ -2859,12 +2955,12 @@
   function fillRhythmControls() {
     var box = $("rhythmControls"), item = RS.rhythm, task = $("rhythmTask");
     if (!box || !item) return;
-    if (task) task.textContent = "Set the calipers on one R-R interval, press March, then decide if the rhythm is regular and whether a P wave precedes every QRS.";
+    if (task) task.textContent = "Set the calipers on one R-R interval, press March the calipers, then decide if the rhythm is regular and whether a P wave precedes every QRS.";
     function pressed(val, cur) { return val === cur ? "true" : "false"; }
     box.innerHTML =
       caliperNudgeHtml() +
       "<button type='button' class='t-btn' id='rhythmSnap'>Snap to two R waves</button>" +
-      "<button type='button' class='t-btn' id='rhythmMarch' aria-pressed='" + (item.marched ? "true" : "false") + "'>March</button>" +
+      "<button type='button' class='t-btn' id='rhythmMarch' aria-pressed='" + (item.marched ? "true" : "false") + "'>March the calipers</button>" +
       "<span class='quiz-controls-label'>Is the rhythm regular?</span>" +
       "<button type='button' class='t-btn' data-reg='regular' aria-pressed='" + pressed("regular", item.regularGuess) + "'>Regular</button>" +
       "<button type='button' class='t-btn' data-reg='irregular' aria-pressed='" + pressed("irregular", item.regularGuess) + "'>Irregular</button>" +
@@ -3691,6 +3787,12 @@
     clickBracket: function (key) { clickPart(key); },
     read: {
       startRate: startRate,
+      setRateCalipers: function (a, b) {
+        if (!RS.rate) return;
+        if (a != null) RS.rate.calA = a;
+        if (b != null) RS.rate.calB = b;
+        renderRate();
+      },
       startRhythm: startRhythm,
       setAxis: setAxis,
       startAxisPractice: startAxisPractice,
@@ -3698,7 +3800,7 @@
       setAxisPracticeGuess: setAxisPracticeGuess,
       state: function () {
         return {
-          rate: RS.rate ? { kind: RS.rate.kind, rate: RS.rate.rate, largeSq: RS.rate.largeSq, n: RS.rate.times.length, marks: RS.rate.marks.slice(), calA: RS.rate.calA, calB: RS.rate.calB, entered: RS.rate.entered } : null,
+          rate: RS.rate ? { kind: RS.rate.kind, rate: RS.rate.rate, largeSq: RS.rate.largeSq, n: RS.rate.times.length, times: RS.rate.times.slice(), marks: RS.rate.marks.slice(), calA: RS.rate.calA, calB: RS.rate.calB, entered: RS.rate.entered } : null,
           rhythm: RS.rhythm ? { kind: RS.rhythm.kind, rate: RS.rhythm.rate, marched: RS.rhythm.marched, regularGuess: RS.rhythm.regularGuess, pGuess: RS.rhythm.pGuess, times: RS.rhythm.times.slice(), calA: RS.rhythm.calA, calB: RS.rhythm.calB } : null,
           axis: RS.axis,
           axisInfo: axisLabel(RS.axis),
@@ -3718,6 +3820,13 @@
       },
       markRateAt: function (t) { if (RS.rate) { toggleMark(RS.rate, t); renderRate(); } },
       markRhythmAt: function (t) { if (RS.rhythm) { toggleMark(RS.rhythm, t); renderRhythm(); } },
+      ratePoint: function (t) {
+        var svg = $("rateSvg"), G = RS._rateG;
+        if (!svg || !G) return null;
+        var off = svgUserToOffset(svg, stripTtoX(G, t), G.y0 - 6 * G.u);
+        if (!off) return null;
+        return { x: off.x, y: off.y, t: t, clientX: off.left + off.x, clientY: off.top + off.y };
+      },
       leadFitReport: leadFitReport,
       formatCaliperSpan: formatCaliperSpan,
       checkRate: checkRate,
