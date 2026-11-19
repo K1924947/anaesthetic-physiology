@@ -1121,12 +1121,16 @@ var VER = {
   s3_adrInf: ["V", ["gSecond", "bInterim", "nAdrInf"]],
   s3_iso: ["V", ["bInterim"]],
   s3_pace: ["S", ["bInterim", "gTC"], "Immediate capture and BP rise are scripted."],
+  s3_paceLateAfterAtropine: ["V", ["bInterim", "gTC"]],
+  s3_atroSoon: ["V", ["gAtro", "nAtro"]],
+  s3_atroLate: ["V", ["gAtro", "nAtro"]],
   s3_expert: ["V", ["bInterim", "gTV"]],
   s3_causes: ["V", ["bABCDE", "gGlucagon"]],
   s3_adr: ["V", ["gSecond", "bInterim", "nAdrInf"]],
   s3_aden: ["V", ["nAdenCI"]],
   s3_observe: ["V", ["bLTF", "bRisk"]],
   s3_widePoint: ["V", ["bInterim", "bRisk", "gWide"], "This narrow-complex case still marks atropine as first-line. The broad-complex complete heart block case marks atropine as Partly right against the ALS guideline caution."],
+  s3_atroNuance: ["V", ["gAtro", "bLTF", "bInterim"]],
   h8_atro1: ["V", ["gWide", "bRisk"], "Atropine in broad-complex complete heart block is marked Partly right against the 2025 Adult ALS guideline."],
   h8_atroRepeat: ["V", ["gWide"], "Repeat atropine in this broad-complex complete heart block case remains Partly right."],
   h8_guideNote: ["V", ["gWide", "bRisk"], "Atropine in broad-complex complete heart block is marked Partly right against the 2025 Adult ALS guideline."],
@@ -1950,6 +1954,13 @@ var PHYS_LIVE = {
 };
 
 
+/* Shared atropine teaching lines, used in debrief feedback and the model path.
+   Spacing and interim-measure wording follows the RCUK 2025 Adult ALS guideline
+   and bradyarrhythmia algorithm text already cited in SRC and VER. The ALS
+   course judgement line is marked for anaesthetist review. */
+var ATROPINE_SPACING_TEACHING = "The RCUK 2025 Adult ALS guideline says to repeat atropine 500 micrograms every 3 to 5 minutes, if necessary, to a total of 3 mg. The bradyarrhythmia algorithm states the 3 mg maximum but does not print an interval. Repeat atropine, transcutaneous pacing, isoprenaline and adrenaline are interim measures and can be used alongside each other; pacing does not have to wait until the full 3 mg has been given.";
+var ATROPINE_CHB_ALS_JUDGEMENT = "Teaching note: for anaesthetist review. ALS course judgement: in complete heart block atropine often fails, so starting or preparing pacing early, once the first dose has clearly not worked, is reasonable and what ALS assessors tend to expect. Working through all 6 doses (15 to 25 minutes) in an unstable patient before pacing is not strictly against the algorithm, but is poor practice.";
+
 /* Feedback texts. full is shown with Hints on and in the debrief.
    Live feedback with Hints off uses outcome (what happened) and, for not-quite
    or partly-right actions, whyWrong (why this action was wrong now, without
@@ -2655,7 +2666,7 @@ var TXT = {
     nextStep: "Treat now: atropine 500 mcg IV first."
   },
   s3_atro1: {
-    full: "Atropine 500 micrograms IV given. Assess the response: the ventricular rate has barely changed and BP is still low, so the response is unsatisfactory. Repeat atropine to a maximum of 3 mg, and transcutaneous pacing, isoprenaline or adrenaline, are all interim measures. In complete heart block atropine often fails, so starting or preparing pacing early alongside atropine is reasonable.",
+    full: "Atropine 500 micrograms IV given. Assess the response after each dose: the ventricular rate has barely changed and BP is still low, so the response is unsatisfactory. " + ATROPINE_SPACING_TEACHING + " " + ATROPINE_CHB_ALS_JUDGEMENT,
     guideline: "Bradyarrhythmia: atropine 500 mcg, assess response",
     src: "brady",
     flag: 1,
@@ -2664,7 +2675,7 @@ var TXT = {
     nextStep: ""
   },
   s3_atroRepeat: {
-    full: "Further atropine 500 micrograms given. The RCUK 2025 Adult ALS guideline allows a repeat every 3 to 5 minutes, if necessary, to a total of 3 mg (the bradyarrhythmia algorithm states the 3 mg maximum but does not print an interval). There is still no response.",
+    full: "Further atropine 500 micrograms given. Assess the response after each dose: there is still no response. " + ATROPINE_SPACING_TEACHING + " " + ATROPINE_CHB_ALS_JUDGEMENT,
     guideline: "Bradyarrhythmia: atropine to a maximum of 3 mg; RCUK 2025 ALS guideline; BNF: atropine sulfate",
     src: "brady",
     flag: 1,
@@ -2691,7 +2702,7 @@ var TXT = {
     nextStep: "Seek expert help and consider transvenous pacing."
   },
   s3_paceEarly: {
-    full: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. In complete heart block atropine often fails, so starting or preparing pacing early, including alongside atropine, is reasonable. Atropine 500 micrograms IV, repeated to a maximum of 3 mg, remains a valid interim measure if it has not already been given. Seek expert help and consider transvenous pacing.",
+    full: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. " + ATROPINE_SPACING_TEACHING + " " + ATROPINE_CHB_ALS_JUDGEMENT + " Atropine 500 micrograms IV, repeated to a maximum of 3 mg, remains a valid interim measure if it has not already been given. Seek expert help and consider transvenous pacing.",
     guideline: "Bradyarrhythmia: interim measures, transcutaneous pacing",
     src: "pacing",
     flag: 1,
@@ -2700,13 +2711,22 @@ var TXT = {
     nextStep: "Seek expert help and consider transvenous pacing. Atropine remains a valid interim measure if it has not already been given."
   },
   s3_pace: {
-    full: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. Use it as a bridge to transvenous pacing.",
+    full: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. Use it as a bridge to transvenous pacing. " + ATROPINE_SPACING_TEACHING + " " + ATROPINE_CHB_ALS_JUDGEMENT,
     guideline: "Bradyarrhythmia: interim measures, transcutaneous pacing",
     src: "pacing",
     flag: 1,
     outcome: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves.",
     whyWrong: "",
     nextStep: "Use it as a bridge to transvenous pacing."
+  },
+  s3_paceLateAfterAtropine: {
+    full: "Partly right. Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves. Consider pacing earlier when atropine fails, especially in complete heart block. " + ATROPINE_SPACING_TEACHING + " " + ATROPINE_CHB_ALS_JUDGEMENT,
+    guideline: "Bradyarrhythmia: interim measures, transcutaneous pacing",
+    src: "pacing",
+    flag: 1,
+    outcome: "Transcutaneous pacing started: each spike is followed by a broad QRS (electrical capture) and a pulse (mechanical capture), and BP improves.",
+    whyWrong: "Consider pacing earlier when atropine fails, especially in complete heart block.",
+    nextStep: "Use it as a bridge to transvenous pacing, and seek expert help."
   },
   s3_paceAgain: {
     full: "Pacing is already running with capture.",
@@ -2802,6 +2822,15 @@ var TXT = {
     full: "Teaching note: complete heart block with a broad QRS is a risk of asystole. The 2025 Adult ALS guideline text says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' In the broad-complex complete heart block case, atropine is marked Partly right against that sentence. This case is narrow-complex complete heart block, so atropine remains the first-line interim measure on the bradyarrhythmia algorithm.",
     guideline: "Bradyarrhythmia algorithm; RCUK 2025 Adult ALS guideline",
     src: "bradyWide",
+    flag: 1,
+    outcome: "",
+    whyWrong: "",
+    nextStep: ""
+  },
+  s3_atroNuance: {
+    full: "Assess the response after each atropine dose. " + ATROPINE_SPACING_TEACHING + " " + ATROPINE_CHB_ALS_JUDGEMENT,
+    guideline: "Bradyarrhythmia: atropine 500 mcg, assess response; interim measures",
+    src: "brady",
     flag: 1,
     outcome: "",
     whyWrong: "",
@@ -4677,6 +4706,13 @@ function O(v, keys, x) { x = x || {}; x.v = v; x.keys = [].concat(keys); return 
 
 /* ===== Scenario timing: RCUK windows with about 30 seconds of grace ===== */
 var TIME_GRACE = 30;
+/* Optional ALS-course-judgement mark. If transcutaneous pacing starts only after
+   4 or more accepted atropine doses in a case with life-threatening features and
+   high-degree atrioventricular block, mark pacing Partly right. Default on.
+   This does not change h8 atropine marking (broad-complex complete heart block
+   without current life-threatening features remains Partly right for atropine). */
+var MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE = true;
+var LATE_PACING_ATROPINE_DOSE_THRESHOLD = 4;
 var ADR_FLOOR = 180;
 var ADR_CEIL = 300;
 var ADR_LATE_END = ADR_CEIL + 120 + TIME_GRACE;
@@ -4760,7 +4796,11 @@ function takeAdr(st, firstKey, repeatKey, extra) {
   if (extra.phys) o.phys = extra.phys;
   if (st.adrT.length) {
     var rep = repeatIntervalWindow(st.clock - st.adrT[st.adrT.length - 1]);
-    if (rep === "soon") return O("bad", extra.soonKey || "a_adrSoon");
+    if (rep === "soon") {
+      var soonO = O("bad", extra.soonKey || "a_adrSoon");
+      soonO.logVerdict = "Too soon: repeat every 3 to 5 min";
+      return soonO;
+    }
     st.adrT.push(st.clock);
     if ((st.shocks || 0) >= 3) st.adrAfter3 = true;
     st.did.adr = 1;
@@ -4804,7 +4844,18 @@ function takeAtro(st, firstKey, repeatKey, extra) {
   if ((st.atro || 0) >= 6) return O("bad", extra.maxKey || "s3_atroMax");
   if (st.lastAtroT != null) {
     var rep = repeatIntervalWindow(st.clock - st.lastAtroT);
-    if (rep === "soon") return O("bad", "s3_atroSoon");
+    if (rep === "soon") {
+      var soonO = O("bad", "s3_atroSoon");
+      if (st.atroSoonRunScored) {
+        soonO.notScoredAgain = true;
+        soonO.logVerdict = "Too soon (not scored again)";
+      } else {
+        st.atroSoonRunScored = true;
+        soonO.logVerdict = "Too soon: repeat every 3 to 5 min";
+      }
+      return soonO;
+    }
+    st.atroSoonRunScored = false;
     st.atro = (st.atro || 0) + 1;
     st.lastAtroT = st.clock;
     st.atroT = st.atroT || [];
@@ -4845,6 +4896,39 @@ function endingDueSteps(st, due) {
     if (d.id === "atro") return false;
     return true;
   });
+}
+function caseThreats(st) {
+  return (st && st.scn && st.scn.start && st.scn.start.vit && st.scn.start.vit.threats) || "";
+}
+function isLifeThreateningHighDegreeBrady(st) {
+  if (!st || !st.scn) return false;
+  var ex = typeof extrasFor === "function" ? extrasFor(st) : null;
+  if (ex && ex.kind && ex.kind !== "brady") return false;
+  var startR = st.scn.start && st.scn.start.rhythm && st.scn.start.rhythm.gen;
+  var nowR = st.rhythm && st.rhythm.gen;
+  if (startR !== "chb" && nowR !== "chb") return false;
+  return /\bshock\b|syncope|myocardial ischaemia|severe heart failure|post-ROSC/i.test(caseThreats(st));
+}
+function latePacingAfterFailedAtropine(st) {
+  return !!(MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE
+    && isLifeThreateningHighDegreeBrady(st)
+    && (st.atro || 0) >= LATE_PACING_ATROPINE_DOSE_THRESHOLD);
+}
+function logVerdictLabel(o) {
+  if (o && o.logVerdict) return o.logVerdict;
+  return (o && VERD[o.v]) ? VERD[o.v][1] : "";
+}
+function scoredDecisionEntries(log) {
+  return (log || []).filter(function (l) {
+    return l && l.o && l.o.v !== "info" && !l.o.notScoredAgain;
+  });
+}
+function decisionScoreFromLog(log, regCalls) {
+  var counted = scoredDecisionEntries(log);
+  var raw = counted.reduce(function (n, l) {
+    return n + (l.o.v === "ok" || l.o.v === "late" ? 1 : l.o.v === "part" ? 0.5 : 0);
+  }, 0);
+  return { pts: Math.max(0, raw - REG_PENALTY * (regCalls || 0)), of: counted.length, raw: raw };
 }
 
 var R_SINUS_ROSC = { gen: "sinus_tachy", opts: { lo: 100, hi: 112 } };
@@ -4957,7 +5041,7 @@ var SCENARIOS = [
     scene: "A 79-year-old on a medical ward felt dizzy and fainted while walking to the bathroom. Now awake but pale, clammy and confused. Monitoring and IV access are in place.",
     start: { rhythm: { gen: "chb", opts: { broad: false, vr: 40 } }, pulse: true, vit: { pulse: "Present, regular", bp: "78/44 mmHg", consc: "Awake, pale, clammy, confused", threats: "Shock; syncope" } },
     req: [["pace", "Interim measures: transcutaneous pacing, or an isoprenaline or adrenaline infusion", "pacing"], ["expert", "Seek expert help and consider transvenous pacing", "brady"]],
-    extra: "s3_widePoint", idleNudge: true,
+    extra: ["s3_widePoint", "s3_atroNuance"], idleNudge: true,
     step: function (a, st) {
       var interim = function () { return !!(st.paced || st.did.adrInf || st.did.iso); };
       var done = function (o) { if (interim() && st.did.expert) o.end = true; return o; };
@@ -4970,6 +5054,9 @@ var SCENARIOS = [
       if (a === "pace") {
         if (st.paced) return O("info", "s3_paceAgain");
         st.paced = true; st.did.pace = 1;
+        if (latePacingAfterFailedAtropine(st)) {
+          return done(O("part", "s3_paceLateAfterAtropine", capture));
+        }
         return done(O("ok", st.atro ? "s3_pace" : "s3_paceEarly", capture));
       }
       if (a === "adrInf") {
@@ -5711,7 +5798,7 @@ function logEvent(o, text, act) {
   var host = $("scnLog");
   if (!host) return;
   var item = document.createElement("li");
-  if (o) item.innerHTML = "<span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>" + VERD[o.v][0] + "</span><span class='log-text'><strong>" + esc(text) + "</strong> <span class='log-verdict'>" + VERD[o.v][1] + "</span></span>";
+  if (o) item.innerHTML = "<span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>" + VERD[o.v][0] + "</span><span class='log-text'><strong>" + esc(text) + "</strong> <span class='log-verdict'>" + esc(logVerdictLabel(o)) + "</span></span>";
   else item.innerHTML = "<span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>\u2022</span><span class='log-text'><em>" + esc(text) + "</em></span>";
   host.appendChild(item);
   host.parentNode.scrollTop = host.parentNode.scrollHeight;
@@ -6118,11 +6205,20 @@ function debriefReqItem(s, r, kind) {
 function debriefEntryBody(l) {
   var k = l.o.keys || [];
   var parts = [], seen = {}, verdict = l.o.verdictText || "", label = l.text || "";
+  function restatesShort(n, other) {
+    var o = normLine(other);
+    if (!n || !o || seen[n]) return !n || seen[n];
+    if (n === o) return true;
+    // Do not drop a longer teaching paragraph just because it begins with the action label.
+    if (n.indexOf(o) === 0) return n.length <= o.length + 40;
+    if (o.indexOf(n) === 0) return o.length <= n.length + 40;
+    return false;
+  }
   function add(html) {
     if (!html) return;
     var n = normLine(html);
-    if (!n || seen[n] || sameLine(n, verdict) || sameLine(n, label)) return;
-    Object.keys(seen).forEach(function (s) { if (sameLine(s, n)) n = ""; });
+    if (!n || seen[n] || restatesShort(n, verdict) || restatesShort(n, label)) return;
+    Object.keys(seen).forEach(function (s) { if (sameLine(s, n) && Math.abs(s.length - n.length) <= 40) n = ""; });
     if (!n) return;
     seen[n] = 1;
     parts.push(html);
@@ -6140,20 +6236,25 @@ function debriefEntryBody(l) {
 }
 function showDebrief() {
   var s = SIM.scn, acts = SIM.log.filter(function (l) { return l.o; });
-  var counted = acts.filter(function (l) { return l.o.v !== "info"; });
-  var raw = counted.reduce(function (n, l) { return n + (l.o.v === "ok" || l.o.v === "late" ? 1 : l.o.v === "part" ? 0.5 : 0); }, 0);
-  var regN = SIM.regCalls || 0;
-  var pts = Math.max(0, raw - REG_PENALTY * regN);
+  var score = decisionScoreFromLog(SIM.log, SIM.regCalls || 0);
+  var counted = scoredDecisionEntries(SIM.log);
+  var raw = score.raw, regN = SIM.regCalls || 0, pts = score.pts;
   var classified = classifyReqSteps(SIM);
   var missed = classified.missed, notReached = classified.notReached;
   var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
   var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "missedShock" ? "Scenario ended: the first shock was missed" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
-  html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct and correct but late score 1, partly right 0.5, not quite 0; noted actions are not scored. Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed below." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
+  var atroScoreNote = (SIM.log || []).some(function (l) { return l.o && (l.o.notScoredAgain || (l.act === "atro" && l.o.logVerdict)); })
+    ? " A run of too-early repeat atropine doses counts as one decision; further too-early doses in the same run are logged as too soon but are not scored again."
+    : "";
+  html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct and correct but late score 1, partly right 0.5, not quite 0; noted actions are not scored." + atroScoreNote + " Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed below." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
   html += posterLineFor(s);
   html += renderLogCompare(s, SIM.log);
   if (missed.length) html += "<h3 class='viva-group'>Missed steps</h3><ul class='debrief-list'>" + missed.map(function (r) { return debriefReqItem(s, r, "missed"); }).join("") + "</ul>";
   if (notReached.length) html += "<h3 class='viva-group'>Not reached</h3><ul class='debrief-list'>" + notReached.map(function (r) { return debriefReqItem(s, r, "notReached"); }).join("") + "</ul>";
-  if (s.extra) html += "<div class='panel-block trap'><h3>Teaching point</h3><p>" + txtHTML(s.extra) + "</p><p class='scn-src'><strong>Source:</strong> " + esc(srcOf(s.extra)) + "</p></div>";
+  ([].concat(s.extra || [])).forEach(function (xk) {
+    if (!xk || !TXT[xk]) return;
+    html += "<div class='panel-block trap'><h3>Teaching point</h3><p>" + txtHTML(xk) + "</p><p class='scn-src'><strong>Source:</strong> " + esc(srcOf(xk)) + "</p></div>";
+  });
   html += "<div class='predict-actions'>" + (SIM.random ? "<button type='button' id='scnAnother'>Another random scenario</button>" : "") + "<button type='button' id='scnRetry'" + (SIM.random ? " class='secondary'" : "") + ">Try this scenario again</button><button type='button' class='secondary' id='scnOther'>Choose another scenario</button></div>";
   var decisionList = "<ol class='debrief-list' id='scnDecisionList'>" + acts.map(function (l, idx) {
     var k = l.o.keys || [];
@@ -6167,7 +6268,7 @@ function showDebrief() {
     } else if (!l.o.isReg && !l.o.isNudge && gk && TXT[gk]) {
       srcBlock = sourceLinesBlock(srcHTML(gk));
     }
-    return "<li class='db-item db-" + l.o.v + "'><p class='db-head'><span class='predict-mark' aria-hidden='true'>" + VERD[l.o.v][0] + "</span><span><strong>" + (l.o.verdictText || VERD[l.o.v][1]) + "</strong> · " + mmss(l.t) + " · " + esc(l.text) + "</span></p>" +
+    return "<li class='db-item db-" + l.o.v + "'><p class='db-head'><span class='predict-mark' aria-hidden='true'>" + VERD[l.o.v][0] + "</span><span><strong>" + (l.o.logVerdict || l.o.verdictText || VERD[l.o.v][1]) + "</strong> · " + mmss(l.t) + " · " + esc(l.text) + "</span></p>" +
       body +
       ca +
       (l.o.phys ? "<p class='db-phys'><strong>Physiology:</strong> " + esc(PHYS[l.o.phys]) + "</p>" : "") +
@@ -6262,7 +6363,7 @@ if ($("scnReg")) $("scnReg").addEventListener("click", callReg);
   });
 })();
 if ($("scnHints")) syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; }, setClock: function (s) { if (SIM) SIM.clock = s; }, timing: { repeat: repeatIntervalWindow, cycle: cycleDrugWindow, adrRepeat: function () { return adrRepeatStatus(SIM); }, firstAdr: function () { return SIM ? (SIM.adrT && SIM.adrT.length ? adrRepeatStatus(SIM) : ((SIM.shocks || 0) >= 3 ? cycleDrugWindow(SIM.checksAfter3 || 0, SIM) : cycleDrugWindow(SIM.rhythmChecks || 0, SIM))) : null; }, dueSeverity: function () { return (outstandingSteps(SIM) || []).map(function (d) { return { id: d.id, severity: dueSeverity(SIM, d) }; }); } } };
+window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; }, setClock: function (s) { if (SIM) SIM.clock = s; }, score: function () { return decisionScoreFromLog((SIM && SIM.log) || [], (SIM && SIM.regCalls) || 0); }, markPacingPartlyRightAfterFourFailedAtropine: function (on) { if (arguments.length) MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE = !!on; return MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE; }, timing: { repeat: repeatIntervalWindow, cycle: cycleDrugWindow, adrRepeat: function () { return adrRepeatStatus(SIM); }, firstAdr: function () { return SIM ? (SIM.adrT && SIM.adrT.length ? adrRepeatStatus(SIM) : ((SIM.shocks || 0) >= 3 ? cycleDrugWindow(SIM.checksAfter3 || 0, SIM) : cycleDrugWindow(SIM.rhythmChecks || 0, SIM))) : null; }, dueSeverity: function () { return (outstandingSteps(SIM) || []).map(function (d) { return { id: d.id, severity: dueSeverity(SIM, d) }; }); } } };
 /* ===== Ideal pathway for each scenario (shown only in the debrief) ===== */
 var SRC_ALS = "RCUK 2025 Adult ALS guideline";
 var SRC_ALS_A = "RCUK 2025 Adult ALS algorithm";
@@ -6312,8 +6413,8 @@ var IDEAL_PATHS = {
   ],
   s3: [
     IP("assess", "Check rhythm and pulse", "Confirm the bradycardia and the life-threatening features. Monitoring and IV access are already in place.", SRC_BRADY),
-    IP("atro", "Atropine 500 micrograms IV, repeated to a maximum of 3 mg", "Atropine 500 micrograms IV is first-line when life-threatening features are present. The RCUK 2025 Adult ALS guideline says to repeat it every 3 to 5 minutes, if necessary, to a total of 3 mg. The bradyarrhythmia algorithm lists repeat atropine to a maximum of 3 mg, and transcutaneous pacing, isoprenaline or adrenaline, as interim measures. In complete heart block atropine often fails, so starting or preparing pacing early alongside atropine is reasonable.", SRC_BRADY, null, { orderFree: true }),
-    IP("pace", "Transcutaneous pacing, or an isoprenaline or adrenaline infusion", "If the response to atropine is unsatisfactory, use transcutaneous pacing, or an isoprenaline or adrenaline infusion, as an interim measure. Arrange expert help and transvenous pacing.", SRC_BRADY, ["adrInf", "iso"]),
+    IP("atro", "Atropine 500 micrograms IV, repeated to a maximum of 3 mg", "Atropine 500 micrograms IV is first-line when life-threatening features are present. Assess the response after each dose. " + ATROPINE_SPACING_TEACHING + " " + ATROPINE_CHB_ALS_JUDGEMENT, SRC_BRADY, null, { orderFree: true }),
+    IP("pace", "Transcutaneous pacing, or an isoprenaline or adrenaline infusion", "If the response to atropine is unsatisfactory, use transcutaneous pacing, or an isoprenaline or adrenaline infusion, as an interim measure. These can run alongside repeat atropine; pacing does not have to wait until the full 3 mg has been given. Arrange expert help and transvenous pacing. " + ATROPINE_CHB_ALS_JUDGEMENT, SRC_BRADY, ["adrInf", "iso"]),
     IP("expert", "Seek expert help", "Seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true })
   ],
   s4: [
@@ -6583,7 +6684,7 @@ function renderEventLogItems(log) {
   return (log || []).map(function (li) {
     var o = li.o;
     if (o) {
-      return "<li><span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>" + VERD[o.v][0] + "</span><span class='log-text'><strong>" + esc(li.text) + "</strong> <span class='log-verdict'>" + VERD[o.v][1] + "</span></span></li>";
+      return "<li><span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>" + VERD[o.v][0] + "</span><span class='log-text'><strong>" + esc(li.text) + "</strong> <span class='log-verdict'>" + esc(logVerdictLabel(o)) + "</span></span></li>";
     }
     return "<li><span class='log-t'>" + mmss(li.t) + "</span><span class='log-mark' aria-hidden='true'>\u2022</span><span class='log-text'><em>" + esc(li.text) + "</em></span></li>";
   }).join("");
