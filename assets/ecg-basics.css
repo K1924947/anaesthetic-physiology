@@ -169,10 +169,190 @@ html[data-theme="colour-blind"] {
 .about-paper > summary::before { content: "+  "; }
 .about-paper[open] > summary::before { content: "\2212  "; }
 
-.read-ecg-slot {
+.read-ecg-card {
   margin-top: 16px;
+  padding: 16px 18px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
 }
-.read-ecg-slot[hidden] { display: none; }
+.read-ecg-card > .tool-title { margin: 0 0 6px; }
+.read-ecg-card > .tool-intro { margin: 0 0 14px; }
+.read-step {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.read-step > h3 {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+.read-step > p {
+  margin: 0 0 8px;
+}
+.read-task {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.strip-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--ecg-paper);
+}
+.read-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 640px;
+  background: var(--ecg-paper);
+  touch-action: none;
+}
+.read-svg:focus-visible,
+.axis-svg:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.read-svg text.lab-small,
+.axis-svg text.lab-small,
+.axis-svg text.lab-int,
+.read-svg text.lab-int {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+}
+.read-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+  align-items: stretch;
+}
+@media (min-width: 800px) {
+  #rateControls, #rhythmControls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  #rateControls .t-btn, #rhythmControls .t-btn { width: auto; }
+  #rhythmControls .quiz-controls-label,
+  #rhythmControls .quiz-feedback,
+  #rateControls .quiz-feedback {
+    flex: 1 0 100%;
+  }
+}
+.read-controls .t-btn {
+  min-height: 44px;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.2;
+}
+#axisControls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.read-controls .t-btn[aria-pressed="true"] {
+  box-shadow: inset 0 -3px 0 var(--text);
+}
+.read-controls label,
+.read-controls .quiz-controls-label,
+.read-controls .quiz-feedback {
+  grid-column: 1 / -1;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+}
+.read-controls input[type="number"],
+.read-controls input[type="range"] {
+  grid-column: 1 / -1;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  min-height: 44px;
+  width: 100%;
+  max-width: 16rem;
+  padding: 6px 8px;
+  border: 2px solid var(--text);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  box-sizing: border-box;
+}
+.read-notes {
+  margin-top: 12px;
+}
+.read-notes h4 {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+.read-notes .panel-block,
+.read-notes .clinical {
+  margin-top: 8px;
+}
+@media (min-width: 900px) {
+  #step-axis .read-notes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 24px;
+    align-items: start;
+  }
+  #step-axis .src-line { grid-column: 1 / -1; margin: 0; }
+}
+.axis-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .axis-layout {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  }
+  .axis-leads-svg,
+  #axisLeadsSvg {
+    min-width: 0;
+  }
+}
+.axis-svg {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  touch-action: none;
+}
+.axis-leads-svg,
+#axisLeadsSvg {
+  min-width: 0 !important;
+  width: 100%;
+  max-height: 360px;
+}
+.axis-caption,
+.strip-hint {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+.axis-svg {
+  max-width: 300px;
+}
 
 .beat-svg {
   display: block;

@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119e">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119g">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -55,10 +55,10 @@
         <div class="tool-stage">
           <div class="graph-card">
             <h2 class="tool-title">One labelled beat</h2>
-            <p class="tool-intro">Hover or tap a part, or use the buttons. Click to lock; click the same part again to unlock.</p>
+            <p class="tool-intro">Hover a wave or segment to preview it; click the trace to lock, and click again to unlock. Use the brackets under the paper for the PR, QT and RR intervals, or use the buttons.</p>
             <svg id="beatSvg" class="beat-svg" viewBox="0 0 720 360" role="img" tabindex="0" aria-labelledby="beat-svg-title" aria-describedby="beat-svg-desc">
               <title id="beat-svg-title">Two synthetic lead II complexes on standard ECG paper, with the P wave, QRS, T wave, U wave, PR, QT and RR intervals labelled</title>
-              <desc id="beat-svg-desc">A teaching trace at 60 per minute, not a patient recording. Two beats are shown so each part can be compared and the RR interval measured. Use the buttons under the trace to choose a part and read its explanation. Click to lock a part; click again to unlock.</desc>
+              <desc id="beat-svg-desc">A teaching trace at 60 per minute, not a patient recording. Two beats are shown so each part can be compared and the RR interval measured. Click a wave or segment on the trace to lock it; click again to unlock. Use the brackets under the paper for the PR, QT and RR intervals, or use the buttons.</desc>
             </svg>
             <div class="part-btns" id="partBtns" role="group" aria-label="Parts of the beat"></div>
             <p class="lock-hint" id="lockHint" hidden></p>
@@ -80,9 +80,6 @@
         <p class="svg-cap">Synthetic lead II at 60 /min, drawn to scale on standard paper. The square pulse on the left is the 1 mV calibration mark. Two beats are shown so each part can be compared and the RR interval measured. One small square is 0.04 s and 0.1 mV; one large square is 0.20 s and 0.5 mV. A hatched band and a thicker line mark the selected part, so colour is never the only cue.</p>
       </details>
     </section>
-
-    <!-- Reserved for a later "Read an ECG step by step" section (rate, rhythm, axis, intervals). Not built yet. -->
-    <section id="read-ecg" class="read-ecg-slot" hidden aria-hidden="true"></section>
 
     <section class="card values-card" aria-labelledby="values-heading">
       <h2 class="tool-title" id="values-heading">Normal values at a glance</h2>
@@ -138,6 +135,107 @@
       </div>
     </section>
 
+
+    <section id="read-ecg" class="read-ecg-card" aria-labelledby="read-ecg-heading">
+      <h2 class="tool-title" id="read-ecg-heading">Read an ECG step by step</h2>
+      <p class="tool-intro">Once you can name the parts of a beat, read a tracing in this order: rate, then rhythm, then axis. The PR, QRS, QT and QTc intervals are covered on the labelled beat and in the table above.</p>
+
+      <article class="read-step" id="step-rate" aria-labelledby="step-rate-h">
+        <h3 id="step-rate-h">1. Rate</h3>
+        <p>On standard paper (25 mm/s), a 10-second lead II rhythm strip is 50 large squares long. For a regular rhythm, rate = 300 / the number of large squares between two R waves. For an irregular rhythm, count the QRS complexes in the 10-second strip and multiply by 6.</p>
+        <p class="read-task" id="rateTask"></p>
+        <div class="strip-wrap" id="rateWrap">
+          <svg id="rateSvg" class="read-svg" viewBox="0 0 800 200" role="application" tabindex="0" aria-labelledby="step-rate-h rateSvgTitle">
+            <title id="rateSvgTitle">Ten-second lead II rhythm strip for measuring the heart rate</title>
+          </svg>
+        </div>
+        <p class="strip-hint">Scroll the strip sideways if you cannot see all 10 seconds.</p>
+        <p class="quiz-readout" id="rateReadout"></p>
+        <div class="read-controls" id="rateControls"></div>
+        <p class="visually-hidden" id="rateLive" aria-live="polite"></p>
+        <div class="read-notes">
+          <div class="panel-block">
+            <h4>Usual normal</h4>
+            <p>Adult rate 60 to 100 /min.</p>
+          </div>
+          <div class="clinical">
+            <h4>Why it matters clinically</h4>
+            <ul>
+              <li>A rate under 60 /min is bradycardia; over 100 /min is tachycardia.</li>
+              <li>An irregularly irregular rate, with no P waves, occurs in atrial fibrillation.</li>
+            </ul>
+          </div>
+          <p class="src-line">Sources: <a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">LITFL, ECG rate interpretation</a> · <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">LITFL, rhythm evaluation</a>.</p>
+        </div>
+      </article>
+
+      <article class="read-step" id="step-rhythm" aria-labelledby="step-rhythm-h">
+        <h3 id="step-rhythm-h">2. Rhythm</h3>
+        <p>Ask two questions. Is the rhythm regular or irregular? And is there a P wave before every QRS? March the calipers from R to R: if they keep landing on each R wave, the rhythm is regular. A regular rhythm with a P wave before every QRS is consistent with sinus rhythm. An irregularly irregular rhythm with no P waves is atrial fibrillation.</p>
+        <p class="read-task" id="rhythmTask"></p>
+        <div class="strip-wrap" id="rhythmWrap">
+          <svg id="rhythmSvg" class="read-svg" viewBox="0 0 800 200" role="application" tabindex="0" aria-labelledby="step-rhythm-h rhythmSvgTitle">
+            <title id="rhythmSvgTitle">Lead II rhythm strip for deciding if the rhythm is regular and whether a P wave precedes each QRS</title>
+          </svg>
+        </div>
+        <p class="strip-hint">Scroll the strip sideways if you cannot see all 10 seconds.</p>
+        <p class="quiz-readout" id="rhythmReadout"></p>
+        <div class="read-controls" id="rhythmControls"></div>
+        <p class="visually-hidden" id="rhythmLive" aria-live="polite"></p>
+        <div class="read-notes">
+          <div class="panel-block">
+            <h4>Usual normal</h4>
+            <p>Sinus rhythm is regular, at 60 to 100 /min in adults, with a P wave before every QRS and a constant PR interval. P waves are upright in I and II, and inverted in aVR.</p>
+          </div>
+          <div class="clinical">
+            <h4>Why it matters clinically</h4>
+            <ul>
+              <li>A P wave before every QRS, with a stable PR interval, is consistent with sinus rhythm.</li>
+              <li>Absent P waves and an irregularly irregular QRS rhythm occur in atrial fibrillation.</li>
+            </ul>
+          </div>
+          <p class="src-line">Sources: <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">LITFL, rhythm evaluation</a> · <a href="https://litfl.com/normal-sinus-rhythm-ecg-library/" target="_blank" rel="noopener">LITFL, normal sinus rhythm</a>.</p>
+        </div>
+      </article>
+
+      <article class="read-step" id="step-axis" aria-labelledby="step-axis-h">
+        <h3 id="step-axis-h">3. Axis</h3>
+        <p>Cardiac axis is the net direction of ventricular depolarisation in the frontal plane. Usual normal is -30° to +90°. Drag the arrow on the hexaxial wheel, or use the buttons and arrow keys, and watch leads I, II and aVF change. The quadrant method uses I and aVF: if both are positive, the axis is between 0° and +90°. Lead II then separates a still-normal axis (-30° to 0°) from left axis deviation (less than -30°).</p>
+        <div class="axis-layout">
+          <div class="axis-wheel-col">
+            <svg id="axisSvg" class="axis-svg" viewBox="0 0 360 360" role="application" tabindex="0" aria-labelledby="step-axis-h axisSvgTitle">
+              <title id="axisSvgTitle">Hexaxial reference wheel. Drag the arrow to change the QRS axis.</title>
+            </svg>
+            <p class="axis-caption">Hatched sector: usual normal, -30° to +90°.</p>
+            <p class="quiz-readout" id="axisReadout"></p>
+            <div class="read-controls" id="axisControls"></div>
+          </div>
+          <div class="axis-leads-col">
+            <svg id="axisLeadsSvg" class="read-svg axis-leads-svg" viewBox="0 0 400 280" role="img" aria-labelledby="axisLeadsTitle">
+              <title id="axisLeadsTitle">Leads I, II and aVF for the chosen axis</title>
+            </svg>
+            <p class="axis-caption">Traces are scaled so the whole QRS stays on the paper. Read polarity, not height.</p>
+            <p class="quiz-readout" id="axisLeadReadout"></p>
+          </div>
+        </div>
+        <p class="visually-hidden" id="axisLive" aria-live="polite"></p>
+        <div class="read-notes">
+          <div class="panel-block">
+            <h4>Usual normal</h4>
+            <p>QRS axis between -30° and +90°. Left axis deviation is less than -30°. Right axis deviation is greater than +90°. An extreme (northwest) axis is when leads I and aVF are both negative.</p>
+          </div>
+          <div class="clinical">
+            <h4>Why it matters clinically</h4>
+            <ul>
+              <li>Left axis deviation can be seen in left ventricular hypertrophy, left bundle branch block, inferior infarction, and left anterior fascicular block.</li>
+              <li>Right axis deviation can be seen in right ventricular hypertrophy, acute right ventricular strain (for example pulmonary embolism), and chronic lung disease.</li>
+            </ul>
+          </div>
+          <p class="src-line">Sources: <a href="https://litfl.com/ecg-axis-interpretation/" target="_blank" rel="noopener">LITFL, ECG axis interpretation</a>.</p>
+        </div>
+      </article>
+    </section>
+
     <div class="test-banner" id="testBanner">
       <span class="test-banner-icon" aria-hidden="true">?</span>
       <div class="test-banner-copy">
@@ -166,7 +264,7 @@
     <details class="card revise-sources">
       <summary>Sources</summary>
       <ul class="source-list">
-        <li>Life in the Fast Lane (LITFL), ECG Library. <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a>, <a href="https://litfl.com/pr-interval-ecg-library/" target="_blank" rel="noopener">PR interval</a>, <a href="https://litfl.com/pr-segment-ecg-library/" target="_blank" rel="noopener">PR segment</a>, <a href="https://litfl.com/qrs-interval-ecg-library/" target="_blank" rel="noopener">QRS interval</a>, <a href="https://litfl.com/q-wave-ecg-library/" target="_blank" rel="noopener">Q wave</a>, <a href="https://litfl.com/st-segment-ecg-library/" target="_blank" rel="noopener">ST segment</a>, <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a>, <a href="https://litfl.com/u-wave-ecg-library/" target="_blank" rel="noopener">U wave</a>, <a href="https://litfl.com/qt-interval-ecg-library/" target="_blank" rel="noopener">QT interval</a>, <a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">rate interpretation</a>, and <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">rhythm evaluation</a>. Fetched 17 November 2026.</li>
+        <li>Life in the Fast Lane (LITFL), ECG Library. <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a>, <a href="https://litfl.com/pr-interval-ecg-library/" target="_blank" rel="noopener">PR interval</a>, <a href="https://litfl.com/pr-segment-ecg-library/" target="_blank" rel="noopener">PR segment</a>, <a href="https://litfl.com/qrs-interval-ecg-library/" target="_blank" rel="noopener">QRS interval</a>, <a href="https://litfl.com/q-wave-ecg-library/" target="_blank" rel="noopener">Q wave</a>, <a href="https://litfl.com/st-segment-ecg-library/" target="_blank" rel="noopener">ST segment</a>, <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a>, <a href="https://litfl.com/u-wave-ecg-library/" target="_blank" rel="noopener">U wave</a>, <a href="https://litfl.com/qt-interval-ecg-library/" target="_blank" rel="noopener">QT interval</a>, <a href="https://litfl.com/ecg-rate-interpretation/" target="_blank" rel="noopener">rate interpretation</a>, <a href="https://litfl.com/ecg-rhythm-evaluation/" target="_blank" rel="noopener">rhythm evaluation</a>, <a href="https://litfl.com/normal-sinus-rhythm-ecg-library/" target="_blank" rel="noopener">normal sinus rhythm</a>, and <a href="https://litfl.com/ecg-axis-interpretation/" target="_blank" rel="noopener">axis interpretation</a>. Fetched 17 November 2026.</li>
         <li>Klabunde RE. CV Physiology: <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Electrocardiogram (EKG, ECG)</a> (revised 1 November 2023). Used for the physiology of each wave and interval, including the ST segment as the action potential plateau.</li>
         <li>Hampton J. <cite>The ECG Made Easy</cite>. Cited for the common UK teaching figure of a QRS under 0.12 s.</li>
       </ul>
@@ -184,6 +282,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-basics.js?v=20261119e"></script>
+<script src="assets/ecg-basics.js?v=20261119g"></script>
 </body>
 </html>
