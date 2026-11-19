@@ -1097,8 +1097,20 @@ html[data-theme="colour-blind"] {
   margin: 8px 0;
 }
 .quiz-svg.quiz-rate-svg {
-  min-width: 1200px;
-  width: 1200px;
+  min-width: 720px;
+  width: 720px;
   max-width: none;
   height: auto;
+}
+@media (min-width: 700px) {
+  .quiz-svg.quiz-rate-svg,
+  #rateSvg.read-svg {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+  .strip-hint {
+    display: none;
+  }
 }

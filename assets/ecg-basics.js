@@ -1332,7 +1332,7 @@
       guess: c.startGuess,
       startGuess: c.startGuess,
       q: "These are leads I, II and aVF. What is the QRS axis?",
-      help: "Drag the arrow on the hexaxial wheel to your estimate, or use the arrow keys (hold Shift for 5° steps). Then press Check. The traces stay still while you move the arrow. Estimates within 30° count as correct."
+      help: "Drag the arrow on the hexaxial wheel to the category you think is present (normal, left axis deviation, right axis deviation, or extreme), or use the arrow keys (hold Shift for 5° steps). Then press Check. The traces stay still while you move the arrow. The exact degree is shown after you check."
     };
   }
 
@@ -1837,7 +1837,8 @@
       if (!ok && guess != null) body += " You entered " + guess + " /min.";
       if (!ok && guess == null) body += " Type the rate in /min, then check.";
     } else if (item.type === "axis") {
-      body = axisFeedbackText(item.trueAxis, item.guess, ok);
+      var axFb = axisFeedbackText(item.trueAxis, item.guess, ok);
+      return "<div class='" + cls + "'><p><strong>" + esc(axFb.head) + "</strong> " + esc(axFb.body) + "</p></div>";
     } else if (item.type === "spot") {
       body = item.why;
       if (!ok) {
@@ -2054,7 +2055,7 @@
       }
       QZ.ok = rateIsClose(g, item.rate);
     } else if (item.type === "axis") {
-      QZ.ok = axisDelta(item.guess, item.trueAxis) <= 30;
+      QZ.ok = axisCategoryCorrect(item.guess, item.trueAxis);
     } else {
       return;
     }
@@ -2150,7 +2151,7 @@
       html += "<div class='strip-wrap quiz-strip-wrap'>";
       html += "<svg id='quizSvg' class='quiz-svg" + (item.type === "rate" ? " quiz-rate-svg" : "") + "' viewBox='0 0 800 200' role='application' tabindex='0' aria-label='" + (item.type === "rate" ? "Ten-second lead II rhythm strip" : "Teaching ECG strip for this drill") + "' aria-describedby='quizSvgDesc quizQ'>";
       html += "<desc id='quizSvgDesc'>" + esc(item.help) + "</desc></svg></div>";
-      html += "<p class='quiz-help'>Standard paper at 25 mm/s and 10 mm/mV. One small square is 0.04 s; one large square is 0.20 s." + (item.type === "rate" ? " Scroll sideways to see the whole 10 seconds." : "") + "</p>";
+      html += "<p class='quiz-help'>Standard paper at 25 mm/s and 10 mm/mV. One small square is 0.04 s; one large square is 0.20 s." + (item.type === "rate" ? "<span class='strip-hint'> Scroll sideways to see the whole 10 seconds.</span>" : "") + "</p>";
     }
     html += "<p class='quiz-readout' id='quizReadout'></p>";
 
@@ -2976,7 +2977,7 @@
   var AXIS_CASES = {
     normal: [
       { deg: 60 }, { deg: 45 }, { deg: 30 }, { deg: 15 }, { deg: 75 }, { deg: -15 },
-      { deg: 0, iso: "aVF" }, { deg: 90, iso: "I" }
+      { deg: 0, iso: "aVF" }
     ],
     lad: [
       { deg: -45 }, { deg: -60 }, { deg: -75 }, { deg: -50 }
@@ -2986,10 +2987,10 @@
       { deg: 150, iso: "II" }
     ],
     extreme: [
-      { deg: -120 }, { deg: -135 }, { deg: -150 }, { deg: -165 },
-      { deg: 180, iso: "aVF" }, { deg: -90, iso: "I" }
+      { deg: -120 }, { deg: -135 }, { deg: -150 }, { deg: -165 }
     ]
   };
+  var AXIS_BOUNDARIES = [-30, 90, 180, -180, -90];
   var AXIS_CATS = ["normal", "lad", "rad", "extreme"];
 
   function makeAxisCase(spec) {
@@ -3015,12 +3016,13 @@
       var isoPool = pool.filter(function (c) { return c.iso; });
       chosen = (isoPool.length ? pickOne(isoPool) : pickOne(pool));
     } else {
-      chosen = pickOne(pool);
+      var safe = pool.filter(function (c) { return !axisNearBoundary(c.deg); });
+      chosen = pickOne(safe.length ? safe : pool);
     }
     var deg = wrapAxis(chosen.deg);
     cat = axisRegionKey(deg);
     var startGuess = (cat === "normal") ? 180 : 60;
-    if (axisDelta(startGuess, deg) <= 30) startGuess = wrapAxis(startGuess + 120);
+    if (axisRegionKey(startGuess) === cat) startGuess = wrapAxis(startGuess + 120);
     return {
       deg: deg,
       category: cat,
@@ -3053,6 +3055,16 @@
 
   /* ---- Axis ---- */
 
+  function axisNearBoundary(deg) {
+    var d = wrapAxis(deg), i;
+    for (i = 0; i < AXIS_BOUNDARIES.length; i++) {
+      if (axisDelta(d, AXIS_BOUNDARIES[i]) <= 10) return true;
+    }
+    return false;
+  }
+
+  /* Boundaries follow the usual ranges already taught on this page:
+     -30° and +90° are normal; -90° and ±180° are extreme. */
   function axisLabel(deg) {
     var d = ((deg + 180) % 360) - 180;
     if (d === -180) d = 180;
@@ -3062,6 +3074,10 @@
     else if (d > 90 && d < 180) name = "right axis deviation";
     else name = "extreme (northwest) axis";
     return { deg: d, name: name };
+  }
+
+  function axisCategoryCorrect(guess, trueDeg) {
+    return axisRegionKey(guess) === axisRegionKey(trueDeg);
   }
 
   function leadSign(axisDeg, leadDeg) {
@@ -3558,7 +3574,7 @@
       html += "<button type='button' class='t-btn' id='axisPPlus' aria-label='Increase estimate by 15 degrees'>+15°</button>";
       html += actionRow(primaryBtn("axisPCheck", "Check") + secondaryBtn("axisPAnother", "Try another strip"));
     } else {
-      html += "<div class='quiz-feedback" + (st.ok ? "" : " is-wrong") + "' id='axisPFeedback'><p><strong>" + (st.ok ? "Correct." : "Not quite.") + "</strong> " + esc(st.feedback) + "</p></div>";
+      html += "<div class='quiz-feedback" + (st.ok ? "" : " is-wrong") + "' id='axisPFeedback'><p><strong>" + esc(st.feedback.head) + "</strong> " + esc(st.feedback.body) + "</p></div>";
       html += actionRow(secondaryBtn("axisPAnother", "Try another strip"));
     }
     box.innerHTML = html;
@@ -3576,22 +3592,24 @@
   }
 
   function axisFeedbackText(trueDeg, guess, ok) {
-    var info = axisLabel(trueDeg);
-    var msg = "The axis is " + formatAxisDeg(trueDeg) + " (" + info.name + ").";
-    msg += " Your estimate was " + formatAxisDeg(guess) + ".";
-    if (!ok) msg += " Estimates within 30° count as correct.";
-    msg += " " + axisReasoning(trueDeg);
-    return msg;
+    var trueInfo = axisLabel(trueDeg);
+    var guessInfo = axisLabel(guess);
+    var head = ok
+      ? ("Correct: " + trueInfo.name + ".")
+      : ("Not quite: this is " + trueInfo.name + ", not " + guessInfo.name + ".");
+    var body = "The exact axis is " + formatAxisDeg(trueDeg) + "; you set " + formatAxisDeg(guess) + ".";
+    body += " " + axisReasoning(trueDeg);
+    return { head: head, body: body, text: head + " " + body };
   }
 
   function checkAxisPractice() {
     var st = RS.axisPractice;
     if (!st || st.answered) return;
-    st.ok = axisDelta(st.guess, st.trueAxis) <= 30;
+    st.ok = axisCategoryCorrect(st.guess, st.trueAxis);
     st.answered = true;
     st.feedback = axisFeedbackText(st.trueAxis, st.guess, st.ok);
     var live = $("axisPracticeLive");
-    if (live) live.textContent = (st.ok ? "Correct. " : "Not quite. ") + st.feedback;
+    if (live) live.textContent = st.feedback.text;
     fillAxisPracticeControls();
     renderAxisPractice();
     flashStrip($("axisPracticeLeadsSvg"));
