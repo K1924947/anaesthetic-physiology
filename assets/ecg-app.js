@@ -2965,13 +2965,13 @@ var TXT = {
     nextStep: "Continue the ABCDE assessment and record a 12-lead ECG; seek expert help if the tachyarrhythmia or life-threatening features persist."
   },
   s5_unsync: {
-    full: "The patient had a pulse, so a synchronised shock was needed. An unsynchronised shock can land on the T wave and has caused VF. There is now no pulse: this is a shockable cardiac arrest, so the next shock should be unsynchronised.",
+    full: "The patient had a pulse, so a synchronised shock was needed. An unsynchronised shock can land on the T wave and has caused VF.",
     guideline: "Tachyarrhythmia: shock must be synchronised",
     src: "sync",
     flag: 1,
     outcome: "",
     whyWrong: "The patient had a pulse, so a synchronised shock was needed. An unsynchronised shock can land on the T wave and has caused VF.",
-    nextStep: "There is now no pulse: this is a shockable cardiac arrest, so the next shock should be unsynchronised."
+    nextStep: "If the case continues, there is now no pulse: this is a shockable cardiac arrest, so the next shock should be unsynchronised."
   },
   s5_arrestShock: {
     full: "There is now no pulse, so unsynchronised defibrillation is correct. Shock delivered. Sinus rhythm with a pulse has returned.",
@@ -3202,7 +3202,7 @@ Object.assign(SRC, {
   afEnergy: "RCUK 2025 Adult ALS guideline (peri-arrest): for atrial fibrillation, an initial synchronised shock at maximum defibrillator output, rather than an escalating approach, is a reasonable strategy based on current data.",
   broadStable: "RCUK Adult tachyarrhythmia algorithm (updated March 2026): broad and regular: treat as VT; synchronised shock(s); if sedation or anaesthesia risk is too high consider drug treatments: procainamide 10 to 15 mg/kg over 20 min, or if procainamide is not available or contraindicated give amiodarone 300 mg IV over 10 to 60 min, then 900 mg IV over 24 h; if drugs are ineffective, synchronised shock(s) with expert advice.",
   bradyRisk: "RCUK 2025 Adult bradyarrhythmia algorithm: after a satisfactory response, or when there are no current life-threatening features, ask whether there is a risk of asystole (recent asystole; Mobitz II AV block; complete heart block with broad QRS; ventricular pause greater than 3 s). If yes: seek expert help; monitor, treat the underlying cause and consider transvenous pacing.",
-  amioInf: "RCUK Adult tachyarrhythmia algorithm (updated March 2026): amiodarone 300 mg IV over 10 to 60 min, then 900 mg IV over 24 h, for stable broad and regular tachycardia when procainamide is not used."
+  amioInf: "RCUK Adult tachyarrhythmia algorithm (updated March 2026): for stable broad and regular tachycardia, treat as VT: synchronised shock(s). If sedation or anaesthesia risk is too high consider drug treatments: give procainamide 10 to 15 mg/kg over 20 min; if procainamide is not available or contraindicated give amiodarone 300 mg IV over 10 to 60 min, then 900 mg IV over 24 h."
 });
 Object.assign(PHYS, {
   asys: "Asystole means no organised ventricular depolarisation, so there is no mechanical output.",
@@ -3281,9 +3281,9 @@ Object.assign(TXT, {
   h6_aden: T("Adenosine is for a stable, regular narrow-complex tachycardia without pre-excitation. This is irregular, and the patient is unstable.", "Tachyarrhythmia: adenosine if no pre-excitation, regular narrow", "narrow", { whyWrong: "Adenosine is not the treatment for unstable, irregular narrow-complex tachycardia." }),
   h6_vagal: T("Vagal manoeuvres are for a stable regular narrow-complex tachycardia. This patient has life-threatening features, so electrical cardioversion is preferred.", "Tachyarrhythmia: unstable", "tachy", { whyWrong: "Vagal manoeuvres are not the treatment for an unstable tachyarrhythmia." }),
   h7_assess: T("A regular broad-complex tachycardia in a stable patient. Treat as VT unless a prior diagnosis of SVT with aberrancy is known.", "Tachyarrhythmia: broad and regular", "broadStable", { outcome: "A regular broad-complex tachycardia in a stable patient. Treat as VT unless a prior diagnosis of SVT with aberrancy is known." }),
-  h7_amioInf: T("Amiodarone 300 mg IV over 10 to 60 min given, as on the stable broad-and-regular pathway when procainamide is not used. The tachycardia slows and then returns to sinus rhythm. A 900 mg infusion over 24 hours would usually follow (simulation simplification: not modelled as a separate action).", "Tachyarrhythmia: amiodarone 300 mg IV over 10 to 60 min", "amioInf", { outcome: "Amiodarone 300 mg IV over 10 to 60 min given. The tachycardia slows and then returns to sinus rhythm." }),
+  h7_amioInf: T("Partly right. The Adult tachyarrhythmia algorithm (V3 March 2026) says, for stable broad and regular tachycardia: treat as VT: synchronised shock(s). If sedation or anaesthesia risk is too high consider drug treatments: give procainamide 10 to 15 mg/kg over 20 min; if procainamide is not available or contraindicated give amiodarone 300 mg IV over 10 to 60 min, then 900 mg IV over 24 h. In this case sedation or anaesthesia risk is not described as too high, so synchronised cardioversion with careful sedation or anaesthesia is first-line. A 900 mg infusion over 24 hours would usually follow if amiodarone is used (simulation simplification: not modelled as a separate action). The tachycardia slows and then returns to sinus rhythm.", "Tachyarrhythmia: broad and regular, synchronised shock first", "broadStable", { outcome: "Amiodarone 300 mg IV over 10 to 60 min given. The tachycardia slows and then returns to sinus rhythm.", whyWrong: "Synchronised shock(s) come first on the stable broad-and-regular pathway. Drug treatment is only if sedation or anaesthesia risk is too high, and then procainamide is first; amiodarone is if procainamide is not available or contraindicated." }),
   h7_amioBolus: T("The cardiac-arrest bolus of amiodarone 300 mg is not the stable-pathway dose. For stable broad and regular tachycardia the load is 300 mg IV over 10 to 60 min.", "Tachyarrhythmia: amiodarone 300 mg IV over 10 to 60 min", "amioInf", { whyWrong: "The cardiac-arrest bolus of amiodarone 300 mg is not the dose or rate used on the stable broad-complex pathway." }),
-  h7_sync: T("Synchronised cardioversion is an accepted treatment for monomorphic VT, including in some stable patients, with careful sedation or anaesthesia if the patient is conscious.", "Tachyarrhythmia: broad and regular, synchronised shock", "broadStable", { outcome: "Synchronised cardioversion. Sinus rhythm is restored." }),
+  h7_sync: T("Synchronised cardioversion is the first-line treatment on the Adult tachyarrhythmia algorithm (V3 March 2026) for stable broad and regular tachycardia treated as VT: synchronised shock(s). Careful sedation or anaesthesia is used if the patient is conscious. Drug treatments are only considered if sedation or anaesthesia risk is too high.", "Tachyarrhythmia: broad and regular, synchronised shock", "broadStable", { outcome: "Synchronised cardioversion. Sinus rhythm is restored." }),
   h7_aden: T("IV adenosine is only for suspected SVT with aberrant conduction in a stable patient. This case should be treated as VT.", "Tachyarrhythmia: suspected SVT with aberrant conduction", "broad", { whyWrong: "Adenosine is only for suspected SVT with aberrancy. This case should be treated as VT." }),
   h8_assess: T("Complete heart block with a broad QRS. There are no current life-threatening features, but this is a risk of asystole on the bradyarrhythmia algorithm (complete heart block with broad QRS).", "Bradyarrhythmia: risk of asystole", "bradyRisk", { outcome: "Complete heart block with a broad QRS. There are no current life-threatening features, but this is a risk of asystole." }),
   h8_atro1: T("Atropine 500 micrograms IV given. The ventricular rate has barely changed. This is marked Partly right. The RCUK 2025 Adult ALS guideline says: 'Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.' Seek expert help and start transcutaneous pacing, or an adrenaline or isoprenaline infusion.", "Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.", "bradyWide", { outcome: "Atropine 500 micrograms IV given. The ventricular rate has barely changed.", whyWrong: "Do not give atropine to patients with high-degree atrioventricular block and wide QRS. It is ineffective and may worsen the block.", nextStep: "Seek expert help and start transcutaneous pacing, or an adrenaline or isoprenaline infusion." }),
@@ -3661,15 +3661,15 @@ HIDDEN_SCENARIOS.push(
 
   { id: "h7", hidden: true, idleNudge: true, group: "Tachycardia", title: "Stable broad-complex tachycardia",
     blurb: "Palpitations for two hours in a patient who looks well, with a previous myocardial infarction.",
-    scene: "A 57-year-old with a previous myocardial infarction attends with palpitations for two hours. Alert, talking, no chest pain, no breathlessness, blood pressure is 118/74 mmHg. Monitoring and IV access are in place.",
+    scene: "A 57-year-old with a previous myocardial infarction attends with palpitations for two hours. Alert, talking, no chest pain, no breathlessness, blood pressure is 118/74 mmHg. Monitoring and IV access are in place. The patient is stable and suitable for careful sedation or anaesthesia if synchronised cardioversion is used; sedation or anaesthesia risk is not described as too high.",
     start: { rhythm: { gen: "vt" }, pulse: true, vit: { pulse: "Present, regular", bp: "118/74 mmHg", consc: "Alert, talking", threats: "None" } },
-    req: [["amioInf", "Amiodarone 300 mg IV over 10 to 60 min, or synchronised cardioversion", "amioInf"]],
+    req: [["sync", "Synchronised cardioversion, with careful sedation or anaesthesia", "broadStable"]],
     due: function (st) {
       var out = [], hadChance = (st.actionN || 0) >= 1 || st.checked;
       if (st.arrest) {
         out.push(dueItem("shock", "Unsynchronised shock for this pulseless rhythm", "This is now a cardiac arrest. Review the immediate electrical treatment", "This is now a cardiac arrest. Have you thought about the immediate electrical treatment?", "alsPriority", "ALS: early defibrillation"));
-      } else if (!st.did.amioInf && st.sync === 0 && hadChance) {
-        out.push(dueItem("amioInf", "Amiodarone 300 mg IV over 10 to 60 min, or synchronised cardioversion", "Review drug or electrical treatment for this stable broad rhythm", "Have you thought about drug or electrical treatment for this rhythm?", "amioInf", "Tachyarrhythmia: broad and regular"));
+      } else if (st.sync === 0 && hadChance) {
+        out.push(dueItem("sync", "Synchronised cardioversion, with careful sedation or anaesthesia", "Review electrical treatment for this stable broad rhythm", "Have you thought about electrical treatment for this rhythm?", "broadStable", "Tachyarrhythmia: broad and regular, synchronised shock"));
       }
       return out;
     },
@@ -3684,7 +3684,7 @@ HIDDEN_SCENARIOS.push(
       if (a === "expert") { st.expert = true; st.did.expert = 1; return O("ok", "s5_expert"); }
       if (a === "amioInf") {
         st.did.amioInf = 1;
-        return O("ok", "h7_amioInf", { end: true, rhythm: { gen: "sinus", opts: { rate: 86 } }, phys: "amioInf", vit: { pulse: "Present, regular", bp: "116/72 mmHg", threats: "None; now in sinus rhythm" } });
+        return O("part", "h7_amioInf", { end: true, rhythm: { gen: "sinus", opts: { rate: 86 } }, phys: "amioInf", vit: { pulse: "Present, regular", bp: "116/72 mmHg", threats: "None; now in sinus rhythm" } });
       }
       if (a === "amio300") return O("bad", "h7_amioBolus");
       if (a === "sync") {
@@ -4032,7 +4032,13 @@ function detectHarm(a, st) {
   if (pulse && a === "cpr") return { id: "harm_cprPulse", label: "CPR in a patient with a pulse" };
   if (!pulse && gen === "asystole" && (a === "shock" || a === "sync")) return { id: "harm_shockAsys", label: "Shock delivered for asystole" };
   if (extra.harm && extra.harm.indexOf(a) >= 0) {
-    if (a === "aden") return { id: "harm_adenUnstable", label: "Adenosine in an unstable broad-complex tachycardia" };
+    if (a === "aden") {
+      var rgen = (st.rhythm && st.rhythm.gen) || "";
+      if (rgen === "af" || rgen === "flutter_var" || rgen === "pre_af") {
+        return { id: "harm_adenUnstableAF", label: "Adenosine in unstable atrial fibrillation" };
+      }
+      return { id: "harm_adenUnstable", label: "Adenosine in an unstable tachycardia" };
+    }
     return { id: "harm_other", label: ACT[a] ? ACT[a].label : a };
   }
   return null;
@@ -4216,10 +4222,12 @@ if (typeof SRC === "object") {
   SRC.bradyCauses = "RCUK 2025 Adult bradyarrhythmia algorithm: identify and treat reversible causes, e.g. electrolyte abnormalities. RCUK 2025 Adult ALS guideline: consider glucagon if beta-blockers or calcium channel blockers are a potential cause of the bradycardia.";
   SRC.ecg12Sim = "Simulation simplification: 12-lead descriptions are scripted to match each case. Delta waves and flutter waves are mentioned only when they belong in that case. Peaked T waves and QRS broadening in hyperkalaemia are common teaching; the saved RCUK 2025 special circumstances text mentions ECG changes but does not list those morphologies.";
   SRC.refRanges = REF_RANGE_NOTE;
-  SRC.harmAden = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features (including shock and immediately post-ROSC) lead to synchronised shock, not adenosine. Adenosine is on the stable regular narrow (or selected regular monomorphic) pathway. Treating an unstable broad-complex tachycardia with adenosine instead of cardioversion was treated as a dangerous error in this simulation; see flagged items.";
+  SRC.harmAden = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features (including shock and immediately post-ROSC) lead to synchronised shock, not adenosine. Adenosine is on the stable regular narrow (or selected regular monomorphic) pathway. Treating an unstable tachycardia with adenosine instead of cardioversion was treated as a dangerous error in this simulation.";
   SRC.harmShockPulse = "RCUK 2025 Adult ALS guideline and tachyarrhythmia algorithm: unsynchronised defibrillation is for VF or pulseless VT. A tachyarrhythmia with a pulse is treated with synchronised cardioversion when unstable.";
   SRC.harmCprPulse = "RCUK 2025 Adult ALS guideline: CPR is for cardiac arrest (unresponsive, not breathing normally). Chest compressions in a patient with a pulse were treated as a dangerous error in this simulation.";
   SRC.harmAsys = "RCUK 2025 Adult ALS algorithm: asystole is a non-shockable rhythm. Do not shock asystole.";
+  SRC.harmAdenAF = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features lead to synchronised shock. Adenosine is for a stable, regular narrow-complex tachycardia without pre-excitation, not for unstable atrial fibrillation.";
+  SRC.harmOther = "This simulation ends the case when Show solution is off if a listed dangerous error is made. The debrief explains why.";
 }
 
 function Tfb(full, guideline, src, extra) {
@@ -4232,7 +4240,9 @@ if (typeof TXT === "object") {
   TXT.harm_shockPulse = Tfb("An unsynchronised shock was delivered in a patient who had a pulse. Unsynchronised defibrillation is for VF or pulseless VT. With a pulse, unstable tachyarrhythmias are treated with synchronised cardioversion.", "Tachyarrhythmia: synchronised shock if unstable", "harmShockPulse", { whyWrong: "Unsynchronised shock is not used in a patient with a pulse.", event: "Unsynchronised shock delivered." });
   TXT.harm_cprPulse = Tfb("CPR was started in a patient who had a pulse. Chest compressions are for cardiac arrest.", "ALS: CPR is for cardiac arrest", "harmCprPulse", { whyWrong: "The patient had a pulse, so CPR should not have been started.", event: "CPR 30:2 started." });
   TXT.harm_shockAsys = Tfb("A shock was delivered for asystole. Asystole is a non-shockable rhythm.", "ALS: non-shockable pathway", "harmAsys", { whyWrong: "Asystole is not a shockable rhythm.", event: "Shock delivered." });
-  TXT.harm_adenUnstable = Tfb("Adenosine was given in an unstable broad-complex tachycardia. The algorithm's unstable path is synchronised cardioversion, not adenosine.", "Tachyarrhythmia: unstable, synchronised shock", "harmAden", { whyWrong: "Adenosine is not the treatment for an unstable broad-complex tachycardia.", event: "Adenosine given." });
+  TXT.harm_adenUnstable = Tfb("Adenosine was given in an unstable tachycardia. The algorithm's unstable path is synchronised cardioversion, not adenosine.", "Tachyarrhythmia: unstable, synchronised shock", "harmAden", { whyWrong: "Adenosine is not the treatment for an unstable tachycardia.", event: "Adenosine given." });
+  TXT.harm_adenUnstableAF = Tfb("Adenosine was given in unstable atrial fibrillation. This is an irregular narrow-complex tachycardia with life-threatening features. The algorithm's unstable path is synchronised cardioversion, not adenosine.", "Tachyarrhythmia: unstable, synchronised shock", "harmAdenAF", { whyWrong: "Adenosine is not the treatment for unstable, irregular atrial fibrillation.", event: "Adenosine given." });
+  TXT.harm_other = Tfb("This action was treated as a dangerous error in this simulation.", "Simulation: dangerous error", "harmOther", { whyWrong: "This action was treated as a dangerous error in this simulation.", event: "A dangerous action was recorded." });
   TXT.cause_ok = Tfb("The cause named fits this case.", "Identify and treat reversible causes", "causesList", { outcome: "The cause named fits this case.", event: "A reversible cause was named." });
   TXT.cause_bad = Tfb("Nothing in this scene supports that reversible cause.", "Identify and treat reversible causes", "causesList", { whyWrong: "Nothing in this scene supports that reversible cause.", event: "A reversible cause was named." });
   TXT.n_skipTime = Tfb("Simulated time advanced by 1 minute. Skip time is not an algorithm action and does not count as performing CPR.", "Simulation clock", "alsPriority", { event: "Simulated time advanced by 1 minute." });
@@ -4547,15 +4557,18 @@ function deliverPending(p) {
       TXT[keys].full = p.text; TXT[keys].event = p.text; TXT[keys].outcome = p.text;
     }
     if (p.relevant) {
-      SIM.did.causes = 1;
-      SIM.cause = true;
       SIM.found = SIM.found || {};
       SIM.found.ask = 1;
     }
-    var o = O("info", keys, { event: p.text, notAction: true });
+    var askEvent = p.text;
+    if (p.relevant) {
+      askEvent = p.text + " This result may help you identify a reversible cause. Name and treat it using Identify and treat reversible causes.";
+    }
+    var o = O("info", keys, { event: askEvent, notAction: true });
     o.label = p.label;
     o.askText = p.text;
-    if (typeof logEvent === "function") logEvent(o, p.label + ": " + p.text, "ask:" + p.id);
+    o.relevantAsk = !!p.relevant;
+    if (typeof logEvent === "function") logEvent(o, p.label + ": " + askEvent, "ask:" + p.id);
     if (!quiet) {
       if (typeof renderFeedback === "function") renderFeedback(o, false);
       if ($("scnLive")) $("scnLive").textContent = p.label + " result: " + p.text;
@@ -4798,9 +4811,16 @@ function takeAdr(st, firstKey, repeatKey, extra) {
     var rep = repeatIntervalWindow(st.clock - st.adrT[st.adrT.length - 1]);
     if (rep === "soon") {
       var soonO = O("bad", extra.soonKey || "a_adrSoon");
-      soonO.logVerdict = "Too soon: repeat every 3 to 5 min";
+      if (st.adrSoonRunScored) {
+        soonO.notScoredAgain = true;
+        soonO.logVerdict = "Too soon (not scored again)";
+      } else {
+        st.adrSoonRunScored = true;
+        soonO.logVerdict = "Too soon: repeat every 3 to 5 min";
+      }
       return soonO;
     }
+    st.adrSoonRunScored = false;
     st.adrT.push(st.clock);
     if ((st.shocks || 0) >= 3) st.adrAfter3 = true;
     st.did.adr = 1;
@@ -4914,9 +4934,68 @@ function latePacingAfterFailedAtropine(st) {
     && isLifeThreateningHighDegreeBrady(st)
     && (st.atro || 0) >= LATE_PACING_ATROPINE_DOSE_THRESHOLD);
 }
+function firstWhyWrong(o) {
+  var keys = (o && o.keys) || [], i, tx;
+  for (i = keys.length - 1; i >= 0; i--) {
+    if (typeof isNudgeKey === "function" && isNudgeKey(keys[i])) continue;
+    tx = TXT[keys[i]];
+    if (tx && tx.whyWrong) return tx.whyWrong;
+  }
+  return "";
+}
+function fallbackWhy(o) {
+  var keys = (o && o.keys) || [], i, tx, first;
+  for (i = keys.length - 1; i >= 0; i--) {
+    if (typeof isNudgeKey === "function" && isNudgeKey(keys[i])) continue;
+    tx = TXT[keys[i]];
+    if (!tx || !tx.full) continue;
+    first = String(tx.full).replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s+/)[0] || "";
+    if (first.length > 20) return first;
+  }
+  if (o && o.harm && o.harm.label) return o.harm.label;
+  return "";
+}
+function shortenWhy(why) {
+  var s = String(why || "").replace(/\s+/g, " ").trim();
+  var m = s.match(/^[^.!?]+[.!?]/);
+  if (m) s = m[0];
+  s = s.replace(/[.]+$/, "");
+  if (s.length > 110) s = s.slice(0, 107).replace(/\s+\S*$/, "") + "...";
+  return s;
+}
 function logVerdictLabel(o) {
   if (o && o.logVerdict) return o.logVerdict;
-  return (o && VERD[o.v]) ? VERD[o.v][1] : "";
+  var base = (o && VERD[o.v]) ? VERD[o.v][1] : "";
+  if (!o || o.v === "ok" || o.v === "late" || o.v === "info") return base;
+  if (o.notScoredAgain) return base + " (not scored again)";
+  var why = firstWhyWrong(o) || fallbackWhy(o);
+  if (why) return base + ": " + shortenWhy(why);
+  return base;
+}
+function lastComparableLog(log) {
+  var i, l;
+  for (i = (log || []).length - 1; i >= 0; i--) {
+    l = log[i];
+    if (!l || !l.o || !l.act) continue;
+    if (l.o.v === "info" || l.o.notAction || l.o.isNudge || l.o.isReg) continue;
+    return l;
+  }
+  return null;
+}
+function applyWrongClickCollapse(a, o) {
+  if (!o || !SIM || !a) return o;
+  if (o.v !== "bad" && o.v !== "part") return o;
+  if (o.notScoredAgain) return o;
+  var prev = lastComparableLog(SIM.log);
+  if (prev && prev.act === a && prev.o && prev.o.v === o.v) {
+    o.notScoredAgain = true;
+    if ((o.logVerdict && /Too soon/.test(o.logVerdict)) || (prev.o.logVerdict && /Too soon/.test(prev.o.logVerdict))) {
+      o.logVerdict = "Too soon (not scored again)";
+    } else {
+      o.logVerdict = ((VERD[o.v] && VERD[o.v][1]) || "Not quite") + " (not scored again)";
+    }
+  }
+  return o;
 }
 function scoredDecisionEntries(log) {
   return (log || []).filter(function (l) {
@@ -5325,7 +5404,10 @@ function physForLive(key) {
 function liveFbParts(o) {
   var parts = [];
   if (o.event) parts.push(o.event);
-  if (o.v === "part") (o.keys || []).forEach(function (k) { if (TXT[k] && TXT[k].whyWrong) parts.push(TXT[k].whyWrong); });
+  if (o.v === "part" || o.v === "bad") {
+    var why = typeof firstWhyWrong === "function" ? firstWhyWrong(o) : "";
+    if (why) parts.push(why);
+  }
   return parts;
 }
 function announceFeedback(o) {
@@ -5560,7 +5642,6 @@ function actionMatchesDue(a, id) {
   if (a === "adr" && id === "adrRepeat") return true;
   if (a === "sync" && id === "sync2") return true;
   if ((a === "adrInf" || a === "iso") && id === "pace") return true;
-  if (a === "sync" && id === "amioInf") return true;
   if (a.indexOf("cause:") === 0 && id === "causes") return true;
   return false;
 }
@@ -5727,10 +5808,13 @@ function startScenario(id, random) {
   clearInterval(simTimer);
   simTimer = setInterval(function () { if (!SIM || SIM.done || document.hidden) return; SIM.clock++; if (typeof tickMonitor === "function") tickMonitor(SIM); renderClock(); renderVitals(); }, 1000);
   $("scnTitle").focus({ preventScroll: true });
+  if (typeof syncSourceBox === "function") syncSourceBox();
   requestAnimationFrame(function () { scrollToScenario(); });
 }
 function scrollToScenario() {
-  var el = $("scnTitle") || $("scnStage");
+  var box = $("scnSourceBox");
+  var keepSource = document.body.classList.contains("scn-case-running") && box && box.tagName === "DETAILS" && !box.open;
+  var el = keepSource ? box : ($("scnTitle") || $("scnStage"));
   if (!el) return;
   el.scrollIntoView({ block: "start", behavior: prefersReduced() ? "auto" : "smooth" });
 }
@@ -5878,6 +5962,7 @@ function doActionFinish(a, o, timeCost) {
   if (SIM.mon) SIM.mon.arrest = !SIM.pulse;
   if (typeof syncMonBpFromVit === "function") syncMonBpFromVit(SIM);
   o.label = label; o.t = SIM.clock;
+  if (typeof applyWrongClickCollapse === "function") applyWrongClickCollapse(a, o);
   if (o.event == null && typeof defaultEvent === "function") o.event = defaultEvent(a, label);
   if ((a === "shock" || a === "sync") && o.keys && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync", "h1_shock", "h2_shock", "h4_shockAsys", "h9_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
   if (!o.dueAt) o.dueAt = copyDueItems(SIM.dueItemsBeforeAction || []);
@@ -5928,6 +6013,8 @@ function renderFeedback(o, changed) {
   var verdict = o.verdictText ? (ic + esc(o.verdictText)) : (ic + VERD[o.v][1] + ": " + esc(o.label));
   var html = "<p class='explain-kicker'>Feedback</p><p class='verdict-line'>" + verdict + "</p>";
   if (o.harm && o.endReason === "harm" && !hintsOn()) {
+    var harmWhy = (typeof firstWhyWrong === "function" && firstWhyWrong(o)) || (o.harm && o.harm.label) || "";
+    if (harmWhy) html += "<p class='scn-fb'>" + esc(harmWhy) + "</p>";
     $("scnFeedback").innerHTML = html;
     return;
   }
@@ -5945,11 +6032,9 @@ function renderFeedback(o, changed) {
     var ev = o.event || (o.keys && TXT[o.keys[0]] && TXT[o.keys[0]].event) || "";
     if (!ev && typeof defaultEvent === "function") ev = defaultEvent("", o.label);
     if (ev) addFb(esc(ev), "scn-fb");
-    if (o.v === "part") {
-      (o.keys || []).forEach(function (k) {
-        var tx = TXT[k];
-        if (tx && tx.whyWrong && !isNudgeKey(k)) addFb(esc(tx.whyWrong), "scn-fb");
-      });
+    if (o.v === "part" || o.v === "bad") {
+      var liveWhy = typeof firstWhyWrong === "function" ? firstWhyWrong(o) : "";
+      if (liveWhy) addFb(esc(liveWhy), "scn-fb");
     }
   } else {
     (o.keys || []).forEach(function (k) {
@@ -5963,6 +6048,11 @@ function renderFeedback(o, changed) {
     if (TXT[k] && TXT[k].guideline) html += "<p class='scn-src'><strong>Guideline step:</strong> " + esc(TXT[k].guideline) + "</p>";
     if (typeof algLinkHTML === "function") html += algLinkHTML(k);
     else if (TXT[k] && TXT[k].guideline) html += "<p class='scn-src scn-quotes'><strong>Source lines:</strong> " + srcHTML(k) + "</p>";
+    if (!o.end) {
+      (o.keys || []).forEach(function (nk) {
+        if (TXT[nk] && TXT[nk].nextStep) addFb(esc(TXT[nk].nextStep), "scn-fb");
+      });
+    }
   }
   if (!o.regLine && o.nudge && o.nudgeText && o.nudge !== "cap") addFb(esc(o.nudgeText), "scn-nudge");
   $("scnFeedback").innerHTML = html;
@@ -5993,6 +6083,24 @@ function finishScenario(completed, reason) {
     $("scnDebriefBtn").addEventListener("click", showDebrief);
   }
   syncScnBanner();
+  if (typeof syncSourceBox === "function") syncSourceBox();
+}
+
+function syncSourceBox() {
+  var box = $("scnSourceBox");
+  var stage = $("scnStage");
+  var debriefEl = $("scnDebrief");
+  var inDebrief = !!(debriefEl && !debriefEl.classList.contains("hidden"));
+  var running = !!(SIM && !SIM.done && stage && !stage.classList.contains("hidden") && !inDebrief);
+  document.body.classList.toggle("scn-case-running", running);
+  document.body.classList.toggle("scn-case-debrief", inDebrief);
+  if (!box) return;
+  var mobile = false;
+  try { mobile = window.matchMedia("(max-width: 700px)").matches; } catch (e) {}
+  if (box.tagName === "DETAILS") {
+    if (running && mobile) box.open = false;
+    else box.open = true;
+  }
 }
 
 function withPeriod(s) {
@@ -6227,10 +6335,19 @@ function debriefEntryBody(l) {
     add("<p>" + esc(l.o.regLine || "") + "</p>");
     return parts.join("");
   }
+  var hasCaseText = k.some(function (other) {
+    return other && !/^harm_/.test(other) && !isNudgeKey(other) && other !== "n_reg" && TXT[other] && TXT[other].full;
+  });
   k.forEach(function (kk) {
     if (isNudgeKey(kk) || kk === "n_reg") return;
+    if (hasCaseText && /^harm_/.test(kk)) return;
     if (TXT[kk]) add("<p>" + txtHTML(kk) + "</p>");
   });
+  if (!(SIM && SIM.endReason === "harm") && !(l.o.harm && l.o.endReason === "harm")) {
+    k.forEach(function (kk) {
+      if (TXT[kk] && TXT[kk].nextStep) add("<p>" + esc(TXT[kk].nextStep) + "</p>");
+    });
+  }
   if (l.o.nudgeText && l.o.nudge && !l.o.separateNudge) add("<p>" + esc(l.o.nudgeText) + "</p>");
   return parts.join("");
 }
@@ -6243,9 +6360,11 @@ function showDebrief() {
   var missed = classified.missed, notReached = classified.notReached;
   var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
   var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "missedShock" ? "Scenario ended: the first shock was missed" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
-  var atroScoreNote = (SIM.log || []).some(function (l) { return l.o && (l.o.notScoredAgain || (l.act === "atro" && l.o.logVerdict)); })
-    ? " A run of too-early repeat atropine doses counts as one decision; further too-early doses in the same run are logged as too soon but are not scored again."
-    : "";
+  var hasAtroCollapse = (SIM.log || []).some(function (l) { return l.o && l.act === "atro" && (l.o.notScoredAgain || l.o.logVerdict); });
+  var hasOtherCollapse = (SIM.log || []).some(function (l) { return l.o && l.o.notScoredAgain && l.act !== "atro"; });
+  var atroScoreNote = "";
+  if (hasAtroCollapse) atroScoreNote += " A run of too-early repeat atropine doses counts as one decision; further too-early doses in the same run are logged as too soon but are not scored again.";
+  if (hasOtherCollapse) atroScoreNote += " Identical consecutive wrong clicks of the same action count as one decision; further clicks in the same run are logged but are not scored again.";
   html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct and correct but late score 1, partly right 0.5, not quite 0; noted actions are not scored." + atroScoreNote + " Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed below." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
   html += posterLineFor(s);
   html += renderLogCompare(s, SIM.log);
@@ -6268,7 +6387,7 @@ function showDebrief() {
     } else if (!l.o.isReg && !l.o.isNudge && gk && TXT[gk]) {
       srcBlock = sourceLinesBlock(srcHTML(gk));
     }
-    return "<li class='db-item db-" + l.o.v + "'><p class='db-head'><span class='predict-mark' aria-hidden='true'>" + VERD[l.o.v][0] + "</span><span><strong>" + (l.o.logVerdict || l.o.verdictText || VERD[l.o.v][1]) + "</strong> · " + mmss(l.t) + " · " + esc(l.text) + "</span></p>" +
+    return "<li class='db-item db-" + l.o.v + "'><p class='db-head'><span class='predict-mark' aria-hidden='true'>" + VERD[l.o.v][0] + "</span><span><strong>" + esc(logVerdictLabel(l.o) || l.o.verdictText || VERD[l.o.v][1]) + "</strong> · " + mmss(l.t) + " · " + esc(l.text) + "</span></p>" +
       body +
       ca +
       (l.o.phys ? "<p class='db-phys'><strong>Physiology:</strong> " + esc(PHYS[l.o.phys]) + "</p>" : "") +
@@ -6278,6 +6397,7 @@ function showDebrief() {
   html += debriefFold("scnIdealTitle", "Ideal pathway", renderIdealPath(s, SIM.log, { noTitle: true }));
   $("scnDebrief").innerHTML = html;
   $("scnDebrief").classList.remove("hidden"); $("scnPanels").classList.add("hidden");
+  if (typeof syncSourceBox === "function") syncSourceBox();
   var wasRandom = SIM.random;
   $("scnRetry").addEventListener("click", function () { startScenario(s.id, wasRandom); });
   if ($("scnAnother")) $("scnAnother").addEventListener("click", randomScenario);
@@ -6288,7 +6408,9 @@ function showChooser() {
   if (monitor) monitor.stop();
   clearInterval(simTimer); SIM = null;
   $("scnStage").classList.add("hidden"); $("scnChooserWrap").classList.remove("hidden");
+  if ($("scnDebrief")) $("scnDebrief").classList.add("hidden");
   renderScnChooser(); syncScnBanner();
+  if (typeof syncSourceBox === "function") syncSourceBox();
 }
 function syncScnBanner() {
   var on = mode === "scenario", b = $("scnBanner"), t = $("scnToggle"), st = $("scnBannerStatus");
@@ -6352,6 +6474,12 @@ window.addEventListener("resize", function () {
 });
 
 if ($("scnHints")) $("scnHints").addEventListener("click", function () { setHints(!hintsOn()); });
+try {
+  window.matchMedia("(max-width: 700px)").addEventListener("change", function () {
+    if (typeof syncSourceBox === "function") syncSourceBox();
+  });
+} catch (e) {}
+
 if ($("scnReg")) $("scnReg").addEventListener("click", callReg);
 (function initScnGuide() {
   var KEY = "anaesthetic-physiology-scn-guide";
@@ -6499,7 +6627,8 @@ var IDEAL_PATHS = {
   ],
   h7: [
     IP("assess", "Check rhythm and pulse", "Confirm a stable regular broad complex tachycardia, with no life-threatening features.", SRC_TACHY),
-    IP("amioInf", "Amiodarone 300 mg IV over 10 to 60 min, or synchronised cardioversion", "If the patient is stable, treat as VT with an amiodarone infusion, or cardiovert if that is the safer choice.", SRC_TACHY, ["sync"])
+    IP("expert", "Careful sedation or anaesthesia", "A conscious patient needs careful sedation or anaesthesia before synchronised cardioversion.", SRC_ALS, { orderFree: true }),
+    IP("sync", "Synchronised cardioversion", "The Adult tachyarrhythmia algorithm (V3 March 2026) lists synchronised shock(s) first for stable broad and regular tachycardia treated as VT. Drug treatments are only if sedation or anaesthesia risk is too high.", SRC_TACHY)
   ],
   h8: [
     IP("assess", "Check rhythm and pulse", "Confirm broad-complex complete heart block. There are no current life-threatening features, but there is a risk of asystole.", SRC_BRADY),
@@ -6598,7 +6727,7 @@ var MODEL_ACTS = {
   h4: ["assess","shock","cpr","ff","assess","cpr","adr","ff","assess"],
   h5: ["assess","ask:ecg12","nibp","vagal","aden","aden","aden"],
   h6: ["assess","ask:ecg12","nibp","expert","sync","sync"],
-  h7: ["assess","ask:ecg12","nibp","amioInf"],
+  h7: ["assess","ask:ecg12","nibp","expert","sync"],
   h8: ["assess","expert","ask:ecg12","nibp","pace"],
   h9: ["assess","shock","cpr","mg","ff","assess"],
   h10: ["assess","ask:ecg12","nibp","expert","sync"]

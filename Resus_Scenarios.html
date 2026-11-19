@@ -318,7 +318,7 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .log-t { font-family: var(--font-sans); font-weight: 700; font-variant-numeric: tabular-nums; }
 .log-mark { font-weight: 700; text-align: center; }
 .log-text { min-width: 0; overflow-wrap: anywhere; }
-.log-verdict { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.log-verdict { font-size: 13px; font-weight: 600; white-space: normal; overflow-wrap: anywhere; }
 .scn-debrief { margin-top: 12px; }
 .debrief-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
 #scnTitle, .scn-card-main { scroll-margin-top: 16px; }
@@ -381,12 +381,50 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .db-late { border-left-width: 8px; border-left-style: solid; }
 .scn-poster-line { margin: 12px 0 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; }
 .scn-source-box { margin: 16px 0 22px; padding: 16px 18px; border: 3px solid var(--text); border-radius: 10px; background: var(--card, transparent); }
+.scn-source-box > summary { list-style: none; cursor: default; }
+.scn-source-box > summary::-webkit-details-marker,
+.scn-source-box > summary::marker { display: none; content: none; }
 .scn-source-box h2 { margin: 0 0 8px; font-size: 1.15rem; }
 .scn-source-box p { margin: 0 0 10px; }
+.scn-source-toggle-hint { display: none; margin: 0 0 0; font-size: 0.95rem; }
+.scn-source-chevron { display: none; }
 .scn-source-disclaimer { font-size: 0.95rem; }
 .scn-source-list { margin: 0; padding-left: 1.2em; }
 .scn-source-list li { margin: 0 0 6px; }
 .scn-source-list a { text-decoration: underline; }
+@media (max-width: 700px) {
+  body.scn-case-running .scn-source-box { margin-bottom: 12px; padding: 10px 12px; }
+  body.scn-case-running .scn-source-box > summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  body.scn-case-running .scn-source-box > summary:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+  body.scn-case-running .scn-source-chevron {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+    border: 2px solid var(--text);
+    border-radius: 5px;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1;
+  }
+  body.scn-case-running .scn-source-chevron::before { content: "+"; }
+  body.scn-case-running .scn-source-box[open] > summary .scn-source-chevron::before { content: "\2212"; }
+  body.scn-case-running .scn-source-box h2 { margin: 0 0 4px; }
+  body.scn-case-running .scn-source-toggle-hint { display: block; margin: 0; }
+}
 .scn-banner-link { text-decoration: none; color: inherit; }
 .scn-banner-link .test-banner-title { text-decoration: underline; }
 .scn-banner-link .test-banner-cta { display: inline-flex; align-items: center; justify-content: center; }
@@ -674,8 +712,15 @@ body.scn-popup-open { overflow: hidden; }
   <main id="main">
     <section id="tool" aria-label="Resuscitation scenarios">
 
-      <aside class="scn-source-box" aria-labelledby="scnSourceHeading">
-        <h2 id="scnSourceHeading">Learn from the source</h2>
+      <details class="scn-source-box" id="scnSourceBox" open>
+        <summary>
+          <span class="scn-source-chevron" aria-hidden="true"></span>
+          <span>
+            <h2 id="scnSourceHeading">Learn from the source</h2>
+            <p class="scn-source-toggle-hint">Official RCUK posters. Open to visit the resus.org.uk links.</p>
+          </span>
+        </summary>
+        <div class="scn-source-body">
         <p>These cases are marked against the Resuscitation Council UK algorithm posters. Visit the official RCUK website at least once and read those posters, plus the ALS course information, rather than practising only on this page.</p>
         <p class="scn-source-disclaimer">Not affiliated with or endorsed by Resuscitation Council UK.</p>
         <ul class="scn-source-list">
@@ -686,7 +731,8 @@ body.scn-popup-open { overflow: hidden; }
           <li><a href="https://www.resus.org.uk/training-courses/adult-life-support/als-2-day-course-advanced-life-support" target="_blank" rel="noopener noreferrer">RCUK ALS 2-day course: what the course and assessment look for (opens in a new tab)</a></li>
           <li><a href="https://www.resus.org.uk/library/additional-guidance/guidance-anaphylaxis" target="_blank" rel="noopener noreferrer">RCUK official guidance on anaphylaxis (opens in a new tab)</a>. None of the cases on this page is an anaphylaxis scenario. The algorithm poster published on the RCUK site is still the 2021 version: <a href="https://www.resus.org.uk/sites/default/files/2021-04/Anaphylaxis%20algorithm%202021.pdf" target="_blank" rel="noopener noreferrer">RCUK anaphylaxis algorithm 2021 (PDF, opens in a new tab)</a>.</li>
         </ul>
-      </aside>
+        </div>
+      </details>
 
 <div id="scnWrap">
                 <p class="scn-note">Simulation for teaching, not clinical guidance. <button type="button" class="scn-sources-btn" id="scnSourcesBtn">Sources and disclaimer</button></p>
@@ -718,7 +764,7 @@ body.scn-popup-open { overflow: hidden; }
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8 h16 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H4 a2 2 0 0 1-2-2 v-8 a2 2 0 0 1 2-2 z M8 8 V6 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2"/></svg></span><span class="scn-guide-n" aria-hidden="true">1</span><span>Pick a listed case, or choose Random scenario. Random picks from all of the cases in the list. The name of a random case is revealed in the debrief, not while you are playing.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5 h16 a1 1 0 0 1 1 1 v10 a1 1 0 0 1-1 1 H4 a1 1 0 0 1-1-1 V6 a1 1 0 0 1 1-1 z M8 21 h8 M12 17 v4"/></svg></span><span class="scn-guide-n" aria-hidden="true">2</span><span>Read the patient and the monitor, then choose actions in the order you would in real life. Use Identify and treat reversible causes and Ask for / check when you need a list of causes or a test result. Each opens as a pop-up, so you do not have to scroll the actions list. Requested results, and Cycle NIBP now, appear after a short real-time delay and do not advance the simulated clock. You can keep treating while they are pending. After the first Cycle NIBP, the cuff then repeats every 2 minutes of simulated time; a further Cycle NIBP now resets that interval. Nothing you should have to request is shown up front.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7 v5 l3 2 M12 3 a9 9 0 1 0 0 18 a9 9 0 1 0 0-18"/></svg></span><span class="scn-guide-n" aria-hidden="true">3</span><span>CPR for 2 minutes performs two minutes of CPR and shows the rhythm on the monitor. Skip time only advances the clock and does not count as an action. Check rhythm and pulse is a separate step.</span></li>
-              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback states only what was done and the objective event. It will not interpret the monitor or tell you what to do next.</span></li>
+              <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 6 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1-2 2 H9 l-4 3 v-3 H5 a2 2 0 0 1-2-2 V8 a2 2 0 0 1 2-2 z"/></svg></span><span class="scn-guide-n" aria-hidden="true">4</span><span>With Show solution off, feedback still gives a short reason when an action is not quite or partly right, and a one-line reason if a dangerous error ends the case. It will not show the full model answer or tell you the next step.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 16 v3 M12 11 v8 M18 6 v13"/></svg></span><span class="scn-guide-n" aria-hidden="true">5</span><span>If a key step is overdue you will get escalating nudges. After the third nudge the case ends. The debrief names the missed step and the correct action; the live nudges stay vague.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><span class="scn-guide-n" aria-hidden="true">6</span><span>Call the reg gives a hint. Each call deducts 0.5 from the decision score, with a minimum of 0.</span></li>
               <li><span class="scn-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 8 h10 a4 4 0 0 1 0 8 H7 a4 4 0 0 1 0-8 z M17 12 a2 2 0 1 1 0 0.01"/></svg></span><span class="scn-guide-n" aria-hidden="true">7</span><span>Show solution is off by default. Turn it on for more guidance, including why the rhythm changed and the guideline link.</span></li>
@@ -832,6 +878,6 @@ body.scn-popup-open { overflow: hidden; }
     </section>
   </main>
 </div>
-<script src="assets/ecg-app.js?v=20261119a"></script>
+<script src="assets/ecg-app.js?v=20261119b"></script>
 </body>
 </html>
