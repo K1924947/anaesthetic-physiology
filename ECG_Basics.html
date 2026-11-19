@@ -3,26 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ECG Basics in 3D (prototype) · The Physio Lab</title>
-<meta name="robots" content="noindex">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118g">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118g">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118g">
+<title>ECG Basics in 3D (layout mock-up) · The Physio Lab</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261119aa">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261119aa">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261119aa">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=20261118g">
-<link rel="stylesheet" href="assets/layout.css?v=20261118g">
-<link rel="stylesheet" href="assets/ecg3d.css?v=20261118g">
-<script src="assets/theme.js?v=20261118g"></script>
+<link rel="stylesheet" href="assets/site.css?v=20261119aa">
+<link rel="stylesheet" href="assets/layout.css?v=20261119aa">
+<link rel="stylesheet" href="assets/ecg3d.css?v=20261119aa">
+<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261119aa">
+<script src="assets/theme.js?v=20261119aa"></script>
 </head>
 <body>
 <a class="skip-link" href="#tool">Skip to the 3D model</a>
-<div class="page page-wide page-tool page-ecg3d">
+<div class="page page-wide page-tool page-ecg3d page-ecg3d-revamp">
   <header class="site-header tool-view-header">
     <div class="site-header-top">
       <a class="site-mark" href="index.html">
-        <img class="site-logo" src="assets/logo.svg?v=20261118g" width="20" height="20" alt="">
+        <img class="site-logo" src="assets/logo.svg?v=20261119aa" width="20" height="20" alt="">
         <span class="site-mark-name">The Physio Lab</span>
       </a>
       <div class="header-actions">
@@ -41,49 +42,97 @@
       <span aria-current="page">ECG Basics in 3D</span>
     </nav>
     <h1>ECG Basics in 3D</h1>
-    <p class="subtitle">Each lead is a line of sight. Its trace is the shadow of the heart's electrical arrow on that line.</p>
+    <p class="subtitle">Each lead shows how much of the heart's electrical vector points towards it: towards is upwards, away is downwards, and side-on is flat.</p>
   </header>
 
   <main>
-    <p class="proto-banner" role="note"><strong>Prototype: work in progress.</strong> A simplified teaching model, shared for feedback. Content is still being reviewed.</p>
+    <p class="proto-banner" role="note"><strong>Layout mock-up.</strong> A simplified teaching model for review; not published. Pathophysiology will live on a later, separate page.</p>
     <section id="tool" aria-label="Interactive 3D ECG model">
       <div class="tool-hero ecg3d-hero">
         <div class="tool-stage">
           <div class="graph-card stage-card">
             <div class="stage-bar">
-              <div class="view-btns" role="group" aria-label="Camera view">
-                <button type="button" class="t-btn view-btn" data-view="frontal" aria-pressed="true">Frontal</button>
-                <button type="button" class="t-btn view-btn" data-view="oblique" aria-pressed="false">3D view</button>
-              </div>
-              <div class="view-btns toggle-btns" role="group" aria-label="Show or hide">
-                <button type="button" class="t-btn toggle-btn" id="toggleLeads" aria-pressed="false">Show all leads</button>
-                <button type="button" class="t-btn toggle-btn" id="toggleLabelAll" aria-pressed="false">Label everything</button>
-              </div>
-              <details class="more-menu" id="moreMenu">
-                <summary class="t-btn">More views and options</summary>
-                <div class="menu-pop" role="group" aria-label="More views and options">
-                  <button type="button" class="t-btn view-btn menu-item" data-view="section" aria-pressed="false">Face-on to the cut</button>
-                  <button type="button" class="t-btn view-btn menu-item" data-view="transverse" aria-pressed="false">Transverse: chest leads</button>
-                  <button type="button" class="t-btn toggle-btn menu-item" id="toggleCut" aria-pressed="false">Cut-away section</button>
-                  <button type="button" class="t-btn toggle-btn menu-item" id="toggleLoop" aria-pressed="false">Vector loop path</button>
-                  <button type="button" class="t-btn menu-item" id="resetView">Reset view</button>
+              <div class="ctrl-group view-group">
+                <span class="ctrl-label" id="viewGroupLabel">View</span>
+                <div class="view-btns segment" role="group" aria-labelledby="viewGroupLabel">
+                  <button type="button" class="t-btn view-btn" data-view="frontal" aria-pressed="true">
+                    <span class="btn-text"><span class="btn-main">Front</span><span class="btn-sub">limb leads</span></span>
+                  </button>
+                  <button type="button" class="t-btn view-btn" data-view="transverse" aria-pressed="false">
+                    <span class="btn-text"><span class="btn-main">Chest leads</span><span class="btn-sub">from above</span></span>
+                  </button>
+                  <button type="button" class="t-btn view-btn" data-view="oblique" aria-pressed="false">
+                    <span class="btn-text"><span class="btn-main">Free rotate</span><span class="btn-sub">drag the heart</span></span>
+                  </button>
                 </div>
-              </details>
+              </div>
+              <div class="ctrl-group show-group">
+                <div class="labels-wrap">
+                  <button type="button" class="t-btn labels-btn" id="labelsBtn" aria-expanded="false" aria-controls="labelsPanel" aria-haspopup="dialog">Labels</button>
+                  <div class="labels-panel" id="labelsPanel" role="dialog" aria-labelledby="labelsPanelTitle" hidden>
+                    <p class="labels-panel-title" id="labelsPanelTitle">Labels</p>
+                    <p class="labels-panel-help">Guided shows a label when that structure is active in the beat. Or pick which groups stay on. The labels sit in columns beside the heart.</p>
+                    <div class="labels-quick" role="group" aria-label="Label presets">
+                      <button type="button" class="t-btn" id="labelsGuided" aria-pressed="false">Guided</button>
+                      <button type="button" class="t-btn" id="labelsAll">All</button>
+                      <button type="button" class="t-btn" id="labelsNone">None</button>
+                    </div>
+                    <div class="labels-groups" role="group" aria-label="Label groups">
+                      <label class="labels-opt"><input type="checkbox" id="lab-chambers" data-group="chambers"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Chambers</strong> RA, LA, RV, LV, septum, SVC</span></label>
+                      <label class="labels-opt"><input type="checkbox" id="lab-conduction" data-group="conduction"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Conduction system</strong> SA node, Bachmann's bundle, AV node, His, bundles, fascicles, moderator band, Purkinje</span></label>
+                      <label class="labels-opt"><input type="checkbox" id="lab-leads" data-group="leads"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Leads and axes</strong> lead name tags (Show all rods, in More, draws the rods)</span></label>
+                      <label class="labels-opt"><input type="checkbox" id="lab-vectors" data-group="vectors"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Vectors</strong> mean vector, lead projection value</span></label>
+                      <label class="labels-opt"><input type="checkbox" id="lab-walls" data-group="walls"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Wall regions</strong> inferior, anterior, lateral or septum, for the selected lead</span></label>
+                      <label class="labels-opt"><input type="checkbox" id="lab-orientation" data-group="orientation"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Orientation</strong> apex, base, anterior (the corner gizmo and the R and L marks always stay on)</span></label>
+                    </div>
+                    <button type="button" class="t-btn labels-panel-close" id="labelsPanelClose">Close</button>
+                  </div>
+                </div>
+                <button type="button" class="t-btn toggle-btn" id="guidedBtn" aria-pressed="false">Guided</button>
+                <div class="more-wrap">
+                  <button type="button" class="t-btn more-btn" id="moreBtn" aria-expanded="false" aria-controls="morePanel" aria-haspopup="true">More</button>
+                  <div class="more-panel" id="morePanel" hidden>
+                    <p class="more-title">More options</p>
+                    <button type="button" class="t-btn toggle-btn" id="toggleCut" aria-pressed="true">Cut-away</button>
+                    <button type="button" class="t-btn toggle-btn" id="toggleLoop" aria-pressed="false">Vector loop</button>
+                    <button type="button" class="t-btn view-btn more-view" data-view="section" aria-pressed="false">Cut face-on</button>
+                    <button type="button" class="t-btn toggle-btn" id="toggleLeads" aria-pressed="true">Show all rods</button>
+                    <button type="button" class="t-btn" id="resetView">Reset view</button>
+                    <button type="button" class="t-btn more-close" id="moreClose">Close</button>
+                  </div>
+                </div>
+              </div>
             </div>
+
             <div class="stage" id="stage">
-              <canvas id="scene" tabindex="0" role="img" aria-label="3D model of the heart with the conduction system, lead lines and the mean electrical vector arrow" aria-describedby="sceneHelp"></canvas>
-              <div class="labels" id="labels" aria-hidden="true"></div>
-              <p class="view-note" id="viewNote" aria-hidden="true"></p>
+              <canvas id="scene" tabindex="0" role="img" aria-label="3D model of the heart inside a faint upper-torso outline, with the conduction system, lead axes and the mean electrical vector arrow" aria-describedby="sceneHelp"></canvas>
+              <div class="labels" id="labels"></div>
+              <div class="body-rl" id="bodyRL" aria-hidden="true">
+                <span class="body-rl-mark" id="markR">R</span>
+                <span class="body-rl-mark" id="markL">L</span>
+              </div>
+              <div class="orient-gizmo" id="orientGizmo" aria-hidden="true">
+                <svg viewBox="0 0 96 96" width="96" height="96" id="orientSvg">
+                  <circle class="orient-bg" cx="48" cy="48" r="45.5"/>
+                  <g id="orientAxes"></g>
+                </svg>
+                <p class="orient-caption">Front: anterior (towards the chest wall)</p>
+              </div>
+              <div class="stage-overlay" id="stageOverlay">
+                <p class="stage-overlay-line" id="viewNote"></p>
+                <button type="button" class="t-btn stage-info-btn" id="stageInfoBtn" aria-expanded="false" aria-controls="stageInfo">Info</button>
+                <div class="stage-info" id="stageInfo" hidden>
+                  <p id="stageInfoText"></p>
+                  <p id="stageHint">Drag to rotate, scroll or pinch to zoom. Click a lead to see it close up on the right.</p>
+                </div>
+              </div>
               <div class="fallback" id="fallback" hidden>
                 <p><strong>3D graphics are not available in this browser.</strong></p>
                 <p>WebGL could not start, so the 3D model cannot be shown. The 12-lead ECG, timeline and phase descriptions still work.</p>
               </div>
             </div>
-            <p id="sceneHelp" class="stage-help">Drag to rotate, scroll or pinch to zoom, click a lead line to select it. Keyboard: focus the model, then arrow keys rotate, + and - zoom, R resets.</p>
-            <div class="mini-wrap">
-              <p class="mini-label" id="miniLabel">Lead II, 5 s at 25 mm/s</p>
-              <div class="mini-frame"><canvas id="miniStrip" role="img" aria-label="ECG strip of the selected lead"></canvas></div>
-            </div>
+            <p id="sceneHelp" class="stage-help visually-hidden">Drag to rotate, scroll or pinch to zoom, click a lead line or lead button to select it. Keyboard: focus the model, then arrow keys rotate, + and - zoom, R resets.</p>
+
             <div class="timeline">
               <button type="button" class="t-btn play-btn" id="playBtn" aria-pressed="false"><span class="play-icon" aria-hidden="true"></span><span class="play-label">Play</span></button>
               <div class="scrub-wrap">
@@ -94,77 +143,106 @@
               <output id="timeOut" for="scrub">250 ms</output>
               <label class="speed-label" for="speed">Speed
                 <select id="speed">
+                  <option value="0.01">0.01×</option>
+                  <option value="0.02">0.02×</option>
                   <option value="0.05">0.05×</option>
-                  <option value="0.1">0.1×</option>
-                  <option value="0.25" selected>0.25×</option>
+                  <option value="0.1" selected>0.1×</option>
+                  <option value="0.25">0.25×</option>
                   <option value="0.5">0.5×</option>
                   <option value="1">Real time</option>
                 </select>
               </label>
             </div>
-            <div class="steps" role="group" aria-label="Guided steps through one beat">
+            <div class="steps" id="stepRow" role="group" aria-label="Guided steps through one beat">
               <button type="button" class="t-btn step-nav" id="stepBack"><span aria-hidden="true">&#8592;</span> Back</button>
               <div class="step-chips" id="stepChips"></div>
               <button type="button" class="t-btn step-nav" id="stepNext">Next <span aria-hidden="true">&#8594;</span></button>
             </div>
-            <ul class="key" aria-label="Key">
-              <li><span class="sw sw-rest" aria-hidden="true"></span>Flat grey: resting muscle. <span class="sw sw-front sw-inline" aria-hidden="true"></span>Orange band with black edges: depolarisation front</li>
-              <li><span class="sw sw-depol" aria-hidden="true"></span>Dotted magenta: depolarised. <span class="sw sw-repol sw-inline" aria-hidden="true"></span>Hatched: repolarising</li>
-              <li><span class="sw sw-cond" aria-hidden="true"></span>Blue tubes: conduction system; a white bead and bulge is the impulse travelling</li>
-              <li><span class="sw sw-arrow" aria-hidden="true"></span>Solid black arrow: mean electrical vector</li>
-              <li><span class="sw sw-sel" aria-hidden="true"></span>Thick black rod: selected lead (ball or box is +). <span class="sw sw-proj sw-inline" aria-hidden="true"></span>Striped bar (QRS step): the arrow&#39;s shadow on it</li>
-            </ul>
-            <details class="key-more">
-              <summary>Show more of the key</summary>
-              <ul class="key" aria-label="More of the key">
-                <li><span class="sw sw-nodes" aria-hidden="true"></span>Diamond: SA node. Cube with filling ring: AV node delay</li>
-                <li><span class="sw sw-lead" aria-hidden="true"></span>Thin grey rod (with Show all leads): other lead axes; dashed half is negative</li>
-                <li><span class="sw sw-mesh" aria-hidden="true"></span>Black wire mesh, dashed label (with Label everything): wall the selected lead faces</li>
-                <li><span class="sw sw-trail" aria-hidden="true"></span>Dotted grey (with Vector loop path): path of the arrow tip</li>
-              </ul>
-            </details>
           </div>
         </div>
 
         <aside class="tool-side">
-          <div class="card explain-card">
-            <p class="phase-kicker" id="phaseKicker">Now <span class="step-count" id="stepCount"></span></p>
-            <h2 class="phase-title" id="phaseTitle">Main ventricular depolarisation</h2>
-            <p class="phase-text" id="phaseText"></p>
-            <div class="lead-explain" id="leadExplain"></div>
-            <p class="visually-hidden" id="live" aria-live="polite"></p>
+          <div class="card explain-card" id="explainCard">
+            <div class="explain-scroll" id="explainScroll" tabindex="0" role="region" aria-labelledby="phaseTitle">
+              <div class="explain-head">
+                <p class="phase-kicker" id="phaseKicker">Now <span class="step-count" id="stepCount"></span></p>
+                <button type="button" class="t-btn key-open-btn" id="keyOpenBtn" aria-expanded="false" aria-haspopup="dialog" aria-controls="keyDialog">Colour key</button>
+              </div>
+              <h2 class="phase-title" id="phaseTitle">Main ventricular depolarisation</h2>
+              <p class="phase-text" id="phaseText"></p>
+              <div class="lead-explain" id="leadExplain"></div>
+              <p class="visually-hidden" id="live" aria-live="polite"></p>
+            </div>
+          </div>
+          <div class="card lead-closeup-card" id="leadCloseupCard">
+            <h2 class="tool-section-title" id="leadCloseupHeading">Selected lead: <span id="leadCloseupName">II</span></h2>
+            <div class="lead-closeup-frame" id="leadCloseupFrame" tabindex="0" role="region" aria-labelledby="leadCloseupHeading">
+              <canvas id="leadCloseup" role="img" aria-label="Close-up of the selected lead on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. About four beats; the cursor sweeps left to right, then the window advances. The QRS is fitted so it is not cut off."></canvas>
+            </div>
+            <p class="side-note lead-closeup-gain" id="leadCloseupGain">10 mm/mV (full gain), 25 mm/s</p>
           </div>
         </aside>
       </div>
 
-      <div class="card ecg12-card">
-        <div class="ecg12-head">
-          <h2 class="tool-section-title" id="ecgHeading">Standard 12-lead ECG</h2>
-          <div class="lead-btns" id="leadBtns" role="group" aria-label="Select a lead"></div>
+      <div class="key-dialog" id="keyDialog" role="dialog" aria-modal="true" aria-labelledby="keyHeading" hidden>
+        <div class="key-dialog-backdrop" id="keyBackdrop" tabindex="-1"></div>
+        <div class="key-dialog-panel" id="keyPanel" role="document" tabindex="-1">
+          <div class="key-dialog-head">
+            <h2 class="key-title" id="keyHeading">Colour key</h2>
+            <button type="button" class="t-btn key-dialog-close" id="keyCloseBtn">Close</button>
+          </div>
+          <ul class="key key-details-list" id="keyDetailsList">
+            <li><span class="sw sw-rest" aria-hidden="true"></span><span><b>Resting</b> flat grey</span></li>
+            <li><span class="sw sw-front" aria-hidden="true"></span><span><b>Depolarisation front</b> orange, dark edges</span></li>
+            <li><span class="sw sw-depol" aria-hidden="true"></span><span><b>Depolarised</b> magenta, dotted</span></li>
+            <li><span class="sw sw-repol" aria-hidden="true"></span><span><b>Repolarising</b> striped</span></li>
+            <li><span class="sw sw-cond" aria-hidden="true"></span><span><b>Conduction system</b> blue tubes; a white bead and bulge is the impulse travelling</span></li>
+            <li><span class="sw sw-arrow" aria-hidden="true"></span><span><b>Mean electrical vector</b> solid black arrow</span></li>
+            <li><span class="sw sw-sel" aria-hidden="true"></span><span><b>Selected lead</b> thick blue rod; the lead name is a black filled pill. Thin grey rods are the other lead axes; a dashed half is the negative end.</span></li>
+            <li><span class="sw sw-nodes" aria-hidden="true"></span><span>Diamond: SA node. Cube with filling ring: AV node delay</span></li>
+            <li><span class="sw sw-lead" aria-hidden="true"></span><span>Thin grey rod: other lead axes</span></li>
+            <li><span class="sw sw-mesh" aria-hidden="true"></span><span>Black wire mesh (More, when wall regions are on): wall the selected lead faces</span></li>
+            <li><span class="sw sw-trail" aria-hidden="true"></span><span>Dotted grey (Vector loop path): path of the arrow tip</span></li>
+          </ul>
         </div>
-        <p class="ecg12-caption" id="ecgCaption" aria-live="off"></p>
-        <div class="ecg12-frame" tabindex="0" role="region" aria-labelledby="ecgHeading">
-          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model: three rows of four leads, 2.5 seconds each, and a 10 second lead II rhythm strip. Click a lead to select it."></canvas>
-        </div>
-        <p class="side-note">25 mm/s, 10 mm/mV: one small square is 40 ms and 0.1 mV; one large square is 200 ms and 0.5 mV. Each row starts with a 1 mV calibration pulse. Click any lead to select it.</p>
       </div>
 
-      <div class="card zoom-card">
-        <h2 class="tool-section-title" id="zoomHeading">Close-up: lead <span id="zoomLead">II</span>, two beats</h2>
-        <div class="zoom-frame" tabindex="0" role="region" aria-labelledby="zoomHeading">
-          <canvas id="zoomECG" role="img" aria-label="Close-up of two beats of the selected lead on standard ECG paper, with the P wave, QRS complex and T wave labelled and the PR, QRS, QT and P durations marked"></canvas>
+      <div class="card ecg12-card" id="ecg12Panel">
+        <div class="ecg12-side">
+          <div class="ecg12-head">
+            <h2 class="tool-section-title" id="ecgHeading">Standard 12-lead ECG</h2>
+            <p class="ecg12-sync-note">All 12 leads recorded at the same moment.</p>
+            <div class="lead-btns" id="leadBtns" role="group" aria-label="Select a lead"></div>
+          </div>
+          <p class="ecg12-caption" id="ecgCaption" aria-live="off"></p>
+          <p class="side-note ecg12-hint" id="ecg12Note">Click a lead to see it close up on the right.</p>
+          <details class="ecg12-about">
+            <summary>About this ECG</summary>
+            <p>All 12 leads are recorded at the same moment, as on a live 12-lead monitor. Each of the four columns shows the same 2.5 s window, time-aligned, with a cursor at the same place in every column. When that window ends, all four columns advance together to the next 2.5 s. The lead II rhythm strip below shows 10 s, and its cursor is at the same absolute time. The close-up and the heart share that clock. 25 mm/s. Limb leads and the rhythm strip are at 10 mm/mV; chest leads V1 to V6 are at 5 mm/mV, as on many real ECG machines. A full-height 1 mV calibration pulse starts each row; a half-height 1 mV pulse and a 5 mm/mV label mark the chest-lead columns. The close-up of any lead is always at 10 mm/mV. One small square is 40 ms (0.1 mV at 10 mm/mV, 0.2 mV at 5 mm/mV). The model computes a normal adult tracing at 75 beats/min. Click a lead, or its name on the heart, to see it close up on the right.</p>
+          </details>
         </div>
-        <p class="side-note">The same paper speed and gain as the 12-lead (25 mm/s, 10 mm/mV), drawn larger so the shape of each wave is visible. A normal QRS is narrow: under 120 ms is only 3 small squares. Intervals are measured from the model across all 12 leads.</p>
+        <div class="ecg12-frame" tabindex="0" role="region" aria-labelledby="ecgHeading">
+          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model. All 12 leads show the same moment: four columns share one 2.5 second window, with a cursor at the same place in each column, and a 10 second lead II rhythm strip whose cursor is at the same time. Limb leads at 10 millimetres per millivolt, chest leads at 5 millimetres per millivolt. Click a lead to select it and see it close up on the right."></canvas>
+        </div>
+      </div>
+
+      <div class="visually-hidden" hidden>
+        <div class="mini-wrap"><p class="mini-label" id="miniLabel">Lead II, 5 s at 25 mm/s</p><div class="mini-frame"><canvas id="miniStrip"></canvas></div></div>
+        <div class="card zoom-card" hidden>
+          <h2 id="zoomHeading">Close-up: lead <span id="zoomLead">II</span></h2>
+          <canvas id="zoomECG"></canvas>
+        </div>
       </div>
     </section>
 
     <section class="card model-notes" aria-labelledby="notes-heading">
       <h2 id="notes-heading" class="tool-section-title">About this model</h2>
       <ul>
-        <li><strong>This is a simplified teaching model, not a patient recording.</strong> The heart is made of about 10,000 small muscle elements. The impulse starts at the SA node, spreads through the atria cell to cell, is held in the AV node, races down the His bundle, bundle branches and Purkinje fibres, then spreads through the ventricular wall from the inside (endocardium) outwards.</li>
+        <li><strong>This is a simplified teaching model, not a patient recording.</strong> The heart is made of about 10,000 small muscle elements. The impulse starts at the SA node, spreads through the atria cell to cell, is held in the AV node, races down the His bundle (through the top of the septum), the right bundle branch on the right side of the septum (with a branch across the moderator band to the right ventricular free wall) and the left bundle branch on the left side, which divides into anterior and posterior fascicles. The Purkinje fibres then spread over the apex and up the inner walls towards the base, and the wave crosses the ventricular wall from the inside (endocardium) outwards. In the atria, a fast band (Bachmann's bundle) carries the impulse from the right to the left atrium. The drawn fibres are a simplified few; the model's Purkinje network covers the lower inner walls.</li>
         <li>Each element adds a small dipole as its wavefront passes. Their sum at each moment is the mean electrical vector (the black arrow). The limb leads record the arrow's component along their own line; the chest leads are computed from the nearby muscle, because they sit close to the heart.</li>
         <li>Conduction speeds follow published values for a real heart (atrial muscle about 0.5 m/s, AV node about 0.05 m/s, His and bundle branches about 2 m/s, Purkinje fibres about 4 m/s), scaled to the model. Shapes, sizes, the ventricular muscle speed and a slower His bundle (because the model heart is small, this gives a normal His-to-ventricle time of about 40 ms) are model choices, tuned so that the normal 12-lead falls within normal limits.</li>
-        <li>The limb leads use the hexaxial angles: I 0°, II +60°, aVF +90°, aVR -150° (positive angles point downwards). The augmented leads are drawn at 0.87 times the size of I and II. Chest electrode positions are schematic.</li>
+        <li>The limb leads use the hexaxial angles: I 0°, II +60°, aVF +90°, aVR −150° (positive angles point downwards). The augmented leads are drawn at 0.87 times the size of I and II. Chest electrodes sit on the chest wall of the torso outline: V1 at the 4th intercostal space, right sternal edge; V2 at the 4th intercostal space, left sternal edge; V4 at the 5th intercostal space, mid-clavicular line; V3 midway between V2 and V4; V5 at the anterior axillary line at the same level as V4; V6 at the mid-axillary line at the same level as V4.</li>
+        <li>Anatomy labels are anchored on the model, not by hand-tuned screen positions: chambers use the ellipsoid centroid or a point 0.6 of the way from that centroid to the surface along an anatomical direction (LV posterior-left towards the apex, RV anterior and to the patient's right, LA posterior and superior, RA anterior and to the patient's right, septum at its model centre). The SA node is at the model's SVC–RA junction, the AV node at the inferior interatrial septum, Bachmann's bundle and the His–Purkinje tree follow the drawn paths, and the Purkinje label sits at the mid-point of the left-ventricular apical fibre. The chambers themselves are tapered ellipsoids, and the conduction tree is a simplified few fibres, so a label marks a representative point on that structure, not a dissected heart. These anchors should be reviewed by an anaesthetist, especially the AV node relative to the coronary sinus, the fascicle paths towards the papillary muscles, and where the moderator band meets the RV free wall.</li>
         <li>The model beat runs at 75 per minute.</li>
       </ul>
     </section>
@@ -173,7 +251,7 @@
       <summary>Sources and credits</summary>
       <ul class="source-list">
         <li>Life in the Fast Lane (LITFL). <a href="https://litfl.com/ecg-lead-positioning/" target="_blank" rel="noopener">ECG lead positioning</a> (chest electrode positions; inferior, lateral and anterior lead groups).</li>
-        <li>LITFL. <a href="https://litfl.com/ecg-axis-interpretation/" target="_blank" rel="noopener">ECG axis interpretation</a> (hexaxial angles; normal axis -30° to +90°).</li>
+        <li>LITFL. <a href="https://litfl.com/ecg-axis-interpretation/" target="_blank" rel="noopener">ECG axis interpretation</a> (hexaxial angles; normal axis −30° to +90°).</li>
         <li>LITFL. <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a> (biphasic P in V1: right atrium first, then left atrium).</li>
         <li>LITFL. <a href="https://litfl.com/q-wave-ecg-library/" target="_blank" rel="noopener">Q wave</a> (small septal q waves in I, aVL, V5 and V6; none in V1 to V3).</li>
         <li>LITFL. <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a> (upright in all leads except aVR and V1).</li>
@@ -200,6 +278,7 @@
     </p>
   </footer>
 </div>
-<script type="module" src="assets/ecg3d.js?v=20261118g"></script>
+
+<script type="module" src="assets/ecg3d.js?v=20261119aa"></script>
 </body>
 </html>

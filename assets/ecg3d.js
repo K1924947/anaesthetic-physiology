@@ -13,6 +13,23 @@ const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:
 const DEG = Math.PI / 180;
 const COL = { blue: 0x184A63, paleBlue: 0x9DB8C8, orange: 0xB34700, black: 0x111111, grey: 0x595959, leadGrey: 0x8a8a8a };
 const PAPER = { minor: '#F7D9D3', major: '#E9A49B', trace: '#111111', cursor: '#184A63', shade: 'rgba(24, 74, 99, 0.10)' };
+// Default 3D palette, and the site's colour-blind tokens (one colour per family: blue, orange, magenta, black, grey).
+const THEMES = {
+  default: {
+    rest: 0xC4C4C4, front: 0xE0701E, dep: 0xB0287A, dot: 0xF4D2E6,
+    condIdle: 0xA9C3D2, condDone: 0x4F84A8, node: 0x184A63,
+    cursor: 0x184A63, black: 0x111111, grey: 0x595959, leadGrey: 0x8a8a8a
+  },
+  'colour-blind': {
+    rest: 0xC4C4C4, front: 0xB34700, dep: 0xB01070, dot: 0xF3C6DE,
+    condIdle: 0x8FB4D4, condDone: 0x005A9E, node: 0x005A9E,
+    cursor: 0x005A9E, black: 0x111111, grey: 0x595959, leadGrey: 0x8a8a8a
+  }
+};
+function hex6(n) { return '#' + n.toString(16).padStart(6, '0'); }
+function isColourBlindTheme() {
+  return !!(window.PhysioTheme ? window.PhysioTheme.isColourBlind() : (document.documentElement.getAttribute('data-theme') === 'colour-blind' || window.__physioColourBlind));
+}
 
 function unit(x, y, z) { const l = Math.hypot(x, y, z); return [x / l, y / l, z / l]; }
 function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
@@ -64,17 +81,50 @@ const CONDUCTION = {
   sa: [-0.40, 0.60, 0.05],
   av: [-0.10, 0.06, -0.02],
   avDelay: 88,
-  vAtrial: 0.018, vHis: 0.04, vVent: 0.007, vPurkinje: 0.08, purkinjeJunction: 3, purkinjeTopY: -0.28,
+  vAtrial: 0.018, vHis: 0.06, vVent: 0.015, vPurkinje: 0.08, vNetwork: 0.08, purkinjeJunction: 3, purkinjeTopY: -0.3,
+  // Bachmann's bundle: a fast band from the RA, near the SA node, across the top of the interatrial groove to the LA
+  vBachmann: 0.036,
+  bachmann: { id: 'bach', label: "Bachmann's bundle", r: 0.03, pts: [[-0.36, 0.5, 0.3], [-0.12, 0.47, 0.32], [0.1, 0.44, 0.2], [0.35, 0.38, -0.05]] },
+  // His-Purkinje tree (heart-local units). The His bundle divides at the top of the muscular septum. The right and left
+  // bundles then run close together down each side of the septum (about a septal wall's thickness apart) until about
+  // two-thirds of the way to the apex. Only then does the right bundle reach the apex and the moderator band, and the
+  // left anterior and posterior fascicles leave towards the papillary muscles. seedPts, when present, are the
+  // subendocardial terminals used for activation (kept at the previous validated baseline); pts are what is drawn.
+  // purkFromY: the segment feeds the muscle only below this level (the upper bundles are insulated).
   segments: [
-    { id: 'his', label: 'Bundle of His', parent: 'avn', v: 0.012, r: 0.06, pts: [[-0.10, 0.06, -0.02], [-0.05, -0.08, 0.0], [0.0, -0.32, 0.02]] },
-    { id: 'rbb', label: 'Right bundle branch', parent: 'his', r: 0.045, purk: 'RV', purkFromY: -0.95,
-      pts: [[0.0, -0.32, 0.02], [-0.19, -0.6, 0.05], [-0.2, -1.2, 0.08], [-0.26, -1.58, 0.1], [-0.72, -1.42, 0.28]] },
-    { id: 'lbb', label: 'Left bundle branch', parent: 'his', r: 0.05, purk: 'LV', purkFromY: -0.35,
-      pts: [[0.0, -0.32, 0.02], [0.18, -0.46, 0.0], [0.19, -0.62, 0.0]] },
-    { id: 'laf', label: 'Left anterior fascicle', parent: 'lbb', r: 0.035, purk: 'LV', purkFromY: -0.35,
-      pts: [[0.19, -0.62, 0.0], [0.24, -0.95, 0.3], [0.6, -1.3, 0.42]] },
-    { id: 'lpf', label: 'Left posterior fascicle', parent: 'lbb', r: 0.035, purk: 'LV', purkFromY: -0.35,
-      pts: [[0.19, -0.62, 0.0], [0.27, -1.05, -0.3], [0.64, -1.5, -0.38]] }
+    { id: 'his', label: 'Bundle of His', parent: 'avn', v: 0.009, r: 0.045, pts: [[-0.10, 0.06, -0.02], [-0.05, -0.04, 0.07], [0.0, -0.15, 0.15]] },
+    { id: 'rbb', label: 'Right bundle branch', parent: 'his', r: 0.028, purk: 'RV', purkFromY: -0.95,
+      seedPts: [[0.0, -0.15, 0.15], [-0.19, -0.27, 0.17], [-0.19, -0.75, 0.2], [-0.19, -1.15, 0.2]],
+      pts: [[0.0, -0.15, 0.15], [-0.06, -0.24, 0.15], [-0.10, -0.40, 0.15], [-0.11, -0.80, 0.14], [-0.12, -1.20, 0.14]] },
+    { id: 'rbbApex', label: 'Right bundle branch', parent: 'rbb', r: 0.026, purk: 'RV', purkFromY: 0, nolabel: true,
+      seedPts: [[-0.19, -1.15, 0.2], [-0.21, -1.45, 0.16], [-0.338, -1.653, 0.12]],
+      pts: [[-0.12, -1.20, 0.14], [-0.18, -1.45, 0.14], [-0.338, -1.653, 0.12]] },
+    { id: 'mod', label: 'Moderator band', parent: 'rbb', r: 0.03, purk: 'RV', purkFromY: 0,
+      seedPts: [[-0.19, -1.15, 0.2], [-0.45, -1.17, 0.29], [-0.77, -1.191, 0.377]],
+      pts: [[-0.12, -1.20, 0.14], [-0.45, -1.20, 0.29], [-0.77, -1.191, 0.377]] },
+    { id: 'lbb', label: 'Left bundle branch', parent: 'his', r: 0.05, purk: 'LV', purkFromY: -0.6,
+      seedPts: [[0.0, -0.15, 0.15], [0.19, -0.26, 0.12], [0.19, -0.48, 0.08]],
+      pts: [[0.0, -0.15, 0.15], [0.06, -0.24, 0.145], [0.10, -0.40, 0.14], [0.11, -0.48, 0.13]] },
+    { id: 'lbb2', label: 'Left bundle branch', parent: 'lbb', r: 0.05, purk: 'LV', purkFromY: -1.10, nolabel: true,
+      pts: [[0.11, -0.48, 0.13], [0.11, -0.80, 0.11], [0.12, -1.15, 0.10]] },
+    { id: 'laf', label: 'Left anterior fascicle', parent: 'lbb', r: 0.03, purk: 'LV', purkFromY: -0.85,
+      seedPts: [[0.19, -0.48, 0.08], [0.19, -0.78, 0.3], [0.434, -0.994, 0.423], [0.694, -1.133, 0.296]],
+      pts: [[0.12, -1.15, 0.10], [0.25, -1.16, 0.30], [0.50, -1.15, 0.40], [0.694, -1.133, 0.296]] },
+    { id: 'lpf', label: 'Left posterior fascicle', parent: 'lbb', r: 0.03, purk: 'LV', purkFromY: -0.85,
+      seedPts: [[0.19, -0.48, 0.08], [0.19, -0.8, -0.25], [0.26, -1.063, -0.465], [0.438, -1.268, -0.393]],
+      pts: [[0.12, -1.15, 0.10], [0.22, -1.20, -0.22], [0.32, -1.24, -0.38], [0.438, -1.268, -0.393]] },
+    { id: 'lsf', label: 'Septal fibres', parent: 'lbb', r: 0.024, purk: 'LV', purkFromY: 0, nolabel: true, fibre: true,
+      seedPts: [[0.19, -0.48, 0.08], [0.19, -1.0, 0.03], [0.19, -1.5, 0.0], [0.308, -1.861, -0.031]],
+      pts: [[0.11, -0.48, 0.13], [0.16, -0.85, 0.08], [0.18, -1.35, 0.02], [0.308, -1.861, -0.031]] },
+    // Purkinje fibres: from the apex and the fascicle ends, up the free walls towards the base (v = vPurkinje)
+    { id: 'pLapex', parent: 'lsf', purk: 'LV', purkFromY: 0, fibre: true, pts: [[0.308, -1.861, -0.031], [0.552, -1.669, -0.027], [0.752, -1.267, -0.024]] },
+    { id: 'pLapexP', parent: 'lsf', purk: 'LV', purkFromY: 0, fibre: true, pts: [[0.308, -1.861, -0.031], [0.37, -1.601, -0.33]] },
+    { id: 'pLlat', parent: 'laf', purk: 'LV', purkFromY: 0, fibre: true, pts: [[0.694, -1.133, 0.296], [0.752, -0.792, 0.107], [0.754, -0.454, 0.036]] },
+    { id: 'pLant', parent: 'laf', purk: 'LV', purkFromY: 0, fibre: true, pts: [[0.694, -1.133, 0.296], [0.432, -0.727, 0.424], [0.37, -0.384, 0.353]] },
+    { id: 'pLpost', parent: 'lpf', purk: 'LV', purkFromY: 0, fibre: true, pts: [[0.438, -1.268, -0.393], [0.563, -0.792, -0.398], [0.436, -0.383, -0.394]] },
+    { id: 'pRfw', parent: 'mod', purk: 'RV', purkFromY: 0, fibre: true, pts: [[-0.77, -1.191, 0.377], [-0.901, -0.725, 0.251], [-0.833, -0.317, 0.184]] },
+    { id: 'pRant', parent: 'mod', purk: 'RV', purkFromY: 0, fibre: true, pts: [[-0.77, -1.191, 0.377], [-0.584, -0.721, 0.633], [-0.457, -0.317, 0.563]] },
+    { id: 'pRapex', parent: 'rbbApex', purk: 'RV', purkFromY: 0, fibre: true, pts: [[-0.338, -1.653, 0.12], [-0.572, -1.527, -0.065]] }
   ],
   accessory: [] // e.g. { id: 'kent', atrial: [x,y,z], ventricular: [x,y,z], delay: 5 } (not used yet)
 };
@@ -98,10 +148,10 @@ for (const s of CONDUCTION.segments) { s.blocked = false; s.extraDelay = 0; }
    calibration.chestMaxR  target for the tallest chest-lead R wave (mV), set once on the baseline. */
 const BASELINE = {
   shapes: SHAPES,
-  orientation: { rotY: 35, rotZ: 15, rotX: -10 },
+  orientation: { rotY: 35, rotZ: 15, rotX: -15 },
   conduction: CONDUCTION,
-  repolarisation: { apd0: 300, slope: 1.4, atrialApd: 170, anteriorShift: 3, apicalShift: 0 },
-  smoothing: { p: 11, qrs: 7, t: 22 },
+  repolarisation: { apd0: 300, slope: 1.4, atrialApd: 170, anteriorShift: 5, apicalShift: 0 },
+  smoothing: { p: 16, qrs: 11, t: 22 },
   calibration: { qrsIIpeak: 1.2, pIIpeak: 0.16, tIIpeak: 0.3, chestMaxR: 1.3 },
   // Chest electrodes (body coordinates, heart centre = origin, about 4 cm per unit). They see the
   // heart from close up, so V1 to V6 are computed from every element's local dipole at the
@@ -174,6 +224,19 @@ function propagate(act, seeds, speed) {
   }
 }
 
+const IS_ENDO_LV = new Uint8Array(NE), IS_ENDO_RV = new Uint8Array(NE);
+for (const e of endoLV) IS_ENDO_LV[e] = 1; for (const e of endoRV) IS_ENDO_RV[e] = 1;
+function nearestIn(p, list) { let best = -1, bd = 1e9; for (const e of list) { const q = ELEM.pos[e]; const d = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2 + (q[2] - p[2]) ** 2; if (d < bd) { bd = d; best = e; } } return best; }
+/* Dijkstra restricted to one surface (mask) and below a height: the Purkinje network on the endocardium */
+function propagateOn(act, seeds, speed, mask, topY) {
+  const heap = []; const push = (t, e) => { heap.push([t, e]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0]; const last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  for (const [e, t] of seeds) if (t < act[e]) { act[e] = t; push(t, e); }
+  while (heap.length) {
+    const [t, e] = pop(); if (t > act[e]) continue;
+    for (const [n, d] of NEIGH[e]) { if (!mask[n] || ELEM.pos[n][1] > topY) continue; const tn = t + d / speed; if (tn < act[n]) { act[n] = tn; push(tn, n); } }
+  }
+}
 /* Polyline helpers */
 function polyLen(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]); return L; }
 function polySample(pts, step) { // [{p, s}] with arc length s
@@ -188,37 +251,41 @@ function polySample(pts, step) { // [{p, s}] with arc length s
 
 /* ======================= Activation model ======================= */
 const SA_ELEM = nearestElem(CONDUCTION.sa, 0), AV_ELEM = nearestElem(CONDUCTION.av, 0);
+const BACH = CONDUCTION.bachmann ? { a: nearestElem(CONDUCTION.bachmann.pts[0], 0), b: nearestElem(CONDUCTION.bachmann.pts[CONDUCTION.bachmann.pts.length - 1], 0), len: polyLen(CONDUCTION.bachmann.pts) } : null;
 let MODEL = null, CAL = null;
 function computeModel() {
   const C = CONDUCTION;
   const act = new Float64Array(NE).fill(Infinity);
   // 1. Atria: cell-to-cell spread from the SA node
   const atrialAct = act; propagate(atrialAct, [[SA_ELEM, C.saTime]], C.vAtrial);
+  // Bachmann's bundle: picks up the impulse in the RA and delivers it to the LA early; the atria then finish cell to cell
+  const seg = {};
+  if (BACH && !C.bachmann.blocked) { const t0 = atrialAct[BACH.a]; seg.bach = { start: t0, end: t0 + BACH.len / C.vBachmann, len: BACH.len, v: C.vBachmann }; propagate(atrialAct, [[BACH.b, seg.bach.end]], C.vAtrial); }
   const tAV = atrialAct[AV_ELEM];
   // 2. AV node delay, then the His-Purkinje tree
   const tHis = (C.avBlocked ? Infinity : tAV + C.avDelay + (C.avExtra || 0));
-  const seg = {};
   for (const s of C.segments) {
     const parentEnd = s.parent === 'avn' ? tHis : (seg[s.parent] ? seg[s.parent].end : Infinity);
     const start = s.blocked ? Infinity : parentEnd + (s.extraDelay || 0);
-    const len = polyLen(s.pts);
-    const v = s.v || C.vHis; seg[s.id] = { start, end: start + len / v, len, v };
+    const len = polyLen(s.seedPts || s.pts);
+    const v = s.v || (s.fibre ? C.vPurkinje : C.vHis); seg[s.id] = { start, end: start + len / v, len, v };
   }
   // 3. Purkinje terminals on the endocardium: earliest arrival from any source point
   const seeds = [];
   const sources = { LV: [], RV: [] };
   for (const s of C.segments) {
     if (!s.purk) continue; const sg = seg[s.id]; if (!isFinite(sg.start)) continue;
-    for (const q of polySample(s.pts, 0.05)) if (q.p[1] <= s.purkFromY) sources[s.purk].push([q.p, sg.start + q.s / sg.v]);
+    const path = s.seedPts || s.pts;
+    for (const q of polySample(path, 0.05)) if (q.p[1] <= s.purkFromY) sources[s.purk].push([q.p, sg.start + q.s / sg.v]);
   }
+  // The Purkinje network spreads over the endocardial surface (never across a cavity) from the drawn fibres,
+  // only below purkinjeTopY (the bases have few Purkinje fibres). Muscle then activates from these terminals.
   for (const [list, side] of [[endoLV, 'LV'], [endoRV, 'RV']]) {
     if (!sources[side].length) continue;
-    for (const e of list) {
-      const p = ELEM.pos[e]; if (p[1] > C.purkinjeTopY) continue; // the bases have few Purkinje fibres
-      let best = Infinity;
-      for (const [q, t] of sources[side]) { const tt = t + Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) / C.vPurkinje; if (tt < best) best = tt; }
-      seeds.push([e, best + C.purkinjeJunction]);
-    }
+    const net = new Float64Array(NE).fill(Infinity), netSeeds = [];
+    for (const [q, t] of sources[side]) { const e = nearestIn(q, list); if (e >= 0) netSeeds.push([e, t + Math.hypot(...ELEM.pos[e].map((v, i) => v - q[i])) / C.vPurkinje]); }
+    propagateOn(net, netSeeds, C.vNetwork || C.vPurkinje, side === 'LV' ? IS_ENDO_LV : IS_ENDO_RV, C.purkinjeTopY);
+    for (const e of list) if (isFinite(net[e])) seeds.push([e, net[e] + C.purkinjeJunction]);
   }
   for (const a of C.accessory) { if (a.blocked) continue; const ea = nearestElem(a.atrial, 0), ev = nearestElem(a.ventricular, 1); seeds.push([ev, atrialAct[ea] + (a.delay || 0)]); }
   // 4. Ventricular muscle: cell-to-cell from the Purkinje terminals (endocardium to epicardium)
@@ -275,7 +342,9 @@ function computeModel() {
   let recMin = Infinity, recMax = -Infinity; for (let e = 0; e < NE; e++) if (ELEM.domain[e] && isFinite(rec[e])) { recMin = Math.min(recMin, rec[e]); recMax = Math.max(recMax, rec[e]); }
   return { act, rec, seg, tAV, tHis, atrialEnd: aMax, vMin, vMax, recMin, recMax, D, chest };
 }
-function dipole(t) { const i = Math.max(0, Math.min(BEAT_MS, Math.round(t))) * 3; const D = MODEL.D; return [D[i], D[i + 1], D[i + 2]]; }
+function dipole(t) { // linear interpolation between 1 ms samples, so very slow playback moves smoothly
+  const tc = Math.max(0, Math.min(BEAT_MS, t)), i0 = Math.min(BEAT_MS - 1, Math.floor(tc)), f = tc - i0, D = MODEL.D, a = i0 * 3, b = a + 3;
+  return [D[a] + (D[b] - D[a]) * f, D[a + 1] + (D[b + 1] - D[a + 1]) * f, D[a + 2] + (D[b + 2] - D[a + 2]) * f]; }
 
 /* ======================= Leads ======================= */
 function frontal(th) { return [Math.cos(th * DEG), -Math.sin(th * DEG), 0]; }   // hexaxial: +90 points down
@@ -329,7 +398,7 @@ function buildPhases() {
       text: 'All muscle is at rest, so there is no arrow and every lead is flat.' },
     { key: 'P', step: 'SA node and atria', at: Math.round((C.saTime + M.atrialEnd) / 2), from: C.saTime, to: M.atrialEnd + 8,
       title: 'P wave: the atria depolarise',
-      text: 'The SA node, where the superior vena cava joins the right atrium, fires and the wave spreads through both atria. The arrow points down and to the left, so P is upright in II.' },
+      text: 'The SA node, where the superior vena cava joins the right atrium, fires and the wave spreads through both atria; a fast band (Bachmann\'s bundle) carries it across to the left atrium. The arrow points down and to the left, so P is upright in II.' },
     { key: 'avd', step: 'AV node delay', at: Math.round((M.atrialEnd + 8 + M.tHis) / 2), from: M.atrialEnd + 8, to: M.tHis,
       title: 'PR segment: AV node delay',
       text: `The AV node, low in the interatrial septum, holds the impulse for about ${r(M.tHis - M.tAV)} ms. The line is flat while the atria finish contracting.` },
@@ -370,14 +439,17 @@ function buildPhases() {
 function phaseAt(t) { return PHASES.find(p => t >= p.from && t < p.to) || PHASES[PHASES.length - 1]; }
 
 /* ======================= State ======================= */
-const state = { t: 250, playing: false, speed: 0.25, sel: 'II', view: 'frontal', beat: 0 };
+const state = { t: 250, playing: false, speed: 0.1, sel: 'II', view: 'frontal', beat: 0 };
 const scrub = $('scrub'), timeOut = $('timeOut'), playBtn = $('playBtn'), speedSel = $('speed');
 
 /* ======================= ECG paper (12-lead and selected-lead strip) ======================= */
 // 25 mm/s and 10 mm/mV: 1 small square = 1 mm = 40 ms = 0.1 mV.
 const MM_PER_MS = 25 / 1000, MM_PER_MV = 10;
+const ONE_SCREEN = window.matchMedia('(min-width: 960px) and (min-height: 600px)');
 const ECG = { calW: 8, colMs: 2500, rowH: 30, base: 17, top: 2 };
+const PAGE_MS = 10000; // 10 s rhythm strip; the 12-lead columns share one 2.5 s window and advance together
 const LAYOUT = [['I', 'aVR', 'V1', 'V4'], ['II', 'aVL', 'V2', 'V5'], ['III', 'aVF', 'V3', 'V6']];
+function pageTime() { return (state.beat * BEAT_MS + state.t) % PAGE_MS; }
 const ecgCanvas = $('ecg12'), miniCanvas = $('miniStrip');
 function prepCanvas(cv, cssW, cssH) {
   const dpr = window.devicePixelRatio || 1;
@@ -394,118 +466,671 @@ function drawPaper(g, wmm, hmm, px) {
     g.stroke();
   }
 }
-function drawCal(g, x0mm, basemm, px) { // 1 mV, 200 ms calibration pulse
+function sheetMmPerMv(id) {
+  const key = id === 'II-rhythm' ? 'II' : id;
+  return (LEAD[key] && LEAD[key].type === 'chest') ? 5 : MM_PER_MV;
+}
+function drawCal(g, x0mm, basemm, px, heightMm) { // 1 mV, 200 ms pulse; height 10 mm at 10 mm/mV, 5 mm at half gain
+  const h = heightMm == null ? 10 : heightMm;
   g.strokeStyle = PAPER.trace; g.lineWidth = 1.4; g.beginPath();
-  g.moveTo(x0mm * px, basemm * px); g.lineTo((x0mm + 1) * px, basemm * px); g.lineTo((x0mm + 1) * px, (basemm - 10) * px);
-  g.lineTo((x0mm + 6) * px, (basemm - 10) * px); g.lineTo((x0mm + 6) * px, basemm * px); g.lineTo((x0mm + 7) * px, basemm * px); g.stroke();
+  g.moveTo(x0mm * px, basemm * px); g.lineTo((x0mm + 1) * px, basemm * px); g.lineTo((x0mm + 1) * px, (basemm - h) * px);
+  g.lineTo((x0mm + 6) * px, (basemm - h) * px); g.lineTo((x0mm + 6) * px, basemm * px); g.lineTo((x0mm + 7) * px, basemm * px); g.stroke();
 }
-function drawSeg(g, id, t0, t1, xStartMm, basemm, px, bold, lw) {
-  const tr = TRACE[id]; g.strokeStyle = PAPER.trace; g.lineWidth = lw || (bold ? 2.3 : 1.3); g.lineJoin = 'round'; g.beginPath();
-  for (let t = t0; t <= t1; t += 1) { const v = tr[t % BEAT_MS]; const x = (xStartMm + (t - t0) * MM_PER_MS) * px, y = (basemm - v * MM_PER_MV) * px; t === t0 ? g.moveTo(x, y) : g.lineTo(x, y); }
-  g.stroke();
+function sampleLead(id, tMs) {
+  const tr = TRACE[id];
+  if (!tr || !tr.length) return 0;
+  const n = BEAT_MS;
+  let t = Math.round(tMs) % n;
+  if (t < 0) t += n;
+  return tr[t];
 }
-function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px) {
-  const beat0 = Math.floor(tAbs / BEAT_MS) * BEAT_MS;
-  const xb = (xStartMm + (beat0 - tStart) * MM_PER_MS) * px;
+function drawSeg(g, id, t0, t1, xStartMm, basemm, px, bold, lw, mmPerMv) {
+  const mm = mmPerMv == null ? MM_PER_MV : mmPerMv;
+  g.strokeStyle = PAPER.trace; g.lineWidth = lw || (bold ? 2.3 : 1.3); g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath();
+  const tStart = t0, tEnd = t1;
+  let started = false;
+  for (let t = tStart; t <= tEnd; t += 1) {
+    const v = sampleLead(id, t);
+    const x = (xStartMm + (t - tStart) * MM_PER_MS) * px, y = (basemm - v * mm) * px;
+    if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
+  }
+  if (started) g.stroke();
+}
+function traceAt(id, t) { const T = TRACE[id]; const tc = Math.max(0, Math.min(BEAT_MS, t)), i = Math.min(BEAT_MS - 1, Math.floor(tc)), f = tc - i; return T[i] + (T[i + 1] - T[i]) * f; }
+function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px, mmPerMv) {
   const x = (xStartMm + (tAbs - tStart) * MM_PER_MS) * px;
-  g.strokeStyle = PAPER.cursor; g.lineWidth = 1.6; g.beginPath(); g.moveTo(x, topmm * px); g.lineTo(x, (topmm + hmm) * px); g.stroke();
-  const v = TRACE[id][Math.round(tAbs) % BEAT_MS];
-  g.fillStyle = PAPER.trace; g.beginPath(); g.arc(x, (basemm - v * MM_PER_MV) * px, 3, 0, Math.PI * 2); g.fill();
+  const y0 = topmm * px, y1 = (topmm + hmm) * px;
+  const mm = mmPerMv == null ? MM_PER_MV : mmPerMv;
+  g.lineCap = 'butt';
+  g.strokeStyle = '#fff'; g.lineWidth = 5; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke();
+  g.strokeStyle = PAPER.cursor; g.lineWidth = 2.6; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke();
+  const ts = Math.max(6, Math.min(9, 1.8 * px));
+  g.fillStyle = PAPER.cursor;
+  g.beginPath();
+  g.moveTo(x, y0 + ts);
+  g.lineTo(x - ts, y0);
+  g.lineTo(x + ts, y0);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = 1; g.stroke();
+  const v = traceAt(id, tAbs % BEAT_MS);
+  let y = (basemm - v * mm) * px;
+  y = Math.max(y0 + ts, Math.min(y1 - 2, y));
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 4.2, 0, Math.PI * 2); g.fill();
+  g.fillStyle = PAPER.cursor; g.beginPath(); g.arc(x, y, 2.8, 0, Math.PI * 2); g.fill();
 }
 function label(g, text, xmm, ymm, px, selected) {
   g.font = `${selected ? 800 : 700} ${Math.max(11, 3.6 * px)}px "Source Sans 3", Arial, sans-serif`;
   const w = g.measureText(text).width;
-  if (selected) { g.fillStyle = '#111'; g.fillRect(xmm * px - 3, ymm * px - 3.6 * px, w + 6, 4.6 * px); g.fillStyle = '#fff'; }
+  const fs = Math.max(11, 3.6 * px);
+  if (selected) { g.fillStyle = '#111'; g.fillRect(xmm * px - 3, ymm * px - fs, w + 6, fs + 3); g.fillStyle = '#fff'; }
   else g.fillStyle = '#111';
   g.fillText(text, xmm * px, ymm * px);
 }
-let ecgPx = 4;
+function ecgHmm(rowH, compact) { return ECG.top + 4 * rowH + (compact ? 5.5 : 7); }
+let ECG_DRAW = null, LAST_CLIPS = [], LAST_CURSORS = [];
+function leadExtrema(id) {
+  const tr = TRACE[id]; let hi = 0, lo = 0;
+  if (tr) for (let t = 0; t < BEAT_MS; t++) { if (tr[t] > hi) hi = tr[t]; if (tr[t] < lo) lo = tr[t]; }
+  return { hi, lo };
+}
+function cellBaseline(id, rowH) {
+  const mm = sheetMmPerMv(id);
+  const e = leadExtrema(id === 'II-rhythm' ? 'II' : id);
+  const up = e.hi * mm, down = Math.max(0, -e.lo) * mm;
+  const pad = 0.5;
+  const inner = Math.max(5, rowH - pad * 2);
+  let base;
+  if (up + down <= inner) {
+    const slack = inner - up - down;
+    const topBias = Math.min(2.4, slack * 0.4);
+    base = pad + up + topBias;
+  } else {
+    const share = up + down > 0 ? up / (up + down) : 0.5;
+    base = pad + share * inner;
+  }
+  return Math.round(Math.max(pad + 0.4, Math.min(rowH - pad - 0.4, base)) * 10) / 10;
+}
+function rowBaseline(ids, rowH) { // kept for any caller; the sheet uses per-cell baselines
+  return cellBaseline(ids[0], rowH);
+}
+function clipReport(id, rowH, baseOff) {
+  const mm = sheetMmPerMv(id);
+  const e = leadExtrema(id === 'II-rhythm' ? 'II' : id);
+  const upNeed = e.hi * mm, downNeed = Math.max(0, -e.lo) * mm;
+  const upClip = Math.max(0, upNeed - (baseOff - 0.4));
+  const downClip = Math.max(0, downNeed - (rowH - baseOff - 0.4));
+  return {
+    id, hi: +e.hi.toFixed(3), lo: +e.lo.toFixed(3), mmPerMv: mm,
+    rowH: +rowH.toFixed(2), base: +baseOff.toFixed(2),
+    upClipMm: +upClip.toFixed(2), downClipMm: +downClip.toFixed(2),
+    upClipMv: +(upClip / mm).toFixed(3), downClipMv: +(downClip / mm).toFixed(3)
+  };
+}
+function ecgSheetSize() {
+  const frame = ecgCanvas.parentElement;
+  const compact = ONE_SCREEN.matches;
+  const wmm = ECG.calW + 250 + 2;
+  let px, hmm;
+  if (compact) {
+    const card = frame.closest('.ecg12-card') || frame.parentElement;
+    // Use the frame's position at scroll 0, so a later click or a scrolled page cannot enlarge the sheet past the viewport.
+    const top = frame.getBoundingClientRect().top + (window.scrollY || window.pageYOffset || 0);
+    const pad = 8; // keep the 12-lead card inside the viewport
+    const availH = Math.max(160, window.innerHeight - top - pad);
+    const frameW = Math.max(200, (frame.clientWidth || card.clientWidth * 0.74) - 2);
+    const pxW = frameW / wmm;
+    // Tightest row spacing that still lets the sheet fill the wide frame under the remaining height.
+    // Squares stay 25 mm/s. Limb leads are 10 mm/mV; chest leads on this sheet are 5 mm/mV.
+    let rh = 28;
+    while (rh > 12 && pxW * ecgHmm(rh, true) > availH + 0.5) rh -= 0.25;
+    ECG.rowH = rh;
+    ECG.base = Math.round(Math.max(7, Math.min(rh - 3.5, rh * 0.62)) * 10) / 10;
+    hmm = ecgHmm(rh, true);
+    px = Math.min(pxW, availH / hmm);
+  } else {
+    ECG.rowH = 30; ECG.base = 17;
+    hmm = ecgHmm(30, false);
+    px = Math.max((frame.clientWidth || 280) - 2, 200) / wmm;
+  }
+  return { frame, compact, wmm, hmm, px, cssW: wmm * px, cssH: Math.round(hmm * px) };
+}
 function drawECG() {
-  const frame = ecgCanvas.parentElement; const wmm = ECG.calW + 250 + 2, hmm = ECG.top + 4 * ECG.rowH + 7;
-  const cssW = Math.max(frame.clientWidth, 940); const px = cssW / wmm; ecgPx = px;
-  const g = prepCanvas(ecgCanvas, cssW, Math.round(hmm * px)); drawPaper(g, wmm, hmm, px);
-  const tLocal = Math.round(state.t);
+  const frame = ecgCanvas.parentElement;
+  // One-screen layout: the sheet fills the height left under the 3D model. Each lead is clipped to its own row. On small screens the sheet may scroll sideways.
+  const { compact, wmm, hmm, px, cssW, cssH } = ecgSheetSize();
+  frame.style.width = '';
+  frame.style.overflow = 'hidden';
+  frame.style.removeProperty('--ecg-w');
+  if (ecgCanvas.dataset) {
+    ecgCanvas.dataset.px = px.toFixed(3);
+    ecgCanvas.dataset.wmm = String(wmm);
+    ecgCanvas.dataset.hmm = String(hmm);
+    ecgCanvas.dataset.rowH = String(ECG.rowH);
+  }
+  ECG_DRAW = { px, wmm, hmm, rowH: ECG.rowH, top: ECG.top, calW: ECG.calW, colMm: ECG.colMs * MM_PER_MS, cssW, cssH };
+  const g = prepCanvas(ecgCanvas, cssW, cssH); drawPaper(g, wmm, hmm, px);
+  const clips = [];
+  LAST_CURSORS = [];
+  const tAbs = pageTime();
+  // All four columns share the same 2.5 s window and the same cursor offset (live 12-lead monitor).
+  const tWin0 = Math.floor(tAbs / ECG.colMs) * ECG.colMs;
+  const tWin1 = tWin0 + ECG.colMs;
+  const pxPerMs = MM_PER_MS * px;
+  if (ecgCanvas.dataset) {
+    ecgCanvas.dataset.tAbs = String(Math.round(tAbs));
+    ecgCanvas.dataset.tWin0 = String(tWin0);
+    ecgCanvas.dataset.pxPerMs = String(pxPerMs);
+  }
   for (let r = 0; r < 4; r++) {
-    const top = ECG.top + r * ECG.rowH, base = top + ECG.base;
-    drawCal(g, 0.5, base, px);
+    const top = ECG.top + r * ECG.rowH;
     if (r < 3) {
+      const limbOff = cellBaseline(LAYOUT[r][0], ECG.rowH);
+      drawCal(g, 0.5, top + limbOff, px, 10);
       for (let c = 0; c < 4; c++) {
-        const id = LAYOUT[r][c], t0 = c * ECG.colMs, x0 = ECG.calW + c * ECG.colMs * MM_PER_MS, sel = id === state.sel;
-        const kFirst = Math.ceil(t0 / BEAT_MS) * BEAT_MS; // first whole beat in this column
-        cursorAt(g, id, kFirst + tLocal, x0, t0, base, top + 1, ECG.rowH - 2, px);
-        drawSeg(g, id, t0, t0 + ECG.colMs, x0, base, px, sel);
+        const id = LAYOUT[r][c], t0 = tWin0, x0 = ECG.calW + c * ECG.colMs * MM_PER_MS, sel = id === state.sel;
+        const mm = sheetMmPerMv(id);
+        const baseOff = cellBaseline(id, ECG.rowH);
+        const base = top + baseOff;
+        const cell = { x: x0 * px, y: top * px, w: ECG.colMs * MM_PER_MS * px, h: ECG.rowH * px };
+        const xStart = x0;
+        if (c >= 2 && r === 0) {
+          // Half-height 1 mV pulse for the chest-lead columns; it does not shift the trace or the cursor.
+          const calBase = top + Math.max(7, Math.min(11, ECG.rowH - 1.2));
+          drawCal(g, x0 + 0.3, calBase, px, 5);
+          const gainFs = Math.max(9, 2.6 * px);
+          g.font = `700 ${gainFs}px "Source Sans 3", Arial, sans-serif`;
+          g.fillStyle = '#111';
+          g.fillText('5 mm/mV', (x0 + 7.3) * px, (calBase - 5.4) * px);
+        }
+        g.save();
+        g.beginPath(); g.rect(cell.x, cell.y, cell.w, cell.h); g.clip();
+        cursorAt(g, id, tAbs, xStart, t0, base, top + 1, ECG.rowH - 2, px, mm);
+        LAST_CURSORS.push({ id, tAbs, t0, col: c, row: r, x: (xStart + (tAbs - t0) * MM_PER_MS) * px, pxPerMs });
+        drawSeg(g, id, tWin0, tWin1, xStart, base, px, sel, null, mm);
+        g.restore();
         if (c) { g.strokeStyle = '#111'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x0 * px, (base - 3) * px); g.lineTo(x0 * px, (base + 3) * px); g.stroke(); }
         label(g, id, x0 + 1.5, top + 5, px, sel);
         if (sel) { g.strokeStyle = '#111'; g.lineWidth = 3; g.strokeRect(x0 * px + 1, (top + 0.5) * px, ECG.colMs * MM_PER_MS * px - 2, (ECG.rowH - 1) * px); }
+        clips.push(clipReport(id, ECG.rowH, baseOff));
       }
     } else {
+      const baseOff = cellBaseline('II', ECG.rowH);
+      const base = top + baseOff;
+      drawCal(g, 0.5, base, px, 10);
       const sel = state.sel === 'II', x0 = ECG.calW;
-      cursorAt(g, 'II', (state.beat % STRIP_BEATS) * BEAT_MS + tLocal, x0, 0, base, top + 1, ECG.rowH - 2, px);
-      drawSeg(g, 'II', 0, 10000, x0, base, px, sel);
+      g.save();
+      g.beginPath(); g.rect(x0 * px, top * px, (wmm - x0) * px, ECG.rowH * px); g.clip();
+      cursorAt(g, 'II', tAbs, x0, 0, base, top + 1, ECG.rowH - 2, px, 10);
+      LAST_CURSORS.push({ id: 'II-rhythm', tAbs, t0: 0, col: 0, row: 3, x: (x0 + tAbs * MM_PER_MS) * px, pxPerMs });
+      drawSeg(g, 'II', 0, PAGE_MS, x0, base, px, sel, null, 10);
+      g.restore();
       label(g, 'II  (rhythm strip)', x0 + 1.5, top + 5, px, sel);
+      clips.push(clipReport('II-rhythm', ECG.rowH, baseOff));
     }
   }
-  g.font = `600 ${Math.max(11, 3.2 * px)}px "Source Sans 3", Arial, sans-serif`; g.fillStyle = '#111';
-  const yb = (ECG.top + 4 * ECG.rowH + 5) * px;
-  g.fillText('25 mm/s    10 mm/mV    Rate 75/min    Computed by the teaching model, not a patient recording', ECG.calW * px, yb);
+  LAST_CLIPS = clips;
+  g.font = `600 ${Math.max(10, compact ? 2.7 * px : 3.2 * px)}px "Source Sans 3", Arial, sans-serif`; g.fillStyle = '#111';
+  const yb = (ECG.top + 4 * ECG.rowH + (compact ? 3.8 : 5)) * px;
+  const footer = cssW < 520
+    ? 'All 12 leads recorded at the same moment.  25 mm/s    Limb 10 mm/mV, chest 5 mm/mV'
+    : 'All 12 leads recorded at the same moment.    25 mm/s    Limb leads 10 mm/mV, chest leads 5 mm/mV    Rate 75/min';
+  g.fillText(footer, ECG.calW * px, yb);
 }
 function drawMini() {
   const frame = miniCanvas.parentElement; const wmm = ECG.calW + 125 + 1, hmm = 26; const cssW = frame.clientWidth - 2; if (cssW < 50) return;
   const px = cssW / wmm; const g = prepCanvas(miniCanvas, cssW, Math.round(hmm * px)); drawPaper(g, wmm, hmm, px);
   const base = 15, id = state.sel; drawCal(g, 0.5, base, px);
-  cursorAt(g, id, (state.beat % 6) * BEAT_MS + Math.round(state.t), ECG.calW, 0, base, 0.5, hmm - 1, px);
+  cursorAt(g, id, (state.beat % 6) * BEAT_MS + state.t, ECG.calW, 0, base, 0.5, hmm - 1, px);
   drawSeg(g, id, 0, 5000, ECG.calW, base, px, true);
   label(g, id, ECG.calW + 1, 5, px, false);
 }
 /* Close-up of the selected lead: two beats, same 25 mm/s and 10 mm/mV paper, drawn large */
 const zoomCanvas = $('zoomECG');
-function drawZoom() {
-  if (!zoomCanvas) return;
-  const frame = zoomCanvas.parentElement; const wmm = ECG.calW + 2 * BEAT_MS * MM_PER_MS + 2, hmm = 49, base = 19;
-  const px = Math.max(10, Math.min(15, (frame.clientWidth - 2) / wmm));
-  const g = prepCanvas(zoomCanvas, Math.round(wmm * px), Math.round(hmm * px)); drawPaper(g, wmm, hmm, px);
-  const id = state.sel, x0 = ECG.calW; drawCal(g, 0.5, base, px);
-  cursorAt(g, id, (state.beat % 2) * BEAT_MS + Math.round(state.t), x0, 0, base, 0.5, hmm - 1, px);
-  drawSeg(g, id, 0, 2 * BEAT_MS, x0, base, px, true, 2.6);
-  label(g, id, x0 + 1, 4.5, px, true);
-  const I = INTERVALS; if (!I) return;
-  const X = t => (x0 + t * MM_PER_MS) * px, tr = TRACE[id];
-  const font = (w, mm) => `${w} ${Math.round(mm * px)}px "Source Sans 3", Arial, sans-serif`;
-  const tag = (txt, xm, ymm) => { g.font = '700 15px "Source Sans 3", Arial, sans-serif'; const w = g.measureText(txt).width; const y = ymm * px;
-    g.fillStyle = 'rgba(255,255,255,0.94)'; g.fillRect(xm - w / 2 - 4, y - 15, w + 8, 20); g.strokeStyle = '#111'; g.lineWidth = 1; g.strokeRect(xm - w / 2 - 4, y - 15, w + 8, 20);
-    g.fillStyle = '#111'; g.fillText(txt, xm - w / 2, y); };
-  const peakAt = (a, b) => { let k = a; for (let t = a; t <= b; t++) if (Math.abs(tr[t]) > Math.abs(tr[k])) k = t; return k; };
-  // wave names above the first beat, placed clear of the trace
-  const top = (a, b) => { let m = 0; for (let t = a; t <= b; t++) m = Math.max(m, tr[t]); return base - m * MM_PER_MV - 2.2; };
-  tag('P', X(peakAt(I.pOn, I.pOff)), Math.min(base - 4, top(I.pOn, I.pOff)));
-  tag('QRS', X((I.qOn + I.qOff) / 2), Math.max(6, Math.min(base - 4, top(I.qOn, I.qOff))));
-  const tPk = peakAt(I.qOff + 40, I.tEnd); tag('T', X(tPk), Math.min(base - 4, top(I.qOff + 40, I.tEnd)));
-  // interval brackets under the trace (from the model's measured intervals, the same in every lead)
-  const bracket = (a, b, ymm, txt) => {
-    const y = ymm * px; g.strokeStyle = '#111'; g.lineWidth = 1.6; g.beginPath();
-    g.moveTo(X(a), y - 4); g.lineTo(X(a), y + 4); g.moveTo(X(a), y); g.lineTo(X(b), y); g.moveTo(X(b), y - 4); g.lineTo(X(b), y + 4); g.stroke();
-    g.setLineDash([3, 3]); g.lineWidth = 1; g.beginPath(); g.moveTo(X(a), y - 4); g.lineTo(X(a), (base - 1) * px); g.moveTo(X(b), y - 4); g.lineTo(X(b), (base - 1) * px); g.stroke(); g.setLineDash([]);
-    tag(txt, (X(a) + X(b)) / 2, ymm + 24 / px);
+function drawZoomOn(canvas, large) {
+  if (!canvas) return;
+  const frame = canvas.parentElement; if (!frame) return;
+  const id = state.sel, tr = TRACE[id], I = INTERVALS;
+  const wmm = ECG.calW + 2 * BEAT_MS * MM_PER_MS + 2;
+  let vHi = 1, vLo = 0; // at least the 1 mV calibration pulse above the baseline
+  if (tr) for (let t = 0; t < BEAT_MS; t++) { if (tr[t] > vHi) vHi = tr[t]; if (tr[t] < vLo) vLo = tr[t]; }
+  const upMm = vHi * MM_PER_MV, downMm = Math.max(0.25, -vLo) * MM_PER_MV;
+  const tagFontOf = px => Math.round(Math.max(12, Math.min(20, 8 + 0.6 * px)));
+  const brFontOf = px => Math.round(Math.max(11, Math.min(17, 7 + 0.5 * px)));
+  const bands = px => {
+    const tf = tagFontOf(px), bf = brFontOf(px);
+    const tagBox = (tf + 10) / px;
+    return { tf, bf, tagBox, tagClear: Math.max(tagBox + 1.2, 3.2), brRow: Math.max(3.15, (bf + 16) / px) };
   };
-  bracket(I.pOn, I.qOn, 37, `PR ${I.PR} ms`); bracket(I.qOn, I.qOff, 42, `QRS ${I.QRS} ms`);
-  bracket(BEAT_MS + I.qOn, BEAT_MS + I.tEnd, 42, `QT ${I.QT} ms`); bracket(BEAT_MS + I.pOn, BEAT_MS + I.pOff, 37, `P ${I.P} ms`);
-  $('zoomLead').textContent = id;
+  const availW = Math.max(200, frame.clientWidth - 2), availH = 10000;
+  const topPad = 0.8, gapBelow = 1.5;
+  const layoutAt = px => {
+    const B = bands(px);
+    const hmm = topPad + B.tagClear + upMm + downMm + gapBelow + B.brRow * 4 + 0.6;
+    const base = topPad + B.tagClear + upMm;
+    return { B, hmm, base };
+  };
+  let px = Math.min(32, availW / wmm);
+  let L = layoutAt(px);
+  if (L.hmm * px > availH) { px = Math.max(4.5, availH / L.hmm); L = layoutAt(px); px = Math.max(4.5, Math.min(px, availH / L.hmm, availW / wmm)); L = layoutAt(px); }
+  else px = Math.max(10, Math.min(px, 15));
+  const { B, hmm, base } = L;
+  const cssW = Math.round(wmm * px), cssH = Math.round(hmm * px);
+  const g = prepCanvas(canvas, cssW, cssH); drawPaper(g, wmm, hmm, px);
+  const x0 = ECG.calW; drawCal(g, 0.5, base, px);
+  cursorAt(g, id, (state.beat % 2) * BEAT_MS + state.t, x0, 0, base, 0.5, hmm - 1, px);
+  drawSeg(g, id, 0, 2 * BEAT_MS, x0, base, px, true, 2.6);
+  // lead name, modest size, top-left of the paper so it does not fight the wave tags
+  const nameFs = Math.round(Math.max(13, Math.min(22, 9 + 0.55 * px)));
+  g.font = `800 ${nameFs}px "Source Sans 3", Arial, sans-serif`;
+  const nameW = g.measureText(id).width;
+  g.fillStyle = '#111'; g.fillRect(3, 3, nameW + 8, nameFs + 5);
+  g.fillStyle = '#fff'; g.fillText(id, 7, 3 + nameFs);
+  if (!I || !tr) return;
+  const X = t => (x0 + t * MM_PER_MS) * px;
+  const Yv = t => (base - tr[Math.max(0, Math.min(BEAT_MS - 1, Math.round(t)))] * MM_PER_MV) * px;
+  const peakAt = (a, b, mode) => {
+    let k = a, best = tr[a] || 0;
+    for (let t = a; t <= b; t++) {
+      const v = tr[t], score = mode === 'min' ? -v : mode === 'abs' ? Math.abs(v) : v;
+      const cur = mode === 'min' ? -best : mode === 'abs' ? Math.abs(best) : best;
+      if (score > cur) { best = v; k = t; }
+    }
+    return k;
+  };
+  const pPk = peakAt(I.pOn, I.pOff, 'abs');
+  let rPk = I.qOn, rMax = tr[I.qOn], qPk = I.qOn, qMin = tr[I.qOn];
+  for (let t = I.qOn; t <= I.qOff; t++) { if (tr[t] > rMax) { rMax = tr[t]; rPk = t; } if (tr[t] < qMin) { qMin = tr[t]; qPk = t; } }
+  const qrsPk = rMax >= 0.05 ? rPk : qPk; // R peak, or the QS nadir when there is no R
+  const tPk = peakAt(I.qOff + 40, I.tEnd, 'abs');
+  let stMid = I.qOff + 40, stBest = 99;
+  for (let t = I.qOff + 16; t < tPk - 12; t++) { const a = Math.abs(tr[t]); if (a < stBest) { stBest = a; stMid = t; } }
+  const features = [
+    { txt: 'QRS', t: qrsPk, row: 0, nudge: 'both' },
+    { txt: 'P wave', t: pPk, row: 0, nudge: 'both' },
+    { txt: 'T wave', t: tPk, row: 0, nudge: 'both' },
+    { txt: 'ST segment', t: stMid, row: 1, nudge: 'right', short: 'ST' }
+  ];
+  const font = B.tf, boxH = font + 6, gap = Math.max(8, 0.45 * px);
+  const paperW = cssW, paperH = cssH;
+  const boxes = [{ x0: 3, y0: 3, x1: 3 + nameW + 8, y1: 3 + nameFs + 5 }]; // keep clear of the lead name
+  const overlaps = b => boxes.some(p => b.x0 < p.x1 + 6 && b.x1 > p.x0 - 6 && b.y0 < p.y1 + 4 && b.y1 > p.y0 - 4);
+  const boxAt = (txt, cx, cy) => {
+    g.font = `700 ${font}px "Source Sans 3", Arial, sans-serif`;
+    const w = g.measureText(txt).width + 8;
+    return { x0: cx - w / 2, y0: cy - font, x1: cx + w / 2, y1: cy + 6, w, cy };
+  };
+  const clampX = (featX, tw) => Math.max(tw / 2 + 2, Math.min(paperW - tw / 2 - 2, featX));
+  const placed = [];
+  for (const f of features) {
+    const featX = X(f.t), featY = Yv(f.t);
+    const row0 = topPad * px + font + 1;
+    const row1 = row0 + boxH + Math.max(4, 0.35 * px);
+    const ys = f.row === 1 ? [row1, row1 + boxH * 0.4, row0] : [Math.min(featY - gap, row0), row0, row1];
+    const dxs = f.nudge === 'right' ? [22, 32, 44, 56, 72, 12, 0] : [0, 10, -10, 20, -20, 32, -32, 44, -44];
+    let hit = null, used = f.txt;
+    const attempt = txt => {
+      g.font = `700 ${font}px "Source Sans 3", Arial, sans-serif`;
+      const tw = g.measureText(txt).width + 8;
+      for (const y of ys) {
+        if (y < font + 2 || y > featY - 6) continue;
+        for (const dx of dxs) {
+          const cand = boxAt(txt, clampX(featX + dx, tw), y);
+          if (!overlaps(cand) && cand.y1 < featY - 3) return cand;
+        }
+      }
+      return null;
+    };
+    hit = attempt(f.txt);
+    if (!hit && f.short) { used = f.short; hit = attempt(f.short); }
+    if (!hit) {
+      used = f.short || f.txt;
+      g.font = `700 ${font}px "Source Sans 3", Arial, sans-serif`;
+      const tw = g.measureText(used).width + 8;
+      hit = boxAt(used, clampX(featX, tw), Math.max(row0, Math.min(row1, featY - gap)));
+    }
+    f.txt = used;
+    placed.push({ f, featX, featY, b: hit });
+    boxes.push(hit);
+  }
+  // leaders first (under the tag boxes), then boxes, so the line meets the exact feature
+  g.lineCap = 'round';
+  for (const p of placed) {
+    const { b, featX, featY } = p;
+    const lx = Math.max(b.x0, Math.min(b.x1, featX));
+    const ly = b.y1; // leave the box from its bottom edge
+    g.strokeStyle = '#111'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(lx, ly); g.lineTo(featX, featY); g.stroke();
+    g.fillStyle = '#111'; g.beginPath(); g.arc(featX, featY, 1.6, 0, Math.PI * 2); g.fill();
+  }
+  for (const p of placed) {
+    const { f, b } = p;
+    g.fillStyle = 'rgba(255,255,255,0.95)'; g.fillRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    g.strokeStyle = '#111'; g.lineWidth = 1; g.strokeRect(b.x0 + 0.5, b.y0 + 0.5, b.x1 - b.x0 - 1, b.y1 - b.y0 - 1);
+    g.fillStyle = '#111'; g.font = `700 ${font}px "Source Sans 3", Arial, sans-serif`;
+    g.fillText(f.txt, b.x0 + 4, b.y0 + font);
+  }
+  // Interval brackets under the first beat only, in four neat rows below the lowest part of the trace
+  const brY0 = base + downMm + gapBelow;
+  const bracket = (a, b, row, txt) => {
+    const ymm = brY0 + row * B.brRow, y = ymm * px, xA = X(a), xB = X(b);
+    g.strokeStyle = '#111'; g.lineWidth = 1.5; g.beginPath();
+    g.moveTo(xA, y - 3); g.lineTo(xA, y + 3); g.moveTo(xA, y); g.lineTo(xB, y); g.moveTo(xB, y - 3); g.lineTo(xB, y + 3); g.stroke();
+    const baseY = (base + Math.max(0.6, downMm * 0.05)) * px;
+    g.setLineDash([3, 3]); g.lineWidth = 1; g.beginPath();
+    g.moveTo(xA, y - 3); g.lineTo(xA, Math.min(baseY, y - 3));
+    g.moveTo(xB, y - 3); g.lineTo(xB, Math.min(baseY, y - 3));
+    g.stroke(); g.setLineDash([]);
+    g.font = `700 ${B.bf}px "Source Sans 3", Arial, sans-serif`;
+    const tw = g.measureText(txt).width, th = B.bf + 6;
+    let cx = (xA + xB) / 2; cx = Math.max(tw / 2 + 3, Math.min(paperW - tw / 2 - 3, cx));
+    const ty = y + B.bf + 3;
+    g.fillStyle = 'rgba(255,255,255,0.95)'; g.fillRect(cx - tw / 2 - 3, ty - B.bf, tw + 6, th);
+    g.strokeStyle = '#111'; g.lineWidth = 1; g.strokeRect(cx - tw / 2 - 3 + 0.5, ty - B.bf + 0.5, tw + 5, th - 1);
+    g.fillStyle = '#111'; g.fillText(txt, cx - tw / 2, ty);
+  };
+  // Closest to the trace first: P duration, then PR, QRS, QT (all on beat 1)
+  bracket(I.pOn, I.pOff, 0, `P wave ${I.P} ms`);
+  bracket(I.pOn, I.qOn, 1, `PR ${I.PR} ms`);
+  bracket(I.qOn, I.qOff, 2, `QRS ${I.QRS} ms`);
+  bracket(I.qOn, I.tEnd, 3, `QT ${I.QT} ms`);
 }
-function ecgClick(e) {
-  const r = ecgCanvas.getBoundingClientRect(); const xmm = (e.clientX - r.left) / ecgPx, ymm = (e.clientY - r.top) / ecgPx;
-  const row = Math.floor((ymm - ECG.top) / ECG.rowH); if (row < 0 || row > 3) return;
-  if (row === 3) { select('II'); return; }
-  const col = Math.floor((xmm - ECG.calW) / (ECG.colMs * MM_PER_MS)); if (col < 0 || col > 3) return;
-  select(LAYOUT[row][col]);
+/* Single-lead close-up: fixed 25 mm/s and 10 mm/mV paper at the saved larger scale (square grid). Deep waves may clip. */
+function paintAnnotatedLead(canvas, cssW, cssH) {
+  if (!canvas) return;
+  const id = state.sel, tr = TRACE[id], I = INTERVALS;
+  cssW = Math.max(120, Math.round(cssW || 0));
+  cssH = Math.max(80, Math.round(cssH || 0));
+  let vHi = 1, vLo = 0;
+  if (tr) for (let t = 0; t < BEAT_MS; t++) { if (tr[t] > vHi) vHi = tr[t]; if (tr[t] < vLo) vLo = tr[t]; }
+  const upMm = vHi * MM_PER_MV, downMm = Math.max(0.25, -vLo) * MM_PER_MV;
+  const LEFT_MM = 2, tagF = 11, rowF = 11, nameFs = 12, marginMm = 1.0;
+  const labelTopPx = nameFs + 6, boxH = tagF + 4, rowGap = 2;
+  // Fixed-page monitor: about 4 beats, cursor sweeps left to right, then the window advances. The trace never scrolls.
+  const targetMs = 4 * BEAT_MS;
+  const minLabelPx = nameFs + 8, minIntervalPx = rowF + 12;
+  const neededMm = (minLabelPx / 5) + marginMm + upMm + downMm + marginMm + (minIntervalPx / 5);
+  let px = cssW / (LEFT_MM + targetMs * MM_PER_MS + 1);
+  if (neededMm * px > cssH) px = cssH / neededMm;
+  px = Math.max(3.4, Math.min(7, px));
+  const wmm = cssW / px, hmm = cssH / px;
+  const x0 = LEFT_MM;
+  const tVis = Math.max(BEAT_MS, Math.floor((wmm - x0 - 1) / MM_PER_MS));
+  const tAbs = pageTime();
+  const tWin0 = Math.floor(tAbs / tVis) * tVis;
+  const tWin1 = tWin0 + tVis;
+  const nBeats = tVis / BEAT_MS;
+  const slim = hmm < 28;
+  const nLabelRows = slim ? 0 : 2;
+  let labelBandPx = slim ? minLabelPx : (labelTopPx + nLabelRows * (boxH + rowGap) + 1);
+  let intervalBandPx = slim ? 4 : minIntervalPx;
+  const needTraceMm = upMm + downMm + marginMm * 2;
+  const bandsMm = (labelBandPx + intervalBandPx) / px;
+  if (bandsMm + needTraceMm > hmm) {
+    const roomPx = Math.max(0, (hmm - needTraceMm) * px);
+    if (slim) { labelBandPx = Math.min(labelBandPx, Math.max(nameFs + 4, roomPx * 0.7)); intervalBandPx = Math.max(0, roomPx - labelBandPx); }
+    else {
+      const share = labelBandPx + intervalBandPx;
+      labelBandPx = Math.max(nameFs + 6, Math.floor(roomPx * (labelBandPx / share)));
+      intervalBandPx = Math.max(rowF + 6, Math.floor(roomPx - labelBandPx));
+    }
+  }
+  const labelBandMm = labelBandPx / px, intervalBandMm = intervalBandPx / px;
+  const traceTopMm = labelBandMm + 0.2;
+  const traceHmm = Math.max(needTraceMm, hmm - labelBandMm - intervalBandMm - 0.2);
+  const upKeep = upMm + marginMm;
+  const base = traceTopMm + upKeep;
+  const cursorX = (x0 + (tAbs - tWin0) * MM_PER_MS) * px;
+  canvas.dataset.beats = nBeats.toFixed(2);
+  canvas.dataset.px = px.toFixed(2);
+  canvas.dataset.t0 = String(Math.round(tWin0));
+  canvas.dataset.t1 = String(Math.round(tWin1));
+  canvas.dataset.tAbs = String(Math.round(tAbs));
+  canvas.dataset.cursorX = String(Math.round(cursorX));
+  canvas.dataset.cssW = String(cssW);
+  canvas.dataset.cssH = String(cssH);
+  const g = prepCanvas(canvas, cssW, cssH);
+  drawPaper(g, wmm, hmm, px);
+  drawSeg(g, id, tWin0, tWin1, x0, base, px, true, Math.max(2.4, Math.min(3.4, 0.16 * px)));
+  cursorAt(g, id, tAbs, x0, tWin0, base, 0.4, hmm - 0.8, px);
+  g.font = `800 ${nameFs}px "Source Sans 3", Arial, sans-serif`;
+  const nameW = g.measureText(id).width;
+  g.fillStyle = '#111'; g.fillRect(3, 3, nameW + 8, nameFs + 5);
+  g.fillStyle = '#fff'; g.fillText(id, 7, 3 + nameFs);
+  if (slim || !I || !tr) return;
+  const X = t => (x0 + (t - tWin0) * MM_PER_MS) * px;
+  const yTrace = t => (base - sampleLead(id, t) * MM_PER_MV) * px;
+  const Yv = t => Math.max(traceTopMm * px + 2, Math.min((traceTopMm + traceHmm) * px - 2, yTrace(t)));
+  const peakAt = (a0, b0, mode) => {
+    let k = a0, best = sampleLead(id, a0);
+    for (let t = a0; t <= b0; t++) {
+      const v = sampleLead(id, t), score = mode === 'abs' ? Math.abs(v) : v;
+      const cur = mode === 'abs' ? Math.abs(best) : best;
+      if (score > cur) { best = v; k = t; }
+    }
+    return k;
+  };
+  const pPk = peakAt(I.pOn, I.pOff, 'abs');
+  let rPk = I.qOn, rMax = sampleLead(id, I.qOn), qPk = I.qOn, qMin = rMax;
+  for (let t = I.qOn; t <= I.qOff; t++) {
+    const v = sampleLead(id, t);
+    if (v > rMax) { rMax = v; rPk = t; }
+    if (v < qMin) { qMin = v; qPk = t; }
+  }
+  const qrsPk = rMax >= 0.05 ? rPk : qPk;
+  const tPk = peakAt(I.qOff + 40, I.tEnd, 'abs');
+  let stMid = I.qOff + 40, stBest = 99;
+  for (let t = I.qOff + 16; t < tPk - 12; t++) { const a1 = Math.abs(sampleLead(id, t)); if (a1 < stBest) { stBest = a1; stMid = t; } }
+  // Label the beat that contains the cursor, even when the window has wrapped past 10 s.
+  const b0 = Math.floor(tAbs / BEAT_MS) * BEAT_MS;
+  const features = [
+    { txt: 'P wave', t: b0 + pPk },
+    { txt: 'QRS', t: b0 + qrsPk },
+    { txt: 'ST', t: b0 + stMid },
+    { txt: 'T wave', t: b0 + tPk }
+  ].sort((a, b) => a.t - b.t);
+  const font = tagF;
+  const paperW = cssW;
+  const boxes = [{ x0: 3, y0: 3, x1: 3 + nameW + 8, y1: 3 + nameFs + 5 }];
+  const overlaps = b => boxes.some(p2 => b.x0 < p2.x1 + 4 && b.x1 > p2.x0 - 4 && b.y0 < p2.y1 + 2 && b.y1 > p2.y0 - 2);
+  const boxAt = (txt, cx, cy) => {
+    g.font = `700 ${font}px "Source Sans 3", Arial, sans-serif`;
+    const w = g.measureText(txt).width + 8;
+    return { x0: cx - w / 2, y0: cy - font, x1: cx + w / 2, y1: cy + 5, w, cy };
+  };
+  const rowYs = [];
+  for (let i = 0; i < nLabelRows; i++) rowYs.push(labelTopPx + i * (boxH + rowGap) + font);
+  const placed = [];
+  for (const f of features) {
+    const featX = X(f.t), featY = Yv(f.t);
+    if (featX < 8 || featX > paperW - 8) continue;
+    g.font = `700 ${font}px "Source Sans 3", Arial, sans-serif`;
+    const tw = g.measureText(f.txt).width + 8;
+    let hit = null;
+    const dxs = [0, 14, -14, 28, -28, 42, -42];
+    for (const y of rowYs) {
+      for (const dx of dxs) {
+        const cx = Math.max(tw / 2 + 2, Math.min(paperW - tw / 2 - 2, featX + dx));
+        const cand = boxAt(f.txt, cx, y);
+        if (cand.y1 > traceTopMm * px - 1) continue;
+        if (!overlaps(cand)) { hit = cand; break; }
+      }
+      if (hit) break;
+    }
+    if (!hit) continue;
+    f.featX = featX; f.featY = featY;
+    placed.push({ f, featX, featY, b: hit });
+    boxes.push(hit);
+  }
+  g.lineCap = 'round';
+  for (const p2 of placed) {
+    const { b, featX, featY } = p2;
+    const lx = Math.max(b.x0 + 2, Math.min(b.x1 - 2, featX));
+    g.strokeStyle = '#111'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(lx, b.y1); g.lineTo(featX, featY); g.stroke();
+    g.fillStyle = '#111'; g.beginPath(); g.arc(featX, featY, 1.8, 0, Math.PI * 2); g.fill();
+  }
+  for (const p2 of placed) {
+    const { f, b } = p2;
+    g.fillStyle = 'rgba(255,255,255,0.96)'; g.fillRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    g.strokeStyle = '#111'; g.lineWidth = 1; g.strokeRect(b.x0 + 0.5, b.y0 + 0.5, b.x1 - b.x0 - 1, b.y1 - b.y0 - 1);
+    g.fillStyle = '#111'; g.font = `700 ${font}px "Source Sans 3", Arial, sans-serif`;
+    g.fillText(f.txt, b.x0 + 4, b.y0 + font);
+  }
+  const yTick = Math.min(cssH - rowF - 10, (traceTopMm + traceHmm + 0.4) * px);
+  const yText = Math.min(cssH - 4, yTick + rowF + 6);
+  const beatInView = (b0 + I.tEnd) > tWin0 + 40 && (b0 + I.pOn) < tWin1 - 40;
+  if (beatInView) {
+    g.strokeStyle = '#111'; g.lineWidth = 1.2;
+    const marks = [b0 + I.pOn, b0 + I.pOff, b0 + I.qOn, b0 + I.qOff, b0 + I.tEnd];
+    g.beginPath();
+    g.moveTo(X(b0 + I.pOn), yTick); g.lineTo(X(b0 + I.tEnd), yTick);
+    for (const t of marks) { g.moveTo(X(t), yTick - 4); g.lineTo(X(t), yTick + 4); }
+    g.stroke();
+    const rowTxt = `P ${I.P} ms    PR ${I.PR} ms    QRS ${I.QRS} ms    QT ${I.QT} ms`;
+    g.font = `700 ${rowF}px "Source Sans 3", Arial, sans-serif`;
+    const tw = g.measureText(rowTxt).width;
+    let cx = (X(b0 + I.pOn) + X(b0 + I.tEnd)) / 2;
+    cx = Math.max(tw / 2 + 4, Math.min(paperW - tw / 2 - 4, cx));
+    g.fillStyle = 'rgba(255,255,255,0.95)'; g.fillRect(cx - tw / 2 - 4, yText - rowF, tw + 8, rowF + 6);
+    g.fillStyle = '#111'; g.fillText(rowTxt, cx - tw / 2, yText);
+  }
 }
+
+function drawZoom() {
+  const id = state.sel || 'II';
+  const name = $('leadCloseupName'); if (name) name.textContent = id;
+  const canvas = $('leadCloseup');
+  const frame = canvas && canvas.parentElement;
+  if (canvas && frame) {
+    frame.style.overflow = 'hidden';
+    const cssW = Math.max(160, Math.floor(frame.clientWidth - 2));
+    const cssH = Math.max(80, Math.floor((frame.clientHeight || 160) - 2));
+    paintAnnotatedLead(canvas, cssW, cssH);
+    const gain = $('leadCloseupGain');
+    if (gain) gain.textContent = '10 mm/mV (full gain), 25 mm/s';
+    canvas.setAttribute('aria-label', `Close-up of lead ${id} on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. About four beats; the cursor sweeps left to right, then the window advances.`);
+  }
+  const z = $('zoomLead'); if (z) z.textContent = id;
+  if (zoomCanvas && zoomCanvas.offsetParent) drawZoomOn(zoomCanvas, false);
+}
+if (typeof ResizeObserver === 'function' && $('leadCloseup')) {
+  let lastCloseup = '';
+  const closeupRo = new ResizeObserver(entries => {
+    const r = entries[0].contentRect;
+    const key = Math.round(r.width) + 'x' + Math.round(r.height);
+    if (key === lastCloseup) return;
+    lastCloseup = key;
+    drawZoom();
+  });
+  const fr = $('leadCloseup').parentElement;
+  if (fr) closeupRo.observe(fr);
+}
+function leadAtEvent(e) {
+  const geo = ECG_DRAW; if (!geo || !geo.px) return null;
+  const r = ecgCanvas.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return null;
+  // Map the click through the displayed CSS size, then the millimetre geometry used to draw the sheet.
+  const xmm = (e.clientX - r.left) * (geo.cssW / r.width) / geo.px;
+  const ymm = (e.clientY - r.top) * (geo.cssH / r.height) / geo.px;
+  const row = Math.floor((ymm - geo.top) / geo.rowH); if (row < 0 || row > 3) return null;
+  if (row === 3) return 'II';
+  const col = Math.floor((xmm - geo.calW) / geo.colMm); if (col < 0 || col > 3) return null;
+  return LAYOUT[row][col];
+}
+function cellPoint(row, col, u, v) {
+  // u,v in 0..1 within the cell (or the rhythm strip if row===3). Returns CSS viewport coordinates.
+  const geo = ECG_DRAW; if (!geo) return null;
+  const r = ecgCanvas.getBoundingClientRect();
+  const xmm = row === 3
+    ? geo.calW + Math.max(0.02, Math.min(0.98, u)) * (geo.wmm - geo.calW)
+    : geo.calW + (col + Math.max(0.02, Math.min(0.98, u))) * geo.colMm;
+  const ymm = geo.top + (row + Math.max(0.02, Math.min(0.98, v))) * geo.rowH;
+  return {
+    x: r.left + (xmm * geo.px) * (r.width / geo.cssW),
+    y: r.top + (ymm * geo.px) * (r.height / geo.cssH)
+  };
+}
+const ECG12_HINT = 'Click a lead to see it close up on the right.';
+function ecgClick(e) { const id = leadAtEvent(e); if (id) select(id, true); }
 ecgCanvas.addEventListener('click', ecgClick);
 (function leadButtons() {
   const box = $('leadBtns');
   for (const L of LEADS) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 't-btn lead-btn'; b.dataset.lead = L.id; b.textContent = L.id;
     b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', `Lead ${L.id}, ${L.type === 'limb' ? 'limb lead at ' + L.angle.replace('-', 'minus ') : 'chest lead'}, ${L.view.toLowerCase()}`);
-    b.addEventListener('click', () => select(L.id)); box.appendChild(b);
+    b.addEventListener('click', () => select(L.id, true));
+    box.appendChild(b);
   }
+})();
+(function keyDialog() {
+  const btn = $('keyOpenBtn'), dialog = $('keyDialog'), panel = $('keyPanel'), closeBtn = $('keyCloseBtn'), backdrop = $('keyBackdrop');
+  if (!btn || !dialog || !panel || !closeBtn) return;
+  let lastFocus = null;
+  const focusables = () => [...panel.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && el.offsetParent !== null);
+  const place = () => {
+    if (dialog.hidden) return;
+    const vw = innerWidth, vh = innerHeight;
+    const side = document.querySelector('.tool-side');
+    const stageCard = document.querySelector('.stage-card');
+    const br = btn.getBoundingClientRect();
+    const sr = side ? side.getBoundingClientRect() : null;
+    const hr = stageCard ? stageCard.getBoundingClientRect() : null;
+    // Prefer the right column so the dialog does not sit on the heart.
+    let left, top, width;
+    if (sr && sr.width > 160 && sr.left > 40) {
+      left = sr.left;
+      width = Math.min(520, Math.max(260, sr.width));
+      top = Math.max(8, Math.min(sr.top, vh - 8));
+    } else {
+      width = Math.min(520, vw - 24);
+      left = Math.max(12, Math.min(br.left, vw - width - 12));
+      top = Math.min(br.bottom + 6, vh - 8);
+    }
+    // If the panel would cover the 3D stage, shift it to the right of the stage.
+    if (hr && left < hr.right - 8 && left + width > hr.left + 8) {
+      const toRight = hr.right + 8;
+      if (toRight + width <= vw - 8) left = toRight;
+      else left = Math.max(12, vw - width - 12);
+    }
+    panel.style.width = width + 'px';
+    panel.style.left = left + 'px';
+    // Measure after width is set, then clamp vertically. Desktop: no inner scroll (CSS overflow visible).
+    panel.style.top = '8px';
+    const ph = panel.getBoundingClientRect().height;
+    const maxTop = Math.max(8, vh - ph - 8);
+    top = Math.max(8, Math.min(top, maxTop));
+    panel.style.top = top + 'px';
+    dialog.dataset.overflows = (ph > vh - 16) ? '1' : '0';
+  };
+  const setOpen = on => {
+    dialog.hidden = !on;
+    btn.setAttribute('aria-expanded', String(on));
+    if (on) {
+      lastFocus = document.activeElement;
+      place();
+      requestAnimationFrame(() => { place(); (closeBtn || panel).focus(); });
+    } else if (lastFocus && typeof lastFocus.focus === 'function') {
+      lastFocus.focus();
+    } else btn.focus();
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); setOpen(dialog.hidden); });
+  closeBtn.addEventListener('click', () => setOpen(false));
+  if (backdrop) backdrop.addEventListener('click', () => setOpen(false));
+  document.addEventListener('keydown', e => {
+    if (dialog.hidden) return;
+    if (e.key === 'Escape') {
+      if ($('labelsPanel') && !$('labelsPanel').hidden) return;
+      e.preventDefault(); setOpen(false); return;
+    }
+    if (e.key !== 'Tab') return;
+    const list = focusables(); if (!list.length) return;
+    const first = list[0], last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+  addEventListener('resize', () => { if (!dialog.hidden) place(); });
+  window.__ecgKeyDialog = { open: () => setOpen(true), close: () => setOpen(false), isOpen: () => !dialog.hidden };
 })();
 
 /* ======================= 3D scene ======================= */
@@ -522,28 +1147,85 @@ function webglAvailable() {
 try { if (webglAvailable()) renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true }); } catch (e) { renderer = null; }
 if (!renderer || !renderer.getContext()) {
   $('fallback').hidden = false; canvas.hidden = true; renderer = null;
-  document.querySelectorAll('.view-btn, #resetView, #toggleCut, #toggleLeads, #toggleLabelAll, #toggleLoop').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('.view-btn, #resetView, #toggleCut, #toggleLeads, #labelsBtn, #toggleLoop').forEach(b => { b.disabled = true; });
   $('sceneHelp').textContent = '3D is unavailable here, but the timeline, phase buttons and the 12-lead ECG still work.';
+  const hint = $('stageHint'); if (hint) hint.textContent = '3D is unavailable here.';
 }
 if (renderer) renderer.localClippingEnabled = true;
 
 const labels = [];
-function addLabel(text, cls, getPos, prio) {
-  const el = document.createElement('div'); el.className = 'lbl ' + cls; el.textContent = text;
+function addLabel(text, cls, getPos, prio, opts) {
+  const leadId = opts && opts.leadId;
+  const el = leadId ? document.createElement('button') : document.createElement('div');
+  el.className = 'lbl ' + cls; el.textContent = text;
+  if (leadId) {
+    el.type = 'button';
+    el.setAttribute('aria-label', 'Select lead ' + leadId);
+    el.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); select(leadId, true); });
+  } else {
+    el.setAttribute('aria-hidden', 'true');
+  }
   labelLayer.appendChild(el);
-  const L = { el, getPos, visible: true, cls, prio: prio != null ? prio : ({ proj: 1, vec: 2, node: 2, region: 3, lead: 4, cond: 5, heart: 6 }[cls] || 5) };
+  const L = { el, getPos, visible: true, cls, prio: prio != null ? prio : ({ proj: 1, vec: 2, node: 2, region: 3, lead: 4, cond: 5, heart: 6 }[cls] || 5), leadId: leadId || null };
   labels.push(L); return L;
 }
 
 const orbit = { az: 0, el: 0, r: 17, target: new THREE.Vector3(0, 0.2, 0) };
 const SECTION_N = dirToBody([0, 0, 1]);
 const VIEWS = {
-  frontal:    { az: 0, el: 0, r: 16, note: "Frontal view: limb leads (hexaxial). The patient's left is on your right." },
+  // turned towards the patient's left until the cut-away faces you (level camera, so lead I stays horizontal)
+  frontal:    { az: Math.atan2(SECTION_N[0], SECTION_N[2]), el: 0, r: 16, note: '' },
   section:    { az: Math.atan2(SECTION_N[0], SECTION_N[2]), el: Math.asin(SECTION_N[1]), r: 13, note: 'Face-on to the cut-away: the four chambers and the conduction system.' },
   oblique:    { az: 35 * DEG, el: 14 * DEG, r: 24, note: '3D view. Drag to rotate.' },
   transverse: { az: 0, el: 89.4 * DEG, r: 22, note: "Transverse view from above: front of the chest at the bottom, patient's left on your right." }
 };
-const ui = { cut: false, labelAll: false, allLeads: false, loop: false };
+const ui = { cut: true, allLeads: true, loop: false, labelMode: 'none', guided: false, anatomyLabels: false, labelGroups: { chambers: false, conduction: false, leads: false, vectors: false, walls: false, orientation: false } };
+VIEWS.frontal.note = `Front view, turned ${Math.round(VIEWS.frontal.az / DEG)}\u00b0 towards the patient's left so the cut-away faces you. Limb leads (hexaxial); the patient's left is on your right.`;
+const HINT = 'Drag to rotate, scroll or pinch to zoom. Click a lead name to see it close up on the right.';
+function lookingFromText(az, el) {
+  const elD = el / DEG;
+  let azD = az / DEG;
+  azD = ((azD + 540) % 360) - 180; // -180..180, 0 = front of the patient
+  const absA = Math.abs(azD);
+  let around;
+  if (absA <= 22) around = 'front';
+  else if (absA >= 158) around = 'back';
+  else if (azD > 0) around = absA < 70 ? "front, slightly from the patient's left" : absA < 110 ? "the patient's left" : "back, slightly from the patient's left";
+  else around = absA < 70 ? "front, slightly from the patient's right" : absA < 110 ? "the patient's right" : "back, slightly from the patient's right";
+  if (elD > 70) around = absA < 25 || absA > 155 ? 'above' : ('above, towards ' + around);
+  else if (elD < -70) around = absA < 25 || absA > 155 ? 'below' : ('below, towards ' + around);
+  else if (elD > 25) around += ', and slightly above';
+  else if (elD < -25) around += ', and slightly below';
+  return 'Looking from: ' + around;
+}
+function setViewCaption(name, v) {
+  const from = lookingFromText(orbit.az, orbit.el);
+  const note = v && v.note != null ? v.note : (name === 'custom' ? 'Custom 3D view. Use Reset view to return to the frontal view.' : '');
+  const line = $('viewNote'); if (line) line.textContent = from;
+  const info = $('stageInfoText');
+  if (info) info.textContent = (note ? note + ' ' : '') + from + ' Drag to rotate, or use Reset view to return to the front.';
+  const hint = $('stageHint'); if (hint && hint.textContent.indexOf('unavailable') < 0) hint.textContent = HINT;
+}
+(function stageInfo() {
+  const btn = $('stageInfoBtn'), panel = $('stageInfo');
+  if (!btn || !panel) return;
+  const setOpen = on => {
+    panel.hidden = !on;
+    btn.setAttribute('aria-expanded', String(on));
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); setOpen(panel.hidden); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || panel.hidden) return;
+    if ($('keyDialog') && !$('keyDialog').hidden) return;
+    if ($('labelsPanel') && !$('labelsPanel').hidden) return;
+    e.preventDefault(); setOpen(false); btn.focus();
+  });
+  document.addEventListener('pointerdown', e => {
+    if (panel.hidden) return;
+    if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) setOpen(false);
+  });
+})();
+
 
 function rod(from, to, radius, mat) {
   const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to);
@@ -657,17 +1339,44 @@ function tubeMats(radius) {
   });
   return [mk(0), mk(Math.max(0.012, radius * 0.35))];
 }
+/* Apply the site colour-blind (or default) palette to the 3D materials, colour key and ECG cursor, live. */
+function applyColourTheme() {
+  const T = THEMES[isColourBlindTheme() ? 'colour-blind' : 'default'];
+  U.cRest.value.setHex(T.rest); U.cFront.value.setHex(T.front); U.cDep.value.setHex(T.dep); U.cDot.value.setHex(T.dot);
+  CIDLE.setHex(T.condIdle); CDONE.setHex(T.condDone);
+  COL.blue = T.node; COL.paleBlue = T.condIdle; COL.orange = T.front; COL.leadGrey = T.leadGrey; COL.grey = T.grey;
+  PAPER.cursor = hex6(T.cursor);
+  const r = (T.cursor >> 16) & 255, g = (T.cursor >> 8) & 255, b = T.cursor & 255;
+  PAPER.shade = `rgba(${r}, ${g}, ${b}, 0.10)`;
+  const root = document.documentElement;
+  root.style.setProperty('--ecg3d-rest', hex6(T.rest));
+  root.style.setProperty('--ecg3d-front', hex6(T.front));
+  root.style.setProperty('--ecg3d-dep', hex6(T.dep));
+  root.style.setProperty('--ecg3d-dot', hex6(T.dot));
+  root.style.setProperty('--ecg3d-cond-idle', hex6(T.condIdle));
+  root.style.setProperty('--ecg3d-cond-done', hex6(T.condDone));
+  root.style.setProperty('--ecg3d-node', hex6(T.node));
+  root.style.setProperty('--ecg3d-cursor', hex6(T.cursor));
+  if (typeof condParts !== 'undefined') {
+    for (const c of condParts) {
+      if (c.mesh && c.mesh.material && c.mesh.material.uniforms) {
+        c.mesh.material.uniforms.cIdle.value.setHex(T.condIdle);
+        c.mesh.material.uniforms.cDone.value.setHex(T.condDone);
+      }
+    }
+  }
+  if (avRing && avRing.material && avRing.material.color) avRing.material.color.setHex(T.node);
+  if (typeof setLeadStyles === 'function' && renderer) setLeadStyles();
+  if (typeof TRACE === 'object' && TRACE && Object.keys(TRACE).length) { drawECG(); drawMini(); drawZoom(); }
+  needsRender = true;
+}
+
 
 /* ---------- Heart: four opaque chambers, septum, cut-away section ---------- */
 let svcMesh = null, heart, shells = [], sectionMesh = null, sectionTex = null, CUT_PLANE = null;
 const SECTION_Z = 0.05; // heart-local z of the cut-away (a four-chamber section)
 const REGION_ELEMS = {}; ['S', 'LV', 'RV', 'RA', 'LA'].forEach(r => { REGION_ELEMS[r] = []; });
 for (let e = 0; e < NE; e++) REGION_ELEMS[ELEM.region[e]].push(e);
-function nearestIn(p, list) {
-  let best = list[0], bd = Infinity;
-  for (const e of list) { const q = ELEM.pos[e]; const d = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2 + (q[2] - p[2]) ** 2; if (d < bd) { bd = d; best = e; } }
-  return best;
-}
 const FIN = v => (isFinite(v) ? v : 1e6);
 function shellGeometry(name, clamp, w = 56, h = 36) {
   const s = SHAPES[name]; const g = new THREE.SphereGeometry(1, w, h); const pos = g.attributes.position;
@@ -750,18 +1459,32 @@ function buildHeart() {
   sectionMesh.position.set(x0 + W / 2, y0 + Hh / 2, SECTION_Z); sectionMesh.visible = ui.cut;
   heart.add(sectionMesh);
   const toWorld = (x, y, z) => () => new THREE.Vector3(x, y, z).applyMatrix4(HEART_VIS);
-  addLabel('Left ventricle', 'heart', toWorld(0.85, -1.25, 0.35)).tag = 'LV';
-  addLabel('Right ventricle', 'heart', toWorld(-0.7, -1.05, 0.55)).tag = 'RV';
-  addLabel('Right atrium', 'heart', toWorld(-0.85, 0.3, 0.3)).tag = 'RA';
-  addLabel('Left atrium', 'heart', toWorld(0.75, 0.35, -0.3)).tag = 'LA';
-  addLabel('Septum', 'heart', toWorld(0.0, -1.5, 0.45)).tag = 'S';
+  // Anchors come from the model: chamber centroids, or a point 0.6 of the way from the
+  // centroid to the ellipsoid surface along an anatomical direction (not a screen offset).
+  const shapeAnchor = (name, dir) => {
+    const S = SHAPES[name];
+    let p = S.c;
+    if (dir) {
+      const d = unit(dir[0], dir[1], dir[2]);
+      const f = taperOf(S, S.c[1]);
+      const rx = S.r[0] * f, ry = S.r[1], rz = S.r[2] * f;
+      const t = 0.6 / Math.sqrt((d[0] / rx) * (d[0] / rx) + (d[1] / ry) * (d[1] / ry) + (d[2] / rz) * (d[2] / rz));
+      p = [S.c[0] + d[0] * t, S.c[1] + d[1] * t, S.c[2] + d[2] * t];
+    }
+    return toWorld(p[0], p[1], p[2]);
+  };
+  addLabel('Left ventricle', 'heart', shapeAnchor('LV', [1, -0.5, -0.2])).tag = 'LV';
+  addLabel('Right ventricle', 'heart', shapeAnchor('RV', [-1, -0.25, 0.7])).tag = 'RV';
+  addLabel('Right atrium', 'heart', shapeAnchor('RA', [-0.7, 0.15, 0.7])).tag = 'RA';
+  addLabel('Left atrium', 'heart', shapeAnchor('LA', [0.7, 0.35, -0.8])).tag = 'LA';
+  addLabel('Septum', 'heart', shapeAnchor('S')).tag = 'S';
   // superior vena cava (drawn only, not electrical): the SA node sits where it joins the right atrium
   const svcPts = [[-0.40, 0.45, 0.05], [-0.40, 0.95, 0.02], [-0.40, 1.25, 0.0]];
   const svcGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(svcPts.map(p => new THREE.Vector3(...p))), 12, 0.17, 20, false);
   const svc = new THREE.Mesh(svcGeo, new THREE.MeshLambertMaterial({ color: 0xD6D6D6 }));
   const svcOut = new THREE.Mesh(outlineGeometry(svcGeo, 0.022), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.BackSide }));
   heart.add(svc, svcOut); svcMesh = svc;
-  addLabel('Superior vena cava', 'heart', toWorld(-0.40, 1.1, 0.12)).tag = 'svc';
+  addLabel('Superior vena cava', 'heart', toWorld(-0.40, 0.95, 0.02)).tag = 'svc';
 }
 function nearestInGrid(p, region) { // nearest element of a region, searching the voxel grid near p
   const i0 = Math.round((p[0] - GX0) / H), j0 = Math.round((p[1] - GY0) / H), k0 = Math.round((p[2] - GZ0) / H);
@@ -844,13 +1567,15 @@ function nodeMesh(geo, scale) {
 }
 function buildConduction() {
   const C = CONDUCTION;
-  for (const s of C.segments) {
-    const tube = tubeFor(s.pts, s.r, 48); const [mat, outMat] = tubeMats(s.r);
+  for (const s of [...(C.bachmann ? [C.bachmann] : []), ...C.segments]) {
+    const r = s.fibre ? 0.01 : s.r;
+    const tube = tubeFor(s.pts, r, s.fibre ? 24 : 48); const [mat, outMat] = tubeMats(r);
     const mesh = new THREE.Mesh(tube.g, mat), out = new THREE.Mesh(tube.g, outMat);
-    mesh.renderOrder = 20; out.renderOrder = 19; heart.add(out, mesh);
-    const mid0 = polyAt(s.pts, polyLen(s.pts) * (s.id === 'rbb' ? 0.55 : s.id === 'his' ? 0.4 : 0.6));
+    mesh.renderOrder = s.fibre ? 18 : 20; out.renderOrder = s.fibre ? 17 : 19; heart.add(out, mesh);
+    if (s.fibre) { condParts.push({ s, tube, mesh, out }); continue; } // Purkinje fibres: thin, no label or bead
+    const mid0 = polyAt(s.pts, polyLen(s.pts) * (s.id === 'rbb' ? 0.55 : s.id === 'his' ? 0.4 : s.id === 'lbb' ? 0.75 : 0.6));
     const mid = mid0; // the label is placed beside this point with a leader line
-    const lbl = addLabel(s.label, 'cond', () => new THREE.Vector3(...mid).applyMatrix4(HEART_VIS)); lbl.tag = s.id;
+    let lbl = null; if (!s.nolabel) { lbl = addLabel(s.label, 'cond', () => new THREE.Vector3(...mid).applyMatrix4(HEART_VIS)); lbl.tag = s.id; }
     const bead = nodeMesh(new THREE.SphereGeometry(Math.max(0.05, s.r * 1.7), 16, 12), 1.3); bead.material.color.set(0xffffff); heart.add(bead);
     condParts.push({ s, tube, mesh, out, lbl }); beads.push({ s, bead });
   }
@@ -864,42 +1589,14 @@ function buildConduction() {
   avRingBack.renderOrder = 23; avRing.renderOrder = 24; scene.add(avRingBack, avRing);
   const edge = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.49, 48), new THREE.MeshBasicMaterial({ color: 0x111111, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
   edge.renderOrder = 23; avRingBack.add(edge);
-  const pl = addLabel('Purkinje fibres', 'cond', () => new THREE.Vector3(0.75, -1.65, 0.2).applyMatrix4(HEART_VIS)); pl.tag = 'purk';
+  // Representative subendocardial point: mid-path of the LV apical Purkinje fibre (pLapex) in the model.
+  const purkPts = CONDUCTION.segments.find(s => s.id === 'pLapex').pts;
+  const purkMid = polyAt(purkPts, polyLen(purkPts) * 0.5);
+  const pl = addLabel('Purkinje fibres', 'cond', () => new THREE.Vector3(...purkMid).applyMatrix4(HEART_VIS)); pl.tag = 'purk';
   condParts.push({ lbl: pl });
   buildPurkinje();
 }
-function buildPurkinje() { // thin fibres from the bundles to sample endocardial terminals (drawn for a few, all are modelled)
-  for (const p of purkParts) { heart.remove(p.mesh, p.out); p.tube.g.dispose(); }
-  purkParts = [];
-  const C = CONDUCTION;
-  for (const [list, side, count] of [[endoLV, 'LV', 4], [endoRV, 'RV', 2]]) {
-    const cand = list.filter(e => ELEM.pos[e][1] <= C.purkinjeTopY && Math.abs(ELEM.pos[e][2] - SECTION_Z) < 0.5);
-    const picked = []; // farthest-point sampling for an even spread
-    if (!cand.length) continue; picked.push(cand[Math.floor(cand.length / 2)]);
-    while (picked.length < Math.min(count, cand.length)) {
-      let best = -1, bd = -1;
-      for (const e of cand) { let dm = Infinity; for (const q of picked) { const a = ELEM.pos[e], b = ELEM.pos[q]; dm = Math.min(dm, (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2); } if (dm > bd) { bd = dm; best = e; } }
-      picked.push(best);
-    }
-    for (const e of picked) {
-      const p = ELEM.pos[e]; let bestQ = null, bt = Infinity, bq = 0;
-      for (const s of C.segments) {
-        if (s.purk !== side) continue; const sg = MODEL.seg[s.id]; if (!isFinite(sg.start)) continue;
-        for (const q of polySample(s.pts, 0.05)) { if (q.p[1] > s.purkFromY) continue; const t = sg.start + q.s / sg.v; const tt = t + Math.hypot(p[0] - q.p[0], p[1] - q.p[1], p[2] - q.p[2]) / C.vPurkinje; if (tt < bt) { bt = tt; bestQ = q.p; bq = t; } }
-      }
-      if (!bestQ) continue;
-      // route the fibre along the endocardial surface (nearest endocardial element to points on the chord)
-      const route = [bestQ];
-      for (const f of [0.3, 0.6, 0.85]) { const m = [bestQ[0] + (p[0] - bestQ[0]) * f, bestQ[1] + (p[1] - bestQ[1]) * f, bestQ[2] + (p[2] - bestQ[2]) * f]; route.push(ELEM.pos[nearestIn(m, list)]); }
-      route.push(p);
-      const tube = tubeFor(route, 0.013, 20);
-      setTubeTimes(tube, bq, C.vPurkinje, 0.25 / C.vPurkinje);
-      const [mat, outMat] = tubeMats(0.013);
-      const mesh = new THREE.Mesh(tube.g, mat), out = new THREE.Mesh(tube.g, outMat); mesh.renderOrder = 18; out.renderOrder = 17;
-      heart.add(out, mesh); purkParts.push({ tube, mesh, out });
-    }
-  }
-}
+function buildPurkinje() {} // the Purkinje fibres are drawn segments of CONDUCTION (fibre: true), timed like the bundles
 function applyConductionTimes() {
   if (!renderer) return;
   for (const c of condParts) { if (!c.s) continue; const sg = MODEL.seg[c.s.id]; setTubeTimes(c.tube, sg.start, sg.v, 0.18 / sg.v); }
@@ -916,33 +1613,280 @@ function buildActiveRanges() {
   }
   R.sa = [[CONDUCTION.saTime - 2, CONDUCTION.saTime + 22]]; R.svc = R.sa;
   R.av = [[M.tAV, M.tHis]];
-  let p0 = Infinity; for (const s of CONDUCTION.segments) { const sg = M.seg[s.id]; R[s.id] = [[sg.start, sg.end + 4]]; if (s.purk) p0 = Math.min(p0, sg.start); }
-  R.purk = [[p0 + 8, M.vMin + 25]];
+  let p0 = Infinity, p1 = -Infinity; for (const s of CONDUCTION.segments) { const sg = M.seg[s.id]; R[s.id] = [[sg.start, sg.end + 4]]; if (s.fibre) { p0 = Math.min(p0, sg.start); p1 = Math.max(p1, sg.end); } }
+  if (M.seg.bach) R.bach = [[M.seg.bach.start, M.seg.bach.end + 4]];
+  R.purk = [[p0, p1 + 6]];
   ACTIVE_RANGES = R;
 }
 function isActive(tag, t) { const r = ACTIVE_RANGES && ACTIVE_RANGES[tag]; return !!r && r.some(([a, b]) => t >= a && t <= b); }
+function labelGroupOf(L) {
+  if (L.cls === 'lead' || L === frontLabel) return 'leads';
+  if (L.cls === 'vec' || L.cls === 'proj') return 'vectors';
+  if (L.cls === 'region') return 'walls';
+  if (L.cls === 'cond' || L.cls === 'node') return 'conduction';
+  if (L.cls === 'heart') return 'chambers';
+  return null;
+}
+function groupOn(name) { return ui.labelMode === 'custom' && !!ui.labelGroups[name]; }
+function orientationOn() {
+  // Guided mode uses the compass caption for "anterior"; landmark pills are only for the custom orientation group.
+  if (ui.labelMode === 'custom') return ui.labelGroups.orientation !== false;
+  return false;
+}
+const GUIDED_TAGS = {
+  rest: [],
+  P: ['sa', 'bach'],
+  avd: ['av'],
+  his: ['his', 'rbb', 'lbb'],
+  sep: ['S'],
+  main: ['vec'],
+  ST: [],
+  T: ['vec'],
+  TP: []
+};
+function guidedTags() { return GUIDED_TAGS[phaseAt(state.t).key] || []; }
 function applyLabelVisibility() {
   const t = state.t;
+  const custom = ui.labelMode === 'custom';
+  const guided = ui.labelMode === 'guided';
+  const showOrient = orientationOn();
+  const tags = guided ? guidedTags() : null;
   for (const L of labels) {
-    if (L.tag) { L.visible = ui.labelAll || isActive(L.tag, t); L.el.classList.toggle('active', isActive(L.tag, t) && (L.cls === 'cond' || L.cls === 'node')); }
+    if (L === frontLabel || L.cls === 'lead' || L.cls === 'proj') continue; // those are set in setLeadStyles / updateScene
+    if (L.cls === 'vec' || L.cls === 'proj') continue;
+    if (L.cls === 'landmark') { L.visible = showOrient && L !== anteriorLabel; continue; }
+    const g = labelGroupOf(L);
+    if (custom) L.visible = groupOn(g);
+    else if (guided) L.visible = !!(L.tag && tags.includes(L.tag));
+    else if (L.tag) L.visible = isActive(L.tag, t);
+    const live = !guided && !!(L.tag && isActive(L.tag, t) && (L.cls === 'cond' || L.cls === 'node'));
+    L.el.classList.toggle('active', live);
   }
-  if (regionLabel) regionLabel.visible = ui.labelAll && regionMeshes.length > 0;
-  for (const m of regionMeshes) m.visible = ui.labelAll;
+  const walls = groupOn('walls');
+  if (regionLabel) regionLabel.visible = walls && regionMeshes.length > 0;
+  for (const m of regionMeshes) m.visible = walls;
   if (trail) trail.visible = ui.loop;
+  if (chestArc) chestArc.visible = false;
+  if (sternumLine) sternumLine.visible = false;
+  if (aortaMesh) aortaMesh.visible = false;
+  if (torso) torso.visible = true;
 }
 
 /* ---------- Torso, leads, vector, projection ---------- */
 const TORSO_C = new THREE.Vector3(-0.45, 1.1, -0.3), TORSO_R = new THREE.Vector3(5.0, 6.3, 4.2);
-let torso, frontLabel, leadObjs = {}, arrow, trail, projBar, projOut, projLine, projLabel, vecLabel, regionMeshes = [], regionLabel;
+let torso, frontLabel, leadObjs = {}, arrow, trail, projBar, projOut, projLine, projLabel, vecLabel, regionMeshes = [], regionLabel, chestArc, sternumLine, aortaMesh, apexLabel, baseLabel, anteriorLabel;
 const arrowTip = new THREE.Vector3();
 const VEC_SCALE = 2.8;
+const VEC_MIN_LEN = 1.2;   // visible minimum while the vector is non-zero
+const VEC_HIDE = 0.045;    // hide the arrow when the instantaneous magnitude is about zero
+const CHEST_IDS = ['V1', 'V2', 'V3', 'V4', 'V5', 'V6'];
+function chestPole(id) {
+  const p = BASELINE.chestElectrodes[id];
+  return new THREE.Vector3(...p).multiplyScalar(VIS_SCALE * 0.85);
+}
+function chestLeadAnchor(id) {
+  if (CHEST_IDS.indexOf(id) < 0) return null;
+  const i = CHEST_IDS.indexOf(id);
+  const p = chestPole(id);
+  const prev = chestPole(CHEST_IDS[Math.max(0, i - 1)]);
+  const next = chestPole(CHEST_IDS[Math.min(CHEST_IDS.length - 1, i + 1)]);
+  const tangent = next.clone().sub(prev).normalize();
+  // Spread V1 and V2 apart along the arc, and push every tag slightly outward from the heart.
+  const spread = (i === 0 ? -0.42 : i === 1 ? 0.36 : 0);
+  const outward = p.clone().normalize().multiplyScalar(0.38);
+  return p.clone().add(outward).addScaledVector(tangent, spread);
+}
+function letterSprite(ch) {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 64, 64);
+  g.font = '800 44px "Source Sans 3", Arial, sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 8; g.strokeStyle = 'rgba(247,244,238,0.95)'; g.strokeText(ch, 32, 34);
+  g.fillStyle = '#222'; g.fillText(ch, 32, 34);
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const spr = new THREE.Sprite(mat); spr.scale.set(0.9, 0.9, 0.9); spr.renderOrder = 40;
+  return spr;
+}
+
+function torsoLine(pts, dashed, opacity) {
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = dashed
+    ? new THREE.LineDashedMaterial({ color: 0x4a4a4a, dashSize: 0.16, gapSize: 0.1, transparent: true, opacity: opacity, depthWrite: false })
+    : new THREE.LineBasicMaterial({ color: 0x6a6a6a, transparent: true, opacity: opacity, depthWrite: false });
+  const line = new THREE.Line(geo, mat);
+  if (dashed) line.computeLineDistances();
+  line.renderOrder = 3;
+  return line;
+}
+
+function ellipsePts(cx, cy, cz, rx, rz, n) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    pts.push(new THREE.Vector3(cx + rx * Math.cos(a), cy, cz + rz * Math.sin(a)));
+  }
+  return pts;
+}
+
+function buildTorso() {
+  torso = new THREE.Group(); torso.name = 'torso';
+  // Body coordinates: +x patient's left, +y head, +z anterior. Fitted so V1-V6 sit on the chest wall.
+  const cx = 0.35, cz = 0.45;
+  const profile = [
+    [4.15, 1.02], [3.55, 1.12], [3.15, 1.32],
+    [2.85, 2.55], [2.55, 4.85], [2.25, 5.15],
+    [1.7, 4.55], [1.0, 4.35], [0.35, 4.4],
+    [-0.4, 4.35], [-0.9, 4.28], [-1.6, 4.05],
+    [-2.5, 3.7], [-3.4, 3.35], [-4.2, 3.15]
+  ];
+  const lathe = new THREE.LatheGeometry(profile.map(([y, r]) => new THREE.Vector2(r, y)), 72);
+  const skin = new THREE.Mesh(lathe, new THREE.MeshLambertMaterial({
+    color: 0x8d8d8d, transparent: true, opacity: 0.11, side: THREE.DoubleSide,
+    depthWrite: false, emissive: 0x9a9a9a, emissiveIntensity: 0.04
+  }));
+  skin.scale.z = 0.86;
+  skin.position.set(cx, 0, cz);
+  skin.renderOrder = 1;
+  torso.add(skin);
+  // A thin outline of the same envelope, so the body still reads when the fill is faint.
+  const outline = new THREE.LineSegments(new THREE.WireframeGeometry(lathe), new THREE.LineBasicMaterial({
+    color: 0x6a6a6a, transparent: true, opacity: 0.18, depthWrite: false
+  }));
+  outline.scale.copy(skin.scale); outline.position.copy(skin.position); outline.renderOrder = 2;
+  // too dense as a full wireframe; keep only a few meridians later if needed. Skip the wireframe.
+  outline.visible = false; torso.add(outline);
+
+  const ribMatOp = 0.08;
+  const ribYs = [1.55, 1.05, 0.55, 0.05, -0.45, -0.95, -1.5];
+  const ribR =   [4.15, 4.28, 4.35, 4.38, 4.32, 4.22, 4.00];
+  for (let i = 0; i < ribYs.length; i++) {
+    const rx = ribR[i], rz = ribR[i] * 0.86;
+    torso.add(torsoLine(ellipsePts(cx, ribYs[i], cz, rx, rz, 72), false, ribMatOp));
+  }
+  // Sternum: manubrium and body, between V1 and V2 at the front of the chest.
+  const sx = (chestPole('V1').x + chestPole('V2').x) / 2;
+  const sz = Math.max(chestPole('V1').z, chestPole('V2').z) + 0.02;
+  const sternum = torsoLine([
+    new THREE.Vector3(sx, 2.15, sz - 0.15),
+    new THREE.Vector3(sx, 1.85, sz),
+    new THREE.Vector3(sx, 0.6, sz + 0.05),
+    new THREE.Vector3(sx, -0.35, sz),
+    new THREE.Vector3(sx, -1.15, sz - 0.08)
+  ], false, 0.85);
+  sternum.material.color.setHex(0x2a2a2a);
+  torso.add(sternum);
+  // Manubrium as a short cross-bar at the sternal notch.
+  torso.add(torsoLine([
+    new THREE.Vector3(sx - 0.45, 1.95, sz - 0.02),
+    new THREE.Vector3(sx + 0.45, 1.95, sz - 0.02)
+  ], false, 0.8));
+
+  // Clavicles, from the sternal notch out to each shoulder.
+  torso.add(torsoLine([
+    new THREE.Vector3(sx, 2.15, sz - 0.15),
+    new THREE.Vector3(sx - 1.4, 2.45, sz - 0.6),
+    new THREE.Vector3(sx - 2.6, 2.55, sz - 1.3),
+    new THREE.Vector3(-4.6, 2.5, 0.3)
+  ], false, 0.7));
+  torso.add(torsoLine([
+    new THREE.Vector3(sx, 2.15, sz - 0.15),
+    new THREE.Vector3(sx + 1.5, 2.45, sz - 0.5),
+    new THREE.Vector3(sx + 2.8, 2.55, sz - 1.2),
+    new THREE.Vector3(5.3, 2.5, 0.2)
+  ], false, 0.7));
+
+  // Shoulder ovals, faintly.
+  torso.add(torsoLine(ellipsePts(-4.55, 2.35, 0.15, 0.85, 0.7, 28), false, 0.45));
+  torso.add(torsoLine(ellipsePts(5.2, 2.35, 0.1, 0.85, 0.7, 28), false, 0.45));
+
+  // Nipple line: a dashed curve at the 4th intercostal space (V1/V2 level) across the anterior chest.
+  const ny = (chestPole('V1').y + chestPole('V2').y) / 2;
+  const nipple = [];
+  for (let i = 0; i <= 24; i++) {
+    const t = i / 24, x = cx - 3.4 + t * 6.8;
+    const xr = x - cx;
+    const rz = 4.35 * 0.86;
+    const inside = 1 - (xr * xr) / (4.35 * 4.35);
+    const z = cz + rz * Math.sqrt(Math.max(0, inside));
+    nipple.push(new THREE.Vector3(x, ny, z + 0.04));
+  }
+  torso.add(torsoLine(nipple, true, 0.7));
+
+  // Patient's right and left marks on the shoulders (letters, not colour).
+  const rPos = new THREE.Vector3(-4.7, 2.55, 2.35);
+  const lPos = new THREE.Vector3(5.15, 2.55, 2.25);
+  torso.userData.rPos = rPos; torso.userData.lPos = lPos;
+  const env = [];
+  for (let i = 0; i < ribYs.length; i++) {
+    const rx = ribR[i], rz = ribR[i] * 0.86, y = ribYs[i];
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      env.push(new THREE.Vector3(cx + rx * Math.cos(a), y, cz + rz * Math.sin(a)));
+    }
+  }
+  env.push(rPos.clone(), lPos.clone(), new THREE.Vector3(cx, 3.7, cz));
+  torso.userData.envelope = env;
+  const rSpr = letterSprite('R'); rSpr.position.copy(rPos); rSpr.visible = false; torso.add(rSpr);
+  const lSpr = letterSprite('L'); lSpr.position.copy(lPos); lSpr.visible = false; torso.add(lSpr);
+
+  scene.add(torso);
+}
+
+function buildOrientationCues() {
+  const pts = CHEST_IDS.map(id => chestPole(id));
+  // Extend a little past V1 and V6 so the arc reads as a chest wall, not just the electrodes.
+  const v1 = pts[0], v6 = pts[5];
+  const pre = v1.clone().add(v1.clone().sub(pts[1]).setY(0).multiplyScalar(0.4));
+  const post = v6.clone().add(v6.clone().sub(pts[4]).setY(0).multiplyScalar(0.35));
+  const curve = new THREE.CatmullRomCurve3([pre, ...pts, post], false, 'catmullrom', 0.2);
+  const arcGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(64));
+  chestArc = new THREE.Line(arcGeo, new THREE.LineDashedMaterial({ color: 0x444444, dashSize: 0.18, gapSize: 0.1, transparent: true, opacity: 0.85 }));
+  chestArc.computeLineDistances();
+  chestArc.renderOrder = 4;
+  scene.add(chestArc);
+  const midSternum = v1.clone().add(pts[1]).multiplyScalar(0.5);
+  midSternum.x *= 0.15; // sit near the midline
+  const sternumTop = midSternum.clone().setY(midSternum.y + 1.1);
+  const sternumBot = midSternum.clone().setY(midSternum.y - 0.7);
+  sternumLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([sternumTop, sternumBot]),
+    new THREE.LineDashedMaterial({ color: 0x555555, dashSize: 0.14, gapSize: 0.1, transparent: true, opacity: 0.8 }));
+  sternumLine.computeLineDistances();
+  scene.add(sternumLine);
+  // A short, schematic ascending aorta so the base of the heart has a landmark (SVC is already drawn).
+  const aoPts = [[0.12, 0.35, 0.12], [0.18, 0.85, 0.08], [0.35, 1.15, -0.05]].map(p => new THREE.Vector3(...p));
+  const aoGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(aoPts), 16, 0.14, 12, false);
+  aortaMesh = new THREE.Mesh(aoGeo, new THREE.MeshLambertMaterial({ color: 0xC8C8C8 }));
+  const aoOut = new THREE.Mesh(aoGeo.clone(), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.BackSide }));
+  // slightly larger outline
+  aoOut.scale.setScalar(1.08);
+  const aoGrp = new THREE.Group(); aoGrp.add(aortaMesh, aoOut);
+  aoGrp.applyMatrix4(HEART_VIS);
+  scene.add(aoGrp);
+  aortaMesh = aoGrp;
+  const toWorld = (x, y, z) => () => new THREE.Vector3(x, y, z).applyMatrix4(HEART_VIS);
+  const apexWorld = () => {
+    const pts = heartPoints();
+    let best = null, minY = Infinity;
+    for (const q of pts) { if (q.y < minY) { minY = q.y; best = q; } }
+    return (best || new THREE.Vector3(0.32, -2.02, 0.05).applyMatrix4(HEART_VIS)).clone();
+  };
+  apexLabel = addLabel('Apex', 'landmark', apexWorld, 3);
+  baseLabel = addLabel('Base', 'landmark', toWorld(0.05, 0.62, 0.05), 3);
+  anteriorLabel = addLabel('Anterior', 'landmark', toWorld(0, 0, 1), 3);
+  anteriorLabel.visible = false;
+  addLabel('Aorta', 'landmark', toWorld(0.28, 1.05, 0.02), 4);
+}
+
 function buildScene() {
-  scene = new THREE.Scene(); scene.background = new THREE.Color(0xFBFAF7);
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0xF7F4EE);
   camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
   scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d2c8, 1.6));
   const dl = new THREE.DirectionalLight(0xffffff, 1.4); dl.position.set(3, 6, 8); scene.add(dl);
-  // no torso mesh: it cluttered the view behind the heart (the lead lines do not need it)
+  buildTorso();
   frontLabel = addLabel('Front of chest', 'heart', () => new THREE.Vector3(-2.2, 0, TORSO_C.z + TORSO_R.z + 0.45));
+  if (frontLabel) frontLabel.visible = false;
 
   buildHeart(); buildConduction();
 
@@ -958,16 +1902,22 @@ function buildScene() {
     pick.userData.lead = L.id; marker.userData.lead = L.id;
     grp.add(pos, negR, marker, pick); scene.add(grp);
     const lp = pole.map(v => v * 1.1);
-    const lbl = addLabel(L.type === 'limb' ? `${L.id} (${L.angle.replace('-', '\u2212')})` : L.id, 'lead', () => new THREE.Vector3(...lp));
+    const lbl = addLabel(L.type === 'limb' ? `${L.id} (${L.angle.replace('-', '\u2212')})` : L.id, 'lead', () => chestLeadAnchor(L.id) || new THREE.Vector3(...lp).multiplyScalar(L.type === 'limb' ? limbScale : 1), undefined, { leadId: L.id });
     leadObjs[L.id] = { grp, matPos, matNeg, pos, negR, marker, pick, lbl, pole };
   }
+  buildOrientationCues();
   // the arrow's shadow on the selected lead: thick black-and-white striped bar with a black outline
   const pg = new THREE.CylinderGeometry(0.07, 0.07, 1, 14);
   projBar = new THREE.Mesh(pg, new THREE.ShaderMaterial({ uniforms: { uLen: { value: 1 } }, // depth-tested: hidden where it passes inside the heart
     vertexShader: 'varying float vY; void main() { vY = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: 'varying float vY; uniform float uLen; void main() { float s = fract(vY * uLen / 0.3); gl_FragColor = vec4(vec3(s < 0.5 ? 0.07 : 1.0), 1.0); }' }));
   projOut = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide }));
-  projOut.scale.set(1.45, 1, 1.45); projBar.add(projOut); projBar.renderOrder = 31; projOut.renderOrder = 30; scene.add(projBar);
+  projOut.scale.set(1.45, 1, 1.45); projBar.add(projOut);
+  projBar.material.depthTest = false; projBar.material.depthWrite = false;
+  projOut.material.depthTest = false; projOut.material.depthWrite = false;
+  projBar.renderOrder = 45; projOut.renderOrder = 44; scene.add(projBar);
+  const projHead = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 14), new THREE.MeshBasicMaterial({ color: COL.black, depthTest: false, depthWrite: false }));
+  projHead.name = 'projHead'; projHead.renderOrder = 46; projBar.add(projHead);
   projLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
     new THREE.LineDashedMaterial({ color: COL.black, dashSize: 0.12, gapSize: 0.08, depthTest: false }));
   projLine.renderOrder = 31; scene.add(projLine);
@@ -975,21 +1925,38 @@ function buildScene() {
 
   arrow = new THREE.Group();
   const am = new THREE.MeshBasicMaterial({ color: COL.black, depthTest: false, depthWrite: false });
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 1, 12), am); shaft.name = 'shaft';
-  const head = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.45, 16), am); head.name = 'head';
-  shaft.renderOrder = 33; head.renderOrder = 33; arrow.add(shaft, head); scene.add(arrow);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.155, 1, 16), am); shaft.name = 'shaft';
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.78, 20), am); head.name = 'head';
+  shaft.renderOrder = 52; head.renderOrder = 53; arrow.add(shaft, head); scene.add(arrow);
   const halo = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide, depthTest: false, depthWrite: false });
-  for (const m of [shaft, head]) { const h = new THREE.Mesh(m.geometry, halo); h.scale.set(1.7, m === head ? 1.25 : 1, 1.7); h.renderOrder = 32; m.add(h); }
-  const dotS = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), am); dotS.renderOrder = 32; scene.add(dotS);
-  vecLabel = addLabel('Mean vector', 'vec', () => { const l = arrowTip.length(); return l < 0.4 ? null : arrowTip.clone().multiplyScalar((l + 0.7) / l); });
+  for (const m of [shaft, head]) { const h = new THREE.Mesh(m.geometry, halo); h.scale.set(1.75, m === head ? 1.28 : 1, 1.75); h.renderOrder = 51; m.add(h); }
+  const dotS = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), am); dotS.name = 'vecOrigin'; dotS.renderOrder = 52; scene.add(dotS);
+  const dotHalo = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), halo); dotHalo.renderOrder = 51; dotS.add(dotHalo);
+  // Fixed label near the origin; it does not travel with the arrow tip.
+  vecLabel = addLabel("Heart's electrical vector", 'vec', () => new THREE.Vector3(0, 0, 0));
+  vecLabel.tag = 'vec';
   trail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: COL.grey, dashSize: 0.06, gapSize: 0.05, depthTest: false }));
   trail.renderOrder = 29; scene.add(trail);
 }
 
 /* Wall the selected lead faces: black wire mesh plus a dashed label (pattern, not colour alone) */
+let lastRegionBuilt = null;
+function clearRegionMeshes() {
+  for (const m of regionMeshes) { if (m.parent) m.parent.remove(m); m.geometry.dispose(); }
+  regionMeshes = []; lastRegionBuilt = null;
+  if (regionLabel) regionLabel.visible = false;
+}
+function ensureRegion(region) {
+  if (!region || !renderer) { clearRegionMeshes(); return; }
+  if (lastRegionBuilt === region && regionMeshes.length) {
+    for (const m of regionMeshes) m.visible = true;
+    if (regionLabel) regionLabel.visible = true;
+    return;
+  }
+  buildRegion(region);
+}
 function buildRegion(region) {
-  for (const m of regionMeshes) { m.parent.remove(m); m.geometry.dispose(); }
-  regionMeshes = []; if (regionLabel) regionLabel.visible = false;
+  clearRegionMeshes();
   if (!region || !renderer) return;
   const mat = new THREE.LineBasicMaterial({ color: 0x111111, depthTest: false, transparent: true, opacity: 0.22 });
   const centroid = new THREE.Vector3(); let cn = 0; const nm = new THREE.Matrix3().getNormalMatrix(HEART_VIS);
@@ -1020,19 +1987,60 @@ function buildRegion(region) {
     regionLabel.el.textContent = txt;
     const push = { inferior: [0, -0.7, 0.3], lateral: [0.8, 0, 0], septal: [0, 0.2, 0.9], anterior: [0, 0.3, 0.9] }[region];
     regionLabel.pos = centroid.clone().add(new THREE.Vector3(...push)); regionLabel.visible = true;
+    regionLabel._bw = regionLabel._bh = 0;
   }
+  lastRegionBuilt = region;
+}
+function isPoleBehind(pole) {
+  if (!camera || !pole) return false;
+  const p = new THREE.Vector3(...pole);
+  const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+  const dPole = p.clone().sub(camera.position).dot(camDir);
+  const dCentre = orbit.target.clone().sub(camera.position).dot(camDir);
+  return dPole > dCentre + 0.15;
 }
 function setLeadStyles() {
   if (!renderer) return;
+  const view = state.view;
+  // Front: limb pills only. Chest-leads view: chest pills only. Free rotate (and custom): both.
+  const showLimbPills = view !== 'transverse';
+  const showChestPills = view !== 'frontal' && view !== 'section';
+  const showLimbRods = view !== 'transverse';
+  const showChestRods = view !== 'frontal' && view !== 'section';
   for (const L of LEADS) {
     const o = leadObjs[L.id]; const sel = L.id === state.sel;
-    const dim = !sel && ((state.view === 'frontal' && L.type === 'chest') || (state.view === 'transverse' && L.type === 'limb'));
-    o.grp.visible = sel || ui.allLeads; // default: only the selected lead is drawn
-    for (const m of [o.matPos, o.matNeg]) { m.color.setHex(sel ? COL.black : COL.leadGrey); m.transparent = dim; m.opacity = dim ? 0.15 : 1; m.depthWrite = !dim; m.needsUpdate = true; }
-    const s = sel ? 2.8 : 1; o.pos.scale.set(s, 1, s); o.negR.children.forEach(c => c.scale.set(s, 1, s)); o.marker.scale.setScalar(sel ? 1.5 : 1);
-    o.lbl.el.className = 'lbl lead' + (sel ? ' sel' : dim ? ' dim' : ''); o.lbl.visible = sel || (ui.allLeads && !dim);
+    const inGroup = L.type === 'limb' ? showLimbRods : showChestRods;
+    const showRod = sel || (ui.allLeads && inGroup);
+    const inViewPills = L.type === 'limb' ? showLimbPills : showChestPills;
+    const noneOn = ui.labelMode === 'custom' && LABEL_GROUPS.every(g => !ui.labelGroups[g]);
+    const hideExtraTags = ui.labelMode === 'custom' && !ui.labelGroups.leads && !noneOn;
+    const showPill = sel || (inViewPills && (ui.allLeads || !!ui.labelGroups.leads) && !hideExtraTags);
+    o.grp.visible = showRod || (L.type === 'chest');
+    o.pos.visible = showRod;
+    o.negR.visible = showRod && L.type === 'limb';
+    o.marker.visible = L.type === 'chest' ? true : showRod;
+    if (o.pick) o.pick.visible = showRod || L.type === 'chest';
+    for (const m of [o.matPos, o.matNeg]) {
+      m.color.setHex(sel ? COL.blue : COL.leadGrey);
+      m.transparent = false;
+      m.opacity = 1;
+      m.depthWrite = true;
+      m.needsUpdate = true;
+    }
+    const sc = sel ? 2.6 : 1;
+    o.pos.scale.set(sc, 1, sc);
+    o.negR.children.forEach(c => c.scale.set(sc, 1, sc));
+    o.marker.scale.setScalar(sel ? 1.45 : 1);
+    const behind = isPoleBehind(o.pole);
+    o.lbl.el.className = 'lbl lead' + (sel ? ' sel' : '') + (behind && !sel ? ' behind' : '');
+    const ang = L.angle ? ' (' + L.angle.replace('-', '\u2212') + ')' : '';
+    o.lbl.el.textContent = L.type === 'limb' ? (L.id + ang) : L.id;
+    if (L.type === 'limb') o.lbl.el.title = L.id + ang;
+    o.lbl.el.setAttribute('aria-label', 'Select lead ' + L.id);
+    o.lbl.el.setAttribute('aria-pressed', String(!!sel));
+    o.lbl.visible = showPill;
   }
-  if (frontLabel) frontLabel.visible = state.view === 'transverse';
+  if (frontLabel) frontLabel.visible = false;
   needsRender = true;
 }
 const _q = new THREE.Vector3();
@@ -1050,75 +2058,197 @@ function updateScene() {
     avRing.geometry.dispose(); avRing.geometry = new THREE.RingGeometry(0.32, 0.44, 48, 1, Math.PI / 2, -Math.max(0.01, avP * Math.PI * 2));
     for (const m of [avRing, avRingBack]) { m.position.copy(avW); m.quaternion.copy(camera.quaternion); }
   }
-  avLabel.el.textContent = avHold ? `AV node: held ${Math.round(t - M.tAV)} of ${Math.round(M.tHis - M.tAV)} ms` : 'AV node';
+  const avTxt = (ui.labelMode !== 'guided' && avHold) ? `AV node: held ${Math.round(t - M.tAV)} of ${Math.round(M.tHis - M.tAV)} ms` : 'AV node';
+  if (avLabel.el.textContent !== avTxt) { avLabel.el.textContent = avTxt; avLabel._bw = avLabel._bh = 0; }
   // travelling pulses
   for (const b of beads) {
     const sg = M.seg[b.s.id]; const on = t >= sg.start && t <= sg.end;
     b.bead.visible = on; if (on) b.bead.position.set(...polyAt(b.s.pts, (t - sg.start) * sg.v));
   }
   applyLabelVisibility();
-  // mean vector
-  const D = dipole(t); const mag = Math.hypot(...D); const len = mag * VEC_SCALE;
+  // Heart's electrical vector: always drawn on top, in every view.
+  const D = dipole(t); const mag = Math.hypot(...D);
   const shaft = arrow.getObjectByName('shaft'), head = arrow.getObjectByName('head');
-  arrow.visible = len > 0.03;
-  if (arrow.visible) {
-    arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), _q.set(...D).normalize());
-    const hl = Math.min(0.45, len * 0.45); head.scale.setScalar(hl / 0.45);
-    shaft.scale.set(1, Math.max(0.001, len - hl), 1); shaft.position.set(0, (len - hl) / 2, 0); head.position.set(0, len - hl / 2, 0);
+  const vecOn = mag > VEC_HIDE;
+  arrow.visible = vecOn;
+  const originDot = scene.getObjectByName('vecOrigin');
+  if (originDot) originDot.visible = vecOn;
+  let drawLen = 0;
+  if (vecOn) {
+    const dir = _q.set(...D).normalize();
+    arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    drawLen = Math.max(VEC_MIN_LEN, mag * VEC_SCALE);
+    const hl = 0.78;
+    shaft.scale.set(1, Math.max(0.001, drawLen - hl), 1);
+    shaft.position.set(0, (drawLen - hl) / 2, 0);
+    head.scale.setScalar(1);
+    head.position.set(0, drawLen - hl / 2, 0);
   }
-  arrowTip.set(D[0], D[1], D[2]).multiplyScalar(VEC_SCALE);
+  if (vecLabel) vecLabel.visible = vecOn;
+  arrowTip.set(D[0], D[1], D[2]).multiplyScalar(vecOn ? drawLen / (mag || 1) : 0);
   const pts = []; for (let i = 0; i <= Math.round(t); i += 2) { const d = dipole(i); pts.push(new THREE.Vector3(d[0], d[1], d[2]).multiplyScalar(VEC_SCALE)); }
   trail.geometry.dispose(); trail.geometry = new THREE.BufferGeometry().setFromPoints(pts.length > 1 ? pts : [new THREE.Vector3(), new THREE.Vector3()]); trail.computeLineDistances();
-  // projection on the selected lead
-  const L = LEAD[state.sel]; const u = new THREE.Vector3(...L.dir); const p = arrowTip.dot(u); const foot = u.clone().multiplyScalar(p);
-  const showProj = ui.labelAll || phaseAt(t).key === 'main';
-  projBar.visible = showProj && Math.abs(p) > 0.03;
-  if (projBar.visible) { projBar.material.uniforms.uLen.value = Math.abs(p); projBar.scale.set(1, Math.abs(p), 1); projBar.position.copy(foot).multiplyScalar(0.5); projBar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), u.clone().multiplyScalar(Math.sign(p))); }
-  const vNow = TRACE[L.id][Math.round(t)];
-  projLabel.visible = showProj && Math.abs(p) > 0.3; projLabel.el.textContent = `${L.id}: ${(vNow >= 0 ? '+' : '\u2212') + Math.abs(vNow).toFixed(2)} mV`;
-  projLabel.pos = foot.clone().add(u.clone().multiplyScalar(Math.sign(p) * 0.5));
-  projLine.geometry.setFromPoints([arrowTip.clone(), foot]); projLine.computeLineDistances(); projLine.visible = showProj && arrow.visible;
+  // Dashed projection of the vector onto the selected lead, along that lead's rod (ties to trace height).
+  const L = LEAD[state.sel]; const u = new THREE.Vector3(...L.dir); const p = vecOn ? arrowTip.dot(u) : 0; const foot = u.clone().multiplyScalar(p);
+  const showProj = vecOn && Math.abs(p) > 0.08;
+  projBar.visible = showProj;
+  if (showProj) {
+    const plen = Math.abs(p);
+    projBar.material.uniforms.uLen.value = plen;
+    projBar.scale.set(1, plen, 1);
+    projBar.position.copy(foot).multiplyScalar(0.5);
+    projBar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), u.clone().multiplyScalar(Math.sign(p) || 1));
+    const ph = projBar.getObjectByName('projHead');
+    if (ph) { ph.position.set(0, 0.5, 0); ph.scale.set(1, 1 / Math.max(0.001, plen), 1); }
+  }
+  projLabel.visible = false;
+  projLine.visible = false;
+  maybeRelayoutForPhase();
   needsRender = true;
 }
 
 /* ======================= Camera and interaction ======================= */
 let camAnim = null;
+function updateGizmo() {
+  const g = $('orientAxes'); if (!g || !camera) return;
+  camera.updateMatrixWorld();
+  const inv = new THREE.Matrix4().copy(camera.matrixWorld).invert();
+  const cx = 48, cy = 48, scale = 30;
+  const axes = [
+    { dir: new THREE.Vector3(0, 1, 0), pos: 'Head', neg: 'Feet', cls: 'axis-hf' },
+    { dir: new THREE.Vector3(1, 0, 0), pos: 'L', neg: 'R', cls: 'axis-lr lab-lr' },
+    { dir: new THREE.Vector3(0, 0, 1), pos: 'Front', neg: 'Back', cls: 'axis-fb' }
+  ];
+  const parts = [];
+  // Depth-sort so nearer arrows are drawn last
+  const drawn = axes.map(a => {
+    const v = a.dir.clone().transformDirection(inv);
+    return { a, v, depth: v.z };
+  }).sort((p, q) => p.depth - q.depth);
+  for (const { a, v } of drawn) {
+    const x2 = cx + v.x * scale, y2 = cy - v.y * scale;
+    const x0 = cx - v.x * scale, y0 = cy + v.y * scale;
+    // Arrow along +dir to the positive label; a short tail to the opposite name
+    const ang = Math.atan2(y2 - cy, x2 - cx);
+    const ah = 6, aw = 3.6;
+    const p1x = x2 - Math.cos(ang) * ah + Math.sin(ang) * aw;
+    const p1y = y2 - Math.sin(ang) * ah - Math.cos(ang) * aw;
+    const p2x = x2 - Math.cos(ang) * ah - Math.sin(ang) * aw;
+    const p2y = y2 - Math.sin(ang) * ah + Math.cos(ang) * aw;
+    parts.push(`<line class="orient-axis ${a.cls}" x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`);
+    parts.push(`<polygon class="orient-head" points="${x2.toFixed(1)},${y2.toFixed(1)} ${p1x.toFixed(1)},${p1y.toFixed(1)} ${p2x.toFixed(1)},${p2y.toFixed(1)}"/>`);
+    const lx = cx + v.x * (scale + 11), ly = cy - v.y * (scale + 11);
+    const rx = cx - v.x * (scale + 11), ry = cy + v.y * (scale + 11);
+    const labCls = 'orient-lab' + (a.cls.indexOf('lr') >= 0 ? ' lab-lr' : '');
+    parts.push(`<text class="${labCls}" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}">${a.pos}</text>`);
+    parts.push(`<text class="${labCls}" x="${rx.toFixed(1)}" y="${ry.toFixed(1)}">${a.neg}</text>`);
+  }
+  g.innerHTML = parts.join('');
+}
+
 function placeCamera() {
   const { az, el, r, target } = orbit;
   camera.position.set(target.x + r * Math.cos(el) * Math.sin(az), target.y + r * Math.sin(el), target.z + r * Math.cos(el) * Math.cos(az));
   camera.up.set(0, 1, 0); camera.lookAt(target); needsRender = true;
+  if ($('viewNote')) setViewCaption(state.view, VIEWS[state.view]);
+  updateGizmo();
+  if (renderer && leadObjs && Object.keys(leadObjs).length) setLeadStyles();
+  requestLabelLayout(0);
+}
+function setViewPressed(name) {
+  document.querySelectorAll('.view-btn').forEach(b => {
+    const on = !!name && b.dataset.view === name;
+    b.setAttribute('aria-pressed', String(on));
+    b.classList.toggle('is-current', on);
+  });
 }
 function goView(name, instant) {
   const v = VIEWS[name]; state.view = name;
-  document.querySelectorAll('.view-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
-  $('viewNote').textContent = v.note; setLeadStyles();
+  setViewPressed(name);
+  setViewCaption(name, v); setLeadStyles();
   if (!renderer) return;
   if (name === 'section' && !ui.cut) setCut(true);
   const fit = fitView(v, name); const tgt = fit.target, r = fit.r;
-  if (instant || REDUCED) { orbit.az = v.az; orbit.el = v.el; orbit.r = r; orbit.target.copy(tgt); placeCamera(); return; }
+  if (instant || REDUCED) {
+    for (const L of labels) { L.px = null; L.py = null; L.colSide = null; }
+    orbit.az = v.az; orbit.el = v.el; orbit.r = r; orbit.target.copy(tgt);
+    placeCamera();
+    if (renderer) updateLabels();
+    return;
+  }
   const daz = ((v.az - orbit.az) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
   orbit.target.copy(tgt);
   camAnim = { t0: performance.now(), from: { az: orbit.az, el: orbit.el, r: orbit.r }, to: { az: orbit.az + daz, el: v.el, r } };
 }
-/* Frame the heart: it fills about 65% of the canvas height (60% in the 3D view), centred */
-let HEART_BOX = null;
+/* Frame the heart from its actual drawn outline, tightly, so it stays a similar on-screen size in the shorter stage.
+   The camera is then shifted up a little so the caption overlay at the bottom does not cover the heart.
+   The limb lead rods are then shortened, if needed, so their + ends and labels stay inside the frame. */
+let HEART_PTS = null, limbScale = 1;
+function heartPoints() {
+  if (HEART_PTS) return HEART_PTS;
+  scene.updateMatrixWorld(true); HEART_PTS = []; const v = new THREE.Vector3();
+  for (const m of [...shells.map(s => s.mesh), svcMesh]) {
+    const pos = m.geometry.attributes.position; const step = Math.max(1, Math.floor(pos.count / 1500));
+    for (let i = 0; i < pos.count; i += step) HEART_PTS.push(v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).clone());
+  }
+  return HEART_PTS;
+}
+function setLimbScale(sc) {
+  limbScale = sc;
+  for (const L of LEADS) { if (L.type !== 'limb') continue; const o = leadObjs[L.id]; o.grp.scale.setScalar(sc); o.marker.scale.setScalar(1 / sc); }
+  needsRender = true;
+}
 function fitView(v, name) {
-  if (name === 'transverse') return { target: new THREE.Vector3(0, 0.3, 0), r: v.r };
-  if (!HEART_BOX) { scene.updateMatrixWorld(true); HEART_BOX = new THREE.Box3(); for (const s of shells) HEART_BOX.expandByObject(s.mesh); HEART_BOX.expandByObject(svcMesh); }
-  const c = HEART_BOX.getCenter(new THREE.Vector3());
+  const P = heartPoints().slice();
+  if (name === 'transverse') {
+    // Frame the heart and V1-V6 only, so this view fills the viewport. R and L marks stay on screen as HTML overlays.
+    for (const id of CHEST_IDS) P.push(chestPole(id).clone());
+  } else if (torso) {
+    const rp = torso.userData.rPos, lp = torso.userData.lPos;
+    if (rp) P.push(rp.clone()); if (lp) P.push(lp.clone());
+    P.push(new THREE.Vector3(0.3, 3.7, 0.4));
+  }
+  if (name === 'transverse') setLimbScale(1);
   const dir = new THREE.Vector3(Math.cos(v.el) * Math.sin(v.az), Math.sin(v.el), Math.cos(v.el) * Math.cos(v.az));
   const right = new THREE.Vector3(0, 1, 0).cross(dir).normalize(), up = dir.clone().cross(right).normalize();
-  let hh = 0, hw = 0, hd = 0; const b = HEART_BOX;
-  for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
-    const q = new THREE.Vector3(x, y, z).sub(c); hh = Math.max(hh, Math.abs(q.dot(up))); hw = Math.max(hw, Math.abs(q.dot(right))); hd = Math.max(hd, Math.abs(q.dot(dir)));
+  const tf = Math.tan(camera.fov / 2 * DEG), asp = camera.aspect || 1;
+  // Tighter frame: about 76% of canvas height (72% in the 3D view).
+  const frac = name === 'transverse' ? 0.84 : name === 'oblique' ? 0.72 : 0.76;
+  const fracW = name === 'transverse' ? 0.86 : 0.84;
+  // centre: middle of the outline in the screen plane (orthographic estimate, refined below)
+  const target = new THREE.Vector3(); let r = 12;
+  const ext = (tg, rr) => { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const q = new THREE.Vector3();
+    for (const p of P) { q.copy(p).sub(tg); const z = rr - q.dot(dir); const x = q.dot(right) / (z * tf * asp), y = q.dot(up) / (z * tf);
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return { x0, x1, y0, y1 }; };
+  for (let it = 0; it < 4; it++) {
+    const e = ext(target, r);
+    const z = r; // shift the target so the outline is centred on screen
+    target.addScaledVector(right, (e.x0 + e.x1) / 2 * z * tf * asp).addScaledVector(up, (e.y0 + e.y1) / 2 * z * tf);
+    const e2 = ext(target, r); const k = Math.max((e2.y1 - e2.y0) / 2 / frac, (e2.x1 - e2.x0) / 2 / fracW);
+    r = r * k;
   }
-  const frac = name === 'oblique' ? 0.6 : 0.66; const tf = Math.tan(camera.fov / 2 * DEG);
-  // the box overestimates a rounded heart, so use 0.82 of its extent
-  const r = Math.max(0.82 * hh / frac / tf, 0.82 * hw / (0.62 * camera.aspect) / tf) + 0.5 * hd;
-  return { target: c, r };
+  // limb rods: keep each + end (and its label just beyond) inside the frame, except in the chest-leads view
+  let sc = 1; const q = new THREE.Vector3();
+  if (name !== 'transverse') {
+    for (const L of LEADS) {
+      if (L.type !== 'limb') continue;
+      q.set(...leadObjs[L.id].pole).multiplyScalar(1.12).sub(target);
+      const z = r - q.dot(dir); const x = Math.abs(q.dot(right) / (z * tf * asp)), y = Math.abs(q.dot(up) / (z * tf));
+      const need = Math.max(x / 0.86, y / 0.86); if (need > 1) sc = Math.min(sc, 1 / need);
+    }
+  }
+  // Keep the heart above the compact caption overlay.
+  const stageH = stage.clientHeight || 1;
+  const bottomPx = 38;
+  const padPx = (1 - frac) / 2 * stageH;
+  const shift = Math.max(0, Math.min((padPx - 6) / stageH, (bottomPx - padPx) / stageH));
+  if (shift > 0) target.addScaledVector(up, -shift * r * tf);
+  setLimbScale(name === 'transverse' ? 1 : Math.max(0.55, sc));
+  return { target, r };
 }
 function markCustom() {
-  if (state.view !== 'custom') { state.view = 'custom'; document.querySelectorAll('.view-btn').forEach(b => b.setAttribute('aria-pressed', 'false')); $('viewNote').textContent = 'Custom 3D view. Use Reset view to return to the frontal view.'; setLeadStyles(); }
+  if (state.view !== 'custom') { state.view = 'custom'; setViewPressed(null); setViewCaption('custom'); setLeadStyles(); }
 }
 function initInteraction() {
   let drag = null; const pointers = new Map(); let pinch0 = null;
@@ -1154,7 +2284,7 @@ function initInteraction() {
     const r = canvas.getBoundingClientRect(); ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
     const hit = ray.intersectObjects(LEADS.map(L => [leadObjs[L.id].pick, leadObjs[L.id].marker]).flat(), false)[0];
-    if (hit) select(hit.object.userData.lead);
+    if (hit) select(hit.object.userData.lead, true);
   }
 }
 function resize() {
@@ -1163,7 +2293,8 @@ function resize() {
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
     U.uPx.value = dpr; needsRender = true;
   }
-  drawECG(); drawMini(); drawZoom();
+  drawECG(); drawMini(); syncCloseup();
+  requestLabelLayout(0);
 }
 
 /* ======================= Labels in the 3D view (collision-avoiding) ======================= */
@@ -1173,53 +2304,503 @@ function effPrio(L) { return L.el.classList.contains('sel') || L.el.classList.co
 const SVGNS = 'http://www.w3.org/2000/svg';
 const leaderSvg = document.createElementNS(SVGNS, 'svg'); leaderSvg.setAttribute('class', 'leaders'); leaderSvg.setAttribute('aria-hidden', 'true');
 labelLayer.prepend(leaderSvg);
+let labelsDirty = true, labelLayoutTimer = 0, lastGuidedKey = null;
+function requestLabelLayout(delay) {
+  if (delay) {
+    if (labelLayoutTimer) clearTimeout(labelLayoutTimer);
+    labelLayoutTimer = setTimeout(() => { labelLayoutTimer = 0; labelsDirty = true; needsRender = true; }, delay);
+    return;
+  }
+  if (labelLayoutTimer) { clearTimeout(labelLayoutTimer); labelLayoutTimer = 0; }
+  labelsDirty = true;
+  needsRender = true;
+}
+function maybeRelayoutForPhase() {
+  const key = (ui.labelMode || '') + '|' + (ui.allLeads ? 'all' : 'one') + '|' + state.sel + '|' + phaseAt(state.t).key;
+  if (key !== lastGuidedKey) { lastGuidedKey = key; requestLabelLayout(0); }
+}
+let _heartShape = null, _heartShapeKey = '';
+function heartScreenShape() {
+  const key = [orbit.az, orbit.el, orbit.r, orbit.target.x, orbit.target.y, orbit.target.z, stage.clientWidth, stage.clientHeight, !!ui.cut].join('|');
+  if (_heartShape && _heartShapeKey === key) return _heartShape;
+  const P = heartPoints();
+  const v = new THREE.Vector3();
+  const w = stage.clientWidth, h = stage.clientHeight;
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, sx = 0, sy = 0, n = 0;
+  for (const p of P) {
+    v.copy(p).project(camera);
+    if (v.z > 1 || Math.abs(v.x) > 1.3 || Math.abs(v.y) > 1.3) continue;
+    const x = ((v.x + 1) / 2) * w, y = ((1 - v.y) / 2) * h;
+    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    sx += x; sy += y; n++;
+  }
+  const shape = !n
+    ? { cx: w / 2, cy: h / 2, rx: w * 0.22, ry: h * 0.28 }
+    : { cx: sx / n, cy: sy / n, rx: Math.max(18, (x1 - x0) / 2 + 6), ry: Math.max(18, (y1 - y0) / 2 + 6) };
+  _heartShape = shape; _heartShapeKey = key;
+  return shape;
+}
+function labelBoxSize(L) {
+  const col = L.el.classList.contains('col');
+  if (L._bw && L._sizeText === L.el.textContent && L._col === col) return { bw: L._bw, bh: L._bh };
+  const bw = L.el.offsetWidth || 90, bh = L.el.offsetHeight || 18;
+  L._bw = bw; L._bh = bh; L._sizeText = L.el.textContent; L._col = col;
+  return { bw, bh };
+}
+let _torsoShape = null, _torsoShapeKey = '';
+function torsoScreenShape() {
+  const key = [orbit.az, orbit.el, orbit.r, orbit.target.x, orbit.target.y, orbit.target.z, stage.clientWidth, stage.clientHeight].join('|');
+  if (_torsoShape && _torsoShapeKey === key) return _torsoShape;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const env = torso && torso.userData && torso.userData.envelope;
+  if (!env || !env.length) {
+    _torsoShape = { cx: w / 2, cy: h / 2, rx: w * 0.28, ry: h * 0.36, x0: w * 0.2, x1: w * 0.8 };
+    _torsoShapeKey = key; return _torsoShape;
+  }
+  const v = new THREE.Vector3();
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, sx = 0, sy = 0, n = 0;
+  for (const p of env) {
+    v.copy(p).project(camera);
+    if (v.z > 1 || Math.abs(v.x) > 1.4 || Math.abs(v.y) > 1.4) continue;
+    const x = ((v.x + 1) / 2) * w, y = ((1 - v.y) / 2) * h;
+    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    sx += x; sy += y; n++;
+  }
+  const shape = !n
+    ? { cx: w / 2, cy: h / 2, rx: w * 0.28, ry: h * 0.36, x0: w * 0.2, x1: w * 0.8 }
+    : { cx: sx / n, cy: sy / n, rx: Math.max(20, (x1 - x0) / 2 + 4), ry: Math.max(20, (y1 - y0) / 2 + 4), x0, x1 };
+  _torsoShape = shape; _torsoShapeKey = key;
+  return shape;
+}
+function easeLabelPos(L, x, y) {
+  if (L.px == null || Math.hypot(x - L.px, y - (L.py || 0)) > 160) { L.px = x; L.py = y; }
+  else {
+    L.px += (x - L.px) * 0.38;
+    L.py += (y - L.py) * 0.38;
+    if (Math.hypot(x - L.px, y - L.py) < 0.4) { L.px = x; L.py = y; }
+    else labelsDirty = true; // keep easing on later frames even when the camera has stopped
+  }
+  return { x: L.px, y: L.py };
+}
+const COL_ANATOMY = new Set(['cond', 'node', 'heart', 'landmark', 'region']);
+const _occRay = new THREE.Raycaster();
+function isAnchorOccluded(worldPos) {
+  if (!camera || !worldPos || !orbit || !orbit.target) return false;
+  const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+  const dPole = worldPos.clone().sub(camera.position).dot(camDir);
+  const dCentre = orbit.target.clone().sub(camera.position).dot(camDir);
+  return dPole > dCentre + 0.45;
+}
+
+function clipLeaderToHeart(x1, y1, x2, y2, H, pad) {
+  const rx = H.rx + (pad || 8), ry = H.ry + (pad || 8);
+  const fx = (x, y) => {
+    const dx = (x - H.cx) / rx, dy = (y - H.cy) / ry;
+    return dx * dx + dy * dy;
+  };
+  const v1 = fx(x1, y1), v2 = fx(x2, y2);
+  if (v1 <= 1) return null;
+  if (v2 > 1) {
+    for (let t = 0.12; t <= 0.88; t += 0.08) {
+      if (fx(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t) < 1) return null;
+    }
+    return { x: x2, y: y2 };
+  }
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 16; i++) {
+    const mid = (lo + hi) / 2;
+    if (fx(x1 + (x2 - x1) * mid, y1 + (y2 - y1) * mid) > 1) lo = mid; else hi = mid;
+  }
+  return { x: x1 + (x2 - x1) * hi, y: y1 + (y2 - y1) * hi };
+}
+function layoutColumnLabels(items, w, h, lines, H, chromeBottom) {
+  // Columns sit in the blank space outside the torso, at the far left and right of the viewport.
+  // Leaders run to the exact model anchor. Labels are sorted by projected anchor y so leaders do not cross.
+  const gap = 5, padX = 8, hyst = 36;
+  const T = torsoScreenShape();
+  const gizmo = $('orientGizmo');
+  const gizmoH = gizmo ? Math.max(80, gizmo.getBoundingClientRect().height + 6) : 100;
+  const minY = 18, maxY = h - 12;
+  if (!(chromeBottom > 0)) chromeBottom = h - 28;
+  const mid = T.cx || w / 2;
+  const left = [], right = [];
+  for (const it of items) {
+    if (it.L.colSide == null) it.L.colSide = it.ax < mid ? 'left' : 'right';
+    else if (it.ax < mid - hyst) it.L.colSide = 'left';
+    else if (it.ax > mid + hyst) it.L.colSide = 'right';
+    (it.L.colSide === 'left' ? left : right).push(it);
+  }
+  const place = (list, side) => {
+    list.sort((a, b) => a.ay - b.ay);
+    const boxes = [];
+    const topMin0 = (side === 'right' ? Math.max(minY, gizmoH + 6) : minY);
+    const botMax0 = Math.min(maxY, chromeBottom);
+    const sized = list.map(it => {
+      it.L.el.classList.add('col');
+      it.L.el.classList.remove('hidden');
+      it.L._bw = 0;
+      const { bw, bh } = labelBoxSize(it.L);
+      const torsoEdge = side === 'left' ? T.x0 : T.x1;
+      let x;
+      if (side === 'left') x = Math.min(padX + bw / 2, torsoEdge - 10 - bw / 2);
+      else x = Math.max(w - padX - bw / 2, torsoEdge + 10 + bw / 2);
+      x = Math.max(bw / 2 + 4, Math.min(w - bw / 2 - 4, x));
+      return { it, bw, bh, x };
+    });
+    const n = sized.length;
+    const sumH = sized.reduce((a, s) => a + s.bh, 0);
+    const needed = sumH + (n > 1 ? gap * (n - 1) : 0);
+    // Prefer to sit below the gizmo on the right, but if the stack cannot fit above the
+    // caption / Info button, encroach the gizmo rather than running off the bottom.
+    let top = topMin0, bot = botMax0;
+    if (n && needed > bot - top) top = Math.max(minY, bot - needed);
+    const ys = sized.map(s => Math.min(bot - s.bh / 2, Math.max(top + s.bh / 2, s.it.ay)));
+    for (let i = 1; i < n; i++) {
+      const minYi = ys[i - 1] + (sized[i - 1].bh + sized[i].bh) / 2 + gap;
+      if (ys[i] < minYi) ys[i] = minYi;
+    }
+    if (n && ys[n - 1] + sized[n - 1].bh / 2 > bot) {
+      const overflow = ys[n - 1] + sized[n - 1].bh / 2 - bot;
+      for (let i = 0; i < n; i++) ys[i] -= overflow;
+    }
+    if (n && ys[0] - sized[0].bh / 2 < top) {
+      const avail = Math.max(1, bot - top);
+      const g = n > 1 ? Math.max(1, Math.min(gap, (avail - sumH) / (n - 1))) : gap;
+      ys[0] = top + sized[0].bh / 2;
+      for (let i = 1; i < n; i++) ys[i] = ys[i - 1] + (sized[i - 1].bh + sized[i].bh) / 2 + g;
+    }
+    let gizmoBox = null;
+    if (side === 'right' && gizmo) {
+      const gb = gizmo.getBoundingClientRect();
+      const sr = stage.getBoundingClientRect();
+      if (gb.width > 0) gizmoBox = { x0: gb.left - sr.left - 6, y0: gb.top - sr.top - 6, y1: gb.bottom - sr.top + 6 };
+    }
+    for (let i = 0; i < n; i++) {
+      const s = sized[i], it = s.it, el = it.L.el;
+      el.classList.add('col');
+      el.classList.toggle('faded', !!it.occluded);
+      el.classList.remove('hidden');
+      const y = ys[i];
+      let x = s.x;
+      // If this row would sit on the orientation gizmo, slide it left of the gizmo, still outside the torso.
+      if (gizmoBox && y + s.bh / 2 > gizmoBox.y0 && y - s.bh / 2 < gizmoBox.y1) {
+        const leftOf = gizmoBox.x0 - s.bw / 2;
+        if (leftOf > s.bw / 2 + 4) x = Math.min(x, leftOf);
+      }
+      const e = easeLabelPos(it.L, x, y);
+      el.style.transform = `translate(${e.x}px, ${e.y}px) translate(-50%, -50%)`;
+      boxes.push({ x, y, h: s.bh, w: s.bw, L: it.L, ax: it.ax, ay: it.ay, occluded: it.occluded });
+    }
+    // Leaders: label edge to the exact anchor, thin dark line and a small dot. Skip if the line would
+    // pass through another label box on this side (y-sort almost always prevents this).
+    for (const b of boxes) {
+      const edgeX = side === 'left' ? b.x + b.w / 2 : b.x - b.w / 2;
+      const fade = b.occluded ? ' faded' : '';
+      let crosses = false;
+      for (const o of boxes) {
+        if (o === b) continue;
+        const x0 = o.x - o.w / 2, x1 = o.x + o.w / 2, y0 = o.y - o.h / 2, y1 = o.y + o.h / 2;
+        // segment (edgeX,b.y) -> (b.ax,b.ay) vs box
+        const hits = (px, py, qx, qy) => {
+          const minx = Math.min(px, qx), maxx = Math.max(px, qx), miny = Math.min(py, qy), maxy = Math.max(py, qy);
+          if (maxx < x0 || minx > x1 || maxy < y0 || miny > y1) return false;
+          // if the segment crosses the interior of the other box
+          for (let t = 0.08; t <= 0.92; t += 0.08) {
+            const x = px + (qx - px) * t, y = py + (qy - py) * t;
+            if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return true;
+          }
+          return false;
+        };
+        if (hits(edgeX, b.y, b.ax, b.ay)) { crosses = true; break; }
+      }
+      if (!crosses) {
+        lines.push(`<line class="col-leader${fade}" x1="${edgeX.toFixed(1)}" y1="${b.y.toFixed(1)}" x2="${b.ax.toFixed(1)}" y2="${b.ay.toFixed(1)}"/><circle class="col-dot${fade}" cx="${b.ax.toFixed(1)}" cy="${b.ay.toFixed(1)}" r="2.2"/>`);
+      } else {
+        lines.push(`<circle class="col-dot${fade}" cx="${b.ax.toFixed(1)}" cy="${b.ay.toFixed(1)}" r="2.2"/>`);
+      }
+    }
+  };
+  place(left, 'left');
+  place(right, 'right');
+}
 function updateLabels() {
   const w = stage.clientWidth, h = stage.clientHeight; const v = new THREE.Vector3(); const placed = []; const lines = [];
-  const sr = stage.getBoundingClientRect(), note = $('viewNote').getBoundingClientRect();
-  if (note.width > 0) placed.push([note.left - sr.left - 4, note.top - sr.top - 4, note.right - sr.left + 4, note.bottom - sr.top + 4]); // never under the view note
+  const sr = stage.getBoundingClientRect();
+  // Reserve the caption and Info button as boxes, and a full-width bottom strip of that height so
+  // aVF and II stay on their rays but above the chrome (not clipped at the viewport edge).
+  // Do not use #stageInfo (the panel) for the bottom inset: when closed it can still have a tall
+  // box and would push chromeBottom negative.
+  const inset = { top: 8, right: 8, bottom: 32, left: 8 };
+  for (const id of ['viewNote', 'stageInfoBtn']) {
+    const el = $(id);
+    if (!el || el.hidden || el.getAttribute('aria-hidden') === 'true') continue;
+    const nb = el.getBoundingClientRect();
+    if (nb.width > 0 && nb.height > 0 && nb.bottom > sr.top && nb.top < sr.bottom) {
+      placed.push([nb.left - sr.left - 4, nb.top - sr.top - 4, nb.right - sr.left + 4, nb.bottom - sr.top + 4]);
+      const fromBottom = sr.bottom - nb.top + 8;
+      if (fromBottom > 0 && fromBottom < h * 0.45) inset.bottom = Math.max(inset.bottom, fromBottom);
+    }
+  }
+  const infoPanel = $('stageInfo');
+  if (infoPanel && !infoPanel.hidden && infoPanel.getAttribute('aria-hidden') !== 'true') {
+    const nb = infoPanel.getBoundingClientRect();
+    if (nb.width > 0 && nb.height > 0 && nb.bottom > sr.top && nb.top < sr.bottom) {
+      placed.push([nb.left - sr.left - 4, nb.top - sr.top - 4, nb.right - sr.left + 4, nb.bottom - sr.top + 4]);
+    }
+  }
+  const gizmo = $('orientGizmo');
+  if (gizmo) {
+    const gb = gizmo.getBoundingClientRect();
+    if (gb.width > 0) placed.push([gb.left - sr.left - 6, gb.top - sr.top - 6, gb.right - sr.left + 6, gb.bottom - sr.top + 6]);
+  }
+  const H = heartScreenShape();
+  const inHeart = (x, y, pad) => {
+    const dx = (x - H.cx) / (H.rx + (pad || 8)), dy = (y - H.cy) / (H.ry + (pad || 8));
+    return dx * dx + dy * dy < 1;
+  };
   const hit = box => placed.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]);
-  for (const L of labels.slice().sort((a, b) => effPrio(a) - effPrio(b))) {
-    if (!L.visible) { L.el.classList.add('hidden'); continue; }
+  for (const L of labels) { if (!L.visible) { L.el.classList.add('hidden'); L.el.classList.remove('col', 'faded'); } }
+  const vis = labels.filter(L => L.visible);
+  const projectWorld = (wx, wy, wz) => {
+    v.set(wx, wy, wz).project(camera);
+    return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, z: v.z };
+  };
+  const ellipseT = (ox, oy, vx, vy, pad) => {
+    const rx = H.rx + pad, ry = H.ry + pad;
+    const dx = ox - H.cx, dy = oy - H.cy;
+    const A = (vx * vx) / (rx * rx) + (vy * vy) / (ry * ry);
+    const B = 2 * (dx * vx) / (rx * rx) + 2 * (dy * vy) / (ry * ry);
+    const C = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) - 1;
+    if (A < 1e-12) return C < 0 ? 0 : 0;
+    const disc = B * B - 4 * A * C;
+    if (disc < 0) return C < 0 ? 0 : 0;
+    const root = Math.sqrt(disc);
+    return Math.max((-B - root) / (2 * A), (-B + root) / (2 * A), 0);
+  };
+  const maxRayT = (ox, oy, vx, vy, hw, hh) => {
+    let t = 1e6;
+    if (vx > 1e-6) t = Math.min(t, (w - inset.right - hw - ox) / vx);
+    else if (vx < -1e-6) t = Math.min(t, (inset.left + hw - ox) / vx);
+    if (vy > 1e-6) t = Math.min(t, (h - inset.bottom - hh - oy) / vy);
+    else if (vy < -1e-6) t = Math.min(t, (inset.top + hh - oy) / vy);
+    return Math.max(0, t);
+  };
+  const placeOnRay = (L, ax, ay, bw, bh) => {
+    const hw = bw / 2, hh = bh / 2;
+    const lead = L.leadId && LEAD[L.leadId];
+    const origin = projectWorld(0, 0, 0);
+    let fx, fy;
+    if (lead && lead.type === 'limb') {
+      const f = projectWorld(lead.dir[0] * 20, lead.dir[1] * 20, lead.dir[2] * 20);
+      fx = f.x; fy = f.y;
+    } else if (lead && leadObjs[lead.id]) {
+      const po = leadObjs[lead.id].pole;
+      const len = Math.hypot(po[0], po[1], po[2]) || 1;
+      const f = projectWorld(po[0] / len * 20, po[1] / len * 20, po[2] / len * 20);
+      fx = f.x; fy = f.y;
+    } else { fx = ax; fy = ay; }
+    let vx = fx - origin.x, vy = fy - origin.y, vlen = Math.hypot(vx, vy);
+    if (vlen < 2) { vx = ax - origin.x; vy = ay - origin.y; vlen = Math.hypot(vx, vy); }
+    if (vlen < 2) { vx = ax - H.cx; vy = ay - H.cy; vlen = Math.hypot(vx, vy); }
+    if (vlen < 1e-3) return null;
+    vx /= vlen; vy /= vlen;
+    const ox = origin.x, oy = origin.y;
+    const tPole = (ax - ox) * vx + (ay - oy) * vy;
+    const tExit = ellipseT(ox, oy, vx, vy, lead && lead.type === 'chest' ? 6 : 8);
+    const tPad = Math.max(hw, hh) * 0.65 + 8;
+    // Limb pills sit just outside the heart, on the + ray, not at the viewport edge.
+    const tWant = (lead && lead.type === 'chest')
+      ? Math.max(tExit + tPad, tPole + Math.max(hw, hh) * 0.5 + 2)
+      : tExit + tPad;
+    const tLimit = maxRayT(ox, oy, vx, vy, hw + 2, hh + 2);
+    const t0 = Math.min(tWant, tLimit);
+    const tryT = t => {
+      if (t < 0 || t > tLimit + 0.5) return null;
+      const x = ox + vx * t, y = oy + vy * t;
+      const box = [x - hw, y - hh, x + hw, y + hh];
+      if (hit(box)) return null;
+      return [x, y, box];
+    };
+    let spot = null;
+    for (const d of [0, 8, 16, 24, 32, 44, 56, -8, -16, -24, -32]) { spot = tryT(t0 + d); if (spot) break; }
+    if (!spot) {
+      const t = Math.max(4, Math.min(t0, tLimit));
+      const x = ox + vx * t, y = oy + vy * t;
+      spot = [x, y, [x - hw, y - hh, x + hw, y + hh]];
+    }
+    return spot;
+  };
+
+  // Lead pills first, each kept on its own positive-axis ray, so de-overlap cannot steal another lead's place.
+  const leadItems = vis.filter(L => L.cls === 'lead').sort((a, b) => (b.el.classList.contains('sel') ? 1 : 0) - (a.el.classList.contains('sel') ? 1 : 0));
+  for (const L of leadItems) {
     const p = L.getPos(); if (!p) { L.el.classList.add('hidden'); continue; }
     v.copy(p).project(camera);
-    if (v.z > 1 || ((Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) && !L.el.classList.contains('sel'))) { L.el.classList.add('hidden'); continue; } // the selected lead's label is kept, pinned to the edge
-    L.el.classList.remove('hidden');
-    const bw = L.el.offsetWidth + 6, bh = L.el.offsetHeight + 4; const x0 = ((v.x + 1) / 2) * w, y0 = ((1 - v.y) / 2) * h;
-    let spot = null;
-    const beside = L.cls === 'heart' || L.cls === 'cond' || L.cls === 'node' || L.cls === 'region';
-    const cands = beside ? [] : OFFSETS; // 'beside' labels never cover their anchor: try boxes just off each side, then further out
-    if (beside) for (const g of [10, 26, 46, 70, 96]) { const sx = bw / 2 + g, sy = bh / 2 + g * 0.6;
-      cands.push([sx, 0], [-sx, 0], [0, -sy], [0, sy], [sx, -sy], [-sx, -sy], [sx, sy], [-sx, sy]); }
-    for (const [dx, dy] of cands) {
-      const x = Math.min(w - bw / 2, Math.max(bw / 2, x0 + dx)), y = Math.min(h - bh / 2, Math.max(bh / 2, y0 + dy));
-      const box = [x - bw / 2, y - bh / 2, x + bw / 2, y + bh / 2];
-      if (!hit(box)) { spot = [x, y, box]; break; }
+    L.el.classList.remove('hidden', 'col', 'faded');
+    const { bw: rawW, bh: rawH } = labelBoxSize(L);
+    const bw = rawW + 6, bh = rawH + 4;
+    const ax = ((v.x + 1) / 2) * w, ay = ((1 - v.y) / 2) * h;
+    let spot = placeOnRay(L, ax, ay, bw, bh);
+    if (!spot) {
+      const xx = Math.min(w - bw / 2, Math.max(bw / 2, ax));
+      const yy = Math.min(h - bh / 2, Math.max(bh / 2, ay));
+      spot = [xx, yy, [xx - bw / 2, yy - bh / 2, xx + bw / 2, yy + bh / 2]];
     }
-    if (!spot) { if (effPrio(L) > 0) { L.el.classList.add('hidden'); continue; } spot = [x0, y0, [x0 - bw / 2, y0 - bh / 2, x0 + bw / 2, y0 + bh / 2]]; }
-    placed.push(spot[2]); L.el.style.transform = `translate(${spot[0]}px, ${spot[1]}px) translate(-50%, -50%)`;
-    // leader line from the anchor to the nearest point of the label box, when the label had to move away
-    const bx = Math.max(spot[2][0] + 3, Math.min(spot[2][2] - 3, x0)), by = Math.max(spot[2][1] + 2, Math.min(spot[2][3] - 2, y0));
-    if (Math.hypot(bx - x0, by - y0) > 8 && L.cls !== 'lead' && L.cls !== 'proj') lines.push(`<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}"/><circle cx="${x0.toFixed(1)}" cy="${y0.toFixed(1)}" r="2.2"/>`);
+    placed.push(spot[2]);
+    L.el.style.transform = `translate(${spot[0]}px, ${spot[1]}px) translate(-50%, -50%)`;
   }
-  leaderSvg.setAttribute('viewBox', `0 0 ${w} ${h}`); leaderSvg.innerHTML = lines.join('');
+
+  const colItems = [];
+  for (const L of vis) {
+    if (!COL_ANATOMY.has(L.cls)) continue;
+    const p = L.getPos();
+    if (!p) { L.el.classList.add('hidden'); continue; }
+    v.copy(p).project(camera);
+    if (v.z > 1 || Math.abs(v.x) > 1.25 || Math.abs(v.y) > 1.25) { L.el.classList.add('hidden'); continue; }
+    const ax = ((v.x + 1) / 2) * w, ay = ((1 - v.y) / 2) * h;
+    const occluded = isAnchorOccluded(p);
+    colItems.push({ L, ax, ay, occluded });
+  }
+  if (colItems.length) {
+    layoutColumnLabels(colItems, w, h, lines, H, h - inset.bottom);
+    const T = torsoScreenShape();
+    placed.push([0, 0, Math.max(8, T.x0 - 8), h], [Math.min(w, T.x1 + 8), 0, w, h]);
+  }
+  if (vecLabel && vecLabel.visible && vis.includes(vecLabel)) {
+    const origin = projectWorld(0, 0, 0);
+    vecLabel.el.classList.remove('hidden', 'col', 'faded');
+    const { bw, bh } = labelBoxSize(vecLabel);
+    let x = origin.x + bw / 2 + 16;
+    let y = origin.y - bh / 2 - 10;
+    if (x + bw / 2 > w - 8) x = origin.x - bw / 2 - 16;
+    if (y - bh / 2 < 8) y = origin.y + bh / 2 + 14;
+    x = Math.max(bw / 2 + 6, Math.min(w - bw / 2 - 6, x));
+    y = Math.max(bh / 2 + 6, Math.min(h - bh / 2 - 6, y));
+    const e = easeLabelPos(vecLabel, x, y);
+    vecLabel.el.style.transform = `translate(${e.x}px, ${e.y}px) translate(-50%, -50%)`;
+    placed.push([e.x - bw / 2, e.y - bh / 2, e.x + bw / 2, e.y + bh / 2]);
+  }
+  const floating = vis.filter(L => !COL_ANATOMY.has(L.cls) && L.cls !== 'lead' && L.cls !== 'vec').sort((a, b) => {
+    const ra = a.el.classList.contains('sel') ? 0 : 2 + effPrio(a);
+    const rb = b.el.classList.contains('sel') ? 0 : 2 + effPrio(b);
+    return ra - rb;
+  });
+  for (const L of floating) {
+    const p = L.getPos(); if (!p) { L.el.classList.add('hidden'); continue; }
+    v.copy(p).project(camera);
+    const mustShow = (ui.labelMode === 'guided' && L.tag && guidedTags().includes(L.tag));
+    const pin = mustShow;
+    if (v.z > 1 && !pin) { L.el.classList.add('hidden'); continue; }
+    if ((Math.abs(v.x) > 1.2 || Math.abs(v.y) > 1.2) && !pin) { L.el.classList.add('hidden'); continue; }
+    L.el.classList.remove('hidden');
+    const { bw: rawW, bh: rawH } = labelBoxSize(L);
+    const bw = rawW + 6, bh = rawH + 4;
+    const ax = ((v.x + 1) / 2) * w, ay = ((1 - v.y) / 2) * h;
+    let spot = null;
+    const isLandmark = L.cls === 'landmark';
+    const needOutside = isLandmark || L.cls === 'vec' || L.cls === 'region';
+    const trySpot = (x, y, pad) => {
+      const xx = Math.min(w - bw / 2, Math.max(bw / 2, x));
+      const yy = Math.min(h - bh / 2, Math.max(bh / 2, y));
+      const box = [xx - bw / 2, yy - bh / 2, xx + bw / 2, yy + bh / 2];
+      if (needOutside && inHeart(xx, yy, pad != null ? pad : 6)) return null;
+      if (hit(box)) return null;
+      return [xx, yy, box];
+    };
+    if (needOutside) {
+      const ang = (L === apexLabel) ? Math.PI / 2 : Math.atan2(ay - H.cy, ax - H.cx);
+      const dists = [14, 22, 30, 40, 48];
+      const angles = (L === apexLabel)
+        ? [Math.PI / 2, 1.2, 1.9, 0.85, 2.3, 0.5, 2.6]
+        : [ang, ang + 0.3, ang - 0.3, ang + 0.6, ang - 0.6, ang + 1, ang - 1, ang + 1.5, ang - 1.5];
+      for (const dist of dists) {
+        for (const a of angles) { spot = trySpot(ax + Math.cos(a) * dist, ay + Math.sin(a) * dist); if (spot) break; }
+        if (spot) break;
+      }
+    } else {
+      for (const [dx, dy] of OFFSETS) { spot = trySpot(ax + dx, ay + dy, 0); if (spot) break; }
+    }
+    if (!spot) {
+      if (effPrio(L) > 0 && !mustShow) { L.el.classList.add('hidden'); continue; }
+      const ang = Math.atan2(ay - H.cy, ax - H.cx);
+      const ring = Math.max(H.rx, H.ry) + 24;
+      for (const extra of [0, 14, 28, 44, 62, 80]) {
+        for (const da of [0, 0.35, -0.35, 0.7, -0.7, 1.1, -1.1, 1.6, -1.6, Math.PI]) {
+          const x = Math.min(w - bw / 2, Math.max(bw / 2, H.cx + Math.cos(ang + da) * (ring + extra)));
+          const y = Math.min(h - bh / 2, Math.max(bh / 2, H.cy + Math.sin(ang + da) * (ring + extra)));
+          const box = [x - bw / 2, y - bh / 2, x + bw / 2, y + bh / 2];
+          if (!hit(box) || extra >= 62) { spot = [x, y, box]; break; }
+        }
+        if (spot) break;
+      }
+    }
+    if (!spot) continue;
+    placed.push(spot[2]);
+    L.el.style.transform = `translate(${spot[0]}px, ${spot[1]}px) translate(-50%, -50%)`;
+    const bx = Math.max(spot[2][0] + 3, Math.min(spot[2][2] - 3, ax));
+    const by = Math.max(spot[2][1] + 2, Math.min(spot[2][3] - 2, ay));
+    const d = Math.hypot(bx - ax, by - ay);
+    if (d > 8 && d <= 56 && L.cls !== 'proj') {
+      lines.push(`<line x1="${ax.toFixed(1)}" y1="${ay.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}"/><circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="2.2"/>`);
+    }
+  }
+  leaderSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  leaderSvg.innerHTML = lines.join('');
+  updateBodyMarks();
+}
+function updateBodyMarks() {
+  const rEl = $('markR'), lEl = $('markL');
+  if (!rEl || !lEl || !camera) return;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const v = new THREE.Vector3();
+  const place = (el, world) => {
+    if (!world) { el.hidden = true; return; }
+    v.copy(world).project(camera);
+    let x = ((v.x + 1) / 2) * w, y = ((1 - v.y) / 2) * h;
+    const vx = x - w / 2, vy = y - h / 2, len = Math.hypot(vx, vy) || 1;
+    x += (vx / len) * 20;
+    y += (vy / len) * 8;
+    x = Math.max(18, Math.min(w - 18, x));
+    y = Math.max(16, Math.min(h - 16, y));
+    el.hidden = false;
+    el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    el.style.opacity = (v.z > 1) ? '0.7' : '1';
+  };
+  const rp = torso && torso.userData && torso.userData.rPos;
+  const lp = torso && torso.userData && torso.userData.lPos;
+  place(rEl, rp); place(lEl, lp);
 }
 
 /* ======================= Text ======================= */
 let lastPhase = null;
-const fmt = v => (v >= 0 ? '+' : '\u2212') + Math.abs(v).toFixed(2);
+const fmt = v => { const s = Math.abs(v).toFixed(2); return (s === '0.00' ? '' : v >= 0 ? '+' : '\u2212') + s; };
 function describeLead() {
-  const L = LEAD[state.sel]; const v = TRACE[L.id][Math.round(state.t)]; const D = dipole(state.t); const mag = Math.hypot(...D);
+  const L = LEAD[state.sel]; const v = traceAt(L.id, state.t); const D = dipole(state.t); const mag = Math.hypot(...D);
   let rel;
-  if (Math.abs(v) < 0.03) rel = 'At this moment the trace is on the baseline.';
+  if (mag <= VEC_HIDE) rel = "The heart's electrical vector is about zero at this moment, so the arrow is hidden.";
   else if (L.type === 'limb') {
     const ang = Math.round(Math.acos(Math.max(-1, Math.min(1, dot(D, L.dir) / (mag || 1)))) / DEG);
-    rel = ang < 60 ? `The arrow points towards the + pole (${ang}° from it), so the trace goes up.` : ang > 120 ? `The arrow points away from the + pole (${ang}° from it), so the trace goes down.` : `The arrow is nearly at right angles to this lead (${ang}°), so the deflection is small.`;
-  } else rel = v > 0 ? 'Activity is heading towards this electrode overall, so the trace goes up.' : 'Activity is heading away from this electrode overall, so the trace goes down.';
+    rel = ang < 60 ? "The heart's electrical vector points towards the + pole (" + ang + "\u00b0), so the trace goes up." : ang > 120 ? "The heart's electrical vector points away from the + pole (" + ang + "\u00b0), so the trace goes down." : "The heart's electrical vector is nearly at right angles to this lead (" + ang + "\u00b0), so the deflection is small.";
+  } else rel = v > 0 ? 'Activity is heading towards this electrode, so the trace goes up.' : 'Activity is heading away from this electrode, so the trace goes down.';
   const where = L.type === 'limb' ? `a limb lead at ${L.angle}` : `a chest lead (${L.pos})`;
-  $('leadExplain').innerHTML = `<p class="le-head">Lead ${L.id}: ${fmt(v)} mV</p><p>${rel}</p>`;
-  $('leadExplain').title = `${L.id} is ${where}. It mainly faces ${REGION_TEXT[L.region]}.`;
-  $('ecgCaption').textContent = `Lead ${L.id} selected (bold box). The line in every lead marks the same moment, ${Math.round(state.t)} ms into the beat.`;
-  $('miniLabel').textContent = `Lead ${L.id}, 5 s at 25 mm/s`;
+  if ($('leadExplain')) {
+    $('leadExplain').innerHTML = `<p class="le-line">Lead ${L.id}: ${fmt(v)} mV. ${rel}</p>`;
+    $('leadExplain').title = `${L.id} is ${where}. It mainly faces ${REGION_TEXT[L.region]}.`;
+  }
+  if ($('ecgCaption')) {
+    const tAbs = pageTime();
+    const tWin0 = Math.floor(tAbs / ECG.colMs) * ECG.colMs;
+    $('ecgCaption').textContent = `Lead ${L.id} selected. All 12 leads recorded at the same moment: ${(tAbs / 1000).toFixed(1)} s, in the ${(tWin0 / 1000).toFixed(1)}–${((tWin0 + ECG.colMs) / 1000).toFixed(1)} s window.`;
+  }
+  if ($('miniLabel')) $('miniLabel').textContent = `Lead ${L.id}, 5 s at 25 mm/s`;
+}
+let closeupChosen = false;
+function syncCloseup() {
+  const card = $('leadCloseupCard');
+  if (!card) return;
+  card.hidden = false;
+  closeupChosen = true;
+  drawZoom();
 }
 /* Guided steps */
 function stepIndexAt(t) { let k = -1; STEPS.forEach((p, i) => { if (t >= p.from) k = i; }); return k; }
@@ -1229,9 +2810,11 @@ function goStep(i) {
 function updateSteps() {
   const k = stepIndexAt(state.t); const ph = phaseAt(state.t); const onStep = !!ph.step;
   document.querySelectorAll('.step-chip').forEach((b, i) => b.setAttribute('aria-pressed', String(onStep && i === k)));
-  $('stepCount').textContent = onStep ? `Step ${k + 1} of ${STEPS.length}` : '';
-  $('stepBack').disabled = k <= 0 && onStep; $('stepNext').disabled = k >= STEPS.length - 1 && onStep;
+  if ($('stepCount')) $('stepCount').textContent = onStep ? `Step ${k + 1} of ${STEPS.length}` : '';
+  if ($('stepBack')) $('stepBack').disabled = k <= 0 && onStep;
+  if ($('stepNext')) $('stepNext').disabled = k >= STEPS.length - 1 && onStep;
 }
+
 function updateText(announce) {
   const ph = phaseAt(state.t);
   if (ph !== lastPhase) { $('phaseTitle').textContent = ph.title; $('phaseText').textContent = ph.text; lastPhase = ph; }
@@ -1247,12 +2830,15 @@ function setT(t, announce) {
   timeOut.textContent = `${Math.round(state.t)} ms`;
   updateScene(); drawECG(); drawMini(); drawZoom(); updateText(announce);
 }
-function select(id) {
+function select(id, fromUser) {
   state.sel = id;
+  if (fromUser) closeupChosen = true;
   document.querySelectorAll('.lead-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lead === id)));
   setLeadStyles(); buildRegion(LEAD[id].region);
-  updateScene(); drawECG(); drawMini(); drawZoom(); updateText(false);
-  $('live').textContent = `Lead ${id} selected.`;
+  updateScene(); drawECG(); drawMini(); updateText(false);
+  syncCloseup();
+  const shown = closeupChosen && !(ONE_SCREEN.matches && !closeupChosen);
+  $('live').textContent = shown ? `Lead ${id} selected. Close-up is on the right.` : `Lead ${id} selected.`;
 }
 function setPlaying(on) {
   state.playing = on; playBtn.setAttribute('aria-pressed', String(on));
@@ -1275,23 +2861,159 @@ document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', 
 $('resetView').addEventListener('click', () => goView('frontal'));
 function refit() { if (renderer && VIEWS[state.view]) { const f = fitView(VIEWS[state.view], state.view); orbit.r = f.r; orbit.target.copy(f.target); placeCamera(); } }
 $('toggleCut').addEventListener('click', () => setCut(!ui.cut));
-function setToggle(id, key, on) { ui[key] = on; $(id).setAttribute('aria-pressed', String(on)); setLeadStyles(); if (state.sel) buildRegion(LEAD[state.sel].region); updateScene(); }
+function setToggle(id, key, on) { ui[key] = on; const el = id && $(id); if (el) el.setAttribute('aria-pressed', String(on)); setLeadStyles(); if (state.sel) buildRegion(LEAD[state.sel].region); updateScene(); }
 $('toggleLeads').addEventListener('click', () => setToggle('toggleLeads', 'allLeads', !ui.allLeads));
-$('toggleLabelAll').addEventListener('click', () => setToggle('toggleLabelAll', 'labelAll', !ui.labelAll));
 $('toggleLoop').addEventListener('click', () => setToggle('toggleLoop', 'loop', !ui.loop));
+
+/* Labels chooser: Guided (default, active structure only), All, None, or individual groups. Choice is kept for the session. */
+const LABEL_STORE = 'ecg3d-revamp-labels';
+const LABEL_GROUPS = ['chambers', 'conduction', 'leads', 'vectors', 'walls', 'orientation'];
+function persistLabels() {
+  try { sessionStorage.setItem(LABEL_STORE, JSON.stringify({ mode: ui.labelMode, groups: ui.labelGroups })); } catch (e) { /* ignore */ }
+}
+function anatomyOn() {
+  return ui.labelMode === 'guided' || (ui.labelMode === 'custom' && LABEL_GROUPS.some(g => g !== 'leads' && ui.labelGroups[g]));
+}
+function applyLabelsChange() {
+  const t0 = performance.now();
+  ui.anatomyLabels = anatomyOn() && ui.labelMode === 'custom';
+  syncLabelsUi(); persistLabels();
+  if (groupOn('walls') && state.sel) ensureRegion(LEAD[state.sel].region);
+  else {
+    for (const m of regionMeshes) m.visible = false;
+    if (regionLabel) regionLabel.visible = false;
+  }
+  applyLabelVisibility();
+  setLeadStyles();
+  requestLabelLayout(0);
+  if (renderer) { updateLabels(); labelsDirty = false; }
+  needsRender = true;
+  lastLabelToggleMs = performance.now() - t0;
+}
+let lastLabelToggleMs = 0;
+function setLabelMode(mode, groups) {
+  if (mode !== 'guided' && ui.guided) {
+    // Walkthrough Guided keeps step labels only; store the choice for when it is turned off.
+    if (groups) for (const g of LABEL_GROUPS) ui.labelGroups[g] = !!groups[g];
+    else if (mode === 'none') for (const g of LABEL_GROUPS) ui.labelGroups[g] = false;
+    else if (mode === 'all') { for (const g of LABEL_GROUPS) ui.labelGroups[g] = true; }
+    syncLabelsUi(); persistLabels();
+    return;
+  }
+  ui.labelMode = mode;
+  if (groups) for (const g of LABEL_GROUPS) ui.labelGroups[g] = !!groups[g];
+  else if (mode === 'guided' || mode === 'none') for (const g of LABEL_GROUPS) ui.labelGroups[g] = false;
+  else if (mode === 'all') { ui.labelMode = 'custom'; for (const g of LABEL_GROUPS) ui.labelGroups[g] = true; }
+  if (mode === 'none') ui.labelMode = 'custom';
+  applyLabelsChange();
+}
+function setLabelGroup(name, on) {
+  ui.labelGroups[name] = !!on;
+  if (ui.guided) { syncLabelsUi(); persistLabels(); return; }
+  ui.labelMode = 'custom';
+  applyLabelsChange();
+}
+function syncLabelsUi() {
+  const guided = ui.labelMode === 'guided' || !!ui.guided;
+  const allOn = !guided && ui.labelMode === 'custom' && LABEL_GROUPS.every(g => ui.labelGroups[g]);
+  const noneOn = !guided && ui.labelMode === 'custom' && LABEL_GROUPS.every(g => !ui.labelGroups[g]);
+  const btn = $('labelsBtn');
+  if (btn) {
+    const customOn = !guided && ui.labelMode === 'custom' && LABEL_GROUPS.some(g => ui.labelGroups[g]);
+    btn.setAttribute('aria-pressed', String(customOn || guided));
+    btn.classList.toggle('is-custom', customOn);
+  }
+  const gBtn = $('labelsGuided'), aBtn = $('labelsAll'), nBtn = $('labelsNone');
+  if (gBtn) gBtn.setAttribute('aria-pressed', String(guided));
+  if (aBtn) aBtn.setAttribute('aria-pressed', String(allOn));
+  if (nBtn) nBtn.setAttribute('aria-pressed', String(noneOn));
+  for (const g of LABEL_GROUPS) {
+    const el = document.getElementById('lab-' + g);
+    if (el) { el.checked = !guided && !!ui.labelGroups[g]; el.disabled = !!ui.guided; }
+  }
+}
+function openLabelsPanel() {
+  const panel = $('labelsPanel'), btn = $('labelsBtn'); if (!panel || !btn) return;
+  panel.hidden = false; btn.setAttribute('aria-expanded', 'true');
+  const first = $('labelsGuided') || panel.querySelector('button, input'); if (first) first.focus();
+}
+function closeLabelsPanel() {
+  const panel = $('labelsPanel'), btn = $('labelsBtn'); if (!panel || panel.hidden) return;
+  panel.hidden = true; if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.focus(); }
+}
+function setAnatomyLabels(on) {
+  ui.anatomyLabels = !!on;
+  const btn = $('labelsBtn'); if (btn) btn.setAttribute('aria-pressed', String(!!on));
+  if (!ui.guided) {
+    if (on) setLabelMode('custom', { chambers: true, conduction: true, leads: true, vectors: false, walls: false, orientation: false });
+    else setLabelMode('none');
+  } else { setLeadStyles(); updateScene(); }
+}
+function setGuided(on) {
+  ui.guided = !!on;
+  const btn = $('guidedBtn'); if (btn) btn.setAttribute('aria-pressed', String(!!on));
+  const strip = $('guideStrip'); if (strip) strip.hidden = true;
+  const row = $('stepRow'); if (row) row.hidden = false;
+  if (on) setLabelMode('guided');
+  else if (ui.anatomyLabels) setLabelMode('custom', { chambers: true, conduction: true, leads: true, vectors: false, walls: false, orientation: false });
+  else setLabelMode('none');
+  if (on) {
+    const k = stepIndexAt(state.t);
+    if (k < 0) goStep(0);
+  }
+  requestLabelLayout(0);
+  requestAnimationFrame(() => { resize(); refit(); });
+}
+function setMoreOpen(on) {
+  const panel = $('morePanel'), btn = $('moreBtn');
+  if (!panel || !btn) return;
+  panel.hidden = !on;
+  btn.setAttribute('aria-expanded', String(!!on));
+}
+if ($('labelsBtn')) $('labelsBtn').addEventListener('click', () => {
+  const panel = $('labelsPanel');
+  if (panel && !panel.hidden) closeLabelsPanel(); else openLabelsPanel();
+});
+if ($('guidedBtn')) $('guidedBtn').addEventListener('click', () => setGuided(!ui.guided));
+if ($('moreBtn')) $('moreBtn').addEventListener('click', () => setMoreOpen($('morePanel').hidden));
+if ($('moreClose')) $('moreClose').addEventListener('click', () => setMoreOpen(false));
+document.addEventListener('pointerdown', e => {
+  const panel = $('morePanel'), btn = $('moreBtn');
+  if (!panel || panel.hidden) return;
+  if (!panel.contains(e.target) && e.target !== btn && !(btn && btn.contains(e.target))) setMoreOpen(false);
+});
+if ($('labelsPanelClose')) $('labelsPanelClose').addEventListener('click', closeLabelsPanel);
+if ($('labelsGuided')) $('labelsGuided').addEventListener('click', () => setLabelMode('guided'));
+if ($('labelsAll')) $('labelsAll').addEventListener('click', () => setLabelMode('all'));
+if ($('labelsNone')) $('labelsNone').addEventListener('click', () => setLabelMode('none'));
+document.querySelectorAll('#labelsPanel input[data-group]').forEach(el => el.addEventListener('change', () => setLabelGroup(el.dataset.group, el.checked)));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('labelsPanel') && !$('labelsPanel').hidden) { e.preventDefault(); closeLabelsPanel(); }
+});
+document.addEventListener('pointerdown', e => {
+  const panel = $('labelsPanel'); if (!panel || panel.hidden) return;
+  if (!panel.contains(e.target) && e.target !== $('labelsBtn') && !$('labelsBtn').contains(e.target)) closeLabelsPanel();
+});
+try { sessionStorage.removeItem(LABEL_STORE); } catch (e) { /* ignore */ }
+syncLabelsUi();
 $('stepBack').addEventListener('click', () => { const k = stepIndexAt(state.t); goStep(phaseAt(state.t).step ? k - 1 : k); });
 $('stepNext').addEventListener('click', () => goStep(stepIndexAt(state.t) + 1));
-// close the 'More' menu after choosing an item
-document.querySelectorAll('#moreMenu .menu-item').forEach(b => b.addEventListener('click', () => { if (!b.classList.contains('toggle-btn')) $('moreMenu').open = false; }));
+ONE_SCREEN.addEventListener && ONE_SCREEN.addEventListener('change', () => { resize(); refit(); });
 let rzT = null; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { resize(); refit(); }, 60); });
 
 MODEL = computeModel(); buildTraces(); buildPhases(); buildActiveRanges();
 if (renderer) { buildScene(); applyMuscleTimes(); applyConductionTimes(); initInteraction(); }
 resize();
 goView('frontal', true);
-setCut(false);
-select('II');
+setCut(true); // cut-away by default: the His bundle and bundle branches are seen on the septum
+ui.allLeads = true; if ($('toggleLeads')) $('toggleLeads').setAttribute('aria-pressed', 'true');
+setAnatomyLabels(false);
+setGuided(false);
+select('II', false); syncCloseup();
+if (ONE_SCREEN.addEventListener) ONE_SCREEN.addEventListener('change', syncCloseup);
 setT(250);
+applyColourTheme();
+window.addEventListener('themechange', applyColourTheme);
 
 let last = performance.now();
 function frame(now) {
@@ -1302,7 +3024,8 @@ function frame(now) {
     for (const key of ['az', 'el', 'r']) orbit[key] = camAnim.from[key] + (camAnim.to[key] - camAnim.from[key]) * e;
     placeCamera(); if (k >= 1) camAnim = null;
   }
-  if (renderer && needsRender) { renderer.render(scene, camera); updateLabels(); needsRender = false; }
+  if (renderer && labelsDirty) { labelsDirty = false; updateLabels(); }
+  if (renderer && needsRender) { renderer.render(scene, camera); needsRender = false; }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -1310,11 +3033,106 @@ if (!REDUCED) setPlaying(true);
 
 /* Hooks for automated checks, screenshots and later pathology modes */
 window.ecg3d = {
-  setT: t => { setPlaying(false); setT(t, true); }, select, view: v => goView(v, true), play: setPlaying, cut: setCut, step: goStep,
-  toggle: (key, on) => setToggle({ allLeads: 'toggleLeads', labelAll: 'toggleLabelAll', loop: 'toggleLoop' }[key], key, on),
-  poleScreen: id => { const v = new THREE.Vector3(...leadObjs[id].pole).project(camera); const r = stage.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; },
+  setT: t => { setPlaying(false); setT(t, true); }, select: id => select(id, true), view: v => goView(v, true), play: setPlaying, cut: setCut, step: goStep, setGuided, setAnatomyLabels, guided: () => !!ui.guided,
+  leadLabel: id => leadObjs[id] && leadObjs[id].lbl && leadObjs[id].lbl.el,
+  leadAt: (x, y) => leadAtEvent({ clientX: x, clientY: y }),
+  sheetCell: cellPoint,
+  sheetGeo: () => ECG_DRAW && { ...ECG_DRAW },
+  sheetClips: () => LAST_CLIPS.slice(),
+  closeupOpen: () => closeupChosen && !($('leadCloseupCard') && $('leadCloseupCard').hidden),
+  toggle: (key, on) => { if (key === 'labelAll') { setLabelMode(on ? 'all' : 'guided'); return; } setToggle({ allLeads: 'toggleLeads', loop: 'toggleLoop' }[key], key, on); },
+  openZoom: () => {}, closeZoom: () => {}, zoomOpen: () => false,
+  singleLead: () => false, setSingleLead: () => {},
+  setLabels: setLabelMode, setLabelGroup, labels: () => ({ mode: ui.labelMode, groups: { ...ui.labelGroups } }),
+  openLabels: openLabelsPanel, closeLabels: closeLabelsPanel,
+  openKey: () => window.__ecgKeyDialog && window.__ecgKeyDialog.open(),
+  closeKey: () => window.__ecgKeyDialog && window.__ecgKeyDialog.close(),
+  keyOpen: () => !!(window.__ecgKeyDialog && window.__ecgKeyDialog.isOpen()),
+  lookingFrom: () => lookingFromText(orbit.az, orbit.el),
+
+  applyTheme: applyColourTheme, isColourBlind: isColourBlindTheme, theme: () => (isColourBlindTheme() ? 'colour-blind' : 'default'),
+  themeColors: () => ({
+    rest: '#' + U.cRest.value.getHexString(),
+    front: '#' + U.cFront.value.getHexString(),
+    dep: '#' + U.cDep.value.getHexString(),
+    dot: '#' + U.cDot.value.getHexString(),
+    condIdle: '#' + CIDLE.getHexString(),
+    condDone: '#' + CDONE.getHexString(),
+    cursor: PAPER.cursor.toLowerCase()
+  }),
+  heartBox: () => { camera.updateMatrixWorld(); let x0 = 9, x1 = -9, y0 = 9, y1 = -9; for (const p of heartPoints()) { const v = p.clone().project(camera); x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); }
+    return { top: (1 - y1) / 2, bottom: (1 - y0) / 2, left: (x0 + 1) / 2, right: (x1 + 1) / 2, height: (y1 - y0) / 2, limbScale }; },
+  poleScreen: id => { const v = new THREE.Vector3(...leadObjs[id].pole).multiplyScalar(LEADS.find(L => L.id === id).type === 'limb' ? limbScale : 1).project(camera); const r = stage.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; },
   leadRodsShown: () => renderer ? Object.values(leadObjs).filter(o => o.grp.visible).length : 0,
-  orbit: (az, el, r) => { camAnim = null; orbit.az = az * DEG; orbit.el = el * DEG; if (r) orbit.r = r; placeCamera(); markCustom(); },
+  orbit: (az, el, r) => {
+    camAnim = null;
+    const naz = az * DEG, nel = el * DEG;
+    if (Math.abs(naz - orbit.az) > 0.15 || Math.abs(nel - orbit.el) > 0.15) {
+      for (const L of labels) { L.px = null; L.py = null; L.colSide = null; }
+    }
+    orbit.az = naz; orbit.el = nel; if (r) orbit.r = r; placeCamera(); markCustom();
+    if (renderer) updateLabels();
+  },
   trace: id => Array.from(TRACE[id]), timings: () => ({ tAV: MODEL.tAV, tHis: MODEL.tHis, seg: MODEL.seg, vMin: MODEL.vMin, vMax: MODEL.vMax, recMin: MODEL.recMin, recMax: MODEL.recMax }),
+  now: () => ({ t: state.t, beat: state.beat, speed: state.speed, playing: state.playing, pageTime: pageTime() }),
+  setSpeed: v => { state.speed = +v; if (speedSel) speedSel.value = String(state.speed); return state.speed; },
+  pageTime, sheetCursors: () => LAST_CURSORS.slice(),
+  closeupMeta: () => { const c = $('leadCloseup'); return c ? { ...c.dataset } : null; },
+  phase: () => { const p = phaseAt(state.t); return { key: p.key, from: p.from, to: p.to, step: p.step || null, title: p.title }; },
+  leadDecor: () => ({
+    allLeads: !!ui.allLeads,
+    arc: !!(chestArc && chestArc.visible),
+    sternum: !!(sternumLine && sternumLine.visible),
+    groups: Object.fromEntries(LEADS.map(L => {
+      const o = leadObjs[L.id];
+      return [L.id, { grp: !!(o && o.grp.visible), pos: !!(o && o.pos.visible), neg: !!(o && o.negR.visible), marker: !!(o && o.marker.visible), lbl: !!(o && o.lbl.visible && !o.lbl.el.classList.contains('hidden')) }];
+    }))
+  }),
+  labelSnapshot: () => labels.filter(L => L.visible && !L.el.classList.contains('hidden')).map(L => ({
+    text: L.el.textContent, cls: L.cls, tag: L.tag || null, leadId: L.leadId || null, transform: L.el.style.transform
+  })),
+  cursorScreen: () => {
+    if (!ECG_DRAW) return [];
+    const r = ecgCanvas.getBoundingClientRect();
+    const scale = r.width / (ECG_DRAW.cssW || r.width);
+    return LAST_CURSORS.map(c => ({ ...c, screenX: r.left + c.x * scale, screenY: r.top }));
+  },
+  closeupCursorScreen: () => {
+    const c = $('leadCloseup'); if (!c) return null;
+    const r = c.getBoundingClientRect();
+    const cssW = parseFloat(c.dataset.cssW || r.width);
+    const x = parseFloat(c.dataset.cursorX || '0');
+    return { x, screenX: r.left + x * (r.width / (cssW || r.width)), tAbs: +c.dataset.tAbs, t0: +c.dataset.t0 };
+  },
+  setPageTime: ms => {
+    const p = ((Math.round(Number(ms)) % PAGE_MS) + PAGE_MS) % PAGE_MS;
+    setPlaying(false);
+    state.beat = Math.floor(p / BEAT_MS);
+    setT(p - state.beat * BEAT_MS, true);
+  },
+  leadPillRays: () => {
+    if (!camera || !stage) return [];
+    const sr = stage.getBoundingClientRect();
+    const origin = new THREE.Vector3(0, 0, 0).project(camera);
+    const ox = sr.left + (origin.x + 1) / 2 * sr.width;
+    const oy = sr.top + (1 - origin.y) / 2 * sr.height;
+    return LEADS.map(L => {
+      const o = leadObjs[L.id];
+      const el = o && o.lbl && o.lbl.el;
+      const r = el ? el.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
+      const visible = !!(o && o.lbl && o.lbl.visible && el && !el.classList.contains('hidden') && r.width > 0);
+      const dir = L.type === 'limb' ? new THREE.Vector3(...L.dir) : new THREE.Vector3(...(o ? o.pole : [1, 0, 0])).normalize();
+      const far = dir.clone().multiplyScalar(20).project(camera);
+      const fx = sr.left + (far.x + 1) / 2 * sr.width;
+      const fy = sr.top + (1 - far.y) / 2 * sr.height;
+      const px = r.left + r.width / 2, py = r.top + r.height / 2;
+      const rayAng = Math.atan2(fy - oy, fx - ox);
+      const pillAng = Math.atan2(py - oy, px - ox);
+      let d = (pillAng - rayAng) * 180 / Math.PI;
+      while (d > 180) d -= 360; while (d < -180) d += 360;
+      return { id: L.id, type: L.type, visible, deltaDeg: d, origin: { x: ox, y: oy }, far: { x: fx, y: fy }, pill: { x: px, y: py } };
+    });
+  },
+  lastLabelMs: () => lastLabelToggleMs,
   BASELINE, CONDUCTION, rebuildModel, webgl: !!renderer
 };

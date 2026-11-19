@@ -1,0 +1,305 @@
+/* Revamp visual language inside the r15 one-screen layout:
+   new heart, torso, lead pills and side-column labels; visible NOW box, close-up and 12-lead. */
+
+.page-ecg3d-revamp .stage-bar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px 10px;
+  flex: 0 0 auto;
+}
+.page-ecg3d-revamp .stage-bar .ctrl-group,
+.page-ecg3d-revamp .show-group,
+.page-ecg3d-revamp .view-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+}
+
+/* Uniform older-style lead pills */
+.page-ecg3d-revamp .lbl {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #111;
+  border: 1.5px solid #6b6b6b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.page-ecg3d-revamp .lbl.lead,
+.page-ecg3d-revamp button.lbl.lead,
+.page-ecg3d-revamp .lbl.lead.compact,
+.page-ecg3d-revamp .lbl.lead.dim,
+.page-ecg3d-revamp .lbl.lead.behind {
+  font-size: 12px;
+  padding: 3px 8px;
+  min-width: 0;
+  min-height: 0;
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: #6b6b6b;
+  color: #111;
+  background: rgba(255, 255, 255, 0.95);
+  opacity: 1;
+}
+.page-ecg3d-revamp .lbl.lead.sel,
+.page-ecg3d-revamp button.lbl.lead.sel {
+  border-color: #111;
+  border-width: 1.5px;
+  color: #fff;
+  background: #111;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+.page-ecg3d-revamp .lbl.lead.behind { border-style: dashed; }
+
+/* Anatomy labels: columns close to the heart, not the viewport edge */
+.page-ecg3d-revamp .lbl.col {
+  color: #111;
+  border-color: #184A63;
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  pointer-events: none;
+  max-width: 148px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.page-ecg3d-revamp .lbl.col.faded { opacity: 0.4; }
+.page-ecg3d-revamp .labels .leaders line.col-leader {
+  stroke: #184A63;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+}
+.page-ecg3d-revamp .labels .leaders line.col-leader.faded { stroke-opacity: 0.35; }
+.page-ecg3d-revamp .labels .leaders circle.col-dot { fill: #184A63; }
+.page-ecg3d-revamp .labels .leaders circle.col-dot.faded { fill-opacity: 0.35; }
+
+/* R and L body marks: high-contrast letters that follow the shoulders */
+.page-ecg3d-revamp .body-rl { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.page-ecg3d-revamp .body-rl-mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  color: #111;
+  background: rgba(247, 244, 238, 0.92);
+  border: 1.5px solid #111;
+  border-radius: 4px;
+  padding: 1px 6px 2px;
+  text-shadow: none;
+  letter-spacing: 0.02em;
+}
+.page-ecg3d-revamp .body-rl-mark[hidden] { display: none !important; }
+
+/* More menu */
+.page-ecg3d-revamp .more-wrap { position: relative; }
+.page-ecg3d-revamp .more-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 8;
+  width: 220px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.page-ecg3d-revamp .more-panel[hidden] { display: none !important; }
+.page-ecg3d-revamp .more-title {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.page-ecg3d-revamp .more-panel .t-btn { width: 100%; justify-content: flex-start; }
+
+.page-ecg3d-revamp .stage { background: #F7F4EE; }
+
+/* One-screen: heart + NOW + close-up + 12-lead all visible, no page scroll */
+@media (min-width: 960px) and (min-height: 600px) {
+  .page-ecg3d-revamp.page-ecg3d { max-width: none; padding-top: 0; }
+  .page-ecg3d-revamp .site-header { gap: 2px; }
+  .page-ecg3d-revamp .crumb,
+  .page-ecg3d-revamp .site-header .subtitle { display: none; }
+  .page-ecg3d-revamp .proto-banner {
+    margin: 0 0 4px;
+    padding: 3px 10px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .page-ecg3d-revamp .ecg3d-hero {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr) !important;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .page-ecg3d-revamp .tool-stage,
+  .page-ecg3d-revamp .tool-side,
+  .page-ecg3d-revamp .stage-card {
+    min-height: 0;
+  }
+  /* A taller stage than r15, but leave room for the 12-lead in the same viewport. */
+  .page-ecg3d-revamp .stage {
+    height: clamp(250px, calc(100vh - 455px), 380px) !important;
+    min-height: 250px !important;
+    max-height: 380px !important;
+  }
+  .page-ecg3d-revamp .stage-card { padding: 6px 8px 8px; gap: 4px; }
+  .page-ecg3d-revamp .stage-bar .t-btn { min-height: 32px; padding: 2px 7px; font-size: 12px; }
+  .page-ecg3d-revamp .stage-bar .btn-sub { font-size: 10px; }
+  .page-ecg3d-revamp .steps { margin: 0; }
+  .page-ecg3d-revamp .step-chips .t-btn,
+  .page-ecg3d-revamp .step-nav { min-height: 28px; font-size: 11px; padding: 1px 7px; }
+
+  /* 12-lead is a normal visible card, not a collapsed panel */
+  .page-ecg3d-revamp .ecg12-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 4fr) minmax(190px, 1fr);
+    grid-template-areas: "frame side";
+    margin-top: 6px;
+    padding: 6px 10px;
+    column-gap: 10px;
+    align-items: stretch;
+  }
+  .page-ecg3d-revamp .ecg12-frame { grid-area: frame; width: auto; min-width: 0; overflow: hidden; }
+  .page-ecg3d-revamp .ecg12-side { grid-area: side; gap: 4px; min-width: 0; height: 0; min-height: 100%; overflow-y: auto; }
+  .page-ecg3d-revamp .lead-btns {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 3px;
+    width: 100% !important;
+  }
+  .page-ecg3d-revamp .lead-btn {
+    flex: unset !important;
+    width: auto !important;
+    min-width: 0;
+    min-height: 32px;
+    padding: 2px 4px;
+    font-size: 12px;
+  }
+  .page-ecg3d-revamp .ecg12-caption,
+  .page-ecg3d-revamp .ecg12-hint { display: none; }
+
+  /* Right column: fixed NOW box, close-up takes the rest, no scroll */
+  .page-ecg3d-revamp .tool-side { overflow: hidden; }
+  .page-ecg3d-revamp .tool-side .explain-card {
+    flex: 0 0 200px;
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
+    overflow: hidden;
+    padding: 10px 14px;
+  }
+  .page-ecg3d-revamp .tool-side .lead-closeup-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    padding: 4px 8px 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .page-ecg3d-revamp .lead-closeup-frame {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    overflow: hidden !important;
+  }
+  .page-ecg3d-revamp .lead-closeup-card h2 { font-size: 14px; margin: 0 0 3px; }
+  .page-ecg3d-revamp .lead-closeup-gain { margin: 4px 0 0; flex: 0 0 auto; white-space: nowrap; }
+  .page-ecg3d-revamp #leadCloseup { display: block; max-width: 100%; }
+}
+
+@media (min-width: 960px) and (min-height: 600px) and (min-width: 1400px) {
+  .page-ecg3d-revamp .tool-side .explain-card {
+    flex: 0 0 200px;
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 700px) {
+  .page-ecg3d-revamp .crumb { display: none; }
+  .page-ecg3d-revamp .site-header .subtitle { display: none; }
+  .page-ecg3d-revamp .site-header h1 { font-size: 18px; margin: 4px 0 2px; }
+  .page-ecg3d-revamp .proto-banner { font-size: 11px; padding: 4px 8px; margin: 0 0 6px; }
+  .page-ecg3d-revamp .stage-bar .btn-sub { display: none; }
+  .page-ecg3d-revamp .stage { height: 360px; min-height: 320px; }
+  .page-ecg3d-revamp .orient-gizmo { width: 64px; }
+  .page-ecg3d-revamp .orient-gizmo svg { width: 64px; height: 64px; }
+  .page-ecg3d-revamp .body-rl-mark { font-size: 15px; }
+}
+
+/* Labels chooser: sits under the Labels button, like the More menu */
+.page-ecg3d-revamp .labels-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  min-width: 0;
+}
+.page-ecg3d-revamp .stage-bar .labels-btn {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 32px;
+  padding: 2px 8px;
+  font-weight: 600;
+}
+.page-ecg3d-revamp .labels-panel {
+  z-index: 40;
+  width: min(360px, calc(100vw - 24px));
+}
+
+.page-ecg3d-revamp .ecg12-sync-note {
+  margin: 2px 0 6px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #111;
+}
+@media (min-width: 960px) and (min-height: 600px) {
+  .page-ecg3d-revamp .ecg12-sync-note { display: block; font-size: 11px; margin: 0 0 4px; }
+}
+
+/* Anatomy leaders: thin dark lines to the exact anchor, columns at the viewport edges */
+.page-ecg3d-revamp .labels .leaders line.col-leader {
+  stroke: #111;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+}
+.page-ecg3d-revamp .labels .leaders line.col-leader.faded { stroke-opacity: 0.35; }
+.page-ecg3d-revamp .labels .leaders circle.col-dot { fill: #111; }
+.page-ecg3d-revamp .labels .leaders circle.col-dot.faded { fill-opacity: 0.35; }
+.page-ecg3d-revamp .lbl.vec {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  max-width: 148px;
+  white-space: normal;
+  text-align: center;
+  border-color: #111;
+  background: #fff;
+  padding: 3px 7px;
+}
