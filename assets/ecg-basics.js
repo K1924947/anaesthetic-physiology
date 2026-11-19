@@ -1,4 +1,4 @@
-/* ECG Basics: interactive labelled lead II beat, normal values and a short quiz. */
+/* ECG Basics: interactive labelled lead II beat, normal values and hands-on drills. */
 (function () {
   "use strict";
 
@@ -524,129 +524,906 @@
     showPart("P", false);
   }
 
-  var QUIZ = [
-    {
-      q: "The P wave represents:",
-      o: ["Atrial depolarisation", "Ventricular depolarisation", "Ventricular repolarisation", "AV node delay only"],
-      a: 0,
-      why: "The P wave is the wave of depolarisation spreading from the SA node through the atria.",
-      src: srcPair("LITFL, P wave", LINKS.p, "Klabunde, Electrocardiogram", LINKS.klab)
-    },
-    {
-      q: "The normal PR interval is:",
-      o: ["0.12 to 0.20 s", "0.06 to 0.10 s", "0.20 to 0.30 s", "Under 0.08 s"],
-      a: 0,
-      why: "From the start of the P wave to the start of the QRS: 3 to 5 small squares. Over 0.20 s is first degree AV block.",
-      src: srcPair("LITFL, PR interval", LINKS.pr, "Klabunde, Electrocardiogram", LINKS.klab)
-    },
-    {
-      q: "The QRS complex represents:",
-      o: ["Ventricular depolarisation", "Atrial depolarisation", "Ventricular repolarisation", "The action potential plateau"],
-      a: 0,
-      why: "The QRS is ventricular depolarisation. A usual normal duration is under 0.12 s.",
-      src: srcPair("LITFL, QRS interval", LINKS.qrs, "Klabunde, Electrocardiogram", LINKS.klab)
-    },
-    {
-      q: "The ST segment is normally:",
-      o: [
-        "Isoelectric, because the ventricles are fully depolarised",
-        "A sharp upward spike",
-        "Inverted in lead II",
-        "The same thing as the QT interval"
-      ],
-      a: 0,
-      why: "It is the flat line from the J point to the start of the T wave. Klabunde notes that it roughly corresponds to the plateau (phase 2) of the ventricular action potential.",
-      src: srcPair("LITFL, ST segment", LINKS.st, "Klabunde, Electrocardiogram", LINKS.klab)
-    },
-    {
-      q: "According to LITFL, QTc is usually regarded as prolonged above:",
-      o: ["440 ms in men and 460 ms in women", "400 ms in everyone", "500 ms in men and 520 ms in women", "350 ms"],
-      a: 0,
-      why: "LITFL uses those sex-specific cut-offs. Over 500 ms is linked to torsades de pointes; under 350 ms is abnormally short. Klabunde uses a single normal of 0.44 s or less. Bazett's formula is QTc = QT divided by the square root of RR, with RR in seconds.",
-      src: srcPair("LITFL, QT interval", LINKS.qt, "Klabunde, Electrocardiogram", LINKS.klab)
-    },
-    {
-      q: "At 25 mm/s, a regular rhythm with 4 large squares between consecutive R waves has a rate of:",
-      o: ["75 /min", "60 /min", "100 /min", "150 /min"],
-      a: 0,
-      why: "Rate = 300 divided by the number of large squares between R waves. 300 divided by 4 is 75 /min.",
-      src: '<a href="' + LINKS.rate + '" target="_blank" rel="noopener">LITFL, ECG rate interpretation</a>.'
-    }
-  ];
+  var DRILL_N = 8;
+  var QZ = {
+    on: false,
+    i: 0,
+    score: 0,
+    items: [],
+    answered: false,
+    ok: false,
+    pick: null,
+    classify: null,
+    rateInput: "",
+    calA: 0.04,
+    calB: 0.24,
+    focus: "A",
+    dragging: null
+  };
+  var QG = { x0: 12, y0: 0, u: 10, tStart: -0.08, tEnd: 1.2, gy: 8, gh: 0, paperBottom: 0 };
 
-  var QZ = { on: false, i: 0, score: 0, answered: false, picked: null };
+  var CLICK_PARTS = [
+    { key: "P", name: "P wave" },
+    { key: "PRs", name: "PR segment" },
+    { key: "PRi", name: "PR interval" },
+    { key: "QRS", name: "QRS complex" },
+    { key: "J", name: "J point" },
+    { key: "ST", name: "ST segment" },
+    { key: "T", name: "T wave" },
+    { key: "U", name: "U wave" },
+    { key: "QT", name: "QT interval" }
+  ];
+  var TYPE_LABEL = {
+    click: "Click the part",
+    calipers: "Calipers",
+    rate: "Rate",
+    spot: "Spot the abnormality"
+  };
+
+  function voltageSeries(bumps, t, rr) {
+    var v = 0, n, n0, n1;
+    if (!rr || rr <= 0) return beatV(bumps, t);
+    n0 = Math.floor((t - 0.9) / rr) - 1;
+    n1 = Math.ceil((t + 0.3) / rr) + 1;
+    for (n = n0; n <= n1; n++) v += beatV(bumps, t - n * rr);
+    return v;
+  }
+
+  function timesFrom(p) {
+    var k = p.qrs / 0.09;
+    var q0 = p.pr;
+    var q1 = p.pr + p.qrs;
+    var qt1 = p.pr + p.qt;
+    var tC = q0 + p.qt - 0.105;
+    var t0 = tC - 0.121;
+    var t1 = tC + 0.075;
+    if (t0 < q1 + 0.02) t0 = q1 + 0.02;
+    var p1 = Math.min(0.105, q0 - 0.015);
+    if (p1 < 0.06) p1 = Math.max(0.05, q0 - 0.02);
+    return {
+      P: [0, p1],
+      PRs: [p1, q0],
+      PRi: [0, q0],
+      QRS: [q0, q1],
+      J: [q1 - 0.012, q1 + 0.012],
+      ST: [q1, t0],
+      T: [t0, Math.max(t1, qt1)],
+      U: [qt1 + 0.03, qt1 + 0.16],
+      QT: [q0, qt1],
+      rPeak: q0 + 0.040 * k,
+      q0: q0,
+      q1: q1,
+      qt1: qt1,
+      j: q1
+    };
+  }
+
+  function defaultBeat(extra) {
+    var p = { pr: 0.16, qrs: 0.08, qt: 0.40, axis: 60, u: true };
+    if (extra) {
+      for (var k in extra) p[k] = extra[k];
+    }
+    return p;
+  }
+
+  function squaresOf(sec) {
+    var sq = sec / 0.04;
+    var r = Math.round(sq * 10) / 10;
+    return (Math.abs(r - Math.round(r)) < 0.05) ? String(Math.round(r)) : r.toFixed(1);
+  }
+
+  function msOf(sec) {
+    return String(Math.round(sec * 1000));
+  }
+
+  function fmtSec(sec) {
+    return (Math.round(sec * 100) / 100).toFixed(2).replace(/0$/, "").replace(/\.0$/, "");
+  }
+
+  function shuffle(arr) {
+    var i, j, t;
+    for (i = arr.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      t = arr[i];
+      arr[i] = arr[j];
+      arr[j] = t;
+    }
+    return arr;
+  }
+
+  function pickOne(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function beatWindow(p, rr, kind) {
+    var tm = timesFrom(p);
+    var tStart, tEnd;
+    if (kind === "rate") {
+      tStart = tm.rPeak - 0.4;
+      tEnd = tm.rPeak + rr + 0.4;
+      if (tEnd - tStart < 1.8) {
+        var extra = (1.8 - (tEnd - tStart)) / 2;
+        tStart -= extra;
+        tEnd += extra;
+      }
+    } else {
+      tStart = -0.12;
+      tEnd = Math.max(1.72, tm.qt1 + rr + 0.2);
+    }
+    return { tStart: tStart, tEnd: tEnd, rr: rr };
+  }
+
+  function makeClick(targetKey) {
+    var part = null, i;
+    if (targetKey) {
+      for (i = 0; i < CLICK_PARTS.length; i++) if (CLICK_PARTS[i].key === targetKey) part = CLICK_PARTS[i];
+    }
+    if (!part) part = pickOne(CLICK_PARTS);
+    var beat = defaultBeat({ u: true });
+    var win = beatWindow(beat, 1.0, "click");
+    return {
+      type: "click",
+      target: part.key,
+      targetName: part.name,
+      q: "Click the " + part.name + " on this strip.",
+      help: "Tap the trace, or use the buttons under it. The paper is unlabelled on purpose.",
+      beat: beat,
+      rr: 1.0,
+      tStart: win.tStart,
+      tEnd: win.tEnd
+    };
+  }
+
+  function makeCalipers(preset) {
+    var pool = [
+      { measure: "PRi", pr: 0.10, qrs: 0.08, qt: 0.40, verdict: "short", name: "PR interval" },
+      { measure: "PRi", pr: 0.14, qrs: 0.08, qt: 0.40, verdict: "normal", name: "PR interval" },
+      { measure: "PRi", pr: 0.16, qrs: 0.08, qt: 0.40, verdict: "normal", name: "PR interval" },
+      { measure: "PRi", pr: 0.18, qrs: 0.08, qt: 0.40, verdict: "normal", name: "PR interval" },
+      { measure: "PRi", pr: 0.20, qrs: 0.08, qt: 0.40, verdict: "normal", name: "PR interval" },
+      { measure: "PRi", pr: 0.24, qrs: 0.08, qt: 0.40, verdict: "long", name: "PR interval" },
+      { measure: "PRi", pr: 0.28, qrs: 0.08, qt: 0.40, verdict: "long", name: "PR interval" },
+      { measure: "QRS", pr: 0.16, qrs: 0.08, qt: 0.40, verdict: "normal", name: "QRS complex" },
+      { measure: "QRS", pr: 0.16, qrs: 0.10, qt: 0.40, verdict: "normal", name: "QRS complex" },
+      { measure: "QRS", pr: 0.16, qrs: 0.14, qt: 0.42, verdict: "long", name: "QRS complex" },
+      { measure: "QRS", pr: 0.16, qrs: 0.16, qt: 0.44, verdict: "long", name: "QRS complex" },
+      { measure: "QT", pr: 0.16, qrs: 0.08, qt: 0.36, verdict: "normal", name: "QT interval" },
+      { measure: "QT", pr: 0.16, qrs: 0.08, qt: 0.40, verdict: "normal", name: "QT interval" },
+      { measure: "QT", pr: 0.16, qrs: 0.08, qt: 0.52, verdict: "long", name: "QT interval" },
+      { measure: "QT", pr: 0.16, qrs: 0.08, qt: 0.56, verdict: "long", name: "QT interval" }
+    ];
+    var spec = preset || null;
+    if (spec && spec.measure && (spec.pr == null)) {
+      var matched = pool.filter(function (x) {
+        return x.measure === spec.measure && (!spec.verdict || x.verdict === spec.verdict);
+      });
+      spec = matched.length ? pickOne(matched) : pickOne(pool);
+    }
+    if (!spec) spec = pickOne(pool);
+    if (!spec.name) {
+      spec.name = spec.measure === "PRi" ? "PR interval" : (spec.measure === "QRS" ? "QRS complex" : "QT interval");
+    }
+    var beat = defaultBeat({ pr: spec.pr, qrs: spec.qrs, qt: spec.qt, u: false });
+    var tm = timesFrom(beat);
+    var t0, t1;
+    if (spec.measure === "PRi") { t0 = tm.PRi[0]; t1 = tm.PRi[1]; }
+    else if (spec.measure === "QRS") { t0 = tm.QRS[0]; t1 = tm.QRS[1]; }
+    else { t0 = tm.QT[0]; t1 = tm.QT[1]; }
+    var win = beatWindow(beat, 1.0, "calipers");
+    var options = (spec.measure === "PRi")
+      ? [{ id: "short", label: "Too short" }, { id: "normal", label: "Normal" }, { id: "long", label: "Too long" }]
+      : [{ id: "normal", label: "Normal" }, { id: "long", label: "Too long" }];
+    return {
+      type: "calipers",
+      measure: spec.measure,
+      measureName: spec.name,
+      t0: t0,
+      t1: t1,
+      verdict: spec.verdict,
+      options: options,
+      q: "Measure the " + spec.name + " with the calipers, then say whether it is normal.",
+      help: "Drag the two markers, or focus the strip and use the arrow keys. Press 1 or 2 to choose a marker, or use the buttons.",
+      beat: beat,
+      rr: 1.0,
+      tStart: win.tStart,
+      tEnd: win.tEnd
+    };
+  }
+
+  function makeRate(largeSq) {
+    var pool = [2, 3, 4, 5, 6];
+    var sq = largeSq || pickOne(pool);
+    var rr = sq * 0.20;
+    var rate = Math.round(300 / sq);
+    var qt = Math.max(0.28, Math.min(0.44, 0.40 * Math.sqrt(rr)));
+    var beat = defaultBeat({ qt: qt, u: false });
+    var win = beatWindow(beat, rr, "rate");
+    return {
+      type: "rate",
+      largeSq: sq,
+      rate: rate,
+      q: "What is the heart rate on this strip?",
+      help: "Count the large squares between two consecutive R waves. At 25 mm/s, rate = 300 / large squares. Drag the calipers from R to R, or type the rate.",
+      beat: beat,
+      rr: rr,
+      tStart: win.tStart,
+      tEnd: win.tEnd
+    };
+  }
+
+  function makeSpot(kind) {
+    var pool = ["normal", "PRi", "QRS", "QT"];
+    var ab = kind || pickOne(pool);
+    var beat, why, qExtra;
+    if (ab === "PRi") {
+      beat = defaultBeat({ pr: 0.28, u: false });
+      why = "The PR interval is 0.28 s (7 small squares, 280 ms). The usual range is 0.12 to 0.20 s, so this PR interval is long.";
+      qExtra = "If something is abnormal, click that part.";
+    } else if (ab === "QRS") {
+      beat = defaultBeat({ qrs: 0.16, qt: 0.44, u: false });
+      why = "The QRS is 0.16 s (4 small squares, 160 ms). A usual normal duration is under 0.12 s, so this QRS is broad.";
+      qExtra = "If something is abnormal, click that part.";
+    } else if (ab === "QT") {
+      beat = defaultBeat({ qt: 0.52, u: false });
+      why = "The QT interval is 0.52 s (13 small squares, 520 ms). The rate is 60 /min, so QTc is 520 ms. That is over 500 ms, which carries a high risk of torsades de pointes, so the QT is prolonged.";
+      qExtra = "If something is abnormal, click that part.";
+    } else {
+      beat = defaultBeat({ u: false });
+      why = "This beat is within the usual values: PR 0.16 s, QRS under 0.12 s, and QTc 400 ms (under 440 ms in men and under 460 ms in women).";
+      qExtra = "If the beat is normal, use the button below the strip.";
+      ab = "normal";
+    }
+    var win = beatWindow(beat, 1.0, "spot");
+    return {
+      type: "spot",
+      abnormality: ab,
+      q: "Is this beat abnormal? " + qExtra,
+      help: "Click the abnormal part on the trace, or use the buttons. Choose \"This beat is normal\" if nothing is out of range.",
+      why: why,
+      beat: beat,
+      rr: 1.0,
+      tStart: win.tStart,
+      tEnd: win.tEnd
+    };
+  }
+
+  function buildRound() {
+    var clicks = shuffle(CLICK_PARTS.slice());
+    var calA = makeCalipers();
+    var calB = makeCalipers();
+    var guard = 0;
+    while (calB.measure === calA.measure && calB.verdict === calA.verdict && guard < 12) {
+      calB = makeCalipers();
+      guard += 1;
+    }
+    var rates = shuffle([2, 3, 4, 5, 6]);
+    var spots = shuffle(["normal", "PRi", "QRS", "QT"]);
+    var items = [
+      makeClick(clicks[0].key),
+      makeClick(clicks[1].key),
+      calA,
+      calB,
+      makeRate(rates[0]),
+      makeRate(rates[1]),
+      makeSpot(spots[0]),
+      makeSpot(spots[1])
+    ];
+    return shuffle(items);
+  }
+
+  function currentItem() {
+    return QZ.items[QZ.i] || null;
+  }
+
+  function quizTtoX(t) {
+    return QG.x0 + (t - QG.tStart) * 25 * QG.u;
+  }
+  function quizXtoT(x) {
+    return QG.tStart + (x - QG.x0) / (25 * QG.u);
+  }
+  function quizClientToT(svg, clientX) {
+    var pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = 0;
+    var ctm = svg.getScreenCTM();
+    if (!ctm) return 0;
+    return quizXtoT(pt.matrixTransform(ctm.inverse()).x);
+  }
+
+  function partAtTime(item, t) {
+    var tm = timesFrom(item.beat);
+    function inR(k) { return t >= tm[k][0] && t <= tm[k][1]; }
+    if (inR("J")) return "J";
+    if (inR("PRs")) return "PRs";
+    if (inR("P")) return "P";
+    if (inR("QRS")) return "QRS";
+    if (inR("ST")) return "ST";
+    if (inR("T")) return "T";
+    if (item.beat.u && inR("U")) return "U";
+    if (inR("PRi")) return "PRi";
+    if (inR("QT")) return "QT";
+    return "baseline";
+  }
+
+  function partName(key) {
+    if (key === "baseline") return "the baseline (the T-P segment)";
+    if (key === "normal") return "This beat is normal";
+    if (key === "J") return "J point";
+    var i;
+    for (i = 0; i < CLICK_PARTS.length; i++) if (CLICK_PARTS[i].key === key) return CLICK_PARTS[i].name;
+    return key;
+  }
+
+  function clickMatches(item, key) {
+    if (!key || key === "baseline") return false;
+    if (item.type === "click") {
+      if (item.target === key) return true;
+      if (item.target === "PRi" && (key === "P" || key === "PRs")) return true;
+      if (item.target === "QT" && (key === "QRS" || key === "J" || key === "ST" || key === "T")) return true;
+      if (item.target === "QRS" && key === "J") return true;
+      return false;
+    }
+    if (item.type === "spot") {
+      if (item.abnormality === "normal") return key === "normal";
+      if (key === "normal") return false;
+      if (item.abnormality === "PRi") return key === "PRi" || key === "P" || key === "PRs";
+      if (item.abnormality === "QRS") return key === "QRS" || key === "J";
+      if (item.abnormality === "QT") return key === "QT" || key === "ST" || key === "T" || key === "QRS" || key === "J";
+      return false;
+    }
+    return false;
+  }
+
+  function caliperSpan() {
+    return Math.abs(QZ.calB - QZ.calA);
+  }
+
+  function calipersPlacedWell(item) {
+    var a = Math.min(QZ.calA, QZ.calB);
+    var b = Math.max(QZ.calA, QZ.calB);
+    var tol = 0.04;
+    return Math.abs(a - item.t0) <= tol && Math.abs(b - item.t1) <= tol;
+  }
+
+  function rateFromCalipers() {
+    var span = caliperSpan();
+    if (span < 0.12) return null;
+    var sq = span / 0.20;
+    return Math.round(300 / sq);
+  }
+
+  function rateEntered() {
+    var typed = parseInt(QZ.rateInput, 10);
+    if (!isNaN(typed) && typed > 0) return typed;
+    return rateFromCalipers();
+  }
+
+  function rateIsClose(guess, trueRate) {
+    if (guess == null || isNaN(guess)) return false;
+    return Math.abs(guess - trueRate) <= 5;
+  }
+
+  function classifyCorrect(item) {
+    return QZ.classify === item.verdict;
+  }
+
+  function speakQuiz(msg) {
+    var live = $("quizLive");
+    if (live) live.textContent = msg;
+  }
 
   function setScore() {
     var s = $("testBannerScore");
     if (!s) return;
     s.hidden = !QZ.on;
-    s.textContent = QZ.on ? ("Score " + QZ.score + " / " + QUIZ.length) : "";
+    s.textContent = QZ.on ? ("Score " + QZ.score + " / " + QZ.items.length) : "";
+  }
+
+  function setupQuizGeometry(item) {
+    var u = 10;
+    var span = item.tEnd - item.tStart;
+    var head = (item.type === "calipers" || item.type === "rate") ? 26 : 8;
+    var gy = head;
+    var gh = 20 * u;
+    QG.x0 = 10;
+    QG.u = u;
+    QG.tStart = item.tStart;
+    QG.tEnd = item.tEnd;
+    QG.gy = gy;
+    QG.gh = gh;
+    QG.y0 = gy + 14 * u;
+    QG.paperBottom = gy + gh;
+    QG.gw = span * 25 * u;
+    QG.head = head;
+  }
+
+  function markGuess(g, item, key) {
+    var tm = timesFrom(item.beat);
+    var ink = cssVar("--ecg-ink") || "#111";
+    if (key === "J") {
+      var jx = quizTtoX(tm.j);
+      el("path", {
+        d: "M" + (jx - 8) + " " + (QG.y0 - 8) + "L" + (jx + 8) + " " + (QG.y0 + 8) + "M" + (jx + 8) + " " + (QG.y0 - 8) + "L" + (jx - 8) + " " + (QG.y0 + 8),
+        stroke: ink, "stroke-width": 2.4, fill: "none", "stroke-linecap": "square", class: "hl-guess"
+      }, g);
+      return;
+    }
+    if (!tm[key]) return;
+    var x0 = quizTtoX(Math.max(tm[key][0], QG.tStart));
+    var x1 = quizTtoX(Math.min(tm[key][1], QG.tEnd));
+    el("rect", {
+      x: x0, y: QG.gy, width: Math.max(x1 - x0, 2), height: QG.gh,
+      fill: "none", stroke: ink, "stroke-width": 2, "stroke-dasharray": "3 3", class: "hl-guess"
+    }, g);
+  }
+
+  function highlightRange(g, item, key, cls) {
+    var tm = timesFrom(item.beat);
+    var t = T();
+    var range;
+    if (key === "J") {
+      var jx = quizTtoX(tm.j);
+      el("circle", {
+        cx: jx, cy: QG.y0, r: 7, fill: "none", stroke: t.a, "stroke-width": 2.5,
+        "stroke-dasharray": "3 2", class: cls || "hl-mark"
+      }, g);
+      return;
+    }
+    if (key === "normal" || key === "baseline" || !tm[key]) return;
+    range = tm[key];
+    var x0 = quizTtoX(Math.max(range[0], QG.tStart));
+    var x1 = quizTtoX(Math.min(range[1], QG.tEnd));
+    el("rect", {
+      x: x0, y: QG.gy, width: Math.max(x1 - x0, 2), height: QG.gh,
+      fill: "url(#qz-hatch)", stroke: t.a, "stroke-width": 1.5, "stroke-dasharray": "5 3",
+      class: cls || "hl-band"
+    }, g);
+    var bumps = beatBumps(item.beat);
+    var f = function (tt) { return voltageSeries(bumps, tt, item.rr); };
+    if (key !== "PRi" && key !== "QT") {
+      el("path", {
+        d: fnPath(f, range[0], range[1], quizTtoX(range[0]), QG.y0, 25 * QG.u, 10 * QG.u, 0.002),
+        fill: "none", stroke: t.a, "stroke-width": 5.5, "stroke-linejoin": "round", "stroke-linecap": "round",
+        class: cls || "hl-trace"
+      }, g);
+    }
+  }
+
+  function drawCaliperLine(g, tVal, which, y0, y1, focused, style) {
+    var x = quizTtoX(tVal);
+    var tok = T();
+    var ink = cssVar("--ecg-ink") || "#111";
+    var fam = fontSans();
+    var isTrue = style === "true";
+    var col = isTrue ? ink : tok.a;
+    var sw = focused && !isTrue ? 3.4 : 2.2;
+    var d = isTrue
+      ? ("M" + x + " " + y0 + "V" + y1)
+      : ("M" + x + " " + (y0 + 14) + "V" + y1);
+    el("path", {
+      d: d,
+      fill: "none",
+      stroke: col,
+      "stroke-width": sw,
+      "stroke-dasharray": isTrue ? "5 3" : "none",
+      "stroke-linecap": "square",
+      class: "cal-line",
+      "data-which": which
+    }, g);
+    if (isTrue) {
+      el("rect", { x: x - 8, y: y0, width: 16, height: 16, fill: tok.surface, stroke: ink, "stroke-width": 2 }, g);
+      el("text", { x: x, y: y0 + 13, "text-anchor": "middle", fill: ink, "font-family": fam, class: "lab-small" }, g, which === "A" ? "A" : "B");
+    } else {
+      var pts = focused
+        ? (x + "," + y0 + " " + (x - 11) + "," + (y0 + 16) + " " + (x + 11) + "," + (y0 + 16))
+        : (x + "," + y0 + " " + (x - 11) + "," + (y0 + 16) + " " + (x + 11) + "," + (y0 + 16));
+      el("polygon", {
+        points: pts,
+        fill: focused ? col : tok.surface,
+        stroke: col,
+        "stroke-width": 2.2,
+        class: "cal-head",
+        "data-which": which
+      }, g);
+      el("text", {
+        x: x, y: y0 + 14, "text-anchor": "middle",
+        fill: focused ? tok.surface : col, "font-family": fam, class: "lab-small"
+      }, g, which === "A" ? "1" : "2");
+    }
+  }
+
+  function drawQuizTrace() {
+    var item = currentItem();
+    var svg = $("quizSvg");
+    if (!item || !svg) return;
+    setupQuizGeometry(item);
+    var t = T(), ink = cssVar("--ecg-ink") || "#111";
+    var fam = fontSans();
+    var u = QG.u;
+    var vbW = QG.x0 + QG.gw + 10;
+    var calY = QG.paperBottom + 8;
+    var vbH = (item.type === "calipers" || item.type === "rate") ? calY + 36 : QG.paperBottom + 10;
+    clearSvg(svg);
+    svg.setAttribute("viewBox", "0 0 " + Math.ceil(vbW) + " " + Math.ceil(vbH));
+    patterns(svg, "qz");
+    var g = el("g", null, svg);
+    paper(g, QG.x0, QG.gy, QG.gw, QG.gh, u);
+    var bumps = beatBumps(item.beat);
+    var f = function (tt) { return voltageSeries(bumps, tt, item.rr); };
+    el("path", {
+      d: fnPath(f, QG.tStart, QG.tEnd, quizTtoX(QG.tStart), QG.y0, 25 * u, 10 * u, 0.002),
+      fill: "none", stroke: ink, "stroke-width": 2.6, "stroke-linejoin": "round", "stroke-linecap": "round"
+    }, g);
+
+    if (QZ.answered) {
+      if (item.type === "click") highlightRange(g, item, item.target, "hl-true");
+      if (item.type === "spot" && item.abnormality !== "normal") highlightRange(g, item, item.abnormality, "hl-true");
+      if ((item.type === "click" || item.type === "spot") && QZ.pick && !QZ.ok && QZ.pick !== "baseline" && QZ.pick !== "normal") {
+        markGuess(g, item, QZ.pick);
+      }
+    }
+
+    if (item.type === "calipers" || item.type === "rate") {
+      var yTop = 4;
+      var yBot = QG.paperBottom;
+      drawCaliperLine(g, QZ.calA, "A", yTop, yBot, QZ.focus === "A", "user");
+      drawCaliperLine(g, QZ.calB, "B", yTop, yBot, QZ.focus === "B", "user");
+      var ax = quizTtoX(Math.min(QZ.calA, QZ.calB));
+      var bxv = quizTtoX(Math.max(QZ.calA, QZ.calB));
+      el("path", {
+        d: "M" + ax + " " + (calY + 8) + "H" + bxv,
+        fill: "none", stroke: t.a, "stroke-width": 2
+      }, g);
+      if (QZ.answered && item.type === "calipers") {
+        drawCaliperLine(g, item.t0, "A", yTop, yBot, false, "true");
+        drawCaliperLine(g, item.t1, "B", yTop, yBot, false, "true");
+      }
+    }
+    updateQuizReadout();
+  }
+
+  function updateQuizReadout() {
+    var elr = $("quizReadout");
+    var item = currentItem();
+    if (!elr || !item) return;
+    if (item.type === "calipers" || item.type === "rate") {
+      var span = caliperSpan();
+      var small = squaresOf(span);
+      var large = (span / 0.20);
+      var largeTxt = (Math.abs(large - Math.round(large)) < 0.05) ? String(Math.round(large)) : large.toFixed(1);
+      if (item.type === "calipers") {
+        elr.textContent = "Calipers: " + msOf(span) + " ms (" + small + " small squares).";
+      } else {
+        var r = (span >= 0.40) ? rateFromCalipers() : null;
+        var largeLabel = (largeTxt === "1") ? "1 large square" : (largeTxt + " large squares");
+        elr.textContent = "Calipers: " + largeLabel + (r ? (", rate " + r + " /min.") : ". Drag them onto two R waves to read the rate.");
+      }
+    } else {
+      elr.textContent = "";
+    }
+  }
+
+  function feedbackHtml(item) {
+    var ok = QZ.ok;
+    var head = ok ? "Correct." : "Not quite.";
+    var cls = ok ? "quiz-feedback" : "quiz-feedback is-wrong";
+    var body = "";
+    var guessName;
+    if (item.type === "click") {
+      guessName = partName(QZ.pick);
+      if (ok) body = "That is the " + item.targetName + ".";
+      else body = "You clicked " + guessName + ". The " + item.targetName + " is marked on the strip.";
+    } else if (item.type === "calipers") {
+      var span = caliperSpan();
+      var placed = calipersPlacedWell(item);
+      var judged = classifyCorrect(item);
+      body = "The " + item.measureName + " is " + msOf(item.t1 - item.t0) + " ms (" + squaresOf(item.t1 - item.t0) + " small squares). ";
+      body += caliperFeedbackRule(item) + " ";
+      if (!placed) {
+        body += "Your calipers span " + msOf(span) + " ms (" + squaresOf(span) + " small squares) and are not close enough to the true start and end (within 1 small square). ";
+      } else if (!ok) {
+        body += "Your calipers were well placed. ";
+      }
+      if (!judged && QZ.classify) {
+        body += "The interval is " + verdictPhrase(item.verdict) + ", not " + verdictPhrase(QZ.classify) + ".";
+      } else if (!QZ.classify) {
+        body += "You still needed to say whether it is normal.";
+      }
+    } else if (item.type === "rate") {
+      var guess = rateEntered();
+      body = "There are " + item.largeSq + " large squares between consecutive R waves, so the rate is 300 / " + item.largeSq + " = " + item.rate + " /min.";
+      if (!ok && guess != null) body += " You entered " + guess + " /min.";
+      if (!ok && (guess == null)) body += " Enter a rate, or drag the calipers from one R wave to the next.";
+    } else if (item.type === "spot") {
+      body = item.why;
+      if (!ok) {
+        if (item.abnormality === "normal") body += " This beat is normal; no part needed to be marked.";
+        else if (QZ.pick === "normal") body += " A part of this beat is out of the usual range; it is marked on the strip.";
+        else if (QZ.pick) body += " You clicked " + partName(QZ.pick) + ".";
+      }
+    }
+    return "<div class='" + cls + "'><p><strong>" + head + "</strong> " + esc(body.trim()) + "</p></div>";
+  }
+
+  function verdictPhrase(v) {
+    if (v === "short") return "too short";
+    if (v === "long") return "too long";
+    return "normal";
+  }
+
+  function caliperFeedbackRule(item) {
+    if (item.measure === "PRi") {
+      return "The usual PR interval is 0.12 to 0.20 s (3 to 5 small squares), so this one is " + verdictPhrase(item.verdict) + ".";
+    }
+    if (item.measure === "QRS") {
+      return "A usual normal QRS is under 0.12 s (3 small squares), so this one is " + verdictPhrase(item.verdict) + ".";
+    }
+    return "The rate is 60 /min, so QTc equals the QT interval. QTc is usually under 440 ms in men and under 460 ms in women, and over 500 ms carries a high risk of torsades de pointes, so this QT is " + verdictPhrase(item.verdict) + ".";
+  }
+
+  function bindQuizSvg(svg, item) {
+    svg.addEventListener("pointerdown", function (ev) {
+      if (QZ.answered) return;
+      if (item.type === "calipers" || item.type === "rate") {
+        var t = quizClientToT(svg, ev.clientX);
+        t = clampT(t);
+        var dA = Math.abs(t - QZ.calA), dB = Math.abs(t - QZ.calB);
+        var tol = 0.08;
+        var which = null;
+        if (dA <= tol || dB <= tol) which = (dA <= dB) ? "A" : "B";
+        if (!which) return;
+        QZ.dragging = which;
+        QZ.focus = which;
+        try { svg.setPointerCapture(ev.pointerId); } catch (err) {}
+        ev.preventDefault();
+        drawQuizTrace();
+        return;
+      }
+      if (item.type === "click" || item.type === "spot") {
+        var tt = quizClientToT(svg, ev.clientX);
+        var key = partAtTime(item, tt);
+        ev.preventDefault();
+        submitClick(key);
+      }
+    });
+    svg.addEventListener("pointermove", function (ev) {
+      if (!QZ.dragging || QZ.answered) return;
+      var t = clampT(quizClientToT(svg, ev.clientX));
+      if (QZ.dragging === "A") QZ.calA = t;
+      else QZ.calB = t;
+      if (item.type === "rate") {
+        var r = rateFromCalipers();
+        if (r) {
+          QZ.rateInput = String(r);
+          var inp = $("quizRate");
+          if (inp && document.activeElement !== inp) inp.value = QZ.rateInput;
+        }
+      }
+      ev.preventDefault();
+      drawQuizTrace();
+    });
+    svg.addEventListener("pointerup", function () { QZ.dragging = null; });
+    svg.addEventListener("pointercancel", function () { QZ.dragging = null; });
+    svg.addEventListener("keydown", function (ev) {
+      if (QZ.answered) return;
+      if (item.type === "calipers" || item.type === "rate") {
+        if (ev.key === "1") { QZ.focus = "A"; ev.preventDefault(); drawQuizTrace(); return; }
+        if (ev.key === "2") { QZ.focus = "B"; ev.preventDefault(); drawQuizTrace(); return; }
+        var step = ev.shiftKey ? 0.02 : 0.04;
+        if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") {
+          var dir = ev.key === "ArrowLeft" ? -step : step;
+          if (QZ.focus === "A") QZ.calA = clampT(QZ.calA + dir);
+          else QZ.calB = clampT(QZ.calB + dir);
+          if (item.type === "rate") {
+            var rr = rateFromCalipers();
+            if (rr) {
+              QZ.rateInput = String(rr);
+              var inp2 = $("quizRate");
+              if (inp2) inp2.value = QZ.rateInput;
+            }
+          }
+          ev.preventDefault();
+          drawQuizTrace();
+        }
+      }
+    });
+  }
+
+  function clampT(t) {
+    var lo = QG.tStart, hi = QG.tEnd;
+    if (t < lo) return lo;
+    if (t > hi) return hi;
+    return t;
+  }
+
+  function moveCaliper(which, dir) {
+    if (QZ.answered) return;
+    QZ.focus = which;
+    var step = 0.04 * dir;
+    if (which === "A") QZ.calA = clampT(QZ.calA + step);
+    else QZ.calB = clampT(QZ.calB + step);
+    var item = currentItem();
+    if (item && item.type === "rate") {
+      var r = rateFromCalipers();
+      if (r) {
+        QZ.rateInput = String(r);
+        var inp = $("quizRate");
+        if (inp) inp.value = QZ.rateInput;
+      }
+    }
+    drawQuizTrace();
+  }
+
+  function resetInteraction(item) {
+    QZ.answered = false;
+    QZ.ok = false;
+    QZ.pick = null;
+    QZ.classify = null;
+    QZ.rateInput = "";
+    QZ.dragging = null;
+    QZ.focus = "A";
+    if (item && (item.type === "calipers" || item.type === "rate")) {
+      QZ.calA = item.tStart + 0.04;
+      QZ.calB = item.tStart + 0.24;
+      if (QZ.calB > item.tEnd) QZ.calB = (item.tStart + item.tEnd) / 2;
+    }
+  }
+
+  function submitClick(key) {
+    var item = currentItem();
+    if (!item || QZ.answered) return;
+    if (item.type !== "click" && item.type !== "spot") return;
+    QZ.pick = key;
+    QZ.answered = true;
+    QZ.ok = clickMatches(item, key);
+    if (QZ.ok) QZ.score += 1;
+    setScore();
+    renderQuiz();
+    speakQuiz((QZ.ok ? "Correct. " : "Not quite. ") + (item.type === "spot" ? item.why : ("The answer is the " + item.targetName + ".")));
+  }
+
+  function submitCheck() {
+    var item = currentItem();
+    if (!item || QZ.answered) return;
+    if (item.type === "calipers") {
+      if (!QZ.classify) {
+        speakQuiz("Say whether the interval is normal before checking.");
+        var box = $("quizClassifyHint");
+        if (box) box.textContent = "Choose too short, normal or too long first.";
+        return;
+      }
+      QZ.ok = calipersPlacedWell(item) && classifyCorrect(item);
+    } else if (item.type === "rate") {
+      var g = rateEntered();
+      QZ.ok = rateIsClose(g, item.rate);
+    } else {
+      return;
+    }
+    QZ.answered = true;
+    if (QZ.ok) QZ.score += 1;
+    setScore();
+    renderQuiz();
+    speakQuiz(QZ.ok ? "Correct." : "Not quite.");
+  }
+
+  function nextDrill() {
+    QZ.i += 1;
+    if (QZ.i < QZ.items.length) resetInteraction(QZ.items[QZ.i]);
+    renderQuiz();
+    var q = $("quizQ");
+    if (q) q.focus();
+  }
+
+  function startRound(forcedItems) {
+    QZ.items = forcedItems && forcedItems.length ? forcedItems : buildRound();
+    QZ.i = 0;
+    QZ.score = 0;
+    resetInteraction(QZ.items[0]);
   }
 
   function renderQuiz() {
     var root = $("quizBody");
     if (!root) return;
-    if (QZ.i >= QUIZ.length) {
+    if (QZ.i >= QZ.items.length) {
       root.innerHTML =
-        "<p class='quiz-end'><strong>Finished.</strong> You scored " + QZ.score + " out of " + QUIZ.length + ".</p>" +
+        "<p class='quiz-end'><strong>Finished.</strong> You scored " + QZ.score + " out of " + QZ.items.length + ".</p>" +
         "<div class='quiz-nav'><button type='button' class='t-btn' id='quizAgain'>Try again</button></div>";
       var again = $("quizAgain");
       if (again) again.addEventListener("click", function () {
-        QZ.i = 0; QZ.score = 0; QZ.answered = false; QZ.picked = null;
+        startRound();
         setScore();
         renderQuiz();
       });
       return;
     }
-    var item = QUIZ[QZ.i];
-    var html = "<p class='quiz-progress'>Question " + (QZ.i + 1) + " of " + QUIZ.length + "</p>";
-    html += "<h3 class='quiz-q' id='quizQ'>" + esc(item.q) + "</h3>";
-    html += "<ul class='quiz-opts' role='list'>";
-    item.o.forEach(function (opt, idx) {
-      var cls = "t-btn";
-      var extra = "";
-      if (QZ.answered) {
-        if (idx === item.a) cls += " is-correct";
-        if (QZ.picked === idx && idx !== item.a) cls += " is-wrong";
-        extra = " disabled";
-      }
-      html += "<li><button type='button' class='" + cls + "' data-i='" + idx + "'" + extra + ">" + esc(opt) + "</button></li>";
-    });
-    html += "</ul>";
+    var item = currentItem();
+    var html = "<p class='quiz-progress'><span class='quiz-type'>" + esc(TYPE_LABEL[item.type]) + "</span> · Drill " + (QZ.i + 1) + " of " + QZ.items.length + "</p>";
+    html += "<h3 class='quiz-q' id='quizQ' tabindex='-1'>" + esc(item.q) + "</h3>";
+    html += "<p class='quiz-help'>" + esc(item.help) + "</p>";
+    html += "<svg id='quizSvg' class='quiz-svg' viewBox='0 0 800 200' role='application' tabindex='0' aria-labelledby='quizQ quizSvgTitle quizSvgDesc'>";
+    html += "<title id='quizSvgTitle'>" + esc("Teaching ECG strip for this drill") + "</title>";
+    html += "<desc id='quizSvgDesc'>" + esc(item.help) + "</desc></svg>";
+    html += "<p class='quiz-help'>Standard paper at 25 mm/s and 10 mm/mV. One small square is 0.04 s; one large square is 0.20 s.</p>";
+    html += "<p class='quiz-readout' id='quizReadout'></p>";
+
+    if (item.type === "calipers" || item.type === "rate") {
+      html += "<div class='quiz-controls' role='group' aria-label='Move calipers'>";
+      html += "<p class='quiz-controls-label'>Move the calipers (or use arrow keys when the strip is focused)</p>";
+      html += "<button type='button' class='t-btn' data-cal='A' data-dir='-1' aria-label='Move marker 1 left'>1 left</button>";
+      html += "<button type='button' class='t-btn' data-cal='A' data-dir='1' aria-label='Move marker 1 right'>1 right</button>";
+      html += "<button type='button' class='t-btn' data-cal='B' data-dir='-1' aria-label='Move marker 2 left'>2 left</button>";
+      html += "<button type='button' class='t-btn' data-cal='B' data-dir='1' aria-label='Move marker 2 right'>2 right</button>";
+      html += "</div>";
+    }
+    if (item.type === "rate") {
+      html += "<div class='quiz-rate-field'>";
+      html += "<label for='quizRate'>Rate (/min)</label>";
+      html += "<input id='quizRate' type='number' inputmode='numeric' min='30' max='220' step='1' value='" + esc(QZ.rateInput) + "'" + (QZ.answered ? " disabled" : "") + ">";
+      html += "</div>";
+    }
+    if (item.type === "calipers") {
+      html += "<div class='quiz-classify' role='group' aria-label='Is this interval normal?'>";
+      html += "<p class='quiz-classify-label'>Is this interval normal?</p>";
+      item.options.forEach(function (op) {
+        var pressed = QZ.classify === op.id ? "true" : "false";
+        html += "<button type='button' class='t-btn' data-class='" + op.id + "' aria-pressed='" + pressed + "'" + (QZ.answered ? " disabled" : "") + ">" + esc(op.label) + "</button>";
+      });
+      html += "<p class='quiz-help' id='quizClassifyHint'></p>";
+      html += "</div>";
+    }
+    if (item.type === "click" || item.type === "spot") {
+      html += "<div class='quiz-fallback' role='group' aria-label='Choose a part'>";
+      html += "<p class='quiz-fallback-label'>Or pick a part with these buttons</p>";
+      var keys = item.type === "spot"
+        ? [{ key: "PRi", name: "PR interval" }, { key: "QRS", name: "QRS complex" }, { key: "QT", name: "QT interval" }, { key: "normal", name: "This beat is normal" }]
+        : CLICK_PARTS;
+      keys.forEach(function (p) {
+        var k = p.key, name = p.name;
+        html += "<button type='button' class='t-btn' data-part='" + k + "'" + (QZ.answered ? " disabled" : "") + ">" + esc(name) + "</button>";
+      });
+      html += "</div>";
+    }
+    if (!QZ.answered && (item.type === "calipers" || item.type === "rate")) {
+      html += "<div class='quiz-nav'><button type='button' class='t-btn' id='quizCheck'>Check</button></div>";
+    }
     if (QZ.answered) {
-      var ok = QZ.picked === item.a;
-      html += "<div class='quiz-feedback'><p><strong>" + (ok ? "Correct." : "Not quite.") + "</strong> " + esc(item.why) + "</p>";
-      html += "<p class='src-line'>Sources: " + item.src + "</p></div>";
-      html += "<div class='quiz-nav'><button type='button' class='t-btn' id='quizNext'>" + (QZ.i === QUIZ.length - 1 ? "See score" : "Next question") + "</button></div>";
+      html += feedbackHtml(item);
+      html += "<div class='quiz-nav'><button type='button' class='t-btn' id='quizNext'>" + (QZ.i === QZ.items.length - 1 ? "See score" : "Next drill") + "</button></div>";
     }
     root.innerHTML = html;
-    root.querySelectorAll(".quiz-opts .t-btn").forEach(function (b) {
+    drawQuizTrace();
+    var svg = $("quizSvg");
+    if (svg) bindQuizSvg(svg, item);
+    root.querySelectorAll(".quiz-controls .t-btn").forEach(function (b) {
       b.addEventListener("click", function () {
-        if (QZ.answered) return;
-        QZ.picked = parseInt(b.getAttribute("data-i"), 10);
-        QZ.answered = true;
-        if (QZ.picked === item.a) QZ.score += 1;
-        setScore();
-        renderQuiz();
+        moveCaliper(b.getAttribute("data-cal"), parseInt(b.getAttribute("data-dir"), 10));
       });
     });
-    var nxt = $("quizNext");
-    if (nxt) nxt.addEventListener("click", function () {
-      QZ.i += 1;
-      QZ.answered = false;
-      QZ.picked = null;
-      renderQuiz();
+    root.querySelectorAll(".quiz-fallback .t-btn").forEach(function (b) {
+      b.addEventListener("click", function () { submitClick(b.getAttribute("data-part")); });
     });
+    root.querySelectorAll(".quiz-classify .t-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (QZ.answered) return;
+        QZ.classify = b.getAttribute("data-class");
+        root.querySelectorAll(".quiz-classify .t-btn").forEach(function (x) {
+          x.setAttribute("aria-pressed", x === b ? "true" : "false");
+        });
+      });
+    });
+    var rateInp = $("quizRate");
+    if (rateInp) {
+      rateInp.addEventListener("input", function () { QZ.rateInput = rateInp.value; });
+    }
+    var chk = $("quizCheck");
+    if (chk) chk.addEventListener("click", submitCheck);
+    var nxt = $("quizNext");
+    if (nxt) nxt.addEventListener("click", nextDrill);
   }
 
-  function setTest(on) {
+  function setTest(on, forcedItems) {
     QZ.on = on;
-    if (on) {
-      QZ.i = 0;
-      QZ.score = 0;
-      QZ.answered = false;
-      QZ.picked = null;
-    }
+    if (on) startRound(forcedItems);
     var banner = $("testBanner");
     var panel = $("quizPanel");
     var btn = $("testToggle");
@@ -666,7 +1443,39 @@
     if (btn) btn.addEventListener("click", function () { setTest(!QZ.on); });
   }
 
-  function redraw() { render(); }
+  function quizState() {
+    var item = currentItem();
+    return {
+      on: QZ.on,
+      i: QZ.i,
+      score: QZ.score,
+      n: QZ.items.length,
+      type: item ? item.type : null,
+      answered: QZ.answered,
+      ok: QZ.ok,
+      pick: QZ.pick,
+      classify: QZ.classify,
+      calA: QZ.calA,
+      calB: QZ.calB,
+      rateInput: QZ.rateInput,
+      item: item ? {
+        type: item.type,
+        target: item.target || null,
+        measure: item.measure || null,
+        t0: item.t0,
+        t1: item.t1,
+        verdict: item.verdict || null,
+        rate: item.rate || null,
+        largeSq: item.largeSq || null,
+        abnormality: item.abnormality || null
+      } : null
+    };
+  }
+
+  function redraw() {
+    render();
+    if (QZ.on && QZ.i < QZ.items.length) drawQuizTrace();
+  }
 
   window.__ecgBasics = {
     state: function () {
@@ -680,6 +1489,54 @@
         bands: document.querySelectorAll("#beatSvg .hl-band").length,
         traces: document.querySelectorAll("#beatSvg .hl-trace").length
       };
+    },
+    quiz: {
+      specToItem: function (it) {
+        if (!it) return null;
+        if (it.type === "click") return makeClick(it.target);
+        if (it.type === "calipers") return makeCalipers(it.measure ? it : null);
+        if (it.type === "rate") return makeRate(it.largeSq);
+        if (it.type === "spot") return makeSpot(it.abnormality);
+        return it;
+      },
+      open: function (itemOrItems) {
+        var list = null;
+        if (!itemOrItems) list = null;
+        else if (Object.prototype.toString.call(itemOrItems) === "[object Array]") list = itemOrItems;
+        else list = [itemOrItems];
+        if (list) list = list.map(window.__ecgBasics.quiz.specToItem);
+        setTest(true, list);
+      },
+      openFirst: function (spec) {
+        var first = window.__ecgBasics.quiz.specToItem(spec);
+        var rest = buildRound().filter(function (it) { return it.type !== first.type; });
+        /* Keep 2 of other types, 1 more of this type if available, total 8. */
+        var same = buildRound().filter(function (it) { return it.type === first.type; }).slice(0, 1);
+        var items = [first].concat(same, rest).slice(0, 8);
+        setTest(true, items);
+      },
+      close: function () { setTest(false); },
+      state: quizState,
+      click: submitClick,
+      check: submitCheck,
+      next: nextDrill,
+      setCalipers: function (a, b) {
+        QZ.calA = clampT(a);
+        QZ.calB = clampT(b);
+        drawQuizTrace();
+      },
+      setRate: function (n) {
+        QZ.rateInput = String(n);
+        var inp = $("quizRate");
+        if (inp) inp.value = QZ.rateInput;
+      },
+      classify: function (v) {
+        QZ.classify = v;
+        document.querySelectorAll(".quiz-classify .t-btn").forEach(function (x) {
+          x.setAttribute("aria-pressed", x.getAttribute("data-class") === v ? "true" : "false");
+        });
+      },
+      move: moveCaliper
     }
   };
 
