@@ -5182,11 +5182,12 @@ function fillDrugPanel() {
     return "<section class='scn-drug-group' data-group='" + g.id + "'>" +
       "<h3 class='scn-drug-group-title'>" + drugShapeHtml(g) + "<span>" + esc(g.name) + "</span></h3>" +
       "<ul class='scn-drug-list'>" + items.map(function (it) {
-        var aria = " aria-expanded='false' aria-controls='scnDrugChooser'";
+        var descId = "scn-drug-desc-" + it.id;
+        var aria = " aria-expanded='false' aria-controls='scnDrugChooser' aria-describedby='" + descId + "'";
         return "<li><button type='button' class='scn-drug-btn' data-drug='" + esc(it.id) + "'" + aria + ">" +
           drugShapeHtml(g) +
-          "<span class='scn-drug-btn-text'><span class='scn-drug-btn-name'>" + esc(it.name) + "</span>" +
-          "<span class='scn-drug-btn-fam'>" + esc(g.famLabel) + ", " + esc(g.shapeName) + "</span></span></button></li>";
+          "<span class='scn-drug-btn-text'><span class='scn-drug-btn-name'>" + esc(it.name) + "</span></span></button>" +
+          "<span class='visually-hidden' id='" + descId + "'>" + esc(g.famLabel) + ", " + esc(g.shapeName) + "</span></li>";
       }).join("") + "</ul></section>";
   }).join("");
   host.querySelectorAll(".scn-drug-btn").forEach(function (b) {

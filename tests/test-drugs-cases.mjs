@@ -96,8 +96,71 @@ await page.evaluate(() => {
   const back = document.getElementById("scnDrugBack");
   if (back) back.click();
 });
+
+const hex = (c) => {
+  const m = String(c).match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return c;
+  return "#" + [m[1], m[2], m[3]].map((n) => Number(n).toString(16).padStart(2, "0")).join("").toUpperCase();
+};
+const palette = await page.evaluate(() => {
+  const expected = {
+    arrest: { hex: "#005A9E", shape: "circle" },
+    anti: { hex: "#B34700", shape: "diamond" },
+    brady: { hex: "#B01070", shape: "triangle" },
+    electro: { hex: "#111111", shape: "square" },
+    fluid: { hex: "#595959", shape: "circle-open" },
+    other: { hex: "#595959", shape: "square-open" }
+  };
+  const toHex = (c) => {
+    const m = String(c).match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!m) return c;
+    return "#" + [m[1], m[2], m[3]].map((n) => Number(n).toString(16).padStart(2, "0")).join("").toUpperCase();
+  };
+  const groups = {};
+  document.querySelectorAll(".scn-drug-group").forEach((sec) => {
+    const id = sec.getAttribute("data-group");
+    const shape = sec.querySelector(".scn-drug-shape");
+    const cs = shape ? getComputedStyle(shape) : null;
+    groups[id] = {
+      color: shape ? toHex(cs.color) : null,
+      shapeClass: shape ? Array.from(shape.classList).filter((c) => c.indexOf("drug-shape-") === 0).join(" ") : null
+    };
+  });
+  const visibleFam = Array.from(document.querySelectorAll(".scn-drug-btn-fam, [id^='scn-drug-desc-']")).filter((el) => {
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    return r.width > 2 && r.height > 2 && s.clip !== "rect(0px, 0px, 0px, 0px)" && s.position !== "absolute";
+  }).map((el) => el.textContent.trim());
+  const described = Array.from(document.querySelectorAll(".scn-drug-btn")).map((b) => {
+    const id = b.getAttribute("aria-describedby");
+    const el = id && document.getElementById(id);
+    return { drug: b.getAttribute("data-drug"), desc: el ? el.textContent.trim() : null };
+  });
+  return { groups, visibleFam, described, expected };
+});
+const paletteOk = ["arrest","anti","brady","electro","fluid","other"].every((id) => {
+  const got = palette.groups[id];
+  const exp = palette.expected[id];
+  return got && got.color === exp.hex && (got.shapeClass || "").indexOf("drug-shape-" + exp.shape) >= 0;
+}) && palette.visibleFam.length === 0
+  && palette.described.length > 0 && palette.described.every((d) => d.desc && d.desc.length);
+if (paletteOk) pass("family swatches match proposal 1.6 and subtitles are not visible", palette);
+else fail("family swatches match proposal 1.6 and subtitles are not visible", palette);
+
 await page.locator("#scnDrugList").screenshot({ path: path.join(SHOT, "desktop-drugs-panel.png") });
-await page.evaluate(() => { if (window.closeScnMenu) window.closeScnMenu("scnDrugList"); else document.getElementById("scnDrugClose")?.click(); });
+await page.evaluate(() => {
+  const panel = document.getElementById("scnDrugList");
+  if (!panel) return;
+  panel.style.maxHeight = "none";
+  panel.style.height = "auto";
+  panel.style.overflow = "visible";
+});
+await page.locator("#scnDrugList").screenshot({ path: path.join(SHOT, "desktop-drugs-panel-full.png") });
+await page.evaluate(() => {
+  const panel = document.getElementById("scnDrugList");
+  if (panel) { panel.style.maxHeight = ""; panel.style.height = ""; panel.style.overflow = ""; }
+  if (window.closeScnMenu) window.closeScnMenu("scnDrugList"); else document.getElementById("scnDrugClose")?.click();
+});
 
 // Adenosine wrong dose is Partly right; correct sequence is Correct
 const adenDose = await page.evaluate(() => {

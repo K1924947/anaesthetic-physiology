@@ -659,12 +659,13 @@ body.scn-popup-open { overflow: hidden; }
   flex: none; width: 18px; height: 18px; margin-top: 2px;
   background: currentColor;
 }
-.drug-fam-arrest { color: var(--series-a); }
-.drug-fam-anti { color: var(--series-b); }
-.drug-fam-brady { color: var(--series-c); }
-.drug-fam-electro { color: var(--series-d); }
-.drug-fam-fluid { color: var(--series-e); }
-.drug-fam-other { color: var(--series-e); }
+/* Proposal 1.6 palette: used in default and colour-blind modes, not the default-theme series tokens. */
+.drug-fam-arrest { color: #005A9E; }
+.drug-fam-anti { color: #B34700; }
+.drug-fam-brady { color: #B01070; }
+.drug-fam-electro { color: #111111; }
+.drug-fam-fluid { color: #595959; }
+.drug-fam-other { color: #595959; }
 .drug-shape-circle { border-radius: 50%; }
 .drug-shape-diamond { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
 .drug-shape-triangle { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
@@ -677,7 +678,8 @@ body.scn-popup-open { overflow: hidden; }
 .scn-drug-btn-text { flex: 1; min-width: 0; }
 .scn-drug-btn-name { display: block; }
 .scn-drug-btn-fam {
-  display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 .scn-drug-chooser {
   margin: 6px 0 8px 28px; padding: 10px;
@@ -985,6 +987,6 @@ body.scn-popup-open { overflow: hidden; }
     </section>
   </main>
 </div>
-<script src="assets/ecg-app.js?v=20261119e"></script>
+<script src="assets/ecg-app.js?v=20261119f"></script>
 </body>
 </html>
