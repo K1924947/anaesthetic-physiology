@@ -439,7 +439,7 @@ function buildPhases() {
 function phaseAt(t) { return PHASES.find(p => t >= p.from && t < p.to) || PHASES[PHASES.length - 1]; }
 
 /* ======================= State ======================= */
-const state = { t: 250, playing: false, speed: 0.1, sel: 'II', view: 'frontal', beat: 0 };
+const state = { t: 250, playing: false, speed: 0.1, sel: 'II', view: 'frontal', beat: 0, simTime: 250 };
 const scrub = $('scrub'), timeOut = $('timeOut'), playBtn = $('playBtn'), speedSel = $('speed');
 
 /* ======================= ECG paper (12-lead and selected-lead strip) ======================= */
@@ -448,8 +448,18 @@ const MM_PER_MS = 25 / 1000, MM_PER_MV = 10;
 const ONE_SCREEN = window.matchMedia('(min-width: 960px) and (min-height: 600px)');
 const ECG = { calW: 8, colMs: 2500, rowH: 30, base: 17, top: 2 };
 const PAGE_MS = 10000; // 10 s rhythm strip; the 12-lead columns share one 2.5 s window and advance together
+const MINI_MS = 5000;
+const ZOOM_MS = 2 * BEAT_MS;
+// PAGE_MS (10000) is not a multiple of BEAT_MS (800): 10000 % 800 = 400.
+// Every view therefore samples and places cursors from one master simTime, not from (T % PAGE_MS).
 const LAYOUT = [['I', 'aVR', 'V1', 'V4'], ['II', 'aVL', 'V2', 'V5'], ['III', 'aVF', 'V3', 'V6']];
-function pageTime() { return (state.beat * BEAT_MS + state.t) % PAGE_MS; }
+function wrapPeriod(t, period) {
+  let x = t % period;
+  if (x < 0) x += period;
+  return x;
+}
+function windowStart(tAbs, windowMs) { return Math.floor(tAbs / windowMs) * windowMs; }
+function pageTime() { return state.simTime; }
 const ecgCanvas = $('ecg12'), miniCanvas = $('miniStrip');
 function prepCanvas(cv, cssW, cssH) {
   const dpr = window.devicePixelRatio || 1;
@@ -513,7 +523,7 @@ function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px, mmPerMv
   g.closePath();
   g.fill();
   g.strokeStyle = '#fff'; g.lineWidth = 1; g.stroke();
-  const v = traceAt(id, tAbs % BEAT_MS);
+  const v = traceAt(id, wrapPeriod(tAbs, BEAT_MS));
   let y = (basemm - v * mm) * px;
   y = Math.max(y0 + ts, Math.min(y1 - 2, y));
   g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 4.2, 0, Math.PI * 2); g.fill();
@@ -661,9 +671,10 @@ function drawECG() {
       const sel = state.sel === 'II', x0 = ECG.calW;
       g.save();
       g.beginPath(); g.rect(x0 * px, top * px, (wmm - x0) * px, ECG.rowH * px); g.clip();
-      cursorAt(g, 'II', tAbs, x0, 0, base, top + 1, ECG.rowH - 2, px, 10);
-      LAST_CURSORS.push({ id: 'II-rhythm', tAbs, t0: 0, col: 0, row: 3, x: (x0 + tAbs * MM_PER_MS) * px, pxPerMs });
-      drawSeg(g, 'II', 0, PAGE_MS, x0, base, px, sel, null, 10);
+      const tPage0 = windowStart(tAbs, PAGE_MS);
+      cursorAt(g, 'II', tAbs, x0, tPage0, base, top + 1, ECG.rowH - 2, px, 10);
+      LAST_CURSORS.push({ id: 'II-rhythm', tAbs, t0: tPage0, col: 0, row: 3, x: (x0 + (tAbs - tPage0) * MM_PER_MS) * px, pxPerMs });
+      drawSeg(g, 'II', tPage0, tPage0 + PAGE_MS, x0, base, px, sel, null, 10);
       g.restore();
       label(g, 'II  (rhythm strip)', x0 + 1.5, top + 5, px, sel);
       clips.push(clipReport('II-rhythm', ECG.rowH, baseOff));
@@ -681,8 +692,9 @@ function drawMini() {
   const frame = miniCanvas.parentElement; const wmm = ECG.calW + 125 + 1, hmm = 26; const cssW = frame.clientWidth - 2; if (cssW < 50) return;
   const px = cssW / wmm; const g = prepCanvas(miniCanvas, cssW, Math.round(hmm * px)); drawPaper(g, wmm, hmm, px);
   const base = 15, id = state.sel; drawCal(g, 0.5, base, px);
-  cursorAt(g, id, (state.beat % 6) * BEAT_MS + state.t, ECG.calW, 0, base, 0.5, hmm - 1, px);
-  drawSeg(g, id, 0, 5000, ECG.calW, base, px, true);
+  const tAbs = pageTime(), t0 = windowStart(tAbs, MINI_MS);
+  cursorAt(g, id, tAbs, ECG.calW, t0, base, 0.5, hmm - 1, px);
+  drawSeg(g, id, t0, t0 + MINI_MS, ECG.calW, base, px, true);
   label(g, id, ECG.calW + 1, 5, px, false);
 }
 /* Close-up of the selected lead: two beats, same 25 mm/s and 10 mm/mV paper, drawn large */
@@ -718,8 +730,9 @@ function drawZoomOn(canvas, large) {
   const cssW = Math.round(wmm * px), cssH = Math.round(hmm * px);
   const g = prepCanvas(canvas, cssW, cssH); drawPaper(g, wmm, hmm, px);
   const x0 = ECG.calW; drawCal(g, 0.5, base, px);
-  cursorAt(g, id, (state.beat % 2) * BEAT_MS + state.t, x0, 0, base, 0.5, hmm - 1, px);
-  drawSeg(g, id, 0, 2 * BEAT_MS, x0, base, px, true, 2.6);
+  const tAbs = pageTime(), tWin0 = windowStart(tAbs, ZOOM_MS);
+  cursorAt(g, id, tAbs, x0, tWin0, base, 0.5, hmm - 1, px);
+  drawSeg(g, id, tWin0, tWin0 + ZOOM_MS, x0, base, px, true, 2.6);
   // lead name, modest size, top-left of the paper so it does not fight the wave tags
   const nameFs = Math.round(Math.max(13, Math.min(22, 9 + 0.55 * px)));
   g.font = `800 ${nameFs}px "Source Sans 3", Arial, sans-serif`;
@@ -727,8 +740,8 @@ function drawZoomOn(canvas, large) {
   g.fillStyle = '#111'; g.fillRect(3, 3, nameW + 8, nameFs + 5);
   g.fillStyle = '#fff'; g.fillText(id, 7, 3 + nameFs);
   if (!I || !tr) return;
-  const X = t => (x0 + t * MM_PER_MS) * px;
-  const Yv = t => (base - tr[Math.max(0, Math.min(BEAT_MS - 1, Math.round(t)))] * MM_PER_MV) * px;
+  const X = t => (x0 + (t - tWin0) * MM_PER_MS) * px;
+  const Yv = t => (base - sampleLead(id, t) * MM_PER_MV) * px;
   const peakAt = (a, b, mode) => {
     let k = a, best = tr[a] || 0;
     for (let t = a; t <= b; t++) {
@@ -745,11 +758,12 @@ function drawZoomOn(canvas, large) {
   const tPk = peakAt(I.qOff + 40, I.tEnd, 'abs');
   let stMid = I.qOff + 40, stBest = 99;
   for (let t = I.qOff + 16; t < tPk - 12; t++) { const a = Math.abs(tr[t]); if (a < stBest) { stBest = a; stMid = t; } }
+  const b0 = Math.floor(tAbs / BEAT_MS) * BEAT_MS;
   const features = [
-    { txt: 'QRS', t: qrsPk, row: 0, nudge: 'both' },
-    { txt: 'P wave', t: pPk, row: 0, nudge: 'both' },
-    { txt: 'T wave', t: tPk, row: 0, nudge: 'both' },
-    { txt: 'ST segment', t: stMid, row: 1, nudge: 'right', short: 'ST' }
+    { txt: 'QRS', t: b0 + qrsPk, row: 0, nudge: 'both' },
+    { txt: 'P wave', t: b0 + pPk, row: 0, nudge: 'both' },
+    { txt: 'T wave', t: b0 + tPk, row: 0, nudge: 'both' },
+    { txt: 'ST segment', t: b0 + stMid, row: 1, nudge: 'right', short: 'ST' }
   ];
   const font = B.tf, boxH = font + 6, gap = Math.max(8, 0.45 * px);
   const paperW = cssW, paperH = cssH;
@@ -829,11 +843,11 @@ function drawZoomOn(canvas, large) {
     g.strokeStyle = '#111'; g.lineWidth = 1; g.strokeRect(cx - tw / 2 - 3 + 0.5, ty - B.bf + 0.5, tw + 5, th - 1);
     g.fillStyle = '#111'; g.fillText(txt, cx - tw / 2, ty);
   };
-  // Closest to the trace first: P duration, then PR, QRS, QT (all on beat 1)
-  bracket(I.pOn, I.pOff, 0, `P wave ${I.P} ms`);
-  bracket(I.pOn, I.qOn, 1, `PR ${I.PR} ms`);
-  bracket(I.qOn, I.qOff, 2, `QRS ${I.QRS} ms`);
-  bracket(I.qOn, I.tEnd, 3, `QT ${I.QT} ms`);
+  // Closest to the trace first: P duration, then PR, QRS, QT (on the beat under the cursor)
+  bracket(b0 + I.pOn, b0 + I.pOff, 0, `P wave ${I.P} ms`);
+  bracket(b0 + I.pOn, b0 + I.qOn, 1, `PR ${I.PR} ms`);
+  bracket(b0 + I.qOn, b0 + I.qOff, 2, `QRS ${I.QRS} ms`);
+  bracket(b0 + I.qOn, b0 + I.tEnd, 3, `QT ${I.QT} ms`);
 }
 /* Single-lead close-up: fixed 25 mm/s and 10 mm/mV paper at the saved larger scale (square grid). Deep waves may clip. */
 function paintAnnotatedLead(canvas, cssW, cssH) {
@@ -2822,13 +2836,47 @@ function updateText(announce) {
   describeLead();
   if (announce) $('live').textContent = `${Math.round(state.t)} milliseconds. ${ph.title}. ${ph.text}`;
 }
-function setT(t, announce) {
-  state.t = Math.max(0, Math.min(BEAT_MS, t));
-  scrub.value = Math.round(state.t);
-  const ph = phaseAt(state.t);
-  scrub.setAttribute('aria-valuetext', `${Math.round(state.t)} milliseconds, ${ph.title}`);
-  timeOut.textContent = `${Math.round(state.t)} ms`;
+function applySimDerived() {
+  const T = state.simTime;
+  state.beat = Math.floor(T / BEAT_MS);
+  state.t = T - state.beat * BEAT_MS;
+  if (state.t < 0) state.t = 0;
+  if (state.t >= BEAT_MS) {
+    state.beat += 1;
+    state.t = 0;
+    state.simTime = state.beat * BEAT_MS;
+  }
+}
+function applyTime(announce) {
+  applySimDerived();
+  if (scrub) {
+    scrub.value = Math.round(state.t);
+    const ph = phaseAt(state.t);
+    scrub.setAttribute('aria-valuetext', `${Math.round(state.t)} milliseconds, ${ph.title}`);
+  }
+  if (timeOut) timeOut.textContent = `${Math.round(state.t)} ms`;
   updateScene(); drawECG(); drawMini(); drawZoom(); updateText(announce);
+}
+function setSimTime(ms, announce) {
+  const T = Number(ms);
+  state.simTime = Number.isFinite(T) ? Math.max(0, T) : 0;
+  applyTime(announce);
+}
+function advanceSim(deltaMs, announce, quiet) {
+  const d = Number(deltaMs);
+  const T = state.simTime + (Number.isFinite(d) ? d : 0);
+  state.simTime = Number.isFinite(T) ? Math.max(0, T) : 0;
+  if (quiet) { applySimDerived(); return; }
+  applyTime(announce);
+}
+function setT(t, announce) {
+  const beat = Math.max(0, Math.floor((Number.isFinite(state.simTime) ? state.simTime : 0) / BEAT_MS));
+  let phase = Number(t);
+  if (!Number.isFinite(phase)) phase = 0;
+  phase = Math.max(0, Math.min(BEAT_MS, phase));
+  // Keep the scrubber's 800 ms tick at the end of this beat, not the start of the next.
+  if (phase >= BEAT_MS) phase = BEAT_MS - 1e-6;
+  setSimTime(beat * BEAT_MS + phase, announce);
 }
 function select(id, fromUser) {
   state.sel = id;
@@ -2840,10 +2888,15 @@ function select(id, fromUser) {
   const shown = closeupChosen && !(ONE_SCREEN.matches && !closeupChosen);
   $('live').textContent = shown ? `Lead ${id} selected. Close-up is on the right.` : `Lead ${id} selected.`;
 }
+let lastClock = performance.now();
+function syncClock(now) { lastClock = now == null ? performance.now() : now; }
+document.addEventListener('visibilitychange', () => { syncClock(); });
+
 function setPlaying(on) {
   state.playing = on; playBtn.setAttribute('aria-pressed', String(on));
   playBtn.querySelector('.play-label').textContent = on ? 'Pause' : 'Play';
   playBtn.setAttribute('aria-label', on ? 'Pause the beat' : 'Play the beat');
+  syncClock();
   if (!on) updateText(true);
 }
 
@@ -2856,7 +2909,7 @@ function rebuildModel() {
 /* ======================= Wiring and start-up ======================= */
 scrub.addEventListener('input', () => { setPlaying(false); setT(+scrub.value, true); });
 playBtn.addEventListener('click', () => setPlaying(!state.playing));
-speedSel.addEventListener('change', () => { state.speed = +speedSel.value; });
+speedSel.addEventListener('change', () => { state.speed = +speedSel.value; syncClock(); });
 document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', () => goView(b.dataset.view)));
 $('resetView').addEventListener('click', () => goView('frontal'));
 function refit() { if (renderer && VIEWS[state.view]) { const f = fitView(VIEWS[state.view], state.view); orbit.r = f.r; orbit.target.copy(f.target); placeCamera(); } }
@@ -3015,10 +3068,9 @@ setT(250);
 applyColourTheme();
 window.addEventListener('themechange', applyColourTheme);
 
-let last = performance.now();
 function frame(now) {
-  const dt = Math.min(100, now - last); last = now;
-  if (state.playing) { let t = state.t + dt * state.speed; if (t >= BEAT_MS) { t -= BEAT_MS; state.beat++; } setT(t); }
+  const dt = Math.min(100, Math.max(0, now - lastClock)); lastClock = now;
+  if (state.playing) setSimTime(state.simTime + dt * state.speed);
   if (camAnim && renderer) {
     const k = Math.min(1, (now - camAnim.t0) / 600); const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     for (const key of ['az', 'el', 'r']) orbit[key] = camAnim.from[key] + (camAnim.to[key] - camAnim.from[key]) * e;
@@ -3074,9 +3126,14 @@ window.ecg3d = {
     if (renderer) updateLabels();
   },
   trace: id => Array.from(TRACE[id]), timings: () => ({ tAV: MODEL.tAV, tHis: MODEL.tHis, seg: MODEL.seg, vMin: MODEL.vMin, vMax: MODEL.vMax, recMin: MODEL.recMin, recMax: MODEL.recMax }),
-  now: () => ({ t: state.t, beat: state.beat, speed: state.speed, playing: state.playing, pageTime: pageTime() }),
-  setSpeed: v => { state.speed = +v; if (speedSel) speedSel.value = String(state.speed); return state.speed; },
-  pageTime, sheetCursors: () => LAST_CURSORS.slice(),
+  now: () => ({ t: state.t, beat: state.beat, speed: state.speed, playing: state.playing, pageTime: pageTime(), simTime: state.simTime }),
+  setSpeed: v => { state.speed = +v; if (speedSel) speedSel.value = String(state.speed); syncClock(); return state.speed; },
+  pageTime, simTime: () => state.simTime,
+  setSimTime: (ms, announce) => { setPlaying(false); setSimTime(ms, announce !== false); return state.simTime; },
+  advanceSim: (deltaMs, announce, quiet) => { advanceSim(deltaMs, announce, quiet); return state.simTime; },
+  refresh: announce => { applyTime(announce); },
+  syncClock, frameAt: now => frame(now),
+  sheetCursors: () => LAST_CURSORS.slice(),
   closeupMeta: () => { const c = $('leadCloseup'); return c ? { ...c.dataset } : null; },
   phase: () => { const p = phaseAt(state.t); return { key: p.key, from: p.from, to: p.to, step: p.step || null, title: p.title }; },
   leadDecor: () => ({
@@ -3105,10 +3162,9 @@ window.ecg3d = {
     return { x, screenX: r.left + x * (r.width / (cssW || r.width)), tAbs: +c.dataset.tAbs, t0: +c.dataset.t0 };
   },
   setPageTime: ms => {
-    const p = ((Math.round(Number(ms)) % PAGE_MS) + PAGE_MS) % PAGE_MS;
     setPlaying(false);
-    state.beat = Math.floor(p / BEAT_MS);
-    setT(p - state.beat * BEAT_MS, true);
+    setSimTime(Number(ms), true);
+    return state.simTime;
   },
   leadPillRays: () => {
     if (!camera || !stage) return [];
