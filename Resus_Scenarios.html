@@ -545,6 +545,15 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .footer-feedback:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
 .footer-disc a { color: inherit; }
 .scn-note { margin: 0 0 16px; font-size: 15px; }
+.scn-review-note {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 2px solid var(--text);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 15px;
+  font-weight: 600;
+}
 .scn-sources-btn {
   font-family: var(--font-sans); font-size: 15px; font-weight: 700;
   min-height: 44px; padding: 6px 12px; margin-left: 8px;
@@ -830,6 +839,7 @@ body.scn-popup-open { overflow: hidden; }
 
 <div id="scnWrap">
                 <p class="scn-note">Simulation for teaching, not clinical guidance. <button type="button" class="scn-sources-btn" id="scnSourcesBtn">Sources and disclaimer</button></p>
+                <p class="scn-review-note">Some doses and regimens, including procainamide, the isoprenaline infusion rate and the potassium arrest bolus wording, are pending anaesthetist review. Follow local protocol.</p>
         <div class="scn-modal" id="scnSourcesModal" hidden aria-hidden="true">
           <div class="scn-modal-backdrop" id="scnSourcesBackdrop" tabindex="-1"></div>
           <div class="scn-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scnSourcesTitle">
@@ -971,7 +981,7 @@ body.scn-popup-open { overflow: hidden; }
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-            <p class="scn-popup-lead">Choose the drug, then the dose and route. Nothing is given until you press Give. Opening this panel does not advance the clock.</p>
+            <p class="scn-popup-lead">Choose the drug, then the dose and route. Nothing is given until you press Give. Opening this panel does not advance the clock. Some doses and regimens, including procainamide, the isoprenaline infusion rate and the potassium arrest bolus wording, are pending anaesthetist review. Follow local protocol.</p>
             <div class="scn-drug-recent" id="scnDrugRecent" hidden></div>
             <div id="scnDrugBrowse"></div>
           </div>
@@ -987,6 +997,6 @@ body.scn-popup-open { overflow: hidden; }
     </section>
   </main>
 </div>
-<script src="assets/ecg-app.js?v=20261119f"></script>
+<script src="assets/ecg-app.js?v=20261120b"></script>
 </body>
 </html>
