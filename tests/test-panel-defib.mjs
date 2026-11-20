@@ -125,23 +125,64 @@ const seq = await page.evaluate(() => {
   scn.start("s1");
   scn.act("assess");
   scn.act("cpr");
+  scn.act("clear");
+  scn.act("shock");
+  const noCharge = reasonOf("shock");
+  const noChargeFb = (document.getElementById("scnFeedback") || {}).innerText || "";
+
+  scn.start("s1");
+  scn.act("assess");
+  scn.act("cpr");
   const cprFirst = reasonOf("cpr");
   scn.act("shock");
   const mid = reasonOf("shock");
   const midFb = (document.getElementById("scnFeedback") || {}).innerText || "";
+  const midState = {
+    done: !!scn.sim.done,
+    completed: !!scn.sim.completed,
+    endReason: scn.sim.endReason,
+    harmId: mid && mid.keys && mid.keys[0],
+    v: mid.v,
+    verdict: (last("shock") && last("shock").o && last("shock").o.verdictText) || "",
+    fb: midFb
+  };
 
+  const midBoth = [false, true].map((hints) => {
+    scn.setHints(!!hints);
+    scn.start("s1");
+    scn.act("assess");
+    scn.act("cpr");
+    scn.act("shock");
+    const row = last("shock");
+    const fb = (document.getElementById("scnFeedback") || {}).innerText || "";
+    const debrief = (document.getElementById("scnDebrief") || {}).innerText || "";
+    return {
+      hints: !!hints,
+      done: !!scn.sim.done,
+      completed: !!scn.sim.completed,
+      endReason: scn.sim.endReason,
+      v: row && row.o && row.o.v,
+      harmId: row && row.o && row.o.harm && row.o.harm.id,
+      verdictText: row && row.o && row.o.verdictText,
+      hasWhy: /do not defibrillate during chest compressions|all clear first/i.test(fb + debrief),
+      hasPatientHarmed: /Patient harmed: scenario ended/i.test(fb + debrief)
+    };
+  });
+
+  scn.setHints(false);
   scn.start("s2");
   scn.act("assess");
   scn.act("cpr");
   scn.act("shock");
   const pea = reasonOf("shock");
+  const peaDone = !!scn.sim.done;
 
   const labels = Array.from(document.querySelectorAll("[data-a='charge'], [data-a='clear'], [data-a='shock']")).map((b) => ({
     id: b.getAttribute("data-a"),
     label: b.textContent.trim()
   }));
 
-  return { skip, skipFb, firstOk, secondOk, cprFirst, mid, midFb, pea, labels };
+  return { skip, skipFb, firstOk, secondOk, noCharge, noChargeFb, cprFirst, mid, midFb, midState, midBoth, pea, peaDone, labels };
 });
 
 const skipOk = seq.skip.v === "part" && /charge|clear|all clear/i.test(seq.skipFb + (seq.skip.keys || []).join(" "));
@@ -154,12 +195,19 @@ else fail("charge, clear, shock then resume CPR scores Correct", { firstOk: seq.
 if (seq.cprFirst.v === "ok" || seq.cprFirst.v === "info") pass("starting CPR before the first shock is not penalised", seq.cprFirst);
 else fail("starting CPR before the first shock is not penalised", seq.cprFirst);
 
-const midOk = seq.mid.v === "part" && (seq.mid.keys || []).indexOf("a_shockNoSeq") !== -1;
-if (midOk) pass("a shock during CPR without the sequence is Partly right", { keys: seq.mid.keys, fb: seq.midFb.slice(0, 240) });
-else fail("a shock during CPR without the sequence is Partly right", seq.mid);
+const noChargeOk = seq.noCharge.v === "part" && (seq.noCharge.keys || []).indexOf("a_shockNoSeq") !== -1;
+if (noChargeOk) pass("a shock after all clear but without charging is Partly right", { keys: seq.noCharge.keys, fb: (seq.noChargeFb || "").slice(0, 240) });
+else fail("a shock after all clear but without charging is Partly right", seq.noCharge);
 
-if (seq.pea.v === "bad") pass("unsynchronised shock in PEA remains Not quite", seq.pea);
-else fail("unsynchronised shock in PEA remains Not quite", seq.pea);
+const midEnds = seq.midBoth && seq.midBoth.length === 2 && seq.midBoth.every((r) =>
+  r.done && !r.completed && r.endReason === "harm" && r.v === "bad"
+  && r.harmId === "harm_shockDuringCpr" && r.hasPatientHarmed && r.hasWhy
+);
+if (midEnds) pass("a shock during CPR ends the case as a harm, Show solution on or off", seq.midBoth);
+else fail("a shock during CPR ends the case as a harm, Show solution on or off", { midState: seq.midState, midBoth: seq.midBoth, mid: seq.mid, fb: seq.midFb });
+
+if (seq.pea.v === "bad" && !seq.peaDone) pass("unsynchronised shock in PEA remains Not quite and does not end the case", seq.pea);
+else fail("unsynchronised shock in PEA remains Not quite and does not end the case", { pea: seq.pea, peaDone: seq.peaDone });
 
 const hasCharge = seq.labels.some((b) => b.id === "charge" && /Charge defibrillator/i.test(b.label));
 const hasClear = seq.labels.some((b) => b.id === "clear" && /Stop compressions, all clear/i.test(b.label));

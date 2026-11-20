@@ -4257,6 +4257,12 @@ function detectHarm(a, st) {
   var gen = (st.rhythm && st.rhythm.gen) || "";
   var extra = extrasFor(st);
   if (pulse && a === "shock") return { id: "harm_shockPulse", label: "Unsynchronised shock in a patient with a pulse" };
+  if (a === "shock" && st.cpr && !pulse) {
+    var shockGen = (st.rhythm && st.rhythm.gen) || "";
+    if (shockGen === "vf" || shockGen === "vt" || shockGen === "torsades") {
+      return { id: "harm_shockDuringCpr", label: "Shock delivered during chest compressions" };
+    }
+  }
   if (pulse && a === "cpr") return { id: "harm_cprPulse", label: "CPR in a patient with a pulse" };
   if (!pulse && gen === "asystole" && (a === "shock" || a === "sync")) return { id: "harm_shockAsys", label: "Shock delivered for asystole" };
   if (extra.harm && extra.harm.indexOf(a) >= 0) {
@@ -4467,6 +4473,7 @@ if (typeof SRC === "object") {
   SRC.refRanges = REF_RANGE_NOTE;
   SRC.harmAden = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features (including shock and immediately post-ROSC) lead to synchronised shock, not adenosine. Adenosine is on the stable regular narrow (or selected regular monomorphic) pathway. Treating an unstable tachycardia with adenosine instead of cardioversion was treated as a dangerous error in this simulation.";
   SRC.harmShockPulse = "RCUK 2025 Adult ALS guideline and tachyarrhythmia algorithm: unsynchronised defibrillation is for VF or pulseless VT. A tachyarrhythmia with a pulse is treated with synchronised cardioversion when unstable. In this simulation an unsynchronised shock in a patient with a pulse ends the case, whether Show solution is on or off, because it would fail the ALS assessment.";
+  SRC.harmShockDuringCpr = "RCUK 2025 Adult ALS guideline: 'Do not defibrillate during manual chest compressions (even when wearing clinical gloves), as that practice is not safe to the rescuer.' In this simulation a shock given while compressions are still ongoing ends the case, whether Show solution is on or off.";
   SRC.harmCprPulse = "RCUK 2025 Adult ALS guideline: CPR is for cardiac arrest (unresponsive, not breathing normally). Chest compressions in a patient with a pulse were treated as a dangerous error in this simulation.";
   SRC.harmAsys = "RCUK 2025 Adult ALS algorithm: asystole is a non-shockable rhythm. Do not shock asystole.";
   SRC.harmAdenAF = "RCUK Adult tachyarrhythmia algorithm (updated March 2026): life-threatening features lead to synchronised shock. Adenosine is for a stable, regular narrow-complex tachycardia without pre-excitation, not for unstable atrial fibrillation.";
@@ -4481,6 +4488,7 @@ if (typeof TXT === "object") {
   TXT.n_nibp = Tfb("NIBP cycled. Blood pressure is measured non-invasively, not continuously, unless an arterial line is in place (simulation: no arterial line by default).", "Monitor BP", "refRanges", { outcome: "", event: "NIBP cycled." });
   TXT.n_nibpFail = Tfb("NIBP cycled. No reading was obtained (unrecordable in cardiac arrest).", "Monitor BP", "als", { event: "NIBP cycled: unrecordable." });
   TXT.harm_shockPulse = Tfb("An unsynchronised shock was delivered in a patient who had a pulse. Unsynchronised defibrillation is for VF or pulseless VT. With a pulse, unstable tachyarrhythmias are treated with synchronised cardioversion.", "Tachyarrhythmia: synchronised shock if unstable", "harmShockPulse", { whyWrong: "Unsynchronised shock is not used in a patient with a pulse.", event: "Unsynchronised shock delivered." });
+  TXT.harm_shockDuringCpr = Tfb("A shock was given while chest compressions were still ongoing. Do not defibrillate during chest compressions. Stop compressions and give an all clear first.", "ALS: do not defibrillate during manual chest compressions", "harmShockDuringCpr", { whyWrong: "Do not defibrillate during chest compressions. Stop and give an all clear first.", event: "Unsynchronised shock attempted during chest compressions." });
   TXT.harm_cprPulse = Tfb("CPR was started in a patient who had a pulse. Chest compressions are for cardiac arrest.", "ALS: CPR is for cardiac arrest", "harmCprPulse", { whyWrong: "The patient had a pulse, so CPR should not have been started.", event: "CPR 30:2 started." });
   TXT.harm_shockAsys = Tfb("A shock was delivered for asystole. Asystole is a non-shockable rhythm.", "ALS: non-shockable pathway", "harmAsys", { whyWrong: "Asystole is not a shockable rhythm.", event: "Shock delivered." });
   TXT.harm_adenUnstable = Tfb("Adenosine was given in an unstable tachycardia. The algorithm's unstable path is synchronised cardioversion, not adenosine.", "Tachyarrhythmia: unstable, synchronised shock", "harmAden", { whyWrong: "Adenosine is not the treatment for an unstable tachycardia.", event: "Adenosine given." });
@@ -6533,21 +6541,10 @@ function handleDefibSafety(a, st) {
 }
 function applyDefibSafetyToShock(o, st) {
   if (!o) return o;
-  var mid = !!(st.cpr && o.keys && o.keys.indexOf("a_shockMid") !== -1);
-  if (mid) {
-    st.cpr = false;
-    var o2 = st.scn.step("shock", st);
-    if (o2 && (o2.v === "ok" || o2.v === "part" || o2.v === "late")) {
-      o = o2;
-      o.cprStop = true;
-    } else {
-      st.cpr = true;
-      if (o2 && o2.v === "bad") o = o2;
-    }
-  }
-  if (!o) return o;
+  // A shock while compressions are still ongoing is not delivered. detectHarm ends shockable cases.
+  if (st.cpr && o.keys && o.keys.indexOf("a_shockMid") !== -1) return o;
   var delivered = o.v === "ok" || o.v === "part" || o.v === "late";
-  if (delivered && !(st.charged && st.cleared)) {
+  if (delivered && !st.charged) {
     o.v = "part";
     o.keys = (o.keys || []).concat(["a_shockNoSeq"]);
   }
@@ -7237,7 +7234,8 @@ function doAction(a) {
     o.keys = [harm.id].concat(o.keys || []);
     o.v = "bad";
     // An unsynchronised shock with a pulse would fail the ALS assessment, so the case always ends.
-    var alwaysEnd = harm.id === "harm_shockPulse";
+    var alwaysEnd = harm.id === "harm_shockPulse" || harm.id === "harm_shockDuringCpr";
+    if (harm.id === "harm_shockDuringCpr") o.keys = [harm.id];
     if (alwaysEnd || !hintsOn()) {
       o.end = true;
       o.endReason = "harm";
