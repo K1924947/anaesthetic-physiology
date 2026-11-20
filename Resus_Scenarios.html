@@ -633,8 +633,36 @@ body.scn-popup-open { overflow: hidden; }
 @media (min-width: 700px) {
   .scn-popup-panel.scn-drug-panel {
     width: min(36rem, calc(100vw - 32px));
-    max-height: min(80vh, 44rem);
+    max-height: min(calc(100vh - 32px), 44rem);
   }
+}
+/* Centred dialog that fits the viewport; title and close stay visible. */
+#scnDrugPopup:not([hidden]) {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.scn-popup-panel.scn-drug-panel {
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  width: min(36rem, calc(100vw - 32px));
+  max-height: min(calc(100vh - 32px), 44rem);
+  overflow: hidden;
+  border-radius: 16px;
+  border: 2px solid var(--text);
+}
+.scn-drug-panel .scn-popup-head {
+  flex: none;
+  background: var(--surface);
+  z-index: 3;
+}
+.scn-drug-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 .scn-drug-recent {
   margin: 0 0 10px; padding: 8px 10px;
@@ -981,9 +1009,11 @@ body.scn-popup-open { overflow: hidden; }
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
+            <div class="scn-drug-body">
             <p class="scn-popup-lead">Choose the drug, then the dose and route. Nothing is given until you press Give. Opening this panel does not advance the clock. Some doses and regimens, including procainamide, the isoprenaline infusion rate and the potassium arrest bolus wording, are pending anaesthetist review. Follow local protocol.</p>
             <div class="scn-drug-recent" id="scnDrugRecent" hidden></div>
             <div id="scnDrugBrowse"></div>
+            </div>
           </div>
         </div>
 
@@ -997,6 +1027,6 @@ body.scn-popup-open { overflow: hidden; }
     </section>
   </main>
 </div>
-<script src="assets/ecg-app.js?v=20261120b"></script>
+<script src="assets/ecg-app.js?v=20261120c"></script>
 </body>
 </html>
