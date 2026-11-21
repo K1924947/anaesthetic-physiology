@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECG Basics · The Physio Lab</title>
 <meta name="description" content="A really basic ECG page: what the P wave, PR interval, QRS, ST segment, T wave, QT interval, QTc, RR interval and rate mean, with normal values.">
-<meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118">
@@ -16,7 +15,7 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-basics.css?v=20261119r">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261121b">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -48,7 +47,7 @@
   </header>
 
   <main>
-    <p class="proto-banner" role="note"><strong>Draft: not yet on the homepage.</strong> Content is still being reviewed. This page is a teaching tool, not clinical guidance.</p>
+    <p class="proto-banner" role="note">This page is a teaching tool, not clinical guidance.</p>
 
     <div class="mode-banners" id="topActions">
       <div class="test-banner" id="topTestBanner">
@@ -62,14 +61,14 @@
           <span class="test-cta-label">Start</span>
         </button>
       </div>
-      <a class="test-banner scn-banner scn-banner-link" href="ECG_3D.html">
+      <div class="test-banner scn-banner scn-banner-soon" aria-disabled="true">
         <span class="test-banner-icon" aria-hidden="true"><svg width="22" height="16" viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 14c3-1 5-7 6-7 2 6 3 9 5 9 2 0 3-6 7-10"/><circle cx="5" cy="14" r="1.2" fill="currentColor" stroke="none"/></svg></span>
         <div class="test-banner-copy">
           <h2 class="test-banner-title">See it in 3D</h2>
-          <p class="test-banner-tag">Watch how these waves are written as the impulse travels through a 3D heart, and how each lead sees that same beat.</p>
+          <p class="test-banner-tag">Watch how these waves are written as the impulse travels through a 3D heart, and how each lead sees that same beat. Coming soon.</p>
         </div>
-        <span class="test-banner-cta">Open</span>
-      </a>
+        <span class="test-banner-cta">Coming soon</span>
+      </div>
     </div>
 
     <section id="tool" aria-label="Interactive labelled ECG beat">
@@ -241,13 +240,13 @@
       <p class="visually-hidden" id="quizLive" aria-live="polite"></p>
     </div>
 
-    <div class="next-card">
+    <div class="next-card next-card-soon" aria-disabled="true">
       <span class="next-icon" aria-hidden="true"><svg width="26" height="18" viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 14c3-1 5-7 6-7 2 6 3 9 5 9 2 0 3-6 7-10"/><circle cx="5" cy="14" r="1.2" fill="currentColor" stroke="none"/></svg></span>
       <div class="test-banner-copy">
         <h2 class="test-banner-title">Next: see it in 3D</h2>
         <p class="test-banner-tag">Watch how these waves are written as the impulse travels through a 3D heart, and how each lead sees that same beat.</p>
       </div>
-      <a class="next-link" href="ECG_3D.html">Open ECG in 3D</a>
+      <span class="next-link next-link-soon">Coming soon</span>
     </div>
 
 
@@ -328,6 +327,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-basics.js?v=20261119r"></script>
+<script src="assets/ecg-basics.js?v=20261121b"></script>
 </body>
 </html>

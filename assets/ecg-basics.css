@@ -1128,3 +1128,18 @@ html[data-theme="colour-blind"] {
   font-weight: 700;
   font-family: var(--font-sans);
 }
+
+.page-ecg-basics .scn-banner-soon,
+.page-ecg-basics .next-card-soon {
+  cursor: default;
+  border-style: dashed;
+}
+.page-ecg-basics .scn-banner-soon .test-banner-title { text-decoration: none; }
+.page-ecg-basics .scn-banner-soon .test-banner-cta,
+.page-ecg-basics .next-link-soon {
+  cursor: default;
+  pointer-events: none;
+  text-decoration: none;
+  opacity: 1;
+}
+.page-ecg-basics .next-link-soon:hover { text-decoration: none; }

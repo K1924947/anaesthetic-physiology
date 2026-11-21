@@ -20,6 +20,17 @@ An interactive cardiac PV loop exploring how the loop changes across physiologic
 
 ---
 
+
+### ECG Basics
+
+A labelled teaching beat covering the P wave, PR interval, QRS, ST segment, T wave, QT interval, QTc, RR interval and rate, with sourced normal values and short drills.
+
+- Hover or click a wave or segment on the trace, or use the buttons
+- Hands-on drills: find a part, measure an interval, work out the rate, estimate the axis, or spot an abnormal beat
+- Teaching tool, not clinical guidance
+
+---
+
 ### ECG Rhythms
 
 An interactive lead II rhythm tool with synthetic strips, callipers, conduction diagrams, a Test yourself quiz, and guideline-based scenarios.
@@ -72,6 +83,7 @@ These tools keep their usual addresses but the old pages are offline while they 
 No login or download needed. Open the live tools directly in any browser:
 
 - [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
+- [ECG Basics](https://k1924947.github.io/anaesthetic-physiology/ECG_Basics.html)
 - [ECG Rhythms](https://k1924947.github.io/anaesthetic-physiology/ECG_Rhythm_Quiz.html)
 - [Cardiac Action Potential](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Action_Potential.html)
 - [Cardiac Murmurs](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Murmurs.html)

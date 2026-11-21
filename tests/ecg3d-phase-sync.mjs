@@ -32,7 +32,7 @@ async function loadPlaywright() {
 function startServer() {
   const server = createServer((req, res) => {
     const url = decodeURIComponent((req.url || '/').split('?')[0]);
-    let path = join(ROOT, url === '/' ? '/ECG_Basics.html' : url);
+    let path = join(ROOT, url === '/' ? '/ECG_3D.html' : url);
     if (!path.startsWith(ROOT)) { res.writeHead(403); res.end(); return; }
     if (existsSync(path) && statSync(path).isDirectory()) path = join(path, 'index.html');
     if (!existsSync(path)) { res.writeHead(404); res.end('not found'); return; }
@@ -99,7 +99,7 @@ function checkSample(label, sample) {
 }
 
 const server = await startServer();
-const base = `http://127.0.0.1:${server.address().port}/ECG_Basics.html`;
+const base = `http://127.0.0.1:${server.address().port}/ECG_3D.html`;
 const pw = await loadPlaywright();
 const chrome = existsSync('/opt/google/chrome/chrome') ? '/opt/google/chrome/chrome' : undefined;
 const browser = await pw.chromium.launch({
