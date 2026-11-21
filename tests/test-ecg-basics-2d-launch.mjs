@@ -70,8 +70,8 @@ const home = await page.evaluate(() => {
     leaked
   };
 });
-if (home.hasCardiac && /6 tools live/.test(home.meta || "") && !home.leaked) pass("homepage Cardiac card counts six live tools and does not link to ECG_3D.html", home);
-else fail("homepage Cardiac card counts six live tools and does not link to ECG_3D.html", home);
+if (home.hasCardiac && /5 tools live/.test(home.meta || "") && !home.leaked) pass("homepage Cardiac card counts five live tools and does not link to ECG_3D.html", home);
+else fail("homepage Cardiac card counts five live tools and does not link to ECG_3D.html", home);
 
 await page.goto(BASE + "/cardiac.html", { waitUntil: "domcontentloaded", timeout: 30000 });
 const cardiac = await page.evaluate(() => {

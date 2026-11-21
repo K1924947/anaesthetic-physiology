@@ -392,6 +392,28 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .scn-source-list { margin: 0; padding-left: 1.2em; }
 .scn-source-list li { margin: 0 0 6px; }
 .scn-source-list a { text-decoration: underline; }
+@media (min-width: 701px) {
+  .scn-source-box { margin: 8px 0 12px; padding: 8px 12px; }
+  .scn-source-box > summary {
+    display: flex; align-items: flex-start; gap: 10px;
+    cursor: pointer; min-height: 44px;
+  }
+  .scn-source-box > summary:focus-visible {
+    outline: 3px solid var(--focus, var(--text)); outline-offset: 2px; border-radius: 8px;
+  }
+  .scn-source-chevron {
+    flex: none; display: grid; place-items: center;
+    width: 22px; height: 22px; margin-top: 2px;
+    border: 2px solid var(--text); border-radius: 5px;
+    font-family: var(--font-sans); font-weight: 700; font-size: 16px; line-height: 1;
+  }
+  .scn-source-chevron::before { content: "+"; }
+  .scn-source-box[open] > summary .scn-source-chevron::before { content: "\2212"; }
+  .scn-source-box h2 { margin: 0 0 2px; font-size: 1.05rem; }
+  .scn-source-toggle-hint { display: block; margin: 0; font-size: 0.9rem; }
+  .scn-source-box .scn-source-body { margin-top: 8px; }
+  .scn-source-box .scn-source-body p { margin: 0 0 8px; font-size: 0.95rem; }
+}
 @media (max-width: 700px) {
   body.scn-case-running .scn-source-box { margin-bottom: 12px; padding: 10px 12px; }
   body.scn-case-running .scn-source-box > summary {
@@ -562,6 +584,30 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 }
 .scn-sources-btn:hover { background: var(--surface-2, var(--bg)); }
 .scn-sources-btn:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+@media (min-width: 701px) {
+  .tool-view-header .crumb { margin-bottom: 6px; }
+  .tool-view-header .subtitle { margin-bottom: 0; }
+  .tool-view-header .scn-source-disclaimer { margin: 4px 0 0; font-size: 0.9rem; }
+  .scn-note { margin: 0 0 8px; }
+  .scn-sources-btn { min-height: 36px; margin-left: 6px; padding: 3px 10px; }
+  .scn-review-note { margin: 0 0 8px; padding: 6px 10px; font-size: 14px; }
+  .scn-guide { margin: 0 0 10px; padding: 8px 10px; }
+  .scn-guide > summary { min-height: 36px; font-size: 16px; }
+  .scn-random-wrap { margin: 0 0 8px; }
+  .scn-random { min-height: 44px; padding: 8px 12px; gap: 8px; }
+}
+@media (min-width: 701px) and (max-height: 800px) {
+  .scn-source-box { margin: 4px 0 6px; padding: 4px 10px; }
+  .scn-source-box > summary { min-height: 0; align-items: center; gap: 8px; }
+  .scn-source-box h2 { margin: 0; font-size: 1rem; }
+  .scn-source-toggle-hint { font-size: 0.82rem; }
+  .scn-note { margin: 0 0 6px; font-size: 14px; }
+  .scn-review-note { margin: 0 0 6px; padding: 4px 8px; font-size: 13px; }
+  .scn-guide { margin: 0 0 8px; padding: 4px 8px; }
+  .scn-guide > summary { min-height: 32px; font-size: 15px; }
+  .scn-random { min-height: 40px; padding: 6px 10px; }
+  .scn-random-sub { margin-top: 0; font-size: 13px; }
+}
 .scn-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; }
 .scn-modal[hidden] { display: none !important; }
 .scn-modal-backdrop { position: absolute; inset: 0; background: rgba(17, 17, 17, 0.45); }
@@ -576,6 +622,15 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .scn-source-links a:hover { text-decoration-thickness: 2px; }
 .scn-clock-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 8px; }
 .scn-clock-row .scn-clock { margin: 0; }
+.scn-shot-clock {
+  box-sizing: border-box; min-width: 4.6em; min-height: 44px; padding: 4px 12px;
+  border: 2px solid var(--text); border-radius: var(--radius-pill);
+  background: var(--surface); color: var(--text);
+  font-family: var(--font-sans); font-weight: 700; font-size: 22px;
+  font-variant-numeric: tabular-nums; line-height: 1; display: inline-flex;
+  align-items: center; justify-content: center;
+}
+.scn-shot-clock[hidden] { display: none !important; }
 .scn-skip {
   font-family: var(--font-sans); font-size: 13px; font-weight: 700; min-height: 44px; padding: 6px 12px;
   border: 2px dashed var(--text); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer;
@@ -938,7 +993,7 @@ body.scn-popup-open { overflow: hidden; }
                 <button type="button" class="tool-btn" id="scnBack">All scenarios</button>
               </div>
             </div>
-            <div class="scn-clock-row"><p class="scn-clock" id="scnClock" aria-label="Simulated time, CPR cycle and shocks">Time 00:00</p><span id="scnSkipHost"></span></div>
+            <div class="scn-clock-row"><p class="scn-clock" id="scnClock" aria-label="Simulated time, CPR cycle and shocks">Time 00:00</p><span class="scn-shot-clock" id="scnShotClock" hidden aria-live="polite"></span><span id="scnSkipHost"></span></div>
             <p class="stem" id="scnScene"></p>
             <div class="scn-monitor" id="scnMonitor"></div>
             <p class="strip-meta">Monitor lead II, sweeping in real time; 1 s per large block of 5. The rhythm is not named until you assess it.</p>
@@ -1027,6 +1082,6 @@ body.scn-popup-open { overflow: hidden; }
     </section>
   </main>
 </div>
-<script src="assets/ecg-app.js?v=20261120d"></script>
+<script src="assets/ecg-app.js?v=20261121a"></script>
 </body>
 </html>

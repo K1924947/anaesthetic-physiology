@@ -1056,6 +1056,7 @@ var VER = {
   a_amio150: ["V", ["gAmio150"]],
   a_amio300: ["V", ["gAmio300", "aNon"]],
   a_interrupt: ["V", ["aMinInt", "gResume"]],
+  a_handsOff: ["V", ["gMinInt"]],
   a_shockMid: ["V", ["gNoDefibCPR", "aShock"]],
   a_charge: ["V", ["gNoDefibCPR", "gMinInt"]],
   a_chargeCpr: ["V", ["gNoDefibCPR", "gMinInt"]],
@@ -2109,6 +2110,16 @@ var TXT = {
     outcome: "",
     whyWrong: "Minimise interruptions to compressions. Stop the cycle early only if there are clinical and physiological signs of ROSC.",
     nextStep: "Complete the 2 minutes of CPR, then pause briefly for the rhythm check."
+  },
+  a_handsOff: {
+    full: "Compressions were interrupted for 60 seconds or more. High-quality chest compressions with minimal interruption remain a priority. This 60-second limit is a teaching choice in this simulation and is pending anaesthetist review.",
+    guideline: "ALS: minimise interruptions",
+    src: "alsPriority",
+    flag: 1,
+    outcome: "",
+    whyWrong: "Prolonged interruption to compressions. RCUK says high-quality chest compressions with minimal interruption remain a priority.",
+    nextStep: "Restart CPR at once, and keep pauses as short as possible.",
+    event: "Compressions were interrupted for 60 seconds or more."
   },
   a_shockMid: {
     full: "Do not defibrillate during manual chest compressions. Complete the 2-minute cycle, pause briefly to assess the rhythm, then shock if it is shockable.",
@@ -7087,7 +7098,7 @@ function renderScnChooser() {
 function startScenario(id, random) {
   if (typeof clearAskPending === "function") clearAskPending();
   var s = SCN[id]; lastScn = id;
-  SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false, wasDue: {}, reviewsWhenReady: null, actionsWhenReady: null, checksAfter3: 0, rhythmChecks: 0, lastCheckAt: null, lastAtroT: null, atroT: [], shockMissNudged: false };
+  SIM = { scn: s, clock: 0, cpr: false, cycleOpen: false, handsOffFrom: s.start.pulse ? null : 0, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false, wasDue: {}, reviewsWhenReady: null, actionsWhenReady: null, checksAfter3: 0, rhythmChecks: 0, lastCheckAt: null, lastAtroT: null, atroT: [], shockMissNudged: false };
   if (typeof initScenarioExtras === "function") initScenarioExtras(SIM);
   if (typeof renderPending === "function") renderPending();
   document.querySelectorAll("#scnGrid .scn-card").forEach(function (b) { b.setAttribute("aria-pressed", !random && b.dataset.id === id ? "true" : "false"); });
@@ -7107,7 +7118,7 @@ function startScenario(id, random) {
   $("scnFeedback").innerHTML = "<p class='explain-kicker'>Feedback</p><p class='ep-wait'>Choose an action. Each choice is checked against the RCUK 2025 algorithms; the rhythm responds.</p>";
   renderVitals(); renderClock(); syncScnBanner();
   clearInterval(simTimer);
-  simTimer = setInterval(function () { if (!SIM || SIM.done || document.hidden) return; SIM.clock++; if (typeof tickMonitor === "function") tickMonitor(SIM); renderClock(); renderVitals(); }, 1000);
+  simTimer = setInterval(function () { if (!SIM || SIM.done || document.hidden) return; SIM.clock++; if (typeof tickMonitor === "function") tickMonitor(SIM); if (typeof checkHandsOff === "function" && checkHandsOff()) return; renderClock(); renderVitals(); }, 1000);
   $("scnTitle").focus({ preventScroll: true });
   if (typeof syncSourceBox === "function") syncSourceBox();
   requestAnimationFrame(function () { scrollToScenario(); });
@@ -7159,10 +7170,19 @@ function renderVitals() {
 function renderClock() {
   if (!SIM) return;
   var txt = "Time " + mmss(SIM.clock);
-  if (SIM.cpr) {
+  if (SIM.cycleOpen) {
     var left = 120 - (SIM.clock - SIM.cycleStart);
     txt += " · CPR cycle " + SIM.cycleCount + (left > 0 ? " · " + mmss(left) + " left" : " · 2 minutes complete");
     if (left <= 0 && !SIM.cycleWarned) { SIM.cycleWarned = true; $("scnLive").textContent = "Two minutes of CPR completed. The rhythm is on the monitor."; }
+    var shot = $("scnShotClock");
+    if (shot) {
+      shot.hidden = false;
+      shot.textContent = left > 0 ? mmss(left) : "0:00";
+      shot.setAttribute("aria-label", left > 0 ? "CPR cycle time remaining " + mmss(left) : "CPR cycle complete");
+    }
+  } else {
+    var shotOff = $("scnShotClock");
+    if (shotOff) { shotOff.hidden = true; shotOff.textContent = ""; }
   }
   txt += " · Shocks delivered " + SIM.nShocks;
   $("scnClock").textContent = txt;
@@ -7249,30 +7269,70 @@ function doAction(a) {
   if (resolved && resolved.event && o.event == null) o.event = resolved.event;
   doActionFinish(a, o, null, rawAct);
 }
+function startCprIfNeeded() {
+  if (!SIM || SIM.cpr) return;
+  SIM.cpr = true;
+  SIM.handsOffFrom = null;
+  if (!SIM.cycleOpen) {
+    SIM.cycleStart = SIM.clock;
+    SIM.cycleCount++;
+    SIM.cycleWarned = false;
+    SIM.cycleOpen = true;
+  }
+}
+function endHandsOff() {
+  if (!SIM || SIM.done) return;
+  var o = O("bad", "a_handsOff", { end: true, endReason: "handsOff", event: "Compressions were interrupted for 60 seconds or more." });
+  o.verdictText = "Scenario ended: prolonged interruption to compressions";
+  o.label = "Hands off the chest";
+  o.t = SIM.clock;
+  if (typeof logEvent === "function") logEvent(o, o.label, "handsOff");
+  if (typeof announceFeedback === "function") announceFeedback(o);
+  if (typeof finishScenario === "function") finishScenario(false, "handsOff");
+  if (typeof renderClock === "function") renderClock();
+  if (typeof renderVitals === "function") renderVitals();
+  if (typeof renderActions === "function") renderActions();
+}
+function checkHandsOff() {
+  if (!SIM || SIM.done) return false;
+  if (SIM.pulse || SIM.cpr) {
+    SIM.handsOffFrom = null;
+    return false;
+  }
+  if (SIM.handsOffFrom == null) SIM.handsOffFrom = SIM.clock;
+  if (SIM.clock - SIM.handsOffFrom < 60) return false;
+  endHandsOff();
+  return true;
+}
 function doActionFinish(a, o, timeCost, rawAct) {
   if (!SIM || !o) return;
   var logAct = rawAct || a;
   var label = o.label || (ACT[a] ? ACT[a].label : (rawAct || a));
   if (timeCost == null) {
     if (a === "ff") {
-      if (o.cprStart && !SIM.cpr) { SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false; }
-      if (SIM.cpr) SIM.clock = Math.max(SIM.clock, (SIM.cycleStart || SIM.clock) + 120);
+      if (o.cprStart) startCprIfNeeded();
+      if (SIM.cpr || SIM.cycleOpen) SIM.clock = Math.max(SIM.clock, (SIM.cycleStart || SIM.clock) + 120);
       else SIM.clock += ACT_TIME[a] || 0;
     } else {
       SIM.clock += ACT_TIME[a] || 0;
-      if (o.cprStart && !SIM.cpr) { SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false; }
+      if (o.cprStart) startCprIfNeeded();
     }
   } else if (timeCost) {
     SIM.clock += timeCost;
-    if (o.cprStart && !SIM.cpr) { SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false; }
-  } else if (o.cprStart && !SIM.cpr) {
-    SIM.cpr = true; SIM.cycleStart = SIM.clock; SIM.cycleCount++; SIM.cycleWarned = false;
+    if (o.cprStart) startCprIfNeeded();
+  } else if (o.cprStart) {
+    startCprIfNeeded();
   }
-  if (o.cprStop) SIM.cpr = false;
+  if (o.cprStop) {
+    SIM.cpr = false;
+    if (o.cycleCheck) SIM.cycleOpen = false;
+    if (!SIM.pulse) SIM.handsOffFrom = SIM.clock;
+  }
   if (o.pulse !== undefined) SIM.pulse = o.pulse;
   if (o.vit) Object.keys(o.vit).forEach(function (k) { SIM.vit[k] = o.vit[k]; });
   if (SIM.mon) SIM.mon.arrest = !SIM.pulse;
   if (typeof syncMonBpFromVit === "function") syncMonBpFromVit(SIM);
+  if (typeof checkHandsOff === "function" && checkHandsOff()) return;
   o.label = label; o.t = SIM.clock;
   if (typeof applyWrongClickCollapse === "function") applyWrongClickCollapse(a, o);
   if (o.event == null && typeof defaultEvent === "function") o.event = defaultEvent(a, label, SIM && SIM._act);
@@ -7378,6 +7438,7 @@ function finishScenario(completed, reason) {
   }
   var endLine;
   if (SIM.endReason === "harm") endLine = "Patient harmed: scenario ended.";
+  else if (SIM.endReason === "handsOff") endLine = "Scenario ended: prolonged interruption to compressions.";
   else if (SIM.endReason === "missedShock") endLine = "Scenario ended: the first shock was missed.";
   else if (SIM.endReason === "missed") {
     var missNames = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean);
@@ -7386,7 +7447,7 @@ function finishScenario(completed, reason) {
   else endLine = completed ? "Scenario complete." : "Scenario ended early.";
   logEvent(null, endLine);
   if (MODEL_RUNNING) return;
-  if (SIM.endReason === "missed" || SIM.endReason === "missedShock" || SIM.endReason === "cap" || SIM.endReason === "harm") {
+  if (SIM.endReason === "missed" || SIM.endReason === "missedShock" || SIM.endReason === "cap" || SIM.endReason === "harm" || SIM.endReason === "handsOff") {
     showDebrief();
   } else {
     var b = $("scnFeedback"), btn = document.createElement("div"); btn.className = "predict-actions";
@@ -7411,6 +7472,7 @@ function syncSourceBox() {
   try { mobile = window.matchMedia("(max-width: 700px)").matches; } catch (e) {}
   if (box.tagName === "DETAILS") {
     if (running && mobile) box.open = false;
+    else if (!running && !inDebrief && !mobile) box.open = false;
     else box.open = true;
   }
 }
@@ -7671,7 +7733,7 @@ function showDebrief() {
   var classified = classifyReqSteps(SIM);
   var missed = classified.missed, notReached = classified.notReached;
   var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
-  var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "missedShock" ? "Scenario ended: the first shock was missed" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
+  var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "handsOff" ? "Scenario ended: prolonged interruption to compressions" : SIM.endReason === "missedShock" ? "Scenario ended: the first shock was missed" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
   var hasAtroCollapse = (SIM.log || []).some(function (l) { return l.o && l.act === "atro" && (l.o.notScoredAgain || l.o.logVerdict); });
   var hasOtherCollapse = (SIM.log || []).some(function (l) { return l.o && l.o.notScoredAgain && l.act !== "atro"; });
   var atroScoreNote = "";
@@ -7794,6 +7856,7 @@ try {
     if (typeof syncSourceBox === "function") syncSourceBox();
   });
 } catch (e) {}
+if (typeof syncSourceBox === "function") syncSourceBox();
 
 if ($("scnReg")) $("scnReg").addEventListener("click", callReg);
 (function initScnGuide() {
@@ -7806,7 +7869,7 @@ if ($("scnReg")) $("scnReg").addEventListener("click", callReg);
   });
 })();
 if ($("scnHints")) syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; }, setClock: function (s) { if (SIM) SIM.clock = s; }, score: function () { return decisionScoreFromLog((SIM && SIM.log) || [], (SIM && SIM.regCalls) || 0); }, markPacingPartlyRightAfterFourFailedAtropine: function (on) { if (arguments.length) MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE = !!on; return MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE; }, timing: { repeat: repeatIntervalWindow, cycle: cycleDrugWindow, adrRepeat: function () { return adrRepeatStatus(SIM); }, firstAdr: function () { return SIM ? (SIM.adrT && SIM.adrT.length ? adrRepeatStatus(SIM) : ((SIM.shocks || 0) >= 3 ? cycleDrugWindow(SIM.checksAfter3 || 0, SIM) : cycleDrugWindow(SIM.rhythmChecks || 0, SIM))) : null; }, dueSeverity: function () { return (outstandingSteps(SIM) || []).map(function (d) { return { id: d.id, severity: dueSeverity(SIM, d) }; }); } } };
+window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; }, setClock: function (s) { if (SIM) { SIM.clock = s; if (typeof checkHandsOff === "function") checkHandsOff(); } }, score: function () { return decisionScoreFromLog((SIM && SIM.log) || [], (SIM && SIM.regCalls) || 0); }, markPacingPartlyRightAfterFourFailedAtropine: function (on) { if (arguments.length) MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE = !!on; return MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE; }, timing: { repeat: repeatIntervalWindow, cycle: cycleDrugWindow, adrRepeat: function () { return adrRepeatStatus(SIM); }, firstAdr: function () { return SIM ? (SIM.adrT && SIM.adrT.length ? adrRepeatStatus(SIM) : ((SIM.shocks || 0) >= 3 ? cycleDrugWindow(SIM.checksAfter3 || 0, SIM) : cycleDrugWindow(SIM.rhythmChecks || 0, SIM))) : null; }, dueSeverity: function () { return (outstandingSteps(SIM) || []).map(function (d) { return { id: d.id, severity: dueSeverity(SIM, d) }; }); } } };
 /* ===== Ideal pathway for each scenario (shown only in the debrief) ===== */
 var SRC_ALS = "RCUK 2025 Adult ALS guideline";
 var SRC_ALS_A = "RCUK 2025 Adult ALS algorithm";
@@ -8241,7 +8304,7 @@ function modelFlushPending() {
 function startModelScenario(id) {
   var s = SCN[id];
   if (!s) return false;
-  SIM = { scn: s, clock: 0, cpr: false, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: false, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false, wasDue: {}, reviewsWhenReady: null, actionsWhenReady: null, asked: {}, found: {}, checksAfter3: 0, rhythmChecks: 0, lastCheckAt: null, lastAtroT: null, atroT: [], shockMissNudged: false };
+  SIM = { scn: s, clock: 0, cpr: false, cycleOpen: false, handsOffFrom: s.start.pulse ? null : 0, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: false, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false, wasDue: {}, reviewsWhenReady: null, actionsWhenReady: null, asked: {}, found: {}, checksAfter3: 0, rhythmChecks: 0, lastCheckAt: null, lastAtroT: null, atroT: [], shockMissNudged: false };
   if (typeof initScenarioExtras === "function") initScenarioExtras(SIM);
   SIM.rhythm = s.start.rhythm;
   logEvent(null, "Scenario started. " + s.scene.split(". ")[0] + ".");
