@@ -3422,6 +3422,10 @@ Object.assign(TXT, {
   h14_nowPea: T("The rhythm is now an organised narrow-complex rhythm with no pulse (PEA). Look for and treat a reversible cause.", "ALS: non-shockable, identify and treat reversible causes", "causes", { outcome: "The rhythm is now PEA." }),
   h14_rosc: T("A pulse has returned after treating hypovolaemia. Continue ABCDE and the usual post-ROSC targets.", "ALS: immediately after ROSC", "rosc", { outcome: "A pulse has returned after treating hypovolaemia." }),
   h14_shockPea: T("This is now PEA, a non-shockable rhythm. Do not shock it. Continue CPR and treat the reversible cause.", "ALS: shock only if the rhythm is shockable", "alsPriority", { whyWrong: "PEA is not a shockable rhythm." }),
+  h15_causes: T("The sudden collapse after a long-haul flight, with breathlessness, points to thrombosis: pulmonary embolism, one of the 4 Ts.", "ALS: identify and treat reversible causes (thrombosis)", "causes", { outcome: "The sudden collapse after a long-haul flight, with breathlessness, points to thrombosis: pulmonary embolism." }),
+  h16_causes: T("After recent cardiac surgery, with rising chest-drain output, cardiac tamponade is the reversible cause, one of the 4 Ts. Emergency re-sternotomy is the Resuscitation Council UK special-circumstances action.", "ALS: identify and treat reversible causes (tamponade); special circumstances: cardiac surgery", "causes", { outcome: "After recent cardiac surgery, with rising chest-drain output, cardiac tamponade is the reversible cause." }),
+  h17_causes: T("The history of a difficult intubation, with deep cyanosis and poor chest movement, points to hypoxia, one of the 4 Hs. Confirm the tracheal tube and give 100% oxygen.", "ALS: identify and treat reversible causes (hypoxia)", "causes", { outcome: "The history of a difficult intubation, with deep cyanosis and poor chest movement, points to hypoxia." }),
+  h18_causes: T("High-dose loop and thiazide diuretics with a potassium of 2.1 mmol/L point to hypokalaemia as the reversible cause, one of the 4 Hs.", "ALS: identify and treat reversible causes (hypokalaemia)", "causes", { outcome: "High-dose loop and thiazide diuretics with a potassium of 2.1 mmol/L point to hypokalaemia as the reversible cause." }),
   h15_fibrin: T("Use fibrinolytic drugs for cardiac arrest when pulmonary embolism is the suspected cause of cardiac arrest. No named agent or dose is modelled; follow local protocol.", "Special circumstances and ALS: thrombolytic drugs when PE is suspected", "special", { outcome: "Fibrinolytic or thrombolytic drug given, following local protocol." }),
   h15_fibrinEarly: T("Fibrinolytic drugs are the right idea if pulmonary embolism is suspected, but first name the reversible cause and continue ALS.", "Special circumstances: pulmonary embolism", "special", { outcome: "Fibrinolytic or thrombolytic drug given.", whyWrong: "Identify the suspected cause as well." }),
   h15_rosc: T("A pulse has returned after thrombolysis and further CPR. Teaching note: the guideline text is, in select patients with suspected pulmonary embolism, consider CPR for 60-90 min after administration of thrombolytic drugs. This simulation is compressed to a few further cycles, not a literal 60 minutes of play.", "ALS: thrombolytic drugs; immediately after ROSC", "special", { outcome: "A pulse has returned after thrombolysis and further CPR." }),
@@ -6186,7 +6190,7 @@ HIDDEN_SCENARIOS.push(
         return O("ok", "n_noPulse", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
       }
       if (a === "adr") return takeAdr(st, "s2_adr", "s1_adrRepeat", { kind: "non", soonKey: "a_adrSoon", phys: "adr" });
-      if (a === "causes") { st.did.causes = 1; return O("ok", "s2_causes"); }
+      if (a === "causes") { st.did.causes = 1; return O("ok", "h15_causes"); }
       if (a === "fibrin") {
         st.did.fibrin = 1;
         return O(st.did.causes ? "ok" : "part", st.did.causes ? "h15_fibrin" : ["h15_fibrinEarly", "h15_fibrin"]);
@@ -6241,7 +6245,7 @@ HIDDEN_SCENARIOS.push(
         return O("ok", "n_noPulse", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
       }
       if (a === "adr") return takeAdr(st, "s2_adr", "s1_adrRepeat", { kind: "non", soonKey: "a_adrSoon", phys: "adr" });
-      if (a === "causes") { st.did.causes = 1; return O("ok", "s2_causes"); }
+      if (a === "causes") { st.did.causes = 1; return O("ok", "h16_causes"); }
       if (a === "resternotomy") {
         st.did.resternotomy = 1;
         var late = st.clock > 300;
@@ -6297,7 +6301,7 @@ HIDDEN_SCENARIOS.push(
         return O("ok", "n_noPulse", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
       }
       if (a === "adr") return takeAdr(st, "s2_adr", "s1_adrRepeat", { kind: "non", soonKey: "a_adrSoon", phys: "adr" });
-      if (a === "causes") { st.did.causes = 1; return O("ok", "s2_causes"); }
+      if (a === "causes") { st.did.causes = 1; return O("ok", "h17_causes"); }
       if (a === "oxygen") {
         st.did.oxygen = 1;
         return O(st.did.causes ? "ok" : "part", st.did.causes ? "h17_oxygen" : ["h17_oxygenEarly", "h17_oxygen"]);
@@ -6352,7 +6356,7 @@ HIDDEN_SCENARIOS.push(
         return O("ok", "n_noPulse", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
       }
       if (a === "adr") return takeAdr(st, "s2_adr", "s1_adrRepeat", { kind: "non", soonKey: "a_adrSoon", phys: "adr" });
-      if (a === "causes") { st.did.causes = 1; return O("ok", "s6_causes"); }
+      if (a === "causes") { st.did.causes = 1; return O("ok", "h18_causes"); }
       if (a === "kcl") {
         st.did.kcl = 1;
         return O(st.did.causes ? "ok" : "part", st.did.causes ? "h18_kcl" : ["h18_kclEarly", "h18_kcl"]);
@@ -7068,6 +7072,54 @@ function callReg() {
 }
 
 var lastScn = null;
+var CHALLENGE_BEST_KEY = "physioResusChallengeBest";
+var challenge = { on: false, score: 0, justEnded: false, lastScore: 0 };
+function challengeBest() {
+  var n = 0;
+  try { n = parseInt(localStorage.getItem(CHALLENGE_BEST_KEY) || "0", 10) || 0; } catch (e) {}
+  if (isNaN(n) || n < 0) n = 0;
+  return n;
+}
+function saveChallengeBest(n) {
+  try { localStorage.setItem(CHALLENGE_BEST_KEY, String(n)); } catch (e) {}
+}
+function startChallenge() {
+  challenge.on = true;
+  challenge.score = 0;
+  challenge.justEnded = false;
+  challenge.lastScore = 0;
+  randomScenario();
+}
+function stopChallenge(keepLast) {
+  if (keepLast) challenge.lastScore = challenge.score;
+  challenge.on = false;
+  challenge.justEnded = true;
+}
+function challengeLine() {
+  var best = challengeBest();
+  if (challenge.on) return "Challenge: " + challenge.score + " in a row · Best " + best;
+  if (challenge.justEnded) return "Challenge ended: " + (challenge.lastScore || 0) + " in a row · Best " + best;
+  return "";
+}
+function syncChallengeUi() {
+  var el = $("scnChallengeStatus");
+  var title = $("scnTitle");
+  if (!el && title && title.parentNode) {
+    el = document.createElement("p");
+    el.id = "scnChallengeStatus";
+    el.className = "scn-challenge-status";
+    title.parentNode.insertBefore(el, title.nextSibling);
+  }
+  if (!el) return;
+  var line = challengeLine();
+  if (line && (challenge.on || challenge.justEnded)) {
+    el.hidden = false;
+    el.textContent = line;
+  } else {
+    el.hidden = true;
+    el.textContent = "";
+  }
+}
 function randomScenario() {
   var pool = ALL_SCENARIOS.filter(function (x) { return x.id !== lastScn; });
   startScenario(pool[Math.floor(Math.random() * pool.length)].id, true);
@@ -7075,9 +7127,12 @@ function randomScenario() {
 function renderScnChooser() {
   var host = $("scnGrid"); if (host.childElementCount) return;
   var rb = document.createElement("div"); rb.className = "scn-random-wrap";
-  rb.innerHTML = "<button type='button' class='scn-random' id='scnRandom'><svg class='dice' viewBox='0 0 24 24' width='26' height='26' aria-hidden='true'><rect x='2.5' y='2.5' width='19' height='19' rx='4' fill='none' stroke='currentColor' stroke-width='2'/><circle cx='8' cy='8' r='1.8' fill='currentColor'/><circle cx='16' cy='8' r='1.8' fill='currentColor'/><circle cx='12' cy='12' r='1.8' fill='currentColor'/><circle cx='8' cy='16' r='1.8' fill='currentColor'/><circle cx='16' cy='16' r='1.8' fill='currentColor'/></svg><span><span class='scn-random-title'>Random scenario</span><span class='scn-random-sub'>A case picked for you from all of the cases in the list. The case name is revealed in the debrief, not while you are playing.</span></span></button>";
+  var bestN = challengeBest();
+  rb.innerHTML = "<button type='button' class='scn-random' id='scnRandom'><svg class='dice' viewBox='0 0 24 24' width='26' height='26' aria-hidden='true'><rect x='2.5' y='2.5' width='19' height='19' rx='4' fill='none' stroke='currentColor' stroke-width='2'/><circle cx='8' cy='8' r='1.8' fill='currentColor'/><circle cx='16' cy='8' r='1.8' fill='currentColor'/><circle cx='12' cy='12' r='1.8' fill='currentColor'/><circle cx='8' cy='16' r='1.8' fill='currentColor'/><circle cx='16' cy='16' r='1.8' fill='currentColor'/></svg><span><span class='scn-random-title'>Random scenario</span><span class='scn-random-sub'>A case picked for you from all of the cases in the list. The case name is revealed in the debrief, not while you are playing.</span></span></button>" +
+    "<button type='button' class='scn-challenge' id='scnChallenge'><span><span class='scn-random-title'>Challenge mode</span><span class='scn-random-sub'>Back-to-back random cases. See how many you can complete correctly in a row. The run ends on a fail (harm, a long hands-off period, or an unsafe shock). Best on this device: " + bestN + ".</span></span></button>";
   host.appendChild(rb);
-  rb.querySelector("button").addEventListener("click", randomScenario);
+  $("scnRandom").addEventListener("click", randomScenario);
+  $("scnChallenge").addEventListener("click", startChallenge);
   var list = listedScenarios();
   LIST_GROUP_ORDER.forEach(function (g, gi) {
     var items = list.filter(function (s) { return listGroup(s) === g; });
@@ -7097,8 +7152,12 @@ function renderScnChooser() {
 
 function startScenario(id, random) {
   if (typeof clearAskPending === "function") clearAskPending();
+  if (!random && challenge.on) {
+    challenge.on = false;
+    challenge.justEnded = false;
+  }
   var s = SCN[id]; lastScn = id;
-  SIM = { scn: s, clock: 0, cpr: false, cycleOpen: false, handsOffFrom: s.start.pulse ? null : 0, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false, wasDue: {}, reviewsWhenReady: null, actionsWhenReady: null, checksAfter3: 0, rhythmChecks: 0, lastCheckAt: null, lastAtroT: null, atroT: [], shockMissNudged: false };
+  SIM = { scn: s, clock: 0, cpr: false, cycleOpen: false, handsOffFrom: s.start.pulse ? null : 0, cycleStart: 0, cycles: 0, cycleCount: 0, shocks: 0, adrT: [], amio: false, atro: 0, aden: 0, sync: 0, nShocks: 0, random: !!random, challenge: !!challenge.on, pulse: s.start.pulse, vit: Object.assign({}, s.start.vit), log: [], did: {}, done: false, phase: "", cycleWarned: false, lastFb: null, nudgeStreak: 0, reviews: 0, actionN: 0, idleSinceDue: 0, regCalls: 0, endedDue: null, endReason: "", monitorReady: false, wasDue: {}, reviewsWhenReady: null, actionsWhenReady: null, checksAfter3: 0, rhythmChecks: 0, lastCheckAt: null, lastAtroT: null, atroT: [], shockMissNudged: false };
   if (typeof initScenarioExtras === "function") initScenarioExtras(SIM);
   if (typeof renderPending === "function") renderPending();
   document.querySelectorAll("#scnGrid .scn-card").forEach(function (b) { b.setAttribute("aria-pressed", !random && b.dataset.id === id ? "true" : "false"); });
@@ -7106,7 +7165,7 @@ function startScenario(id, random) {
   $("scnStage").classList.remove("hidden");
   $("scnDebrief").classList.add("hidden"); $("scnPanels").classList.remove("hidden");
   var listN = listIndex(s);
-  $("scnTitle").textContent = random ? "Random case" : listN >= 0 ? "Scenario " + (listN + 1) + ": " + listTitle(s) : listTitle(s);
+  $("scnTitle").textContent = challenge.on ? "Challenge case" : random ? "Random case" : listN >= 0 ? "Scenario " + (listN + 1) + ": " + listTitle(s) : listTitle(s);
   $("scnScene").innerHTML = "<strong>Scene</strong>" + esc(s.scene);
   $("scnLog").innerHTML = "";
   monitor = new Monitor($("scnMonitor"));
@@ -7117,6 +7176,7 @@ function startScenario(id, random) {
   logEvent(null, "Scenario started. " + s.scene.split(". ")[0] + ".");
   $("scnFeedback").innerHTML = "<p class='explain-kicker'>Feedback</p><p class='ep-wait'>Choose an action. Each choice is checked against the RCUK 2025 algorithms; the rhythm responds.</p>";
   renderVitals(); renderClock(); syncScnBanner();
+  if (typeof syncChallengeUi === "function") syncChallengeUi();
   clearInterval(simTimer);
   simTimer = setInterval(function () { if (!SIM || SIM.done || document.hidden) return; SIM.clock++; if (typeof tickMonitor === "function") tickMonitor(SIM); if (typeof checkHandsOff === "function" && checkHandsOff()) return; renderClock(); renderVitals(); }, 1000);
   $("scnTitle").focus({ preventScroll: true });
@@ -7446,16 +7506,30 @@ function finishScenario(completed, reason) {
   } else if (SIM.endReason === "cap") endLine = "Scenario ended: too many cycles without a resolution.";
   else endLine = completed ? "Scenario complete." : "Scenario ended early.";
   logEvent(null, endLine);
+  var challengeSuccess = false;
+  if (challenge.on && SIM.challenge) {
+    var success = completed && (!SIM.endReason || SIM.endReason === "complete");
+    if (success) {
+      challenge.score += 1;
+      if (challenge.score > challengeBest()) saveChallengeBest(challenge.score);
+      challengeSuccess = true;
+    } else {
+      stopChallenge(true);
+    }
+  }
   if (MODEL_RUNNING) return;
   if (SIM.endReason === "missed" || SIM.endReason === "missedShock" || SIM.endReason === "cap" || SIM.endReason === "harm" || SIM.endReason === "handsOff") {
     showDebrief();
   } else {
     var b = $("scnFeedback"), btn = document.createElement("div"); btn.className = "predict-actions";
-    btn.innerHTML = "<button type='button' id='scnDebriefBtn'>Open the debrief</button>";
+    var nextHtml = challengeSuccess ? "<button type='button' id='scnChallengeNext'>Next challenge case</button>" : "";
+    btn.innerHTML = nextHtml + "<button type='button' id='scnDebriefBtn'" + (challengeSuccess ? " class='secondary'" : "") + ">Open the debrief</button>";
     b.appendChild(btn);
+    if ($("scnChallengeNext")) $("scnChallengeNext").addEventListener("click", randomScenario);
     $("scnDebriefBtn").addEventListener("click", showDebrief);
   }
   syncScnBanner();
+  if (typeof syncChallengeUi === "function") syncChallengeUi();
   if (typeof syncSourceBox === "function") syncSourceBox();
 }
 
@@ -7748,7 +7822,11 @@ function showDebrief() {
     if (!xk || !TXT[xk]) return;
     html += "<div class='panel-block trap'><h3>Teaching point</h3><p>" + txtHTML(xk) + "</p><p class='scn-src'><strong>Source:</strong> " + esc(srcOf(xk)) + "</p></div>";
   });
-  html += "<div class='predict-actions'>" + (SIM.random ? "<button type='button' id='scnAnother'>Another random scenario</button>" : "") + "<button type='button' id='scnRetry'" + (SIM.random ? " class='secondary'" : "") + ">Try this scenario again</button><button type='button' class='secondary' id='scnOther'>Choose another scenario</button></div>";
+  if (SIM.challenge || challenge.justEnded) {
+    html += "<p class='scn-challenge-result' id='scnChallengeResult'>" + esc(challengeLine()) + "</p>";
+  }
+  var nextCh = (challenge.on && SIM.completed) ? "<button type='button' id='scnChallengeNext'>Next challenge case</button>" : "";
+  html += "<div class='predict-actions'>" + nextCh + (SIM.random && !challenge.on ? "<button type='button' id='scnAnother'>Another random scenario</button>" : "") + "<button type='button' id='scnRetry'" + (SIM.random || challenge.on || nextCh ? " class='secondary'" : "") + ">Try this scenario again</button><button type='button' class='secondary' id='scnOther'>Choose another scenario</button></div>";
   var decisionList = "<ol class='debrief-list' id='scnDecisionList'>" + acts.map(function (l, idx) {
     var k = l.o.keys || [];
     var body = debriefEntryBody(l);
@@ -7775,15 +7853,19 @@ function showDebrief() {
   var wasRandom = SIM.random;
   $("scnRetry").addEventListener("click", function () { startScenario(s.id, wasRandom); });
   if ($("scnAnother")) $("scnAnother").addEventListener("click", randomScenario);
+  if ($("scnChallengeNext")) $("scnChallengeNext").addEventListener("click", randomScenario);
   $("scnOther").addEventListener("click", showChooser);
   $("scnDebriefTitle").focus({ preventScroll: false });
 }
 function showChooser() {
   if (monitor) monitor.stop();
   clearInterval(simTimer); SIM = null;
+  if (challenge.on) stopChallenge(true);
+  challenge.justEnded = false;
   $("scnStage").classList.add("hidden"); $("scnChooserWrap").classList.remove("hidden");
   if ($("scnDebrief")) $("scnDebrief").classList.add("hidden");
   renderScnChooser(); syncScnBanner();
+  if (typeof syncChallengeUi === "function") syncChallengeUi();
   if (typeof syncSourceBox === "function") syncSourceBox();
 }
 function syncScnBanner() {
@@ -7796,7 +7878,7 @@ function syncScnBanner() {
   if (on && SIM) {
     var n = listIndex(SIM.scn);
     st.hidden = false;
-    st.textContent = SIM.done ? "Scenario finished" : SIM.random ? "Random case running" : n >= 0 ? "Scenario " + (n + 1) + " running" : "Case running";
+    st.textContent = SIM.done ? "Scenario finished" : challenge.on ? ("Challenge: " + challenge.score + " in a row") : SIM.random ? "Random case running" : n >= 0 ? "Scenario " + (n + 1) + " running" : "Case running";
   }
   else { st.hidden = true; st.textContent = ""; }
 }
@@ -7869,7 +7951,7 @@ if ($("scnReg")) $("scnReg").addEventListener("click", callReg);
   });
 })();
 if ($("scnHints")) syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; }, setClock: function (s) { if (SIM) { SIM.clock = s; if (typeof checkHandsOff === "function") checkHandsOff(); } }, score: function () { return decisionScoreFromLog((SIM && SIM.log) || [], (SIM && SIM.regCalls) || 0); }, markPacingPartlyRightAfterFourFailedAtropine: function (on) { if (arguments.length) MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE = !!on; return MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE; }, timing: { repeat: repeatIntervalWindow, cycle: cycleDrugWindow, adrRepeat: function () { return adrRepeatStatus(SIM); }, firstAdr: function () { return SIM ? (SIM.adrT && SIM.adrT.length ? adrRepeatStatus(SIM) : ((SIM.shocks || 0) >= 3 ? cycleDrugWindow(SIM.checksAfter3 || 0, SIM) : cycleDrugWindow(SIM.rhythmChecks || 0, SIM))) : null; }, dueSeverity: function () { return (outstandingSteps(SIM) || []).map(function (d) { return { id: d.id, severity: dueSeverity(SIM, d) }; }); } } };
+window.__scn = { start: startScenario, random: randomScenario, startChallenge: startChallenge, challenge: function () { return { on: challenge.on, score: challenge.score, best: challengeBest(), justEnded: challenge.justEnded, lastScore: challenge.lastScore }; }, setChallengeBest: function (n) { saveChallengeBest(n); }, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; }, setClock: function (s) { if (SIM) { SIM.clock = s; if (typeof checkHandsOff === "function") checkHandsOff(); } }, score: function () { return decisionScoreFromLog((SIM && SIM.log) || [], (SIM && SIM.regCalls) || 0); }, markPacingPartlyRightAfterFourFailedAtropine: function (on) { if (arguments.length) MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE = !!on; return MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE; }, timing: { repeat: repeatIntervalWindow, cycle: cycleDrugWindow, adrRepeat: function () { return adrRepeatStatus(SIM); }, firstAdr: function () { return SIM ? (SIM.adrT && SIM.adrT.length ? adrRepeatStatus(SIM) : ((SIM.shocks || 0) >= 3 ? cycleDrugWindow(SIM.checksAfter3 || 0, SIM) : cycleDrugWindow(SIM.rhythmChecks || 0, SIM))) : null; }, dueSeverity: function () { return (outstandingSteps(SIM) || []).map(function (d) { return { id: d.id, severity: dueSeverity(SIM, d) }; }); } } };
 /* ===== Ideal pathway for each scenario (shown only in the debrief) ===== */
 var SRC_ALS = "RCUK 2025 Adult ALS guideline";
 var SRC_ALS_A = "RCUK 2025 Adult ALS algorithm";

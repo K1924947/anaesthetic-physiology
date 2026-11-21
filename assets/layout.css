@@ -370,3 +370,17 @@ footer .footer-left { margin: 0; gap: 4px 0; line-height: 1.5; }
 .about-note a:hover { text-decoration-thickness: 2px; }
 .about-note a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 @media (max-width: 640px) { .site-header-top > .crumb, .site-header .crumb { flex: 1 1 100%; } }
+
+
+/* Homepage sections: titles are plain text so they can be renamed. */
+.home-section { margin: 0 0 40px; }
+.home-section-title {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0 0 10px;
+  color: var(--text);
+}
+.home-section-lede { margin: 0 0 16px; max-width: 40em; color: var(--muted); }
+.home-section .jcard-grid.topics { margin: 0; }

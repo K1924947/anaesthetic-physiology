@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-basics.css?v=20261121b">
+<link rel="stylesheet" href="assets/ecg-basics.css?v=20261121c">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -167,7 +167,28 @@
 
       <article class="read-step" id="step-axis" aria-labelledby="step-axis-h">
         <h3 id="step-axis-h">3. Axis</h3>
-        <p>Cardiac axis is the net direction of ventricular depolarisation in the frontal plane. Usual normal is -30° to +90°. Drag the arrow on the hexaxial wheel, or use the buttons and arrow keys, and watch leads I, II and aVF change. The quadrant method uses I and aVF: if both are positive, the axis is between 0° and +90°. Lead II then separates a still-normal axis (-30° to 0°) from left axis deviation (less than -30°). Then have a go at a tracing below: set the arrow to your estimate and check.</p>
+        <p>Cardiac axis is the net direction of ventricular depolarisation in the frontal plane. Usual normal is -30° to +90°. Drag the arrow on the hexaxial wheel, or use the buttons and arrow keys, and watch leads I, II and aVF change.</p>
+        <div class="panel-block axis-method">
+          <h4>How to read the axis</h4>
+          <ol>
+            <li>
+              <p><strong>Look at leads I and aVF (the quadrant method).</strong> A net-positive QRS means the mean QRS vector points towards that lead's positive pole. On the hexaxial system, lead I's positive pole is at 0° and aVF's is at +90°, so the two leads split the frontal plane into four quadrants:</p>
+              <ul>
+                <li>I and aVF both positive: the axis is between 0° and +90° (normal).</li>
+                <li>I positive and aVF negative: the axis is between 0° and -90° (could still be normal, or left axis deviation).</li>
+                <li>I negative and aVF positive: the axis is between +90° and +180° (right axis deviation).</li>
+                <li>I and aVF both negative: an extreme (northwest) axis.</li>
+              </ul>
+            </li>
+            <li>
+              <p><strong>Then look at lead II, to separate a still-normal axis from left axis deviation.</strong> Lead II's positive pole is at +60°. The line perpendicular to lead II is at -30°, which is the usual lower limit of a normal axis. If lead II is net-positive, the mean vector still points towards +60°, so the axis is to the right of -30° and remains normal. If lead II is net-negative, the vector points away from +60° and the axis is less than -30° (left axis deviation).</p>
+            </li>
+            <li>
+              <p><strong>Optionally, find an isoelectric lead and go perpendicular to it.</strong> A lead is isoelectric when the QRS has roughly equal positive and negative area, which means the mean vector is at right angles to that lead. Move 90° from that lead, towards the leads that are net-positive, and read the angle on the hexaxial wheel. This refines the estimate once the quadrant is known.</p>
+            </li>
+          </ol>
+          <p>Then have a go at a tracing below: set the arrow to your estimate and check. Answers are marked by category (normal, left axis deviation, right axis deviation, or extreme), not by the exact degree. The exact degree is shown after you check.</p>
+        </div>
         <div class="axis-layout">
           <div class="axis-wheel-col">
             <svg id="axisSvg" class="axis-svg" viewBox="0 0 500 500" role="application" tabindex="0" aria-label="Hexaxial reference wheel. Drag the arrow to change the QRS axis.">
@@ -300,9 +321,10 @@
       <p class="values-note">The PR segment (the flat line between the P wave and the QRS) is covered on the labelled beat. The small U wave after the T wave is included there too, but it is not needed to read a basic ECG.</p>
 
       <div class="qtc-box">
-        <h3>QTc, briefly</h3>
-        <p>The uncorrected QT shortens as the heart rate rises, so we estimate what the QT would be at 60 /min. The most commonly used formula is Bazett: <span class="formula">QTc = QT &#247; &#8730;RR</span>, with RR in seconds.</p>
-        <p>Bazett over-corrects above 100 /min and under-corrects below 60 /min. Outside that range, Fridericia or Framingham is often used instead. A useful rule of thumb is that a normal QT is under half the preceding RR interval. Do not use a single QTc value alone to make clinical decisions.</p>
+        <h3>QTc</h3>
+        <p>You are not expected to calculate QTc. The uncorrected QT shortens as the heart rate rises, so the monitor reports a rate-corrected value. Assume the machine-reported QT is the corrected QTc, and interpret that number.</p>
+        <p>Usual normal: under 440 ms in men and under 460 ms in women. A QTc over 500 ms carries a high risk of torsades de pointes. Do not use a single QTc value alone to make clinical decisions.</p>
+        <p class="src-line">Sources: <a href="https://litfl.com/qt-interval-ecg-library/" target="_blank" rel="noopener">LITFL, QT interval</a>; <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">Klabunde</a>. These are the same sources as the table above.</p>
       </div>
     </details>
 
@@ -327,6 +349,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-basics.js?v=20261121b"></script>
+<script src="assets/ecg-basics.js?v=20261121c"></script>
 </body>
 </html>

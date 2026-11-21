@@ -476,8 +476,8 @@
       short: "QT",
       t: [0.16, 0.56],
       bracket: true,
-      event: "From the start of the QRS to the end of the T wave: the whole of ventricular depolarisation and repolarisation. It shortens as the heart rate rises, so it is usually quoted as a rate-corrected value (QTc).",
-      normal: "QTc under 440 ms in men and under 460 ms in women. Over 500 ms carries a high risk of torsades de pointes. On this trace the rate is 60 /min and QT is 0.40 s, so Bazett QTc is 0.40 s.",
+      event: "From the start of the QRS to the end of the T wave: the whole of ventricular depolarisation and repolarisation. It shortens as the heart rate rises, so it is usually quoted as a rate-corrected value (QTc). Assume a machine-reported QT is the corrected QTc; you are not expected to calculate it.",
+      normal: "QTc under 440 ms in men and under 460 ms in women. Over 500 ms carries a high risk of torsades de pointes. On this trace the rate is 60 /min, so the QT of 0.40 s is also the QTc.",
       clinical: [
         "A prolonged QT is associated with an increased risk of torsades de pointes, especially if QTc is over 500 ms.",
         "Causes include low potassium, magnesium or calcium, and some drugs."
@@ -1379,8 +1379,10 @@
       sex: sex,
       risk: qtcMs > 500,
       options: [{ id: "normal", label: "Normal" }, { id: "long", label: "Prolonged" }],
-      q: sexLab + ", heart rate " + rate + " /min. Measure the QT interval with the calipers, then say whether the QTc is normal or prolonged.",
-      help: "Measure from the start of the QRS to the end of the T wave. Then classify the QTc. Calipers are accepted if each end is within 1 small square, or if the measured duration is within 40 ms of the true QT.",
+      q: sexLab + ". The machine reports a QTc of " + qtcMs + " ms. Is this QTc normal or prolonged?",
+      help: "Assume the machine-reported QT is the corrected QTc. You do not need to calculate it. Usual upper limits are 440 ms in men and 460 ms in women. Over 500 ms carries a high risk of torsades de pointes.",
+      skipMeasure: true,
+      machineQtc: true,
       beat: beat,
       rr: rr,
       tStart: winStart,
@@ -1452,7 +1454,7 @@
       sex = qtCase.sex;
       qtcMs = qtCase.qtcMs;
       rr = qtCase.rr;
-      why = "The QT interval is " + msOf(qtCase.t1 - qtCase.t0) + " ms (" + squaresOf(qtCase.t1 - qtCase.t0) + " small squares). The heart rate is " + rate + " /min, so RR is " + (60 / rate).toFixed(2) + " s. By Bazett, QTc = QT ÷ √RR = " + qtcMs + " ms. For a " + sex + " the usual upper limit is " + qtcCutoff(sex) + " ms" + (qtcMs > 500 ? ", and over 500 ms carries a high risk of torsades de pointes" : "") + ", so the QT is prolonged.";
+      why = "The machine reports a QTc of " + qtcMs + " ms. Assume this is the rate-corrected value; you do not need to calculate it. For a " + sex + " the usual upper limit is " + qtcCutoff(sex) + " ms" + (qtcMs > 500 ? ", and over 500 ms carries a high risk of torsades de pointes" : "") + ", so this QTc is prolonged.";
       qExtra = "If something is abnormal, click that part.";
     } else {
       beat = defaultBeat({ u: false });
@@ -1462,8 +1464,8 @@
     }
     var win = beatWindow(beat, rr, "spot");
     var q = "Is this beat abnormal? " + qExtra;
-    if (ab === "QT" && sex) {
-      q = (sex === "woman" ? "Woman" : "Man") + ", heart rate " + rate + " /min. " + q;
+    if (ab === "QT" && sex && qtcMs != null) {
+      q = (sex === "woman" ? "Woman" : "Man") + ". The machine reports a QTc of " + qtcMs + " ms. " + q;
     }
     return {
       type: "spot",
@@ -1817,7 +1819,7 @@
       drawRMarks(g, quizTtoX, item.marks, 18, QZ.answered, t, fam, { yNum: (QG.markBand || 32) - 2, fontSize: rMarkFontSize(svg, QG.x0 + QG.gw + 8) });
     }
 
-    if (item.type === "calipers" || item.type === "rate") {
+    if ((item.type === "calipers" && !item.skipMeasure) || item.type === "rate") {
       var capBottom = drawCaliperCaptions(
         g, quizTtoX(QZ.calA), quizTtoX(QZ.calB), t, fam, svg, 0, vbW,
         item.type === "rate" ? (QG.markBand || 0) : 0
@@ -1844,7 +1846,7 @@
     var elr = $("quizReadout");
     var item = currentItem();
     if (!elr || !item) return;
-    if (item.type === "calipers" || item.type === "rate") {
+    if ((item.type === "calipers" && !item.skipMeasure) || item.type === "rate") {
       var span = caliperSpan();
       var parts = ["Calipers: " + formatCaliperSpan(span) + "."];
       if (item.type === "rate") parts.push("R waves marked: " + (item.marks ? item.marks.length : 0) + ".");
@@ -1871,21 +1873,30 @@
       if (ok) body = "That is the " + item.targetName + ".";
       else body = "You clicked " + guessName + ". The " + item.targetName + " is marked on the strip.";
     } else if (item.type === "calipers") {
-      var span = caliperSpan();
-      var place = caliperPlacement(item);
       var judged = classifyCorrect(item);
-      body = "The " + item.measureName + " is " + msOf(item.t1 - item.t0) + " ms (" + squaresOf(item.t1 - item.t0) + " small squares). ";
-      body += caliperFeedbackRule(item) + " ";
-      body += "Calipers are accepted if each end is within 1 small square of the true start and end, or if the measured duration is within 40 ms of the true interval. ";
-      if (!place.ok) {
-        body += "Your calipers span " + msOf(place.span) + " ms (" + squaresOf(place.span) + " small squares) and do not meet either rule. ";
-      } else if (!ok) {
-        body += "Your calipers were well placed. ";
-      }
-      if (!judged && QZ.classify) {
-        body += "The interval is " + verdictPhrase(item.verdict, item) + ", not " + verdictPhrase(QZ.classify, item) + ".";
-      } else if (!QZ.classify) {
-        body += "You still needed to say whether it is " + (item.measure === "QT" ? "normal or prolonged" : "normal") + ".";
+      if (item.skipMeasure || item.machineQtc) {
+        body = caliperFeedbackRule(item) + " ";
+        if (!judged && QZ.classify) {
+          body += "This QTc is " + verdictPhrase(item.verdict, item) + ", not " + verdictPhrase(QZ.classify, item) + ".";
+        } else if (!QZ.classify) {
+          body += "You still needed to say whether it is normal or prolonged.";
+        }
+      } else {
+        var span = caliperSpan();
+        var place = caliperPlacement(item);
+        body = "The " + item.measureName + " is " + msOf(item.t1 - item.t0) + " ms (" + squaresOf(item.t1 - item.t0) + " small squares). ";
+        body += caliperFeedbackRule(item) + " ";
+        body += "Calipers are accepted if each end is within 1 small square of the true start and end, or if the measured duration is within 40 ms of the true interval. ";
+        if (!place.ok) {
+          body += "Your calipers span " + msOf(place.span) + " ms (" + squaresOf(place.span) + " small squares) and do not meet either rule. ";
+        } else if (!ok) {
+          body += "Your calipers were well placed. ";
+        }
+        if (!judged && QZ.classify) {
+          body += "The interval is " + verdictPhrase(item.verdict, item) + ", not " + verdictPhrase(QZ.classify, item) + ".";
+        } else if (!QZ.classify) {
+          body += "You still needed to say whether it is " + (item.measure === "QT" ? "normal or prolonged" : "normal") + ".";
+        }
       }
     } else if (item.type === "rate") {
       var guess = rateEntered();
@@ -1932,30 +1943,44 @@
     if (item.measure === "QRS") {
       return "A usual normal QRS is under 0.12 s (3 small squares), so this one is " + verdictPhrase(item.verdict, item) + ".";
     }
-    var rr = 60 / item.rate;
     var cut = qtcCutoff(item.sex);
     var sexWord = item.sex === "woman" ? "woman" : "man";
-    var msg = "The heart rate is " + item.rate + " /min, so RR is " + rr.toFixed(2) + " s. By Bazett, QTc = QT ÷ √RR = " + item.qtcMs + " ms. For a " + sexWord + " the usual upper limit is " + cut + " ms";
+    var msg = "The machine reports a QTc of " + item.qtcMs + " ms. Assume this is the rate-corrected value; you do not need to calculate it. For a " + sexWord + " the usual upper limit is " + cut + " ms";
     if (item.qtcMs > 500) msg += ", and over 500 ms carries a high risk of torsades de pointes";
     msg += ", so this QTc is " + verdictPhrase(item.verdict, item) + ".";
     return msg;
+  }
+
+  function caliperHeadY(G) {
+    /* The start and end triangles sit on, or slightly into, the paper top.
+       A 2-unit band missed most of the cap, so a click on the Start line was
+       treated as an R-wave mark when Start was within markSnapTol of an R. */
+    return (G && G.gy != null ? G.gy : 0) + 18;
+  }
+  function caliperWhich(t, pt, G, times, svg, stateA, stateB, timeTol) {
+    var dA = Math.abs(t - stateA), dB = Math.abs(t - stateB);
+    var tol = timeTol != null ? timeTol : 0.16;
+    if (Math.min(dA, dB) > tol) return null;
+    var inHead = pt && pt.y < caliperHeadY(G);
+    var nR = (times && times.length) ? nearestR(times, t) : { dist: 1e9 };
+    var snap = (times && svg && G) ? markSnapTol(svg, G) : 0;
+    var nearR = nR.t != null && nR.dist <= snap;
+    if (inHead || !nearR || Math.min(dA, dB) <= nR.dist + 0.001) return dA <= dB ? "A" : "B";
+    return null;
   }
 
   function bindQuizSvg(svg, item) {
     svg.addEventListener("pointerdown", function (ev) {
       var it = currentItem() || item;
       if (!it || QZ.answered) return;
-      if (it.type === "calipers" || it.type === "rate") {
+      if ((it.type === "calipers" && !it.skipMeasure) || it.type === "rate") {
         var t = clampT(quizClientToT(svg, ev));
-        var dA = Math.abs(t - QZ.calA), dB = Math.abs(t - QZ.calB);
-        var tol = 0.08;
         var pt = svgEventToUser(svg, ev);
-        var inHead = pt && pt.y < (QG.gy + 2);
-        var nearCal = Math.min(dA, dB) <= tol;
-        var nR = (it.type === "rate" && it.times) ? nearestR(it.times, t) : { dist: 1e9 };
-        var nearR = nR.t && nR.dist <= markSnapTol(svg, QG);
-        if (nearCal && (inHead || !nearR || it.type === "calipers")) {
-          QZ.dragging = (dA <= dB) ? "A" : "B";
+        var times = (it.type === "rate" && it.times) ? it.times : null;
+        var which = caliperWhich(t, pt, QG, times, svg, QZ.calA, QZ.calB, 0.16);
+        if (which || (it.type === "calipers" && caliperWhich(t, pt, QG, null, svg, QZ.calA, QZ.calB, 0.16))) {
+          if (!which) which = Math.abs(t - QZ.calA) <= Math.abs(t - QZ.calB) ? "A" : "B";
+          QZ.dragging = which;
           QZ.focus = QZ.dragging;
           try { svg.setPointerCapture(ev.pointerId); } catch (err) {}
           ev.preventDefault();
@@ -2119,7 +2144,7 @@
         }
         return;
       }
-      QZ.ok = calipersPlacedWell(item) && classifyCorrect(item);
+      QZ.ok = (item.skipMeasure || item.machineQtc) ? classifyCorrect(item) : (calipersPlacedWell(item) && classifyCorrect(item));
     } else if (item.type === "rate") {
       var g = rateEntered();
       if (g == null) {
@@ -2209,7 +2234,8 @@
       return;
     }
     var item = currentItem();
-    var html = "<p class='quiz-progress'><span class='quiz-type'>" + esc(TYPE_LABEL[item.type]) + "</span> · Drill " + (QZ.i + 1) + " of " + QZ.items.length + "</p>";
+    var typeLab = (item.skipMeasure || item.machineQtc) ? "QTc" : TYPE_LABEL[item.type];
+    var html = "<p class='quiz-progress'><span class='quiz-type'>" + esc(typeLab) + "</span> · Drill " + (QZ.i + 1) + " of " + QZ.items.length + "</p>";
     html += "<h3 class='quiz-q' id='quizQ' tabindex='-1'>" + esc(item.q) + "</h3>";
     html += "<p class='quiz-help'>" + esc(item.help) + "</p>";
     if (item.type === "rate") html += "<p class='strip-indicator'>10 s strip</p>";
@@ -2230,7 +2256,7 @@
     }
     html += "<p class='quiz-readout' id='quizReadout'></p>";
 
-    if (item.type === "calipers" || item.type === "rate") {
+    if ((item.type === "calipers" && !item.skipMeasure) || item.type === "rate") {
       html += "<div class='quiz-controls' role='group' aria-label='Move calipers'>";
       html += caliperNudgeHtml();
       html += "</div>";
@@ -2687,14 +2713,11 @@
       var G = getG(), state = getState();
       if (!G || !state) return;
       var t = Math.max(G.tStart, Math.min(G.tEnd, stripClientToT(svg, G, ev)));
-      var dA = Math.abs(t - state.calA), dB = Math.abs(t - state.calB);
       var pt = svgEventToUser(svg, ev);
-      var inHead = pt && pt.y < G.gy + 2;
-      var nearCal = Math.min(dA, dB) <= 0.10;
-      var nR = (state.times && onMark) ? nearestR(state.times, t) : { dist: 1e9 };
-      var nearR = nR.t && nR.dist <= markSnapTol(svg, G);
-      if (nearCal && (inHead || !nearR)) {
-        state.dragging = dA <= dB ? "A" : "B";
+      var times = (state.times && onMark) ? state.times : null;
+      var which = caliperWhich(t, pt, G, times, svg, state.calA, state.calB, 0.16);
+      if (which) {
+        state.dragging = which;
         state.focus = state.dragging;
         try { svg.setPointerCapture(ev.pointerId); } catch (err) {}
         ev.preventDefault();
@@ -3828,6 +3851,15 @@
         if (!off) return null;
         return { x: off.x, y: off.y, t: t, clientX: off.left + off.x, clientY: off.top + off.y };
       },
+      caliperPoint: function (which, band) {
+        var svg = $("rateSvg"), G = RS._rateG, item = RS.rate;
+        if (!svg || !G || !item) return null;
+        var t = which === "B" ? item.calB : item.calA;
+        var y = band === "head" ? (G.gy - 8) : (G.gy + G.gh * 0.55);
+        var off = svgUserToOffset(svg, stripTtoX(G, t), y);
+        if (!off) return null;
+        return { x: off.x, y: off.y, t: t, clientX: off.left + off.x, clientY: off.top + off.y };
+      },
       leadFitReport: leadFitReport,
       formatCaliperSpan: formatCaliperSpan,
       checkRate: checkRate,
@@ -3857,6 +3889,15 @@
         if (!svg) return null;
         var y = (band === "paper" || !band) ? (QG.gy + QG.gh * 0.55) : (QG.gy + QG.gh * 0.55);
         var off = svgUserToOffset(svg, quizTtoX(t), y);
+        return { x: off.x, y: off.y, t: t, clientX: off.left + off.x, clientY: off.top + off.y };
+      },
+      caliperPoint: function (which, band) {
+        var svg = $("quizSvg");
+        if (!svg || QZ.calA == null) return null;
+        var t = which === "B" ? QZ.calB : QZ.calA;
+        var y = band === "head" ? (QG.gy - 8) : (QG.gy + QG.gh * 0.55);
+        var off = svgUserToOffset(svg, quizTtoX(t), y);
+        if (!off) return null;
         return { x: off.x, y: off.y, t: t, clientX: off.left + off.x, clientY: off.top + off.y };
       },
       hover: function () { return QZ.hover; },
