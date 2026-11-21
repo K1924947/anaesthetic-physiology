@@ -2161,31 +2161,41 @@ var TXT = {
     event: "Compressions stopped; all clear."
   },
   a_shockNoSeq: {
-    full: "The shock was delivered, but the safe sequence is to charge the defibrillator while CPR continues, then stop compressions, check all is clear, and shock. Do not defibrillate during manual chest compressions. Immediately resume CPR after the shock.",
-    guideline: "ALS: do not defibrillate during manual chest compressions; immediately resume CPR after the shock",
+    full: "The shock was delivered, but the safe sequence is to charge the defibrillator first (continuing CPR if it is already in progress), then check all is clear, and shock. Do not defibrillate during manual chest compressions. If CPR is in progress, resume it immediately after an unsynchronised shock.",
+    guideline: "ALS: do not defibrillate during manual chest compressions; immediately resume CPR after a defibrillation shock. Teaching choice: the same charge-then-all-clear sequence is used before a synchronised shock.",
     src: "alsPriority",
     flag: 1,
-    outcome: "Unsynchronised shock delivered.",
-    whyWrong: "Charge the defibrillator while CPR continues, then stop compressions, all clear, and then shock.",
-    nextStep: "Immediately resume CPR for 2 minutes."
+    outcome: "Shock delivered.",
+    whyWrong: "Charge the defibrillator first (continue CPR if it is already in progress), then all clear, and then shock.",
+    nextStep: "If CPR is in progress after an unsynchronised shock, resume it immediately for 2 minutes."
+  },
+  a_clearReady: {
+    full: "All clear. Deliver the shock now.",
+    guideline: "ALS: do not defibrillate during manual chest compressions",
+    src: "als",
+    flag: 0,
+    outcome: "All clear.",
+    whyWrong: "",
+    nextStep: "Deliver the shock.",
+    event: "All clear."
   },
   a_chargePulse: {
-    full: "The patient has a pulse. Unsynchronised defibrillation is for VF or pulseless VT. If the tachycardia is unstable, use synchronised cardioversion.",
-    guideline: "Tachyarrhythmia: synchronised shock if unstable",
+    full: "A shock is not the next step here. Charge the defibrillator when a shock is indicated: unsynchronised defibrillation for VF or pulseless VT, or synchronised cardioversion for an unstable tachycardia.",
+    guideline: "ALS: shockable rhythms; tachyarrhythmia: synchronised shock if unstable",
     src: "harmShockPulse",
     flag: 1,
     outcome: "",
-    whyWrong: "The patient has a pulse, so this charge sequence is not for unsynchronised defibrillation.",
-    nextStep: "If there are life-threatening features, use synchronised cardioversion."
+    whyWrong: "A shock is not the next step, so there is nothing to charge for.",
+    nextStep: "Treat the rhythm in front of you; charge when a synchronised or unsynchronised shock is indicated."
   },
   a_clearPulse: {
-    full: "The patient has a pulse. Stopping for unsynchronised defibrillation is not the path here. If the tachycardia is unstable, use synchronised cardioversion.",
-    guideline: "Tachyarrhythmia: synchronised shock if unstable",
+    full: "A shock is not the next step here, so there is no all-clear for a shock. Use all clear when a synchronised or unsynchronised shock is indicated.",
+    guideline: "ALS: shockable rhythms; tachyarrhythmia: synchronised shock if unstable",
     src: "harmShockPulse",
     flag: 1,
     outcome: "",
-    whyWrong: "The patient has a pulse, so this clear-and-shock sequence is not used.",
-    nextStep: "If there are life-threatening features, use synchronised cardioversion."
+    whyWrong: "A shock is not the next step, so this all-clear is not used.",
+    nextStep: "Treat the rhythm in front of you; check all is clear when a shock is indicated."
   },
   a_shockTwice: {
     full: "After a shock, immediately resume CPR for 2 minutes. Do not stack shocks unless the arrest was witnessed and monitored with the defibrillator already attached.",
@@ -4303,7 +4313,7 @@ function defaultEvent(a, label, resolved) {
     ff: "Two minutes of CPR completed. The rhythm is on the monitor.",
     skip: "Simulated time advanced by 1 minute.",
     charge: "Defibrillator charging; CPR continues if it is already in progress.",
-    clear: "Compressions stopped; all clear.",
+    clear: "All clear.",
     shock: "Unsynchronised shock delivered.",
     sync: "Synchronised shock delivered.",
     pace: "Transcutaneous pacing started.",
@@ -4971,7 +4981,7 @@ var ACTIONS = [
   { id: "observe", label: "Observe and reassess later", g: "Assess and call" },
   { id: "cpr", label: "Start CPR 30:2", g: "CPR and electrical" },
   { id: "ff", label: "CPR for 2 minutes", g: "CPR and electrical" },
-  { id: "charge", label: "Charge defibrillator (continue CPR)", g: "CPR and electrical" },
+  { id: "charge", label: "Charge defibrillator (continue CPR if in progress)", g: "CPR and electrical" },
   { id: "clear", label: "Stop compressions, all clear", g: "CPR and electrical" },
   { id: "shock", label: "Shock (unsynchronised)", g: "CPR and electrical" },
   { id: "sync", label: "Synchronised DC cardioversion", g: "CPR and electrical" },
@@ -6542,15 +6552,41 @@ function listedScenarios() {
 function listIndex(s) { return listedScenarios().indexOf(s); }
 
 /* Generic outcomes when a scenario script does not handle an action */
+function mentionsIndicatedShock(id, label) {
+  if (id === "sync" || id === "shock") return true;
+  return /synchronised (shock|cardioversion)|unsynchronised shock/i.test(String(label || ""));
+}
+function electricalShockIndicated(st) {
+  if (!st) return false;
+  var gen = (st.rhythm && st.rhythm.gen) || "";
+  var shockable = gen === "vf" || gen === "vt" || gen === "torsades";
+  if (!st.pulse && shockable) return true;
+  if (st.arrest && shockable) return true;
+  var req = (st.scn && st.scn.req) || [];
+  var i, due;
+  for (i = 0; i < req.length; i++) {
+    if (mentionsIndicatedShock(req[i][0], req[i][1])) return true;
+  }
+  if (st.scn && typeof st.scn.due === "function") {
+    due = st.scn.due(st) || [];
+    for (i = 0; i < due.length; i++) {
+      if (mentionsIndicatedShock(due[i].id, due[i].name)) return true;
+    }
+  }
+  return false;
+}
 function handleDefibSafety(a, st) {
-  if (st.pulse) return O("bad", a === "charge" ? "a_chargePulse" : "a_clearPulse");
+  var indicated = electricalShockIndicated(st);
   if (a === "charge") {
+    if (!indicated) return O("bad", "a_chargePulse");
     st.charged = true;
     return O("ok", st.cpr ? "a_chargeCpr" : "a_charge");
   }
   if (a === "clear") {
+    if (!indicated) return O("bad", "a_clearPulse");
     st.cleared = true;
-    return O("ok", "a_clear", { cprStop: true });
+    if (st.cpr) return O("ok", "a_clear", { cprStop: true });
+    return O("ok", st.pulse ? "a_clearReady" : "a_clear", { cprStop: true });
   }
   return null;
 }
@@ -6964,6 +7000,10 @@ function actionMatchesDue(a, id) {
 function actionClearsDue(a) {
   return ((SIM && SIM.dueBeforeAction) || []).some(function (id) { return actionMatchesDue(a, id); });
 }
+function preparingDueShock(a, due) {
+  if (a !== "charge" && a !== "clear") return false;
+  return (due || []).some(function (d) { return d && (d.id === "sync" || d.id === "sync2" || d.id === "shock"); });
+}
 function isZeroTimeRequest(a, o) {
   if (!a) return false;
   if (o && o.notAction) return true;
@@ -6980,12 +7020,13 @@ function applyReview(a, o) {
   noteDueSteps(SIM);
   var stillDue = stillDueSteps(due);
   var didDueStep = actionClearsDue(a);
-  if (didDueStep || !stillDue.length) SIM.idleSinceDue = 0;
+  var preparingShock = preparingDueShock(a, stillDue);
+  if (didDueStep || preparingShock || !stillDue.length) SIM.idleSinceDue = 0;
   var review = isCycleCheck(o) || !!o.forceReview || (a === "assess" && o.keys && o.keys[0] === "a_assessAgain");
-  if (!review && stillDue.length && !didDueStep && !isZeroTimeRequest(a, o) && SIM.scn.idleNudge) {
+  if (!review && stillDue.length && !didDueStep && !preparingShock && !isZeroTimeRequest(a, o) && SIM.scn.idleNudge) {
     SIM.idleSinceDue = (SIM.idleSinceDue || 0) + 1;
     if (SIM.idleSinceDue >= 3) { review = true; SIM.idleSinceDue = 0; }
-  } else if (!stillDue.length || didDueStep) {
+  } else if (!stillDue.length || didDueStep || preparingShock) {
     SIM.idleSinceDue = 0;
   }
   if (review) {
@@ -7325,7 +7366,7 @@ function doAction(a) {
   var harm = typeof detectHarm === "function" ? detectHarm(a, SIM) : null;
   var label = (resolved && resolved.label) || (a === "aden" && resolved && resolved.dose ? ("Adenosine " + resolved.dose + " mg rapid IV") : (ACT[a] ? ACT[a].label : (rawAct || a)));
   var o = SIM.scn.step(a, SIM) || genericOutcome(a, SIM);
-  if (a === "shock") o = applyDefibSafetyToShock(o, SIM);
+  if (a === "shock" || a === "sync") o = applyDefibSafetyToShock(o, SIM);
   if (a === "ff" && !SIM.cpr && !SIM.pulse && SIM.phase !== "organised" && o.keys && o.keys.indexOf("a_ffNoCPR") >= 0) {
     o = O("ok", "n_skip", { cprStart: true, cprStop: true, cycleCheck: true });
   }
@@ -7416,6 +7457,15 @@ function doActionFinish(a, o, timeCost, rawAct) {
   o.label = label; o.t = SIM.clock;
   if (typeof applyWrongClickCollapse === "function") applyWrongClickCollapse(a, o);
   if (o.event == null && typeof defaultEvent === "function") o.event = defaultEvent(a, label, SIM && SIM._act);
+  if (a === "assess") {
+    var pulsePhrase = SIM.pulse ? "Pulse present" : "No pulse";
+    var statesPulse = /\bpulse present\b|\bno pulse\b|\bno palpable[^.]*pulse\b/i;
+    o.pulseLine = pulsePhrase + ".";
+    if (o.event && !statesPulse.test(o.event)) o.event = o.event.replace(/\.?$/, ". ") + pulsePhrase + ".";
+    else if (!o.event) o.event = pulsePhrase + ".";
+    label = "Check rhythm and pulse: " + pulsePhrase;
+    o.label = label;
+  }
   if ((a === "shock" || a === "sync") && o.keys && ["a_shockMid", "a_shockTwice", "a_resumeFirst", "p_shock", "s2_shock", "s4_sync", "s6_sync", "s1_roscShock", "a_sync", "p_sync", "h1_shock", "h2_shock", "h4_shockAsys", "h9_sync"].indexOf(o.keys[o.keys.length - 1]) < 0) SIM.nShocks++;
   if (!o.dueAt) o.dueAt = copyDueItems(SIM.dueItemsBeforeAction || []);
   if (a !== "skip") applyReview(a, o);
@@ -7506,6 +7556,7 @@ function renderFeedback(o, changed) {
       });
     }
   }
+  if (o.pulseLine) addFb(esc(o.pulseLine), "scn-fb");
   if (!o.regLine && o.nudge && o.nudgeText && o.nudge !== "cap") addFb(esc(o.nudgeText), "scn-nudge");
   $("scnFeedback").innerHTML = html;
 }
@@ -8003,12 +8054,12 @@ var IDEAL_PATHS = {
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "First shock", "Give a shock as early as possible for VF or pulseless VT.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Use single shocks, each followed by a 2-minute cycle of CPR.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Second shock", "If VF or pulseless VT persists, shock again and resume CPR.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Third shock", "A third shock is followed by adrenaline and amiodarone during CPR.", SRC_ALS),
@@ -8042,7 +8093,11 @@ var IDEAL_PATHS = {
   s5: [
     IP("assess", "Check rhythm and pulse", "Confirm an unstable broad complex tachycardia with life-threatening features.", SRC_TACHY),
     IP("expert", "Careful sedation or anaesthesia", "A conscious patient needs careful sedation or anaesthesia before synchronised cardioversion.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "First synchronised shock", "Electrical cardioversion is the preferred treatment in the unstable patient.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "Further synchronised shock if needed", "Up to three synchronised shocks may be used if the rhythm persists.", SRC_TACHY)
   ],
   s6: [
@@ -8074,24 +8129,24 @@ var IDEAL_PATHS = {
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "First shock", "Give a shock as early as possible for VF or pulseless VT.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Use single shocks, each followed by a 2-minute cycle of CPR.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Second shock", "If VF persists, shock again and resume CPR.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Third shock", "After a total of three shocks, give adrenaline and amiodarone 300 mg.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
     IP("adr", "Adrenaline 1 mg after the third shock", "Adrenaline's alpha-1 vasoconstriction raises aortic diastolic pressure during CPR, and so coronary and cerebral perfusion pressure.", SRC_ALS),
     IP("amio300", "Amiodarone 300 mg after the third shock", "Amiodarone mainly blocks K+ channels, prolonging the action potential and refractory period, which makes re-entry harder to sustain.", SRC_BNF_AMIO),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue CPR and then reassess.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Fourth shock", "If VF persists, continue the shockable algorithm.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Fifth shock", "If VF persists, continue the shockable algorithm. Repeat adrenaline every 3 to 5 minutes.", SRC_ALS),
@@ -8122,12 +8177,18 @@ var IDEAL_PATHS = {
   h6: [
     IP("assess", "Check rhythm and pulse", "Confirm unstable tachycardia with life-threatening features.", SRC_TACHY),
     IP("expert", "Careful sedation or anaesthesia", "A conscious patient needs careful sedation or anaesthesia before synchronised cardioversion.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "First synchronised shock", "Electrical cardioversion is the preferred treatment in unstable atrial fibrillation.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "Further synchronised shock if needed", "Up to three synchronised shocks may be used if the rhythm persists.", SRC_TACHY)
   ],
   h7: [
     IP("assess", "Check rhythm and pulse", "Confirm a stable regular broad complex tachycardia, with no life-threatening features.", SRC_TACHY),
     IP("expert", "Careful sedation or anaesthesia", "A conscious patient needs careful sedation or anaesthesia before synchronised cardioversion.", SRC_ALS, { orderFree: true }),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "Synchronised cardioversion", "The Adult tachyarrhythmia algorithm (V3 March 2026) lists synchronised shock(s) first for stable broad and regular tachycardia treated as VT. Drug treatments are only if sedation or anaesthesia risk is too high.", SRC_TACHY)
   ],
   h8: [
@@ -8148,6 +8209,8 @@ var IDEAL_PATHS = {
   h10: [
     IP("assess", "Check rhythm and pulse", "The patient has just had ROSC; confirm the new unstable rhythm.", SRC_TACHY),
     IP("expert", "Careful sedation or anaesthesia if needed", "A conscious or rousable patient may need sedation or anaesthesia before cardioversion.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "Synchronised shock", "Electrical cardioversion is the preferred treatment for unstable VT immediately after ROSC.", SRC_ALS)
   ],
   h11: [
@@ -8166,12 +8229,12 @@ var IDEAL_PATHS = {
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "First shock", "Give a shock as early as possible for VF or pulseless VT.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Use single shocks, each followed by a 2-minute cycle of CPR.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Second shock", "If VF or pulseless VT persists, shock again and resume CPR.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Third shock", "A third shock is followed by adrenaline and amiodarone during CPR.", SRC_ALS),
@@ -8179,12 +8242,12 @@ var IDEAL_PATHS = {
     IP("adr", "Adrenaline 1 mg after the third shock", "Give adrenaline 1 mg after the third shock in a shockable arrest, and repeat every 3 to 5 minutes.", SRC_BNF_ADR),
     IP("amio300", "Amiodarone 300 mg after the third shock", "Give amiodarone 300 mg IV after a total of three shocks. Lidocaine 100 mg IV may be used as an alternative.", SRC_ALS, ["lido100"]),
     IP("padsAP", "Change pads to the antero-posterior position", "After a failed third shock, prepare to place a fresh set of pads in the anterior-posterior position at the time of the following rhythm check.", SRC_ALS, { orderFree: true }),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Fourth shock", "If VF persists, shock again and resume CPR.", SRC_ALS),
     IP("cpr", "Resume CPR after the shock", "Restart compressions immediately after each shock.", SRC_ALS),
-    IP("charge", "Charge the defibrillator (continue CPR)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge while compressions continue, so the pause for the shock is as short as possible.", SRC_ALS),
     IP("ff", "CPR for 2 minutes", "Continue 2-minute cycles between shocks.", SRC_ALS),
     IP("clear", "Stop compressions, all clear", "Do not defibrillate during manual chest compressions. Stop, check all is clear, then shock, and immediately resume CPR.", SRC_ALS),
     IP("shock", "Fifth shock", "A further amiodarone 150 mg, or lidocaine 50 mg if lidocaine was used, is given after five shocks.", SRC_ALS),
@@ -8254,10 +8317,18 @@ var IDEAL_PATHS = {
   h20: [
     IP("assess", "Check rhythm and pulse", "Confirm unstable tachycardia with life-threatening features.", SRC_TACHY),
     IP("expert", "Careful sedation or anaesthesia", "A conscious patient needs careful sedation or anaesthesia before synchronised cardioversion.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "First synchronised shock", "Electrical cardioversion is the preferred treatment in unstable VT.", SRC_ALS),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "Second synchronised shock", "Up to three synchronised shocks may be used if the rhythm persists.", SRC_TACHY),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "Third synchronised shock", "If three attempts have not worked, give an antiarrhythmic load and re-attempt cardioversion.", SRC_TACHY),
     IP("amio1020", "Amiodarone 300 mg IV over 10 to 20 min, or procainamide", "If cardioversion fails and the patient remains unstable, give procainamide 10–15 mg kg-1 (maximum 1 g) over 20 min or amiodarone 300 mg intravenously over 10–20 min according to local availability and protocols, and re-attempt electrical cardioversion.", SRC_ALS, ["procain"]),
+    IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
+    IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "Further synchronised shock after the load", "Re-attempt electrical cardioversion after the antiarrhythmic load.", SRC_ALS)
   ],
   h21: [
@@ -8342,18 +8413,18 @@ var MODEL_ACTS = {
   s2: ["assess","cpr","adr","ask:gas","cause:hypovolaemia","fluid","ff","assess"],
   s3: ["assess","expert","ask:ecg12","nibp","atro","pace"],
   s4: ["assess","ask:ecg12","nibp","vagal","aden:6","aden:12"],
-  s5: ["assess","ask:ecg12","nibp","expert","sync","sync"],
+  s5: ["assess","ask:ecg12","nibp","expert","charge","clear","sync","charge","clear","sync"],
   s6: ["assess","ask:ecg12","ask:gas","mg","cause:hypokalaemia"],
   h1: ["assess","cpr","adr","ask:gas","cause:hyperkalaemia","calcium:arrest","ff","assess"],
   h2: ["assess","cpr","adr","ask:examine","cause:tension","decompress","ff","assess"],
   h3: ["assess","charge","clear","shock","cpr","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","adr","amio300","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","ff","assess"],
   h4: ["assess","charge","clear","shock","cpr","ff","assess","cpr","adr","ff","assess"],
   h5: ["assess","ask:ecg12","nibp","vagal","aden:6","aden:12","aden:18"],
-  h6: ["assess","ask:ecg12","nibp","expert","sync","sync"],
-  h7: ["assess","ask:ecg12","nibp","expert","sync"],
+  h6: ["assess","ask:ecg12","nibp","expert","charge","clear","sync","charge","clear","sync"],
+  h7: ["assess","ask:ecg12","nibp","expert","charge","clear","sync"],
   h8: ["assess","expert","ask:ecg12","nibp","pace"],
   h9: ["assess","charge","clear","shock","cpr","mg","ff","assess"],
-  h10: ["assess","ask:ecg12","nibp","expert","sync"],
+  h10: ["assess","ask:ecg12","nibp","expert","charge","clear","sync"],
   h11: ["assess","ask:ecg12","nibp","expert","atro"],
   h12: ["assess","ask:ecg12","nibp","expert","atro"],
   h13: ["assess","charge","clear","shock","cpr","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","adr","amio300","padsAP","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","amio150","ff","assess"],
@@ -8363,7 +8434,7 @@ var MODEL_ACTS = {
   h17: ["assess","cpr","adr","ask:airway","cause:hypoxia","oxygen","ff","assess"],
   h18: ["assess","cpr","adr","ask:gas","cause:hypokalaemia","kcl","ff","assess"],
   h19: ["assess","ask:ecg12","nibp","expert","procain"],
-  h20: ["assess","ask:ecg12","nibp","expert","sync","sync","sync","amio1020","sync"],
+  h20: ["assess","ask:ecg12","nibp","expert","charge","clear","sync","charge","clear","sync","charge","clear","sync","amio1020","charge","clear","sync"],
   h21: ["assess","ask:ecg12","nibp","expert","procain"],
   h22: ["assess","ask:ecg12","nibp","vagal","aden:6","aden:12"]
 };

@@ -209,10 +209,116 @@ else fail("a shock during CPR ends the case as a harm, Show solution on or off",
 if (seq.pea.v === "bad" && !seq.peaDone) pass("unsynchronised shock in PEA remains Not quite and does not end the case", seq.pea);
 else fail("unsynchronised shock in PEA remains Not quite and does not end the case", { pea: seq.pea, peaDone: seq.peaDone });
 
-const hasCharge = seq.labels.some((b) => b.id === "charge" && /Charge defibrillator/i.test(b.label));
+const hasCharge = seq.labels.some((b) => b.id === "charge" && /Charge defibrillator \(continue CPR if in progress\)/i.test(b.label));
 const hasClear = seq.labels.some((b) => b.id === "clear" && /Stop compressions, all clear/i.test(b.label));
 if (hasCharge && hasClear) pass("charge and clear actions are in the CPR and electrical group", seq.labels);
 else fail("charge and clear actions are in the CPR and electrical group", seq.labels);
+
+const pulseCharge = await page.evaluate(() => {
+  const scn = window.__scn;
+  const last = (act) => (scn.sim.log || []).filter((x) => x.o && x.act === act).pop();
+  const reasonOf = (act) => {
+    const row = last(act);
+    const keys = (row && row.o && row.o.keys) || [];
+    return {
+      v: row && row.o && row.o.v,
+      keys,
+      label: row && row.o && row.o.label,
+      event: row && row.o && row.o.event,
+      text: row && (row.text || ""),
+      pulseLine: row && row.o && row.o.pulseLine
+    };
+  };
+  const fb = () => (document.getElementById("scnFeedback") || {}).innerText || "";
+
+  scn.setHints(false);
+  scn.start("s5");
+  scn.act("assess");
+  const s5assess = Object.assign(reasonOf("assess"), { fb: fb() });
+  scn.act("charge");
+  const s5charge = Object.assign(reasonOf("charge"), { fb: fb() });
+
+  scn.start("s5");
+  scn.act("assess");
+  scn.act("sync");
+  const s5syncNoCharge = reasonOf("sync");
+
+  scn.start("s5");
+  scn.act("assess");
+  scn.act("expert");
+  scn.act("charge");
+  scn.act("clear");
+  scn.act("sync");
+  const s5syncOk = reasonOf("sync");
+
+  scn.start("s5");
+  scn.act("assess");
+  scn.act("shock");
+  const unsyncRow = last("shock");
+  const s5unsync = {
+    v: unsyncRow && unsyncRow.o && unsyncRow.o.v,
+    done: !!scn.sim.done,
+    completed: !!scn.sim.completed,
+    endReason: scn.sim.endReason,
+    harmId: unsyncRow && unsyncRow.o && unsyncRow.o.harm && unsyncRow.o.harm.id
+  };
+
+  scn.start("s4");
+  scn.act("assess");
+  const s4assess = Object.assign(reasonOf("assess"), { fb: fb() });
+  scn.act("charge");
+  const s4charge = Object.assign(reasonOf("charge"), { fb: fb() });
+
+  scn.start("s3");
+  scn.act("assess");
+  const s3assess = Object.assign(reasonOf("assess"), { fb: fb() });
+
+  scn.start("s2");
+  scn.act("assess");
+  const s2assess = Object.assign(reasonOf("assess"), { fb: fb() });
+
+  const chargeLabel = Array.from(document.querySelectorAll("[data-a='charge']")).map((b) => b.textContent.trim())[0] || "";
+
+  return { s5assess, s5charge, s5syncNoCharge, s5syncOk, s5unsync, s4assess, s4charge, s3assess, s2assess, chargeLabel };
+});
+
+function mentionsPulse(row, expect) {
+  const blob = [row && row.label, row && row.event, row && row.fb, row && row.pulseLine, row && row.text].join(" ");
+  return new RegExp(expect, "i").test(blob);
+}
+
+if (mentionsPulse(pulseCharge.s5assess, "Pulse present") && mentionsPulse(pulseCharge.s4assess, "Pulse present") && mentionsPulse(pulseCharge.s3assess, "Pulse present") && mentionsPulse(pulseCharge.s2assess, "No pulse")) {
+  pass("Check rhythm and pulse states Pulse present or No pulse", {
+    s5: pulseCharge.s5assess.label,
+    s2: pulseCharge.s2assess.label,
+    s3: pulseCharge.s3assess.label,
+    s4: pulseCharge.s4assess.label
+  });
+} else {
+  fail("Check rhythm and pulse states Pulse present or No pulse", { s5: pulseCharge.s5assess, s2: pulseCharge.s2assess, s3: pulseCharge.s3assess, s4: pulseCharge.s4assess });
+}
+
+const chargeOk = pulseCharge.s5charge.v === "ok" && (pulseCharge.s5charge.keys || []).indexOf("a_chargePulse") === -1 && !/not quite|not for unsynchronised/i.test(pulseCharge.s5charge.fb || "");
+if (chargeOk) pass("charging before synchronised cardioversion in pulsed VT is Correct", { keys: pulseCharge.s5charge.keys, fb: (pulseCharge.s5charge.fb || "").slice(0, 240) });
+else fail("charging before synchronised cardioversion in pulsed VT is Correct", pulseCharge.s5charge);
+
+const noSeq = pulseCharge.s5syncNoCharge.v === "part" && (pulseCharge.s5syncNoCharge.keys || []).indexOf("a_shockNoSeq") !== -1;
+if (noSeq) pass("a synchronised shock without charging is Partly right, same pattern as unsynchronised", pulseCharge.s5syncNoCharge);
+else fail("a synchronised shock without charging is Partly right, same pattern as unsynchronised", pulseCharge.s5syncNoCharge);
+
+if (pulseCharge.s5syncOk.v === "ok") pass("charge, all clear, then synchronised shock scores Correct", pulseCharge.s5syncOk);
+else fail("charge, all clear, then synchronised shock scores Correct", pulseCharge.s5syncOk);
+
+const unsyncEnds = pulseCharge.s5unsync.done && !pulseCharge.s5unsync.completed && pulseCharge.s5unsync.endReason === "harm" && pulseCharge.s5unsync.harmId === "harm_shockPulse";
+if (unsyncEnds) pass("an unsynchronised shock with a pulse still ends the case", pulseCharge.s5unsync);
+else fail("an unsynchronised shock with a pulse still ends the case", pulseCharge.s5unsync);
+
+const s4not = pulseCharge.s4charge.v === "bad" && (pulseCharge.s4charge.keys || []).indexOf("a_chargePulse") !== -1 && !/not for unsynchronised/i.test(pulseCharge.s4charge.fb || "");
+if (s4not) pass("charging is not Correct when a shock is not the next step", { keys: pulseCharge.s4charge.keys, fb: (pulseCharge.s4charge.fb || "").slice(0, 240) });
+else fail("charging is not Correct when a shock is not the next step", pulseCharge.s4charge);
+
+if (pulseCharge.chargeLabel === "Charge defibrillator (continue CPR if in progress)") pass("charge button says continue CPR if in progress", pulseCharge.chargeLabel);
+else fail("charge button says continue CPR if in progress", pulseCharge.chargeLabel);
 
 await page.close();
 await browser.close();

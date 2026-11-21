@@ -286,6 +286,8 @@ const h7 = await page.evaluate(() => {
   const scene = scn.sim.scn.scene;
   scn.act("assess");
   scn.act("expert");
+  scn.act("charge");
+  scn.act("clear");
   scn.act("sync");
   const syncPath = { done: !!scn.sim.done, completed: !!scn.sim.completed, endReason: scn.sim.endReason, score: scn.score() };
   const last = (scn.sim.log || []).filter((x) => x.act === "sync").pop();
@@ -325,7 +327,7 @@ const h7ok = h7.sceneFlagsRisk && h7.syncV === "ok" && h7.syncPath.completed
 if (h7ok) pass("h7 sync with sedation is Correct; amiodarone is Partly right; procainamide is not a top-level button", { model: h7.model, amioV: h7.amioPath.v });
 else fail("h7 sync with sedation is Correct; amiodarone is Partly right; procainamide is not a top-level button", h7);
 
-// model paths still complete (h7 now expert+sync)
+// model paths still complete (h7 now expert, charge, clear, sync)
 const models = await page.evaluate(() => {
   const scn = window.__scn;
   const paths = window.__scnIdeal.modelActs;
