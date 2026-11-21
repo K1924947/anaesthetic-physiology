@@ -7095,20 +7095,32 @@ function stopChallenge(keepLast) {
   challenge.on = false;
   challenge.justEnded = true;
 }
+function isChallengeFail(reason) {
+  return reason === "harm" || reason === "handsOff" || reason === "missedShock";
+}
+function isChallengeSuccess(completed, reason) {
+  return !!completed && !isChallengeFail(reason) && reason !== "missed" && reason !== "cap" && reason !== "early";
+}
 function challengeLine() {
   var best = challengeBest();
-  if (challenge.on) return "Challenge: " + challenge.score + " in a row · Best " + best;
-  if (challenge.justEnded) return "Challenge ended: " + (challenge.lastScore || 0) + " in a row · Best " + best;
+  var n = challenge.on ? challenge.score : (challenge.lastScore || 0);
+  if (challenge.on) return "Challenge: " + n + " completed, best " + best;
+  if (challenge.justEnded) return "Challenge ended: " + n + " completed, best " + best;
   return "";
 }
-function syncChallengeUi() {
+function syncChallengeUi(opts) {
+  opts = opts || {};
   var el = $("scnChallengeStatus");
-  var title = $("scnTitle");
-  if (!el && title && title.parentNode) {
-    el = document.createElement("p");
-    el.id = "scnChallengeStatus";
-    el.className = "scn-challenge-status";
-    title.parentNode.insertBefore(el, title.nextSibling);
+  if (!el) {
+    var row = $("scnClock") && $("scnClock").parentNode;
+    if (row) {
+      el = document.createElement("p");
+      el.id = "scnChallengeStatus";
+      el.className = "scn-challenge-status";
+      el.setAttribute("aria-live", "polite");
+      var skip = $("scnSkipHost");
+      row.insertBefore(el, skip || null);
+    }
   }
   if (!el) return;
   var line = challengeLine();
@@ -7118,6 +7130,14 @@ function syncChallengeUi() {
   } else {
     el.hidden = true;
     el.textContent = "";
+  }
+  var bar = $("scnChallengeNextBar");
+  if (bar) {
+    var showNext = !!(challenge.on && typeof SIM !== "undefined" && SIM && SIM.done && isChallengeSuccess(SIM.completed, SIM.endReason));
+    bar.hidden = !showNext;
+  }
+  if (opts.reveal && el && !el.hidden) {
+    try { el.scrollIntoView({ block: "nearest", behavior: (typeof prefersReduced === "function" && prefersReduced()) ? "auto" : "smooth" }); } catch (e) {}
   }
 }
 function randomScenario() {
@@ -7508,8 +7528,7 @@ function finishScenario(completed, reason) {
   logEvent(null, endLine);
   var challengeSuccess = false;
   if (challenge.on && SIM.challenge) {
-    var success = completed && (!SIM.endReason || SIM.endReason === "complete");
-    if (success) {
+    if (isChallengeSuccess(SIM.completed, SIM.endReason)) {
       challenge.score += 1;
       if (challenge.score > challengeBest()) saveChallengeBest(challenge.score);
       challengeSuccess = true;
@@ -7529,7 +7548,7 @@ function finishScenario(completed, reason) {
     $("scnDebriefBtn").addEventListener("click", showDebrief);
   }
   syncScnBanner();
-  if (typeof syncChallengeUi === "function") syncChallengeUi();
+  if (typeof syncChallengeUi === "function") syncChallengeUi({ reveal: true });
   if (typeof syncSourceBox === "function") syncSourceBox();
 }
 
@@ -7825,7 +7844,7 @@ function showDebrief() {
   if (SIM.challenge || challenge.justEnded) {
     html += "<p class='scn-challenge-result' id='scnChallengeResult'>" + esc(challengeLine()) + "</p>";
   }
-  var nextCh = (challenge.on && SIM.completed) ? "<button type='button' id='scnChallengeNext'>Next challenge case</button>" : "";
+  var nextCh = (challenge.on && isChallengeSuccess(SIM.completed, SIM.endReason)) ? "<button type='button' id='scnChallengeNext'>Next challenge case</button>" : "";
   html += "<div class='predict-actions'>" + nextCh + (SIM.random && !challenge.on ? "<button type='button' id='scnAnother'>Another random scenario</button>" : "") + "<button type='button' id='scnRetry'" + (SIM.random || challenge.on || nextCh ? " class='secondary'" : "") + ">Try this scenario again</button><button type='button' class='secondary' id='scnOther'>Choose another scenario</button></div>";
   var decisionList = "<ol class='debrief-list' id='scnDecisionList'>" + acts.map(function (l, idx) {
     var k = l.o.keys || [];
@@ -7878,7 +7897,7 @@ function syncScnBanner() {
   if (on && SIM) {
     var n = listIndex(SIM.scn);
     st.hidden = false;
-    st.textContent = SIM.done ? "Scenario finished" : challenge.on ? ("Challenge: " + challenge.score + " in a row") : SIM.random ? "Random case running" : n >= 0 ? "Scenario " + (n + 1) + " running" : "Case running";
+    st.textContent = (challenge.on || challenge.justEnded) ? challengeLine() : SIM.done ? "Scenario finished" : SIM.random ? "Random case running" : n >= 0 ? "Scenario " + (n + 1) + " running" : "Case running";
   }
   else { st.hidden = true; st.textContent = ""; }
 }
@@ -7909,6 +7928,7 @@ function exitScenarioMode(silent) {
   syncScnBanner();
 }
 if ($("scnToggle")) $("scnToggle").addEventListener("click", function () { if (mode === "scenario") exitScenarioMode(); else enterScenarioMode(); });
+if ($("scnChallengeNextBar")) $("scnChallengeNextBar").addEventListener("click", randomScenario);
 if ($("scnEnd")) $("scnEnd").addEventListener("click", function () { if (SIM && !SIM.done) finishScenario(false); });
 if ($("scnRestart")) $("scnRestart").addEventListener("click", function () { if (SIM) startScenario(SIM.scn.id, SIM.random); });
 if ($("scnBack")) $("scnBack").addEventListener("click", showChooser);

@@ -201,33 +201,98 @@ for (const c of causeCases) {
 if (causeOk) pass("reversible-cause feedback matches the chosen cause", causeExtra);
 else fail("reversible-cause feedback matches the chosen cause", causeExtra);
 
+function playModelPath(id) {
+  return page.evaluate((caseId) => {
+    const scn = window.__scn;
+    const path = (window.__scnIdeal && window.__scnIdeal.modelActs && window.__scnIdeal.modelActs[caseId]) || [];
+    scn.setHints(false);
+    scn.useFakeTimers(true);
+    scn.start(caseId, true);
+    for (const a of path) {
+      if (scn.sim.done) break;
+      scn.act(a);
+      if (a === "nibp" || String(a).indexOf("ask:") === 0) scn.advanceTimers(12000);
+    }
+    const st = document.getElementById("scnChallengeStatus");
+    const bar = document.getElementById("scnChallengeNextBar");
+    const r = st ? st.getBoundingClientRect() : null;
+    return {
+      done: !!scn.sim.done,
+      completed: !!scn.sim.completed,
+      endReason: scn.sim.endReason,
+      ch: scn.challenge(),
+      status: st ? (st.hidden ? "" : (st.textContent || "").trim()) : "",
+      statusInView: !!(r && r.width > 0 && r.height > 0 && r.top < window.innerHeight && r.bottom > 0),
+      nextBar: !!(bar && !bar.hidden),
+      nextFeedback: !!document.getElementById("scnChallengeNext")
+    };
+  }, id);
+}
+
 const challenge = await page.evaluate(() => {
   localStorage.removeItem("physioResusChallengeBest");
   const chooserHas = !!document.getElementById("scnChallenge");
   window.__scn.startChallenge();
   const first = window.__scn.challenge();
+  const during = ((document.getElementById("scnChallengeStatus") || {}).textContent || "").trim();
   const title = (document.getElementById("scnTitle") && document.getElementById("scnTitle").textContent) || "";
   window.__scn.finish(true, "complete");
   const afterOk = window.__scn.challenge();
-  const nextBtn = !!document.getElementById("scnChallengeNext");
+  const statusAfter = ((document.getElementById("scnChallengeStatus") || {}).textContent || "").trim();
+  const nextBtn = !!document.getElementById("scnChallengeNext") || !!(document.getElementById("scnChallengeNextBar") && !document.getElementById("scnChallengeNextBar").hidden);
   window.__scn.random();
   window.__scn.finish(false, "harm");
   const afterFail = window.__scn.challenge();
   const result = (document.getElementById("scnChallengeResult") && document.getElementById("scnChallengeResult").textContent) ||
     (document.getElementById("scnChallengeStatus") && document.getElementById("scnChallengeStatus").textContent) || "";
   const stored = localStorage.getItem("physioResusChallengeBest");
-  return { chooserHas, first, title, afterOk, nextBtn, afterFail, result, stored };
+  return { chooserHas, first, during, title, afterOk, statusAfter, nextBtn, afterFail, result, stored };
 });
 const chOk = challenge.chooserHas &&
   challenge.first && challenge.first.on && challenge.first.score === 0 &&
+  /Challenge: 0 completed, best 0/.test(challenge.during) &&
   /Challenge case/i.test(challenge.title) &&
   challenge.afterOk && challenge.afterOk.on && challenge.afterOk.score === 1 && challenge.afterOk.best === 1 &&
+  /Challenge: 1 completed, best 1/.test(challenge.statusAfter) &&
   challenge.nextBtn &&
   challenge.afterFail && challenge.afterFail.justEnded && !challenge.afterFail.on &&
   challenge.afterFail.lastScore === 1 && challenge.afterFail.best === 1 &&
+  /Challenge ended: 1 completed, best 1/.test(challenge.result) &&
   challenge.stored === "1";
 if (chOk) pass("Challenge mode counts a streak, ends on a fail, and stores the best score", challenge);
 else fail("Challenge mode counts a streak, ends on a fail, and stores the best score", challenge);
+
+await page.evaluate(() => localStorage.removeItem("physioResusChallengeBest"));
+await page.evaluate(() => window.__scn.startChallenge());
+const twoA = await playModelPath("s4");
+const twoB = await playModelPath("h7");
+// h7 model path is perfect (sync). Also play a partly-right finish on a fresh challenge case.
+const part = await page.evaluate(() => {
+  const scn = window.__scn;
+  scn.setHints(false);
+  scn.useFakeTimers(true);
+  scn.start("h7", true);
+  scn.act("assess");
+  scn.act("ask:ecg12"); scn.advanceTimers(12000);
+  scn.act("nibp"); scn.advanceTimers(12000);
+  scn.act("amioInf");
+  const st = document.getElementById("scnChallengeStatus");
+  const bar = document.getElementById("scnChallengeNextBar");
+  const last = (scn.sim.log || []).filter((x) => x.o && x.act === "amioInf").pop();
+  return {
+    done: !!scn.sim.done,
+    completed: !!scn.sim.completed,
+    v: last && last.o && last.o.v,
+    ch: scn.challenge(),
+    status: st ? (st.hidden ? "" : (st.textContent || "").trim()) : "",
+    nextBar: !!(bar && !bar.hidden)
+  };
+});
+const twoOk = twoA.completed && twoA.ch.score === 1 && /Challenge: 1 completed, best 1/.test(twoA.status) && twoA.statusInView && twoA.nextBar
+  && twoB.completed && twoB.ch.score === 2 && /Challenge: 2 completed, best 2/.test(twoB.status) && twoB.statusInView && twoB.nextBar
+  && part.completed && part.v === "part" && part.ch.score === 3 && /Challenge: 3 completed, best 3/.test(part.status) && part.nextBar;
+if (twoOk) pass("Challenge counter increments across two model-path cases and a partly-right finish", { twoA, twoB, part });
+else fail("Challenge counter increments across two model-path cases and a partly-right finish", { twoA, twoB, part });
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);

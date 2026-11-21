@@ -471,7 +471,10 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .scn-challenge { display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left; min-height: 64px; padding: 14px 16px; border: 2px solid var(--text); border-radius: 14px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; }
 .scn-challenge:hover { box-shadow: var(--shadow); }
 .scn-challenge:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
-.scn-challenge-status, .scn-challenge-result { margin: 8px 0 0; font-family: var(--font-sans); font-size: 15px; font-weight: 700; color: var(--text); }
+.scn-challenge-status, .scn-challenge-result { margin: 0; font-family: var(--font-sans); font-size: 15px; font-weight: 700; color: var(--text); }
+.scn-challenge-status[hidden], .scn-challenge-next[hidden] { display: none !important; }
+.scn-clock-row .scn-challenge-status { flex: 1 1 auto; min-width: 12em; }
+.scn-challenge-result { margin: 8px 0 0; }
 
 /* How scenarios work: card title (the summary) sits fully inside the padded card. */
 .scn-guide {
@@ -998,7 +1001,7 @@ body.scn-popup-open { overflow: hidden; }
                 <button type="button" class="tool-btn" id="scnBack">All scenarios</button>
               </div>
             </div>
-            <div class="scn-clock-row"><p class="scn-clock" id="scnClock" aria-label="Simulated time, CPR cycle and shocks">Time 00:00</p><span class="scn-shot-clock" id="scnShotClock" hidden aria-live="polite"></span><span id="scnSkipHost"></span></div>
+            <div class="scn-clock-row"><p class="scn-clock" id="scnClock" aria-label="Simulated time, CPR cycle and shocks">Time 00:00</p><span class="scn-shot-clock" id="scnShotClock" hidden aria-live="polite"></span><p class="scn-challenge-status" id="scnChallengeStatus" hidden aria-live="polite"></p><button type="button" class="tool-btn scn-challenge-next" id="scnChallengeNextBar" hidden>Next challenge case</button><span id="scnSkipHost"></span></div>
             <p class="stem" id="scnScene"></p>
             <div class="scn-monitor" id="scnMonitor"></div>
             <p class="strip-meta">Monitor lead II, sweeping in real time; 1 s per large block of 5. The rhythm is not named until you assess it.</p>
@@ -1087,6 +1090,6 @@ body.scn-popup-open { overflow: hidden; }
     </section>
   </main>
 </div>
-<script src="assets/ecg-app.js?v=20261121c"></script>
+<script src="assets/ecg-app.js?v=20261121d"></script>
 </body>
 </html>
