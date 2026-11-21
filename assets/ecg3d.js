@@ -3083,6 +3083,72 @@ function frame(now) {
 requestAnimationFrame(frame);
 if (!REDUCED) setPlaying(true);
 
+const fsRoot = $('tool');
+const fsBtn = $('fsBtn');
+const fsExitBtn = $('fsExitBtn');
+function nativeFsEl() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+function isFullscreen() {
+  return nativeFsEl() === fsRoot || document.body.classList.contains('ecg3d-fs-fallback');
+}
+function syncFsUi() {
+  const on = isFullscreen();
+  document.body.classList.toggle('ecg3d-fs', on);
+  if (fsBtn) fsBtn.setAttribute('aria-pressed', String(on));
+  if (fsExitBtn) fsExitBtn.hidden = !on;
+  if (renderer && typeof resize === 'function') {
+    try { resize(); } catch (e) {}
+  }
+  if (typeof updateLabels === 'function' && renderer) updateLabels();
+}
+function enterFullscreen() {
+  if (!fsRoot || isFullscreen()) return Promise.resolve(true);
+  const startNative = fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen;
+  if (startNative) {
+    return Promise.resolve(startNative.call(fsRoot)).then(() => {
+      syncFsUi();
+      return true;
+    }).catch(() => {
+      document.body.classList.add('ecg3d-fs-fallback');
+      syncFsUi();
+      return true;
+    });
+  }
+  document.body.classList.add('ecg3d-fs-fallback');
+  syncFsUi();
+  return Promise.resolve(true);
+}
+function exitFullscreen() {
+  const el = nativeFsEl();
+  const stopNative = document.exitFullscreen || document.webkitExitFullscreen;
+  if (el && stopNative) {
+    return Promise.resolve(stopNative.call(document)).then(() => {
+      document.body.classList.remove('ecg3d-fs-fallback');
+      syncFsUi();
+      return false;
+    }).catch(() => {
+      document.body.classList.remove('ecg3d-fs-fallback');
+      syncFsUi();
+      return false;
+    });
+  }
+  document.body.classList.remove('ecg3d-fs-fallback');
+  syncFsUi();
+  return Promise.resolve(false);
+}
+if (fsBtn) fsBtn.addEventListener('click', () => { enterFullscreen(); });
+if (fsExitBtn) fsExitBtn.addEventListener('click', () => { exitFullscreen(); });
+document.addEventListener('fullscreenchange', syncFsUi);
+document.addEventListener('webkitfullscreenchange', syncFsUi);
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape') return;
+  if (document.body.classList.contains('ecg3d-fs-fallback')) {
+    ev.preventDefault();
+    exitFullscreen();
+  }
+});
+
 /* Hooks for automated checks, screenshots and later pathology modes */
 window.ecg3d = {
   setT: t => { setPlaying(false); setT(t, true); }, select: id => select(id, true), view: v => goView(v, true), play: setPlaying, cut: setCut, step: goStep, setGuided, setAnatomyLabels, guided: () => !!ui.guided,
@@ -3127,6 +3193,7 @@ window.ecg3d = {
   },
   trace: id => Array.from(TRACE[id]), timings: () => ({ tAV: MODEL.tAV, tHis: MODEL.tHis, seg: MODEL.seg, vMin: MODEL.vMin, vMax: MODEL.vMax, recMin: MODEL.recMin, recMax: MODEL.recMax }),
   now: () => ({ t: state.t, beat: state.beat, speed: state.speed, playing: state.playing, pageTime: pageTime(), simTime: state.simTime }),
+  isFullscreen, enterFullscreen, exitFullscreen,
   setSpeed: v => { state.speed = +v; if (speedSel) speedSel.value = String(state.speed); syncClock(); return state.speed; },
   pageTime, simTime: () => state.simTime,
   setSimTime: (ms, announce) => { setPlaying(false); setSimTime(ms, announce !== false); return state.simTime; },

@@ -303,3 +303,164 @@
   background: #fff;
   padding: 3px 7px;
 }
+
+/* Full screen: model, one lead close-up and a lead chooser only */
+.page-ecg3d-revamp #tool:fullscreen,
+.page-ecg3d-revamp #tool:-webkit-full-screen,
+body.ecg3d-fs-fallback #tool {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--surface, #fff);
+  color: var(--text, #111);
+  overflow: hidden;
+  padding: 8px 12px;
+}
+body.ecg3d-fs-fallback #tool {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+body.ecg3d-fs-fallback {
+  overflow: hidden;
+}
+.page-ecg3d-revamp #tool:fullscreen .explain-card,
+.page-ecg3d-revamp #tool:-webkit-full-screen .explain-card,
+body.ecg3d-fs-fallback #tool .explain-card,
+.page-ecg3d-revamp #tool:fullscreen .timeline,
+.page-ecg3d-revamp #tool:-webkit-full-screen .timeline,
+body.ecg3d-fs-fallback #tool .timeline,
+.page-ecg3d-revamp #tool:fullscreen .steps,
+.page-ecg3d-revamp #tool:-webkit-full-screen .steps,
+body.ecg3d-fs-fallback #tool .steps,
+.page-ecg3d-revamp #tool:fullscreen .ecg12-frame,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-frame,
+body.ecg3d-fs-fallback #tool .ecg12-frame,
+.page-ecg3d-revamp #tool:fullscreen .ecg12-about,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-about,
+body.ecg3d-fs-fallback #tool .ecg12-about,
+.page-ecg3d-revamp #tool:fullscreen .ecg12-caption,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-caption,
+body.ecg3d-fs-fallback #tool .ecg12-caption,
+.page-ecg3d-revamp #tool:fullscreen .ecg12-hint,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-hint,
+body.ecg3d-fs-fallback #tool .ecg12-hint,
+.page-ecg3d-revamp #tool:fullscreen .ecg12-sync-note,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-sync-note,
+body.ecg3d-fs-fallback #tool .ecg12-sync-note,
+.page-ecg3d-revamp #tool:fullscreen .ecg12-head .tool-section-title,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-head .tool-section-title,
+body.ecg3d-fs-fallback #tool .ecg12-head .tool-section-title,
+.page-ecg3d-revamp #tool:fullscreen .fs-btn,
+.page-ecg3d-revamp #tool:-webkit-full-screen .fs-btn,
+body.ecg3d-fs-fallback #tool .fs-btn {
+  display: none !important;
+}
+.page-ecg3d-revamp #tool:fullscreen .fs-exit-btn,
+.page-ecg3d-revamp #tool:-webkit-full-screen .fs-exit-btn,
+body.ecg3d-fs-fallback #tool .fs-exit-btn {
+  display: inline-flex !important;
+}
+.page-ecg3d-revamp #tool:fullscreen .stage-bar,
+.page-ecg3d-revamp #tool:-webkit-full-screen .stage-bar,
+body.ecg3d-fs-fallback #tool .stage-bar,
+.page-ecg3d-revamp #tool:fullscreen .stage-overlay-line,
+.page-ecg3d-revamp #tool:-webkit-full-screen .stage-overlay-line,
+body.ecg3d-fs-fallback #tool .stage-overlay-line,
+.page-ecg3d-revamp #tool:fullscreen #stageInfoBtn,
+.page-ecg3d-revamp #tool:-webkit-full-screen #stageInfoBtn,
+body.ecg3d-fs-fallback #tool #stageInfoBtn,
+.page-ecg3d-revamp #tool:fullscreen #stageInfo,
+.page-ecg3d-revamp #tool:-webkit-full-screen #stageInfo,
+body.ecg3d-fs-fallback #tool #stageInfo {
+  display: none !important;
+}
+.page-ecg3d-revamp #tool:fullscreen .ecg3d-hero,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg3d-hero,
+body.ecg3d-fs-fallback #tool .ecg3d-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 32%);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+.page-ecg3d-revamp #tool:fullscreen .tool-stage,
+.page-ecg3d-revamp #tool:-webkit-full-screen .tool-stage,
+body.ecg3d-fs-fallback #tool .tool-stage,
+.page-ecg3d-revamp #tool:fullscreen .stage-card,
+.page-ecg3d-revamp #tool:-webkit-full-screen .stage-card,
+body.ecg3d-fs-fallback #tool .stage-card {
+  display: flex !important;
+  flex-direction: column;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+.page-ecg3d-revamp #tool:fullscreen .stage,
+.page-ecg3d-revamp #tool:-webkit-full-screen .stage,
+body.ecg3d-fs-fallback #tool .stage {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+.page-ecg3d-revamp #tool:fullscreen .ecg12-card,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-card,
+body.ecg3d-fs-fallback #tool .ecg12-card {
+  flex: 0 0 auto;
+  display: block !important;
+  grid-template-columns: none !important;
+  grid-template-areas: none !important;
+  margin-top: 8px;
+  padding: 8px 0 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.page-ecg3d-revamp #tool:fullscreen .ecg12-side,
+.page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-side,
+body.ecg3d-fs-fallback #tool .ecg12-side {
+  display: block;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+.page-ecg3d-revamp #tool:fullscreen .lead-btns,
+.page-ecg3d-revamp #tool:-webkit-full-screen .lead-btns,
+body.ecg3d-fs-fallback #tool .lead-btns {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100% !important;
+  grid-template-columns: none !important;
+}
+.page-ecg3d-revamp #tool:fullscreen .lead-closeup-card,
+.page-ecg3d-revamp #tool:-webkit-full-screen .lead-closeup-card,
+body.ecg3d-fs-fallback #tool .lead-closeup-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.page-ecg3d-revamp .fs-btn,
+.page-ecg3d-revamp .fs-exit-btn {
+  pointer-events: auto;
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 32px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.94);
+}
+
+.page-ecg3d-revamp #tool:fullscreen .lead-closeup-frame,
+.page-ecg3d-revamp #tool:-webkit-full-screen .lead-closeup-frame,
+body.ecg3d-fs-fallback #tool .lead-closeup-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+}

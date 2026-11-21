@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="assets/site.css?v=20261120a">
 <link rel="stylesheet" href="assets/layout.css?v=20261120a">
 <link rel="stylesheet" href="assets/ecg3d.css?v=20261120a">
-<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261120a">
+<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261121a">
 <script src="assets/theme.js?v=20261120a"></script>
 </head>
 <body>
@@ -47,7 +47,7 @@
 
   <main>
     <p class="proto-banner" role="note"><strong>Layout mock-up.</strong> A simplified teaching model for review; not published. Pathophysiology will live on a later, separate page.</p>
-    <section id="tool" aria-label="Interactive 3D ECG model">
+    <section id="tool" class="ecg3d-fs-root" aria-label="Interactive 3D ECG model">
       <div class="tool-hero ecg3d-hero">
         <div class="tool-stage">
           <div class="graph-card stage-card">
@@ -121,6 +121,8 @@
               <div class="stage-overlay" id="stageOverlay">
                 <p class="stage-overlay-line" id="viewNote"></p>
                 <button type="button" class="t-btn stage-info-btn" id="stageInfoBtn" aria-expanded="false" aria-controls="stageInfo">Info</button>
+                <button type="button" class="t-btn fs-btn" id="fsBtn">Full screen</button>
+                <button type="button" class="t-btn fs-exit-btn" id="fsExitBtn" hidden>Exit</button>
                 <div class="stage-info" id="stageInfo" hidden>
                   <p id="stageInfoText"></p>
                   <p id="stageHint">Drag to rotate, scroll or pinch to zoom. Click a lead to see it close up on the right.</p>
@@ -279,6 +281,6 @@
   </footer>
 </div>
 
-<script type="module" src="assets/ecg3d.js?v=20261120a"></script>
+<script type="module" src="assets/ecg3d.js?v=20261121a"></script>
 </body>
 </html>
