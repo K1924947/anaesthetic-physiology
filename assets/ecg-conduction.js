@@ -456,6 +456,14 @@
       SAMPLES[c][L] = arr;
     });
   });
+  // Vertical gain: about standard paper proportions for this time scale (10 mm/mV against 25 mm/s would be about 60 px/mV here).
+  var GAIN = 56; // px per mV, same for the trace and the 1 mV calibration pulse
+  var DATA_RANGE = {};
+  function dataRange(c, L) {
+    var k = c + "|" + L; if (DATA_RANGE[k]) return DATA_RANGE[k];
+    var a = SAMPLES[c][L], lo = 0, hi = 0; for (var i = 0; i < a.length; i++) { if (a[i] < lo) lo = a[i]; if (a[i] > hi) hi = a[i]; }
+    return (DATA_RANGE[k] = [lo, hi]);
+  }
   var LEAD_RANGE = {};
   LEADS.forEach(function (L) {
     var hi = .6, lo = -.6;
@@ -528,6 +536,7 @@
         posCount++; seenPos = true;
       } else {
         nm = seenPos ? (small ? "s" : "S") : (small ? "q" : "Q");
+        if (!seenPos && !bumps.some(function (o) { return o.sign > 0; })) nm = "QS"; // no R anywhere in this QRS
         if (b.notch) nm = ORD[b.notch - 1] + " " + nm.toUpperCase();
       }
       b.name = nm; prev = b;
@@ -840,11 +849,16 @@
     var ctx = cv.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    var L = state.leads[i], rg = LEAD_RANGE[L], data = SAMPLES[state.cond][L], isFocus = i === state.focus;
+    var L = state.leads[i], data = SAMPLES[state.cond][L], isFocus = i === state.focus;
     var left = 34, pw = w - left - 4;
     function X(ms) { return left + ms / CYCLE * pw; }
-    var top = isFocus ? 30 : 4;
-    function Y(mv) { return top + (rg[1] - mv) / (rg[1] - rg[0]) * (h - top - 4); }
+    // Fixed gain; the baseline is placed per lead so this beat's tallest R and deepest S both fit (centred if it is tight).
+    var top = isFocus ? 25 : 3, dr = dataRange(state.cond, L), span = (dr[1] - dr[0]) * GAIN;
+    if (isFocus && span > h - top - 3) top = 3; // a very tall beat may run up behind the bump tags rather than be clipped
+    var avail = h - top - 3;
+    var y0 = span <= avail ? top + dr[1] * GAIN + (avail - span) / 2 : top + avail / 2 + (dr[1] + dr[0]) / 2 * GAIN;
+    function Y(mv) { return y0 - mv * GAIN; }
+    var rg = [(y0 - h) / GAIN, (y0 - top) / GAIN];
     ctx.lineWidth = 1;
     for (var ms = 0; ms <= CYCLE; ms += 40) {
       ctx.strokeStyle = ms % 200 === 0 ? "#C9C5BE" : "#ECE9E4";
@@ -855,9 +869,12 @@
       ctx.beginPath(); ctx.moveTo(left, Math.round(Y(mv)) + .5); ctx.lineTo(w, Math.round(Y(mv)) + .5); ctx.stroke();
     }
     ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(4, Y(0)); ctx.lineTo(10, Y(0)); ctx.lineTo(10, Y(1)); ctx.lineTo(18, Y(1)); ctx.lineTo(18, Y(0)); ctx.lineTo(24, Y(0)); ctx.stroke();
+    // 1 mV calibration pulse at the trace gain, on the baseline (moved down only if the baseline is too high to fit it).
+    var cb = Math.min(h - 3, Math.max(Y(0), top + GAIN + 2)), ct = cb - GAIN;
+    ctx.beginPath(); ctx.moveTo(4, cb); ctx.lineTo(10, cb); ctx.lineTo(10, ct); ctx.lineTo(18, ct); ctx.lineTo(18, cb); ctx.lineTo(24, cb); ctx.stroke();
     ctx.fillStyle = "#111"; ctx.font = "11px 'Source Sans 3', sans-serif";
-    ctx.fillText("1 mV", 2, Math.max(11, Y(1) - 3));
+    ctx.fillText("1 mV", 2, Math.max(isFocus ? top + 9 : 11, ct - 3));
+    ctx.save(); ctx.beginPath(); ctx.rect(0, top - 2, w, h - top + 2); ctx.clip();
     var cut = Math.max(0, Math.min(CYCLE - 1, Math.floor(t)));
     ctx.lineJoin = "round";
     ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 1.5;
@@ -868,6 +885,7 @@
     ctx.beginPath();
     for (k = 0; k <= cut; k++) { if (k === 0) ctx.moveTo(X(k), Y(data[k])); else ctx.lineTo(X(k), Y(data[k])); }
     ctx.stroke();
+    ctx.restore();
     var link = null;
     if (isFocus) {
       // Each bump drawn so far, styled by its cause: blue + solid arrowhead = fast route; orange + chevrons = slow cell to cell.
@@ -886,7 +904,7 @@
         var tx0 = Math.max(left, Math.min(w - tw - 34, px - tw / 2));
         var c0 = Math.max(tx0, rowEnd[0] + 6), c1 = Math.max(tx0, rowEnd[1] + 6), row = c0 <= c1 ? 0 : 1, tx = row ? c1 : c0;
         rowEnd[row] = tx + tw;
-        var ty = row ? 26 : 12;
+        var ty = row ? 22 : 10;
         ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash(b.slow ? [2, 2] : []);
         ctx.beginPath(); ctx.moveTo(px, ty + 2); ctx.lineTo(px, Y(b.amp) + (b.sign > 0 ? -3 : 3)); ctx.stroke(); ctx.setLineDash([]);
         ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fillRect(tx - 2, ty - 10, tw + 4, 13);
