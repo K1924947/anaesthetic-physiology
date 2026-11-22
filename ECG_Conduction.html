@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Why the ECG looks like that · The Physio Lab</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css?v=20261118">
+<link rel="stylesheet" href="assets/layout.css?v=20261118">
+<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261122a">
+<script src="assets/theme.js?v=20261118"></script>
+</head>
+<body>
+<a class="skip-link" href="#ecgc">Skip to the conduction tool</a>
+<div class="page page-tool page-ecgc">
+  <header class="site-header tool-view-header ecgc-header">
+    <div class="site-header-top">
+      <a class="site-mark" href="index.html">
+        <img class="site-logo" src="assets/logo.svg?v=20261118" width="20" height="20" alt="">
+        <span class="site-mark-name">The Physio Lab</span>
+      </a>
+      <nav class="crumb" aria-label="Breadcrumb">
+        <a href="index.html">Home</a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <a href="cardiac.html">Cardiac</a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">Why the ECG looks like that</span>
+      </nav>
+    </div>
+    <div class="ecgc-titlebar">
+      <h1>Why the ECG looks like that</h1>
+      <p class="ecgc-sub">The heart is the cause, the leads are the effect. Teaching tool, not clinical guidance.</p>
+    </div>
+  </header>
+
+  <main id="ecgc" class="ecgc">
+    <div class="ecgc-controls" role="group" aria-label="Tool controls">
+      <div class="ecgc-cond" role="radiogroup" aria-label="Condition">
+        <button type="button" role="radio" class="ecgc-cond-btn" data-cond="normal" aria-checked="true">Normal sinus</button>
+        <button type="button" role="radio" class="ecgc-cond-btn" data-cond="rbbb" aria-checked="false">RBBB</button>
+        <button type="button" role="radio" class="ecgc-cond-btn" data-cond="lbbb" aria-checked="false">LBBB</button>
+      </div>
+      <div class="ecgc-play">
+        <button type="button" id="ecgcPlay" class="ecgc-btn" aria-pressed="false">Pause</button>
+        <button type="button" id="ecgcReplay" class="ecgc-btn">Replay</button>
+        <label class="ecgc-speed">Speed
+          <select id="ecgcSpeed" aria-label="Playback speed">
+            <option value="0.25" selected>0.25x</option>
+            <option value="0.5">0.5x</option>
+            <option value="1">1x</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="ecgc-stage">
+      <figure class="ecgc-heart" aria-labelledby="ecgcHeartCap">
+        <svg id="ecgcSvg" viewBox="0 0 600 470" role="img" aria-labelledby="ecgcHeartTitle ecgcHeartCap">
+          <title id="ecgcHeartTitle">Flat diagram of the heart and its conduction system</title>
+        </svg>
+        <figcaption id="ecgcHeartCap" class="ecgc-rule"><span class="ecgc-rule-arrow" aria-hidden="true">&#10142;</span> Wavefront <strong>towards</strong> a lead's electrode = <strong>upward</strong> deflection; <strong>away</strong> = <strong>downward</strong>.</figcaption>
+      </figure>
+
+      <div class="ecgc-leads" id="ecgcLeads"></div>
+    </div>
+
+    <div class="ecgc-timeline">
+      <div class="ecgc-time-head">
+        <p class="ecgc-readout" id="ecgcReadout" aria-live="off"><strong id="ecgcMs">0</strong> ms after the SA node fires</p>
+        <p class="ecgc-qrs" id="ecgcQrs">QRS 90 ms</p>
+      </div>
+      <div class="ecgc-scrub">
+        <div class="ecgc-segs" id="ecgcSegs" aria-hidden="true"></div>
+        <input type="range" id="ecgcScrub" min="0" max="799" step="1" value="0" aria-label="Time in the cardiac cycle, in ms after the SA node fires">
+      </div>
+      <p class="ecgc-sentence" id="ecgcSentence" aria-live="polite"></p>
+    </div>
+
+    <div class="ecgc-extras">
+      <details>
+        <summary>For anaesthetist review</summary>
+        <ul>
+          <li>Activation timings are idealised round numbers for one beat at 75 per minute, not measured values.</li>
+          <li>Lead traces are schematic morphologies drawn from the textbook patterns below. They are not recordings and are not calculated from the diagram.</li>
+          <li>The heart is a flat, simplified view. Chest electrodes are drawn on the same flat view; really they sit in the horizontal plane, in front of and to the left of the heart.</li>
+          <li>The arrow is a simplified mean direction of activation (and a dashed T vector during repolarisation). Repolarisation is shown only as a fade.</li>
+          <li>Time is stretched so one beat fills each panel: thin vertical lines are 40 ms, horizontal lines 0.5 mV.</li>
+          <li>Secondary ST and T changes in RBBB and LBBB are shown as typical patterns; individual patients vary.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Sources</summary>
+        <ul>
+          <li>Klabunde RE. CV Physiology Concepts: <a href="https://cvphysiology.com/arrhythmias/a003" target="_blank" rel="noopener">conduction system</a> and <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">the ECG</a>.</li>
+          <li>Life in the Fast Lane (LITFL): <a href="https://litfl.com/right-bundle-branch-block-rbbb-ecg-library/" target="_blank" rel="noopener">RBBB</a> and <a href="https://litfl.com/left-bundle-branch-block-lbbb-ecg-library/" target="_blank" rel="noopener">LBBB</a> ECG library.</li>
+          <li>Hampton J. <cite>The ECG Made Easy</cite>. Conduction and bundle branch block chapters.</li>
+        </ul>
+      </details>
+    </div>
+  </main>
+
+  <footer>
+    <p class="footer-left">
+      <span class="footer-item">Dr Ed Kim<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item">The Physio Lab<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item">Built for teaching<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item"><a class="footer-feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="Give feedback, opens Google Forms in a new tab">Give feedback</a></span>
+    </p>
+  </footer>
+</div>
+<script src="assets/ecg-conduction.js?v=20261122a"></script>
+</body>
+</html>

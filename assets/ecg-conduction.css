@@ -1,0 +1,70 @@
+/* Why the ECG looks like that: conduction mock-up. Own file so no other page changes. */
+.page-ecgc {
+  --ecgc-blue: #005A9E;
+  --ecgc-orange: #C85A00;
+  --ecgc-grey: #A3A8AE;
+  --ecgc-grey-soft: #E6E4E0;
+  --ecgc-magenta: #B01070;
+  --ecgc-ink: #111111;
+  max-width: 1248px;
+  padding: 10px 20px 0;
+}
+.ecgc-header { margin-bottom: 4px; }
+.ecgc-header .site-header-top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.ecgc-header .crumb { margin: 0; }
+.ecgc-titlebar { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-top: 2px; }
+.ecgc-titlebar h1 { font-size: 24px !important; margin: 0; text-align: left; }
+.ecgc-sub { margin: 0; color: var(--muted); font-size: 14px; }
+
+.ecgc { display: flex; flex-direction: column; gap: 6px; }
+.ecgc-controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ecgc-cond { display: inline-flex; border: 1px solid var(--text); border-radius: 999px; overflow: hidden; }
+.ecgc-cond-btn, .ecgc-btn {
+  font: 600 14px var(--font-sans); padding: 5px 14px; border: 0; background: var(--surface); color: var(--text); cursor: pointer;
+}
+.ecgc-cond-btn + .ecgc-cond-btn { border-left: 1px solid var(--text); }
+.ecgc-cond-btn[aria-checked="true"] { background: var(--text); color: var(--surface); }
+.ecgc-cond-btn[aria-checked="true"]::before { content: "\2713\00a0"; }
+.ecgc-btn { border: 1px solid var(--text); border-radius: 999px; }
+.ecgc-play { display: flex; gap: 8px; align-items: center; }
+.ecgc-speed { font: 600 14px var(--font-sans); display: inline-flex; gap: 6px; align-items: center; }
+.ecgc select { font: 14px var(--font-sans); padding: 3px 6px; border: 1px solid var(--text); border-radius: 6px; background: var(--surface); color: var(--text); }
+.ecgc button:focus-visible, .ecgc select:focus-visible, .ecgc input:focus-visible, .ecgc summary:focus-visible { outline: 3px solid var(--ecgc-blue); outline-offset: 2px; }
+
+.ecgc-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr); gap: 12px; align-items: start; }
+.ecgc-heart { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px 6px; }
+.ecgc-heart svg { display: block; width: 100%; height: auto; max-height: 410px; }
+.ecgc-rule { font: 14px var(--font-sans); margin: 2px 4px 2px; color: var(--text); }
+.ecgc-rule-arrow { color: var(--ecgc-magenta); font-weight: 700; }
+
+.ecgc-leads { display: flex; flex-direction: column; gap: 6px; }
+.ecgc-lead { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px 8px 6px; }
+.ecgc-lead-head { display: flex; align-items: center; gap: 8px; font: 600 14px var(--font-sans); }
+.ecgc-lead-head svg { width: 18px; height: 18px; flex: none; }
+.ecgc-lead-note { margin-left: auto; font-weight: 400; color: var(--muted); font-size: 12px; }
+.ecgc-lead canvas { display: block; width: 100%; height: 106px; }
+
+.ecgc-timeline { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px 12px 6px; }
+.ecgc-time-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ecgc-readout, .ecgc-qrs { margin: 0; font: 15px var(--font-sans); }
+.ecgc-readout strong { font-variant-numeric: tabular-nums; display: inline-block; min-width: 3ch; text-align: right; }
+.ecgc-qrs { color: var(--muted); }
+.ecgc-scrub { position: relative; height: 30px; }
+.ecgc-segs { position: absolute; inset: 4px 0 4px 0; display: flex; border: 1px solid var(--text); border-radius: 4px; overflow: hidden; }
+.ecgc-seg { display: flex; align-items: center; justify-content: center; font: 600 12px var(--font-sans); color: var(--text); background: var(--ecgc-grey-soft); border-right: 1px solid var(--text); overflow: hidden; white-space: nowrap; }
+.ecgc-seg:last-child { border-right: 0; }
+.ecgc-seg.is-now { background: var(--text); color: var(--surface); }
+.ecgc-scrub input[type="range"] { position: absolute; inset: 0; width: 100%; margin: 0; opacity: 0; cursor: ew-resize; height: 30px; }
+.ecgc-scrub-thumb { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--ecgc-blue); pointer-events: none; transform: translateX(-1px); }
+.ecgc-scrub-thumb::after { content: ""; position: absolute; top: -2px; left: -5px; border: 6.5px solid transparent; border-top-color: var(--ecgc-blue); }
+.ecgc-scrub:focus-within .ecgc-segs { outline: 3px solid var(--ecgc-blue); outline-offset: 2px; }
+.ecgc-sentence { margin: 2px 0 0; font: 16px/1.35 var(--font-serif); min-height: 2.7em; }
+
+.ecgc-extras { display: flex; gap: 18px; font: 13px var(--font-sans); }
+.ecgc-extras summary { cursor: pointer; color: var(--muted); }
+.ecgc-extras ul { margin: 4px 0; padding-left: 18px; max-width: 70ch; }
+.page-ecgc footer { margin-top: 4px; padding-top: 4px; }
+
+@media (max-width: 900px) {
+  .ecgc-stage { grid-template-columns: 1fr; }
+}
