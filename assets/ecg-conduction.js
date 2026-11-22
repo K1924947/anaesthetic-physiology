@@ -11,55 +11,50 @@
   try { reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { reduced = false; }
 
   /* ---------- Conditions ---------- */
-  // Waves: P and T are single bumps; qrs is a list of [centre ms, width ms, amplitude mV]; st is the ST level in mV.
-  var MORPH = {
-    normal: {
-      I: { P: .1, T: .25, qrs: [[170, 5, -.08], [196, 10, .9], [226, 7, -.15]] },
-      II: { P: .15, T: .35, qrs: [[170, 5, -.06], [197, 10, 1.2], [227, 7, -.2]] },
-      III: { P: .05, T: .1, qrs: [[199, 10, .5], [227, 7, -.25]] },
-      aVR: { P: -.12, T: -.3, qrs: [[172, 6, .12], [200, 12, -.95]] },
-      aVL: { P: .03, T: .1, qrs: [[170, 5, -.1], [194, 10, .4], [223, 8, -.25]] },
-      aVF: { P: .1, T: .25, qrs: [[199, 10, .8], [227, 7, -.2]] },
-      V1: { P: .07, T: -.08, qrs: [[176, 7, .25], [205, 12, -1.0]] },
-      V2: { P: .07, T: .45, qrs: [[178, 7, .4], [208, 12, -1.3]] },
-      V3: { P: .08, T: .45, qrs: [[192, 10, .8], [217, 9, -.8]] },
-      V4: { P: .1, T: .4, qrs: [[197, 10, 1.3], [222, 7, -.4]] },
-      V5: { P: .1, T: .35, qrs: [[171, 5, -.1], [198, 10, 1.4], [224, 7, -.25]] },
-      V6: { P: .1, T: .3, qrs: [[171, 5, -.12], [198, 10, 1.1], [224, 7, -.15]] }
-    },
-    rbbb: {
-      I: { P: .1, T: .2, qrs: [[170, 5, -.08], [196, 10, .8], [262, 17, -.35]] },
-      II: { P: .15, T: .3, qrs: [[170, 5, -.06], [197, 10, 1.0], [262, 17, -.25]] },
-      III: { P: .05, T: .1, qrs: [[199, 10, .45], [258, 15, -.15]] },
-      aVR: { P: -.12, T: -.25, qrs: [[172, 6, .1], [200, 12, -.85], [264, 16, .4]] },
-      aVL: { P: .03, T: .1, qrs: [[170, 5, -.1], [194, 10, .4], [258, 15, -.25]] },
-      aVF: { P: .1, T: .2, qrs: [[199, 10, .7], [260, 16, -.2]] },
-      V1: { P: .07, T: -.25, st: -.05, qrs: [[176, 7, .3], [203, 8, -.5], [252, 16, .95]] },
-      V2: { P: .07, T: -.1, qrs: [[178, 7, .4], [206, 9, -.8], [256, 16, .6]] },
-      V3: { P: .08, T: .3, qrs: [[193, 10, .7], [218, 9, -.5], [258, 15, .3]] },
-      V4: { P: .1, T: .4, qrs: [[197, 10, 1.2], [258, 16, -.45]] },
-      V5: { P: .1, T: .35, qrs: [[171, 5, -.1], [198, 10, 1.3], [262, 17, -.45]] },
-      V6: { P: .1, T: .3, qrs: [[171, 5, -.12], [198, 10, 1.0], [262, 17, -.45]] }
-    },
-    lbbb: {
-      I: { P: .1, T: -.3, st: -.08, qrs: [[205, 16, .7], [252, 17, .8]] },
-      II: { P: .15, T: -.1, qrs: [[222, 26, .6]] },
-      III: { P: .05, T: .2, st: .05, qrs: [[182, 8, .2], [235, 24, -.4]] },
-      aVR: { P: -.12, T: .25, st: .05, qrs: [[230, 28, -.7]] },
-      aVL: { P: .03, T: -.3, st: -.08, qrs: [[205, 16, .7], [253, 17, .8]] },
-      aVF: { P: .1, T: .05, qrs: [[215, 22, .3], [265, 12, -.12]] },
-      V1: { P: .07, T: .45, st: .15, qrs: [[178, 6, .1], [230, 27, -1.6]] },
-      V2: { P: .07, T: .55, st: .22, qrs: [[180, 6, .15], [232, 27, -2.0]] },
-      V3: { P: .08, T: .45, st: .15, qrs: [[185, 7, .2], [235, 26, -1.6]] },
-      V4: { P: .1, T: .1, qrs: [[205, 14, .5], [252, 16, -.6]] },
-      V5: { P: .1, T: -.3, st: -.1, qrs: [[210, 16, .9], [255, 17, 1.0]] },
-      V6: { P: .1, T: -.3, st: -.1, qrs: [[210, 16, .8], [255, 17, .9]] }
-    }
+  // One source of truth: the heart vector. Each component is [centre ms, width ms, x, y, z] in mV,
+  // with x = towards the patient's left, y = inferior, z = anterior. Every lead trace is the projection
+  // of the summed vector on that lead's axis (a single idealised dipole), so lead polarity always matches the arrow.
+  var P_WAVE = [[35, 14, .03, .12, .07], [65, 14, .10, .06, -.06]];           // RA (inferior, anterior) then LA (left, posterior)
+  var VEC = {
+    normal: P_WAVE.concat([
+      [172, 6, -.15, .05, .25],      // septum, left to right: q in I, aVL, V6; r in V1
+      [186, 8, .3, .4, .5],          // apex and anterior wall
+      [200, 10, .9, .75, -.3],       // LV free wall dominates: leftward, inferior, posterior
+      [227, 8, -.1, -.2, -.25],      // basal and posterior LV last: superior, posterior
+      [435, 42, .25, .2, .15]        // T: concordant with the QRS
+    ]),
+    rbbb: P_WAVE.concat([
+      [172, 6, -.15, .05, .25],      // septum still left to right (left bundle intact)
+      [186, 8, .3, .4, .5],
+      [200, 10, .85, .65, -.35],     // LV through its own Purkinje fibres
+      [255, 17, -.45, .05, .35],     // late RV, cell to cell: terminal rightward, anterior vector
+      [470, 42, .3, .2, -.15]        // secondary T, opposite the terminal QRS
+    ]),
+    lbbb: P_WAVE.concat([
+      [178, 6, 0, 0, .12],           // RV free wall via the right bundle: small r in V1 at most
+      [180, 10, .35, .1, -.05],      // septum right to left: no septal q in I, aVL, V6
+      [210, 16, .7, .25, -.5],       // slow cell-to-cell LV activation, leftward and posterior
+      [258, 17, .8, .1, -.6],        // lateral LV last: second hump of the notched R
+      [350, 20, -.08, 0, .12],       // secondary ST shift, opposite the QRS
+      [470, 42, -.3, -.05, .35]      // secondary T, discordant
+    ])
   };
+  var FRONTAL_AX = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150 };
+  var HORIZ_AX = { V1: 115, V2: 94, V3: 75, V4: 60, V5: 30, V6: 0 }; // positive = anterior
+  var CHEST_GAIN = 1.3; // chest electrodes sit closer to the heart, so they read larger
+  function vectorAt(c, t) {
+    var v = { x: 0, y: 0, z: 0 }, k = VEC[c];
+    for (var i = 0; i < k.length; i++) { var d = (t - k[i][0]) / k[i][1], g = Math.exp(-0.5 * d * d); v.x += g * k[i][2]; v.y += g * k[i][3]; v.z += g * k[i][4]; }
+    return v;
+  }
+  function project(v, L) {
+    if (FRONTAL_AX[L] !== undefined) { var a = FRONTAL_AX[L] * Math.PI / 180; return v.x * Math.cos(a) + v.y * Math.sin(a); }
+    var h = HORIZ_AX[L] * Math.PI / 180; return CHEST_GAIN * (v.x * Math.cos(h) + v.z * Math.sin(h));
+  }
 
   var SHARED_START = [
     [0, 12, "The SA node fires. It is too small to show on the ECG, so the trace is still flat."],
-    [12, 100, "The impulse spreads through the right atrium, and along Bachmann's bundle to the left atrium. Atrial depolarisation is the P wave."],
+    [12, 100, "The impulse spreads through the right atrium, then along Bachmann's bundle to the left atrium: the P wave. Its vector points down and to the left (about +60°), so P is upright in II, inverted in aVR and biphasic in V1."],
     [100, 145, "The AV node slows the impulse so the atria can finish contracting first. Too little tissue is active to show, so the trace is flat: the PR segment."]
   ];
   var REST = "The heart is at rest, waiting for the SA node to fire again.";
@@ -72,16 +67,13 @@
       region: { RA: [5, 70], LA: [25, 65], SEP: [160, 40], RV: [180, 45], LV: [180, 60] },
       sepDir: "lr",
       blocked: [],
-      arrow: [[0, 55, 20, 0], [20, 55, 20, .3], [50, 55, 20, .4], [85, 55, 20, .2], [100, 55, 20, 0],
-        [160, 170, 120, 0], [168, 170, 120, .3], [180, 170, 120, .3], [192, 45, -10, .8], [205, 40, -20, 1], [222, -60, -80, .35], [238, -90, -110, .12], [245, -90, -110, 0],
-        [350, 40, 30, 0], [435, 40, 30, .35], [520, 40, 30, 0]],
       text: [
         [145, 160, "The impulse leaves the AV node and races down the His bundle into the right and left bundle branches."],
-        [160, 185, "The septum depolarises first, from left to right. That small wavefront heads towards V1 (small r wave) and away from V6 (small q wave)."],
-        [185, 222, "Purkinje fibres spread the impulse through both ventricles at once. The thick left ventricle wins, so the wavefront points left: tall R in V6 and II, deep S in V1."],
-        [222, 245, "The last areas to depolarise are high in the ventricles, near the valves. The narrow QRS ends at about 85 ms."],
-        [245, 350, "Every ventricular cell is now in its plateau phase, so no current flows between areas. The ST segment sits on the baseline."],
-        [350, 520, "The ventricles repolarise, epicardium first, so the T wave points the same way as the QRS in most leads."]
+        [160, 180, "The septum depolarises first, from left to right, because the left bundle reaches it first. That small wavefront heads towards V1 (small r) and away from I, aVL and V6 (small septal q)."],
+        [180, 215, "Purkinje fibres carry the impulse to the apex, then out through both free walls, endocardium to epicardium. The thick left ventricle outweighs the right, so the wavefront points left and down: tall R in II and V6, deep S in V1."],
+        [215, 245, "The base of the left ventricle, high and at the back, depolarises last, so the wavefront swings up and backwards: a small s in II and V6. The narrow QRS lasts about 85 ms."],
+        [245, 350, "Every ventricular cell is in its plateau phase at a similar voltage, so no current flows between areas. The ST segment is isoelectric."],
+        [350, 520, "Repolarisation is the reverse charge change, but it also runs the reverse way: epicardial cells have shorter action potentials, so the epicardium recovers first. The two reversals cancel, so the T wave points the same way as the QRS in most leads."]
       ]
     },
     rbbb: {
@@ -92,16 +84,13 @@
       sepDir: "lr",
       blocked: ["rb", "purkR"],
       blockAt: "rb",
-      arrow: [[0, 55, 20, 0], [20, 55, 20, .3], [50, 55, 20, .4], [85, 55, 20, .2], [100, 55, 20, 0],
-        [160, 170, 120, 0], [168, 170, 120, .3], [182, 170, 120, .3], [195, 40, -15, .75], [215, 35, -20, .85], [235, 190, 150, .3], [250, 190, 150, .5], [275, 190, 150, .55], [293, 190, 150, .2], [300, 190, 150, 0],
-        [380, 20, -30, 0], [470, 20, -30, .3], [560, 20, -30, 0]],
-      sweep: { RV: [285, 260, 130, 200] },
-      late: "0,169 256,151 290,362 270,420 0,420",
+      sweep: { RV: [250, 260, 130, 200] },
+      late: "0,169 254,152 244,200 242,260 250,322 236,334 0,420",
       text: [
         [145, 160, "The impulse races down the His bundle. The right bundle is blocked, so only the left bundle carries it on."],
         [160, 185, "The left bundle still activates the septum from left to right, so the QRS starts normally: small r in V1, small q in V6."],
-        [185, 232, "The left ventricle depolarises through its own Purkinje fibres. The wavefront points left: S wave in V1, R wave in V6."],
-        [232, 300, "The right ventricle is reached late, cell to cell across the septum, which is slow. This late rightward wavefront makes the R' in V1 and the wide, slurred S in I and V6. QRS 120 ms or more."],
+        [185, 232, "The apex and left ventricle depolarise normally through the left bundle's Purkinje fibres. The wavefront points left: S wave in V1, R wave in I and V6."],
+        [232, 300, "The right ventricle is reached late, cell to cell from the septum, which is slow. This late wavefront points right and forwards: the R' in V1 and the wide, slurred S in I and V6. QRS 120 ms or more."],
         [300, 380, "All ventricular cells are depolarised, so the ST segment sits near the baseline."],
         [380, 560, "The right ventricle repolarises late and out of order too, so T waves are often inverted in V1 to V3. This is a secondary change."]
       ]
@@ -114,17 +103,14 @@
       sepDir: "rl",
       blocked: ["lb", "laf", "lpf", "purkL"],
       blockAt: "lb",
-      arrow: [[0, 55, 20, 0], [20, 55, 20, .3], [50, 55, 20, .4], [85, 55, 20, .2], [100, 55, 20, 0],
-        [160, 0, -10, 0], [172, 5, -10, .3], [200, 15, -20, .6], [230, 10, -25, .9], [260, 0, -20, .8], [290, -10, -15, .4], [300, -10, -15, 0],
-        [380, 195, 160, 0], [470, 195, 160, .35], [560, 195, 160, 0]],
       sweep: { LV: [290, 260, 435, 230] },
       late: "385,143 540,132 540,420 330,420 372,330",
       text: [
         [145, 160, "The impulse races down the His bundle. The left bundle is blocked, so only the right bundle carries it on."],
-        [160, 200, "The septum is activated from the right side, so it depolarises right to left. The wavefront heads away from V1 and towards V6: no septal q in I, aVL, V5 or V6."],
-        [200, 260, "The small right ventricle activates normally, then the impulse creeps cell to cell through the left ventricle. The wavefront points left, away from V1: deep, broad S in V1."],
+        [160, 200, "The septum is activated from the right side, so it depolarises right to left. The wavefront heads towards V6 and away from V1: no septal q in I, aVL, V5 or V6, and at most a tiny r in V1."],
+        [200, 260, "Without the fast Purkinje network, the impulse creeps cell to cell from the septum through the left ventricle, which is slow. The wavefront points left and backwards, away from V1: deep, broad S in V1, broad R in V6."],
         [260, 300, "The lateral wall of the left ventricle depolarises last, giving the broad, notched R in I, aVL, V5 and V6. QRS 120 ms or more."],
-        [300, 380, "Abnormal depolarisation means abnormal repolarisation. The ST segment shifts opposite to the main QRS: up in V1 to V3, down in V5 and V6."],
+        [300, 380, "Abnormal depolarisation means abnormal repolarisation. The ST segment shifts opposite to the main QRS: up in V1 to V3, down in I, aVL and V6."],
         [380, 560, "T waves point opposite to the main QRS (discordant): upright in V1, inverted in I, aVL, V5 and V6. This is the expected secondary pattern in LBBB."]
       ]
     }
@@ -133,20 +119,12 @@
   function seg(c, name) { var s = COND[c].segs; for (var i = 0; i < s.length; i++) if (s[i][0] === name) return s[i]; return null; }
 
   /* ---------- Trace samples (1 ms) ---------- */
-  function gauss(t, c, w, a) { var d = (t - c) / w; return a * Math.exp(-0.5 * d * d); }
-  function logistic(x) { return 1 / (1 + Math.exp(-x)); }
   var SAMPLES = {};
-  Object.keys(MORPH).forEach(function (c) {
+  Object.keys(VEC).forEach(function (c) {
     SAMPLES[c] = {};
-    var q = seg(c, "QRS"), tw = seg(c, "T"), tc = (tw[1] + tw[2]) / 2;
     LEADS.forEach(function (L) {
-      var m = MORPH[c][L], arr = new Float32Array(CYCLE);
-      for (var t = 0; t < CYCLE; t++) {
-        var v = gauss(t, 50, 17, m.P) + gauss(t, tc, 42, m.T);
-        for (var i = 0; i < m.qrs.length; i++) v += gauss(t, m.qrs[i][0], m.qrs[i][1], m.qrs[i][2]);
-        if (m.st) v += m.st * logistic((t - (q[2] - 8)) / 5) * (1 - logistic((t - tc) / 22));
-        arr[t] = v;
-      }
+      var arr = new Float32Array(CYCLE);
+      for (var t = 0; t < CYCLE; t++) arr[t] = project(vectorAt(c, t), L);
       SAMPLES[c][L] = arr;
     });
   });
@@ -185,27 +163,27 @@
 
   // Four-chamber view: one smooth silhouette; chambers are cut from it (cavities drawn over the muscle in white).
   // AV groove: one slightly oblique line, y = 160 - 0.069 (x - 130). Crux at about (266, 151).
-  var SIL = "M176,46 C140,50 118,92 122,140 L122,161 C126,232 176,322 252,366 C286,388 314,402 340,398 " +
-    "C392,388 430,320 432,240 C434,192 430,162 426,140 C422,96 402,56 362,46 C332,39 298,42 270,47 C250,40 226,38 206,44 Z";
+  var SIL = "M176,46 C140,50 118,92 122,140 L122,161 C128,222 170,290 236,330 C268,352 300,394 338,399 " +
+    "C392,392 430,322 432,240 C434,192 430,162 426,140 C422,96 402,56 362,46 C332,39 298,42 270,47 C250,40 226,38 206,44 Z";
   var VENT = SIL;
   var REGIONS = {
     RA: { d: SIL, clip: "0,0 263,0 266,151 0,169" },
     LA: { d: SIL, clip: "263,0 540,0 540,131.7 266,151" },
-    RV: { d: SIL, clip: "0,169 256,151 290,362 270,420 0,420" },
-    SEP: { d: SIL, clip: "256,151 282,149 318,372 290,362" },
-    LV: { d: SIL, clip: "282,149 540,131.7 540,420 270,420 290,362 318,372" }
+    RV: { d: SIL, clip: "0,169 254,152 244,200 242,260 250,322 236,334 0,420" },
+    SEP: { d: SIL, clip: "254,152 284,150 276,215 288,300 320,366 300,380 250,322 242,260 244,200" },
+    LV: { d: SIL, clip: "284,150 540,131.7 540,420 0,420 236,334 250,322 300,380 320,366 288,300 276,215" }
   };
   var CAVITY = {
     RA: "M140,157 C128,120 134,74 172,58 L208,56 C234,58 252,72 257,92 L257,148 Z",
     LA: "M273,147 L273,72 C286,58 320,54 356,60 C392,68 410,100 412,137 Z",
-    RV: "M142,164 C142,232 190,306 288,356 C276,300 262,220 256,154 Z",
-    LV: "M282,152 C290,230 300,310 318,368 C330,378 345,372 360,352 C392,310 400,230 398,143 Z"
+    RV: "M136,165 C142,225 180,284 240,318 C238,270 240,200 256,155 Z",
+    LV: "M282,152 C266,215 270,300 312,366 C326,382 346,378 362,356 C396,312 402,230 398,143 Z"
   };
   // Direction of the activation sweep in each region: [x1, y1, x2, y2]. Conditions may override.
   var SWEEP = {
     RA: [178, 46, 250, 158], LA: [270, 50, 422, 142],
-    RV: [290, 355, 140, 165], LV: [325, 395, 428, 150],
-    SEP: { lr: [300, 265, 272, 270], rl: [272, 270, 300, 265] }
+    RV: [245, 300, 140, 170], LV: [325, 395, 428, 150],
+    SEP: { lr: [285, 255, 242, 245], rl: [242, 245, 285, 255] }
   };
   var PATHS = {
     intern: "M182,50 C225,62 248,100 250,142",
@@ -213,12 +191,12 @@
     bach: "M186,48 C225,36 290,38 360,54",
     avn: "M246,143 L256,149",
     his: "M256,149 L262,160 L267,176",
-    rb: "M267,176 C268,230 278,300 292,352",
-    lb: "M267,176 L280,190",
-    laf: "M280,190 C315,200 355,198 392,180",
-    lpf: "M280,190 C296,250 306,310 318,352",
-    purkR: "M292,354 C240,330 185,290 160,240 C150,215 148,190 150,170",
-    purkL: "M318,354 C330,372 350,365 362,348 C390,308 396,240 392,160"
+    rb: "M267,176 C254,215 249,275 254,315",
+    lb: "M267,176 L274,190",
+    laf: "M274,190 C305,198 350,196 392,178",
+    lpf: "M274,190 C278,240 292,300 314,354",
+    purkR: "M254,316 C230,312 205,300 190,282 C170,258 152,215 148,172",
+    purkL: "M314,356 C326,380 348,376 364,354 C394,312 400,240 392,160"
   };
   var ATRIAL = { intern: 1, intern2: 1, bach: 1, avn: 1 };
 
@@ -270,7 +248,7 @@
   ];
   VALVES.forEach(function (d) { el("path", { d: d, fill: "#fff", stroke: "#6B7075", "stroke-width": 1.5, "stroke-linejoin": "round" }, gRegions); });
 
-  [["RA", 198, 108], ["LA", 345, 104], ["RV", 205, 238], ["LV", 350, 330]].forEach(function (c) {
+  [["RA", 198, 108], ["LA", 345, 104], ["RV", 195, 235], ["LV", 345, 322]].forEach(function (c) {
     el("text", { x: c[1], y: c[2], "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: INK, "font-family": "var(--font-sans)" }, gRegions).textContent = c[0];
   });
 
@@ -298,11 +276,11 @@
   // Fixed label columns with thin leader lines: [text, label x, label y, target x, target y, anchor].
   var LABELS = [
     ["SA node", 100, 42, 176, 50, "end"], ["Internodal paths", 100, 96, 141, 108, "end"], ["Coronary sinus", 100, 132, 230, 140, "end"],
-    ["AV node", 100, 166, 250, 146, "end"], ["Tricuspid valve", 100, 204, 176, 180, "end"], ["Right bundle", 100, 280, 277, 283, "end"],
-    ["Purkinje fibres", 100, 330, 216, 307, "end"],
+    ["AV node", 100, 166, 250, 146, "end"], ["Tricuspid valve", 100, 204, 176, 180, "end"], ["Right bundle", 100, 270, 253, 260, "end"],
+    ["Purkinje fibres", 100, 320, 190, 282, "end"],
     ["Bachmann's bundle", 430, 34, 280, 40, "start"], ["Interatrial septum", 430, 76, 265, 90, "start"], ["Mitral valve", 430, 120, 372, 158, "start"],
-    ["Fibrous AV ring", 430, 150, 418, 140, "start"], ["His bundle", 430, 178, 263, 165, "start"], ["Left bundle", 430, 206, 276, 186, "start"],
-    ["Anterior fascicle", 430, 234, 347, 194, "start"], ["Posterior fascicle", 430, 300, 306, 302, "start"], ["Septum", 430, 360, 297, 340, "start"]
+    ["Fibrous AV ring", 430, 150, 418, 140, "start"], ["His bundle", 430, 178, 263, 165, "start"], ["Left bundle", 430, 206, 271, 184, "start"],
+    ["Anterior fascicle", 430, 234, 341, 192, "start"], ["Posterior fascicle", 430, 300, 294, 296, "start"], ["Septum", 430, 360, 261, 280, "start"]
   ];
   var gLab = el("g", { "class": "ecgc-labels", "aria-hidden": "true" });
   LABELS.forEach(function (l) {
@@ -321,8 +299,8 @@
 
   /* ---------- Vector wheels ---------- */
   var SLOTS = ["A", "B", "C"];
-  var FRONTAL = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150 };
-  var HORIZ = { V1: 115, V2: 94, V3: 75, V4: 60, V5: 30, V6: 0 }; // approximate; positive = anterior (drawn downwards)
+  var FRONTAL = FRONTAL_AX;
+  var HORIZ = HORIZ_AX; // approximate; positive = anterior (drawn downwards)
   function shape(s, g, size) {
     var k = size || 1;
     if (s === "A") el("circle", { r: 6 * k, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
@@ -430,17 +408,6 @@
   /* ---------- Rendering ---------- */
   function prog(win, t) { if (!win) return -1; return Math.max(0, Math.min(1, (t - win[0]) / win[1])); }
   function lerp(a, b, f) { return a + (b - a) * f; }
-  function arrowAt(c, t) {
-    var k = COND[c].arrow;
-    for (var i = 0; i < k.length - 1; i++) {
-      if (t >= k[i][0] && t <= k[i + 1][0]) {
-        var f = (t - k[i][0]) / ((k[i + 1][0] - k[i][0]) || 1);
-        return { ang: lerp(k[i][1], k[i + 1][1], f), h: lerp(k[i][2], k[i + 1][2], f), mag: lerp(k[i][3], k[i + 1][3], f) };
-      }
-    }
-    return { ang: 0, h: 0, mag: 0 };
-  }
-
   function renderHeart(t) {
     var c = COND[state.cond], qrs = seg(state.cond, "QRS"), tw = seg(state.cond, "T");
     var ventFade = t < tw[1] ? 1 : Math.max(0, 1 - (t - tw[1]) / (tw[2] - tw[1]));
@@ -470,27 +437,29 @@
     saNode.setAttribute("fill", t >= 0 && t < 14 ? "var(--ecgc-blue)" : GREY);
 
     // One live vector: frontal component on the heart and frontal wheel, horizontal component on the horizontal wheel.
-    var a = arrowAt(state.cond, t), isT = t >= tw[1] && t <= tw[2];
+    var v = vectorAt(state.cond, t), isT = t >= tw[1] && t <= tw[2], isST = t >= qrs[2] && t < tw[1];
     var o = t < 100 ? { x: 255, y: 100 } : { x: 312, y: 262 };
-    var show = a.mag >= 0.06, rad = a.ang * Math.PI / 180, hrad = a.h * Math.PI / 180;
-    gArrow.setAttribute("opacity", show ? 1 : 0);
-    [[wheelF, rad], [wheelH, hrad]].forEach(function (w) {
-      var L = show ? 10 + 30 * a.mag : 0;
-      w[0].vec.setAttribute("x2", (L * Math.cos(w[1])).toFixed(1)); w[0].vec.setAttribute("y2", (L * Math.sin(w[1])).toFixed(1));
-      w[0].vec.setAttribute("opacity", show ? 1 : 0);
-      w[0].vec.setAttribute("stroke-dasharray", isT ? "5 4" : "none");
+    var fm = Math.hypot(v.x, v.y), hm = Math.hypot(v.x, v.z), rad = Math.atan2(v.y, v.x);
+    var dashed = isT || isST;
+    [[wheelF, v.x, v.y, fm], [wheelH, v.x, v.z, hm]].forEach(function (w) {
+      var on = w[3] >= 0.03, L = on ? Math.min(42, 8 + 28 * w[3]) / w[3] : 0;
+      w[0].vec.setAttribute("x2", (w[1] * L).toFixed(1)); w[0].vec.setAttribute("y2", (w[2] * L).toFixed(1));
+      w[0].vec.setAttribute("opacity", on ? 1 : 0);
+      w[0].vec.setAttribute("stroke-dasharray", dashed ? "5 4" : "none");
     });
+    var show = fm >= 0.03;
+    gArrow.setAttribute("opacity", show ? 1 : 0);
     if (show) {
-      var len = 28 + 72 * a.mag;
+      var len = 22 + 60 * Math.min(fm, 1.3);
       var ex = o.x + len * Math.cos(rad), ey = o.y + len * Math.sin(rad);
       arrowLine.setAttribute("x1", o.x); arrowLine.setAttribute("y1", o.y);
       arrowLine.setAttribute("x2", ex.toFixed(1)); arrowLine.setAttribute("y2", ey.toFixed(1));
-      arrowLine.setAttribute("stroke-dasharray", isT ? "10 7" : "none");
+      arrowLine.setAttribute("stroke-dasharray", dashed ? "10 7" : "none");
       arrowTail.setAttribute("cx", o.x); arrowTail.setAttribute("cy", o.y);
       arrowText.setAttribute("x", o.x - 18 * Math.cos(rad));
       arrowText.setAttribute("y", o.y - 18 * Math.sin(rad) + 5);
       arrowText.setAttribute("text-anchor", Math.cos(rad) >= 0.3 ? "end" : Math.cos(rad) <= -0.3 ? "start" : "middle");
-      arrowText.textContent = isT ? "T vector (dashed)" : "Wavefront";
+      arrowText.textContent = isT ? "T vector (dashed)" : isST ? "ST vector (dashed)" : "Wavefront";
     }
   }
 
@@ -632,6 +601,10 @@
     state: state,
     setTime: function (t) { setPlaying(false); state.t = Math.max(0, Math.min(CYCLE - 1, t)); render(); },
     setCondition: setCondition,
+    vectorAt: vectorAt,
+    sample: function (c, L, t) { return SAMPLES[c][L][t]; },
+    axes: { frontal: FRONTAL_AX, horizontal: HORIZ_AX, chestGain: CHEST_GAIN },
+    segs: function (c) { return COND[c].segs; },
     qrsWidth: function () { var q = seg(state.cond, "QRS"); return q[2] - q[1]; }
   };
 })();
