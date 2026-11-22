@@ -95,8 +95,8 @@
       arrow: [[0, 55, 20, 0], [20, 55, 20, .3], [50, 55, 20, .4], [85, 55, 20, .2], [100, 55, 20, 0],
         [160, 170, 120, 0], [168, 170, 120, .3], [182, 170, 120, .3], [195, 40, -15, .75], [215, 35, -20, .85], [235, 190, 150, .3], [250, 190, 150, .5], [275, 190, 150, .55], [293, 190, 150, .2], [300, 190, 150, 0],
         [380, 20, -30, 0], [470, 20, -30, .3], [560, 20, -30, 0]],
-      sweep: { RV: [290, 300, 150, 240] },
-      late: "0,190 244,190 300,392 280,420 0,420",
+      sweep: { RV: [285, 260, 130, 200] },
+      late: "0,169 256,151 290,362 270,420 0,420",
       text: [
         [145, 160, "The impulse races down the His bundle. The right bundle is blocked, so only the left bundle carries it on."],
         [160, 185, "The left bundle still activates the septum from left to right, so the QRS starts normally: small r in V1, small q in V6."],
@@ -117,8 +117,8 @@
       arrow: [[0, 55, 20, 0], [20, 55, 20, .3], [50, 55, 20, .4], [85, 55, 20, .2], [100, 55, 20, 0],
         [160, 0, -10, 0], [172, 5, -10, .3], [200, 15, -20, .6], [230, 10, -25, .9], [260, 0, -20, .8], [290, -10, -15, .4], [300, -10, -15, 0],
         [380, 195, 160, 0], [470, 195, 160, .35], [560, 195, 160, 0]],
-      sweep: { LV: [285, 280, 430, 260] },
-      late: "372,185 540,185 540,420 340,420 360,350",
+      sweep: { LV: [290, 260, 435, 230] },
+      late: "385,143 540,132 540,420 330,420 372,330",
       text: [
         [145, 160, "The impulse races down the His bundle. The left bundle is blocked, so only the right bundle carries it on."],
         [160, 200, "The septum is activated from the right side, so it depolarises right to left. The wavefront heads away from V1 and towards V6: no septal q in I, aVL, V5 or V6."],
@@ -183,57 +183,56 @@
   var mk = el("marker", { id: "ecgcHead", viewBox: "0 0 10 10", refX: 6, refY: 5, markerWidth: 4, markerHeight: 4, orient: "auto-start-reverse" }, defs);
   el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--ecgc-magenta)" }, mk);
 
-  // Outer muscle shapes (cavities are drawn over them in white).
-  var VENT = "M150,212 L404,188 C432,240 430,320 385,368 C360,392 335,402 318,398 C285,392 250,370 215,345 C170,312 146,265 150,212 Z";
+  // Four-chamber view: one smooth silhouette; chambers are cut from it (cavities drawn over the muscle in white).
+  // AV groove: one slightly oblique line, y = 160 - 0.069 (x - 130). Crux at about (266, 151).
+  var SIL = "M176,46 C140,50 118,92 122,140 L122,161 C126,232 176,322 252,366 C286,388 314,402 340,398 " +
+    "C392,388 430,320 432,240 C434,192 430,162 426,140 C422,96 402,56 362,46 C332,39 298,42 270,47 C250,40 226,38 206,44 Z";
+  var VENT = SIL;
   var REGIONS = {
-    RA: { d: "M150,212 L120,212 C108,170 115,112 160,90 L176,82 L206,82 C232,92 248,116 252,150 L254,207 Z" },
-    LA: { d: "M282,191 C276,150 282,114 305,104 L380,100 C405,110 412,150 404,188 Z" },
-    RV: { d: VENT, clip: "0,190 244,190 300,392 280,420 0,420" },
-    SEP: { d: VENT, clip: "244,190 274,190 334,392 300,392" },
-    LV: { d: VENT, clip: "274,190 540,190 540,420 280,420 300,392 334,392" }
+    RA: { d: SIL, clip: "0,0 263,0 266,151 0,169" },
+    LA: { d: SIL, clip: "263,0 540,0 540,131.7 266,151" },
+    RV: { d: SIL, clip: "0,169 256,151 290,362 270,420 0,420" },
+    SEP: { d: SIL, clip: "256,151 282,149 318,372 290,362" },
+    LV: { d: SIL, clip: "282,149 540,131.7 540,420 270,420 290,362 318,372" }
   };
   var CAVITY = {
-    RA: "M150,206 L128,206 C120,170 126,120 166,100 L178,94 L204,94 C226,102 238,122 241,150 L243,203 Z",
-    LA: "M292,189 C288,154 292,124 310,114 L376,110 C396,120 400,152 394,188 Z",
-    RV: "M162,213 L246,206 C262,270 285,330 305,372 C280,372 250,356 222,336 C184,308 160,264 162,213 Z",
-    LV: "M272,203 L382,194 C400,240 394,305 364,345 C350,362 336,370 326,366 C306,330 288,270 272,203 Z"
+    RA: "M140,157 C128,120 134,74 172,58 L208,56 C234,58 252,72 257,92 L257,148 Z",
+    LA: "M273,147 L273,72 C286,58 320,54 356,60 C392,68 410,100 412,137 Z",
+    RV: "M142,164 C142,232 190,306 288,356 C276,300 262,220 256,154 Z",
+    LV: "M282,152 C290,230 300,310 318,368 C330,378 345,372 360,352 C392,310 400,230 398,143 Z"
   };
   // Direction of the activation sweep in each region: [x1, y1, x2, y2]. Conditions may override.
   var SWEEP = {
-    RA: [175, 88, 205, 212], LA: [290, 100, 404, 190],
-    RV: [295, 365, 150, 215], LV: [322, 392, 418, 200],
-    SEP: { lr: [298, 284, 266, 294], rl: [266, 294, 298, 284] }
+    RA: [178, 46, 250, 158], LA: [270, 50, 422, 142],
+    RV: [290, 355, 140, 165], LV: [325, 395, 428, 150],
+    SEP: { lr: [300, 265, 272, 270], rl: [272, 270, 300, 265] }
   };
   var PATHS = {
-    intern: "M180,90 C222,100 240,150 244,191",
-    intern2: "M170,96 C138,136 150,192 238,198",
-    bach: "M182,88 C225,78 280,90 330,106",
-    avn: "M238,193 L249,199",
-    his: "M249,199 L253,208 L259,224",
-    rb: "M259,224 C266,265 284,320 302,362",
-    lb: "M259,224 L272,240",
-    laf: "M272,240 C305,250 345,248 380,232",
-    lpf: "M272,240 C290,290 305,330 318,352",
-    purkR: "M302,364 C262,362 216,340 186,305 C166,280 160,250 164,222",
-    purkL: "M318,354 C330,372 350,362 366,340 C386,310 392,255 384,206"
+    intern: "M182,50 C225,62 248,100 250,142",
+    intern2: "M174,54 C135,80 130,140 160,152 L244,146",
+    bach: "M186,48 C225,36 290,38 360,54",
+    avn: "M246,143 L256,149",
+    his: "M256,149 L262,160 L267,176",
+    rb: "M267,176 C268,230 278,300 292,352",
+    lb: "M267,176 L280,190",
+    laf: "M280,190 C315,200 355,198 392,180",
+    lpf: "M280,190 C296,250 306,310 318,352",
+    purkR: "M292,354 C240,330 185,290 160,240 C150,215 148,190 150,170",
+    purkL: "M318,354 C330,372 350,365 362,348 C390,308 396,240 392,160"
   };
   var ATRIAL = { intern: 1, intern2: 1, bach: 1, avn: 1 };
 
-  // Great vessels as short stubs (drawn first so the chambers sit on top).
+  // SVC stub (drawn first so the right atrium sits on it).
   var gVes = el("g", { "aria-hidden": "true" });
-  function tube(d, parent) { el("path", { d: d, fill: "#fff", stroke: GREY, "stroke-width": 1.6 }, parent || gVes); }
-  tube("M290,100 L318,26 L344,32 L314,106 Z");                 // pulmonary trunk
-  tube("M258,203 L258,22 L284,22 L284,201 Z");                 // aorta
-  [["Aorta", 271, 16, "middle"], ["Pulmonary trunk", 334, 22, "start"], ["SVC", 191, 16, "middle"], ["IVC", 136, 268, "middle"]].forEach(function (v) {
-    el("text", { x: v[1], y: v[2], "text-anchor": v[3], "font-size": 12, "font-family": "var(--font-sans)", fill: INK }, gVes).textContent = v[0];
-  });
+  el("path", { d: "M178,58 L178,14 L206,14 L206,58", fill: SOFT, stroke: GREY, "stroke-width": 1.6 }, gVes);
+  el("text", { x: 172, y: 26, "text-anchor": "end", "font-size": 12, "font-family": "var(--font-sans)", fill: INK }, gVes).textContent = "SVC";
 
   var gRegions = el("g", { "aria-hidden": "true" });
   var regionNodes = {};
   Object.keys(REGIONS).forEach(function (r) {
     var R = REGIONS[r], cp = null;
     if (R.clip) { var c = el("clipPath", { id: "ecgcC" + r }, defs); el("polygon", { points: R.clip }, c); cp = "url(#ecgcC" + r + ")"; }
-    var base = el("path", { d: R.d, fill: SOFT, stroke: GREY, "stroke-width": 1.6 }, gRegions);
+    var base = el("path", { d: R.d, fill: SOFT, stroke: "none" }, gRegions);
     if (cp) base.setAttribute("clip-path", cp);
     var grad = el("linearGradient", { id: "ecgcG" + r, gradientUnits: "userSpaceOnUse" }, defs);
     el("stop", { offset: 0, "stop-color": "#fff" }, grad);
@@ -250,30 +249,28 @@
   var lateClip = el("clipPath", { id: "ecgcLate" }, defs);
   var latePoly = el("polygon", { points: "0,0 0,0 0,0" }, lateClip);
   var lateZone = el("path", { d: VENT, fill: "url(#ecgcHatch)", "clip-path": "url(#ecgcLate)", opacity: 0 }, gRegions);
-  // Cavities in white over the muscle, which leaves thin atrial and RV walls, a thick LV wall and a muscular septum.
+  // One continuous outline.
+  el("path", { d: SIL, fill: "none", stroke: GREY, "stroke-width": 1.8 }, gRegions);
+  // Cavities in white: thin atrial and RV walls, a thick LV wall, muscular septa meeting at the crux.
   Object.keys(CAVITY).forEach(function (k) {
     el("path", { d: CAVITY[k], fill: "#fff", stroke: GREY, "stroke-width": 1.4 }, gRegions);
   });
-  // White openings where the SVC and IVC enter the right atrium.
-  el("rect", { x: 179, y: 22, width: 24, height: 76, fill: "#fff" }, gRegions);
-  el("path", { d: "M178,22 L178,94 M204,22 L204,94", stroke: GREY, "stroke-width": 1.6 }, gRegions);
-  el("rect", { x: 125, y: 203, width: 22, height: 52, fill: "#fff" }, gRegions);
-  el("path", { d: "M124,202 L124,255 M148,207 L148,255", stroke: GREY, "stroke-width": 1.6 }, gRegions);
-  // Coronary sinus opening.
-  el("ellipse", { cx: 226, cy: 197, rx: 7, ry: 4, fill: "#fff", stroke: GREY, "stroke-width": 1.4 }, gRegions);
+  // SVC opening into the right atrium.
+  el("rect", { x: 179, y: 14, width: 26, height: 46, fill: "#fff" }, gRegions);
+  el("path", { d: "M178,14 L178,57 M206,14 L206,57", stroke: GREY, "stroke-width": 1.6 }, gRegions);
+  // Faint coronary sinus opening, the landmark for the AV node.
+  el("ellipse", { cx: 234, cy: 140, rx: 7, ry: 4, fill: "#fff", stroke: GREY, "stroke-width": 1, "stroke-dasharray": "2 2" }, gRegions);
 
-  // Fibrous AV ring: an electrical insulator; the only way through is the AV node and His bundle.
-  el("path", { d: "M120,212 L404,188", stroke: "#6B7075", "stroke-width": 3.5, "stroke-linecap": "round" }, gRegions);
-  // Valves as simple flaps.
+  // Fibrous AV ring along the groove: an electrical insulator; the only way through is the AV node and His bundle.
+  el("path", { d: "M122,160.6 L426,139.6", stroke: "#6B7075", "stroke-width": 3.5, "stroke-linecap": "round" }, gRegions);
+  // Tricuspid and mitral valves as simple flaps on the groove.
   var VALVES = [
-    "M168,210 Q172,232 186,238 Q180,224 180,209 Z", "M232,204 Q228,226 214,234 Q220,220 220,205 Z",           // tricuspid
-    "M296,198 Q300,222 316,230 Q308,214 310,197 Z", "M372,191 Q368,215 352,223 Q360,207 358,192 Z",           // mitral
-    "M259,202 Q265,188 271,200 Z", "M271,200 Q277,187 283,200 Z",                                             // aortic
-    "M298,88 Q304,77 308,91 Z", "M308,91 Q314,80 316,95 Z"                                                    // pulmonary
+    "M165,158 Q169,182 184,190 Q177,174 178,157 Z", "M235,153 Q231,177 216,186 Q223,170 222,154 Z",           // tricuspid
+    "M300,148 Q304,174 320,182 Q312,166 313,147 Z", "M385,142 Q381,168 365,176 Q373,160 371,143 Z"            // mitral
   ];
   VALVES.forEach(function (d) { el("path", { d: d, fill: "#fff", stroke: "#6B7075", "stroke-width": 1.5, "stroke-linejoin": "round" }, gRegions); });
 
-  [["RA", 186, 150], ["LA", 346, 152], ["RV", 208, 285], ["LV", 340, 338]].forEach(function (c) {
+  [["RA", 198, 108], ["LA", 345, 104], ["RV", 205, 238], ["LV", 350, 330]].forEach(function (c) {
     el("text", { x: c[1], y: c[2], "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: INK, "font-family": "var(--font-sans)" }, gRegions).textContent = c[0];
   });
 
@@ -288,7 +285,7 @@
     act.setAttribute("stroke-dasharray", len + " " + len);
     pathNodes[p] = { base: base, act: act, len: len };
   });
-  var saNode = el("ellipse", { cx: 176, cy: 90, rx: 8, ry: 5.5, fill: GREY, stroke: INK, "stroke-width": 1 }, gPaths);
+  var saNode = el("ellipse", { cx: 177, cy: 50, rx: 8, ry: 5.5, fill: GREY, stroke: INK, "stroke-width": 1 }, gPaths);
   var gHeads = el("g", { "aria-hidden": "true" });
   var heads = {};
   Object.keys(PATHS).forEach(function (p) {
@@ -300,13 +297,12 @@
 
   // Fixed label columns with thin leader lines: [text, label x, label y, target x, target y, anchor].
   var LABELS = [
-    ["SA node", 100, 52, 172, 89, "end"], ["Internodal paths", 100, 112, 150, 140, "end"], ["Coronary sinus", 100, 170, 220, 197, "end"],
-    ["AV node", 100, 200, 240, 194, "end"], ["Tricuspid valve", 100, 238, 172, 224, "end"], ["Right bundle", 100, 300, 280, 300, "end"],
-    ["Purkinje fibres", 100, 352, 192, 312, "end"],
-    ["Pulmonary valve", 430, 50, 312, 86, "start"], ["Bachmann's bundle", 430, 82, 300, 95, "start"], ["Aortic valve", 430, 128, 280, 196, "start"],
-    ["Mitral valve", 430, 168, 362, 206, "start"], ["Fibrous AV ring", 430, 196, 400, 189, "start"], ["His bundle", 430, 222, 254, 212, "start"],
-    ["Left bundle", 430, 250, 266, 232, "start"], ["Anterior fascicle", 430, 278, 360, 242, "start"], ["Posterior fascicle", 430, 316, 300, 312, "start"],
-    ["Septum", 430, 372, 300, 352, "start"]
+    ["SA node", 100, 42, 176, 50, "end"], ["Internodal paths", 100, 96, 141, 108, "end"], ["Coronary sinus", 100, 132, 230, 140, "end"],
+    ["AV node", 100, 166, 250, 146, "end"], ["Tricuspid valve", 100, 204, 176, 180, "end"], ["Right bundle", 100, 280, 277, 283, "end"],
+    ["Purkinje fibres", 100, 330, 216, 307, "end"],
+    ["Bachmann's bundle", 430, 34, 280, 40, "start"], ["Interatrial septum", 430, 76, 265, 90, "start"], ["Mitral valve", 430, 120, 372, 158, "start"],
+    ["Fibrous AV ring", 430, 150, 418, 140, "start"], ["His bundle", 430, 178, 263, 165, "start"], ["Left bundle", 430, 206, 276, 186, "start"],
+    ["Anterior fascicle", 430, 234, 347, 194, "start"], ["Posterior fascicle", 430, 300, 306, 302, "start"], ["Septum", 430, 360, 297, 340, "start"]
   ];
   var gLab = el("g", { "class": "ecgc-labels", "aria-hidden": "true" });
   LABELS.forEach(function (l) {
@@ -475,7 +471,7 @@
 
     // One live vector: frontal component on the heart and frontal wheel, horizontal component on the horizontal wheel.
     var a = arrowAt(state.cond, t), isT = t >= tw[1] && t <= tw[2];
-    var o = t < 100 ? { x: 262, y: 140 } : { x: 312, y: 288 };
+    var o = t < 100 ? { x: 255, y: 100 } : { x: 312, y: 262 };
     var show = a.mag >= 0.06, rad = a.ang * Math.PI / 180, hrad = a.h * Math.PI / 180;
     gArrow.setAttribute("opacity", show ? 1 : 0);
     [[wheelF, rad], [wheelH, hrad]].forEach(function (w) {
