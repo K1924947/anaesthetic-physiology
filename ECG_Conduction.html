@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261118">
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261122a">
+<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261122b">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -49,6 +49,9 @@
       <div class="ecgc-play">
         <button type="button" id="ecgcPlay" class="ecgc-btn" aria-pressed="false">Pause</button>
         <button type="button" id="ecgcReplay" class="ecgc-btn">Replay</button>
+        <button type="button" id="ecgcStep" class="ecgc-btn" aria-pressed="false">Step through</button>
+        <button type="button" id="ecgcBack" class="ecgc-btn" hidden>Back</button>
+        <button type="button" id="ecgcNext" class="ecgc-btn" hidden>Next</button>
         <label class="ecgc-speed">Speed
           <select id="ecgcSpeed" aria-label="Playback speed">
             <option value="0.25" selected>0.25x</option>
@@ -64,18 +67,22 @@
         <svg id="ecgcSvg" viewBox="0 0 600 470" role="img" aria-labelledby="ecgcHeartTitle ecgcHeartCap">
           <title id="ecgcHeartTitle">Flat diagram of the heart and its conduction system</title>
         </svg>
-        <figcaption id="ecgcHeartCap" class="ecgc-rule"><span class="ecgc-rule-arrow" aria-hidden="true">&#10142;</span> Wavefront <strong>towards</strong> a lead's electrode = <strong>upward</strong> deflection; <strong>away</strong> = <strong>downward</strong>.</figcaption>
+        <figcaption id="ecgcHeartCap" class="ecgc-rule"><span class="ecgc-rule-arrow" aria-hidden="true">&#10142;</span> Net wavefront <strong>towards</strong> a lead = <strong>upward</strong> deflection; <strong>away</strong> = <strong>downward</strong>. Dashed in ST and T.</figcaption>
       </figure>
 
-      <figure class="ecgc-wheels" id="ecgcWheels" role="img" aria-label="Vector wheels">
-        <p class="ecgc-wheel-title">Frontal plane<br><span>limb leads</span></p>
-        <svg id="ecgcWheelF" viewBox="-70 -66 140 132" aria-hidden="true"></svg>
-        <p class="ecgc-wheel-title">Horizontal plane<br><span>chest leads, front at the bottom</span></p>
+      <figure class="ecgc-wheels" id="ecgcWheels" role="img" aria-label="Chest lead wheel">
+        <p class="ecgc-wheel-title">Chest leads<br><span>horizontal plane, front at the bottom</span></p>
         <svg id="ecgcWheelH" viewBox="-70 -66 140 132" aria-hidden="true"></svg>
+        <p class="ecgc-wheel-note">Limb leads are the lines on the heart.</p>
         <figcaption class="ecgc-wheel-cap">A lead reads positive when the wavefront points towards it.</figcaption>
+        <ul class="ecgc-key" aria-label="Key">
+          <li><span class="k-fast" aria-hidden="true">&#9654;</span> Fast route: bundle branches and Purkinje fibres (blue, solid)</li>
+          <li><span class="k-slow" aria-hidden="true">&raquo;</span> Slow route: cell to cell through gap junctions (orange, chevrons)</li>
+        </ul>
       </figure>
 
       <div class="ecgc-leads" id="ecgcLeads"></div>
+      <svg class="ecgc-link" id="ecgcLink" aria-hidden="true"></svg>
     </div>
 
     <div class="ecgc-timeline">
@@ -94,12 +101,19 @@
       <details>
         <summary>For anaesthetist review</summary>
         <ul>
-          <li>Activation timings are idealised round numbers for one beat at 75 per minute (PR 160 ms, QRS 85 ms normal, 140 ms in RBBB and LBBB), checked against Klabunde's sequence; not measured values.</li>
-          <li>Every lead trace is calculated as the projection of one idealised heart vector (a single dipole) on that lead's axis, so lead polarity always matches the arrow. The vector's components and timings are hand-set to reproduce the textbook patterns below. Real ECGs also contain non-dipole and electrode-proximity effects; chest leads use one shared gain. Not recordings.</li>
+          <li>One activation-time map drives everything: the arrows, dots and chevrons on the heart, the net vector, every lead trace, the bump labels and the step-through story. Every trace is the projection of that one summed vector (a single dipole) on the lead's axis, so polarity always matches the arrow. Not recordings; real ECGs also contain non-dipole and electrode-proximity effects.</li>
+          <li>The map is a flat 2D slice: muscle points on a 7-unit grid (about 2.3 mm), scale chosen by hand so the heart is about 10 cm long. Speeds from Klabunde: bundle branches 2 m/s, Purkinje fibres 4 m/s, ventricular muscle 0.5 m/s (one speed for all muscle, no fibre direction).</li>
+          <li>Because a flat slice makes long cell-to-cell routes longer than the real 3D routes, muscle spread beyond one wall thickness is treated as 1.5 times quicker (a model choice, not a measured speed).</li>
+          <li>Hand-set model choices: where each fast path starts exciting muscle (insulated His bundle and upper bundle branches; right bundle reaching the septum low down; LV Purkinje network branching half way down the posterior fascicle); the coupling distance (12 units); how far muscle spread runs before it is called "slow, cell to cell" (RV 22 units, elsewhere 42); the out-of-plane (front to back) direction given to each region; the RV counted at 0.75 because its wall is thinner than drawn; and slow fronts counted 3 times, because in a slice a slow front crossing a wall shows as a short line but in the heart it is a broad sheet.</li>
+          <li>One calibration constant for all conditions: normal lead II R wave set to 1.2 mV. Chest leads share one gain.</li>
+          <li>The atria are not mapped: the P wave is two hand-set components (right then left atrium).</li>
+          <li>Repolarisation is a simple rule from the same map: fast-route muscle gives a concordant T (epicardium recovers first); slow-route muscle gives a secondary ST/T opposite to its own depolarisation. Typical patterns; individual patients vary.</li>
+          <li>Bump labels: each QRS deflection of the focus lead is split at clear notches and credited to the muscle regions whose own projection on that lead has the bump's sign; the top one or two are named. A teaching attribution, not a measured one.</li>
+          <li>Timings in this model: PR about 155 ms (165 ms to the first muscle in LBBB, where the first muscle is reached via the right bundle); QRS 75 ms normal, 160 ms RBBB, 195 ms LBBB from first to last muscle activation (the low-amplitude tail makes the readout longer than a measured surface QRS).</li>
+          <li>Known gaps: in RBBB the model's R wave in I and aVL is smaller than typical (aVL is mostly negative), and LBBB inferior leads are more multiphasic than usual.</li>
+          <li>The frontal lead lines on the heart and the chest wheel show the same vector: frontal (x, y) on the heart, horizontal (x, z) on the wheel; dashed during ST and T. Chest lead angles are standard approximations.</li>
           <li>The heart is a flat, simplified four-chamber cut-through; valve, vessel and conduction positions are schematic.</li>
-          <li>The arrow on the heart and the wheels show that same vector: frontal components (x, y) on the heart and frontal wheel, horizontal components (x, z) on the horizontal wheel; dashed during ST and T. Chest lead angles are standard approximations. On the diagram, repolarisation is shown only as a fade.</li>
-          <li>Time is stretched so one beat fills each panel: thin vertical lines are 40 ms, horizontal lines 0.5 mV. The ms readout and QRS width are true values.</li>
-          <li>Secondary ST and T changes in RBBB and LBBB are shown as typical patterns; individual patients vary.</li>
+          <li>Time is stretched so one beat fills each panel: thin vertical lines are 40 ms, horizontal lines 0.5 mV. The ms readout is the model's true time.</li>
         </ul>
       </details>
       <details>
@@ -122,6 +136,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-conduction.js?v=20261122a"></script>
+<script src="assets/ecg-conduction.js?v=20261122b"></script>
 </body>
 </html>

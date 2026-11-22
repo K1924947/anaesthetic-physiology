@@ -49,7 +49,8 @@ const r = await page.evaluate(() => {
   f.lbbbV6 = peaks(tr("lbbb", "V6", 150, 310), .05);
   f.lbbbV6notch = (() => { const a = tr("lbbb", "V6", 190, 280); let mx = 0; for (let i = 1; i < a.length - 1; i++) if (a[i] > a[i - 1] && a[i] >= a[i + 1]) mx++; return mx; })();
   f.lbbbT = Object.fromEntries(["I", "aVL", "V6", "V1"].map((L) => [L, [Math.sign(area("lbbb", L, 155, 305)), Math.sign(tPeak("lbbb", L))]]));
-  f.lbbbST = { V1: E.sample("lbbb", "V1", 345), V6: E.sample("lbbb", "V6", 345) };
+  const stS = E.segs("lbbb").find((s) => s[0] === "ST"), stT = Math.round((stS[1] + stS[2]) / 2);
+  f.lbbbST = { t: stT, V1: E.sample("lbbb", "V1", stT), V6: E.sample("lbbb", "V6", stT) };
   return out;
 });
 
@@ -58,7 +59,7 @@ const f = r.feat;
 check("P upright in II", f.Pwave.II.length === 1 && f.Pwave.II[0] > 0, f.Pwave.II);
 check("P inverted in aVR", f.Pwave.aVR.length === 1 && f.Pwave.aVR[0] < 0, f.Pwave.aVR);
 check("P biphasic in V1 (positive then negative)", f.Pwave.V1.length === 2 && f.Pwave.V1[0] > 0 && f.Pwave.V1[1] < 0, f.Pwave.V1);
-check("normal QRS 80 to 100 ms", f.width.normal >= 75 && f.width.normal <= 100, f.width);
+check("normal QRS 70 to 100 ms (LITFL normal range)", f.width.normal >= 70 && f.width.normal <= 100, f.width);
 check("BBB QRS >= 120 ms", f.width.rbbb >= 120 && f.width.lbbb >= 120, f.width);
 check("normal septal q in I, aVL, V6 and r in V1", f.normalFirst.I < 0 && f.normalFirst.aVL < 0 && f.normalFirst.V6 < 0 && f.normalFirst.V1 > 0, f.normalFirst);
 check("normal T concordant with QRS", Object.values(f.normalT).every(([q, t]) => q === t), f.normalT);

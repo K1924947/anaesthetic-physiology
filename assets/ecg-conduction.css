@@ -31,7 +31,7 @@
 .ecgc select { font: 14px var(--font-sans); padding: 3px 6px; border: 1px solid var(--text); border-radius: 6px; background: var(--surface); color: var(--text); }
 .ecgc button:focus-visible, .ecgc select:focus-visible, .ecgc input:focus-visible, .ecgc summary:focus-visible { outline: 3px solid var(--ecgc-blue); outline-offset: 2px; }
 
-.ecgc-stage { display: grid; grid-template-columns: minmax(0, 1.22fr) 150px minmax(0, 1fr); gap: 10px; align-items: start; }
+.ecgc-stage { display: grid; grid-template-columns: minmax(0, 1.25fr) 140px minmax(0, 1fr); gap: 10px; align-items: start; position: relative; }
 .ecgc-wheels { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px 4px 6px; text-align: center; }
 .ecgc-wheels svg { display: block; width: 100%; height: auto; }
 .ecgc-wheel-title { margin: 2px 0 0; font: 600 13px/1.15 var(--font-sans); }
@@ -73,3 +73,17 @@
 @media (max-width: 900px) {
   .ecgc-stage { grid-template-columns: 1fr; }
 }
+
+.ecgc-btn[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+.ecgc-btn:disabled { opacity: .45; cursor: default; }
+.ecgc-link { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.ecgc-wheel-note { margin: 0 2px; font: 11.5px/1.25 var(--font-sans); color: var(--muted); }
+.ecgc-key { list-style: none; margin: 6px 2px 0; padding: 0; text-align: left; font: 11.5px/1.25 var(--font-sans); }
+.ecgc-key li { margin-top: 4px; }
+.k-fast { color: var(--ecgc-blue); font-weight: 700; }
+.k-slow { color: var(--ecgc-orange); font-weight: 700; font-size: 14px; }
+.ecgc-focus { font: 600 12px var(--font-sans); padding: 1px 8px; border: 1px solid var(--text); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
+.ecgc-focus[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+.ecgc-lead.is-focus { border: 2px solid var(--text); padding: 3px 7px 5px; }
+.ecgc-lead.is-focus canvas { cursor: pointer; }
+.ecgc-lead-note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; text-align: right; }
