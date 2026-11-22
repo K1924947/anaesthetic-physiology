@@ -20,7 +20,7 @@
     var h = HORIZ_AX[L] * Math.PI / 180; return CHEST_GAIN * (v.x * Math.cos(h) + v.z * Math.sin(h));
   }
   // Atria are not mapped: the P wave is two idealised components, right atrium then left atrium.
-  var P_WAVE = [[35, 14, .03, .12, .07], [65, 14, .10, .06, -.06]];
+  var P_WAVE = [[35, 14, .04, .156, .09], [65, 14, .13, .078, -.078]]; // II peak about 0.17 mV
   // The heart vector. Each component is [centre ms, width ms, x, y, z] in mV (x = patient's left, y = inferior,
   // z = anterior), then the muscle region that makes it and whether it is reached slowly, cell to cell (1) or by the fast route (0).
   var VEC = {

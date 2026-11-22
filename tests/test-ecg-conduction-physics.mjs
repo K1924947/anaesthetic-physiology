@@ -65,6 +65,7 @@ for (const c of Object.keys(r.sign)) check(`${c}: trace sign = vector projection
 const f = r.feat;
 check("P upright in II", f.Pwave.II.length === 1 && f.Pwave.II[0] > 0, f.Pwave.II);
 check("P inverted in aVR", f.Pwave.aVR.length === 1 && f.Pwave.aVR[0] < 0, f.Pwave.aVR);
+check("P amplitude in II 0.12 to 0.25 mV, aVR P negative", f.Pwave.II[0] >= 0.12 && f.Pwave.II[0] <= 0.25 && f.Pwave.aVR[0] < 0, { II: f.Pwave.II, aVR: f.Pwave.aVR, V1: f.Pwave.V1 });
 check("P biphasic in V1 (positive then negative)", f.Pwave.V1.length === 2 && f.Pwave.V1[0] > 0 && f.Pwave.V1[1] < 0, f.Pwave.V1);
 check("normal QRS 80 to 100 ms", f.width.normal >= 80 && f.width.normal <= 100, f.width);
 check("RBBB QRS 120 to 140 ms, LBBB QRS 130 to 150 ms", f.width.rbbb >= 120 && f.width.rbbb <= 140 && f.width.lbbb >= 130 && f.width.lbbb <= 150, f.width);
