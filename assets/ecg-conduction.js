@@ -224,9 +224,11 @@
     var a = FRONTAL_AX[L] * Math.PI / 180, ex = LC.x + LR * Math.cos(a), ey = LC.y + LR * Math.sin(a);
     var line = el("line", { x1: LC.x, y1: LC.y, x2: ex.toFixed(1), y2: ey.toFixed(1), stroke: GREY, "stroke-width": 1, "stroke-dasharray": "4 4", opacity: .75 }, gLeadLines);
     var deg = FRONTAL_AX[L] > 0 ? "+" + FRONTAL_AX[L] : String(FRONTAL_AX[L]).replace("-", "\u2212");
-    var tx = el("text", { x: (LC.x + (LR + 12) * Math.cos(a)).toFixed(1), y: (LC.y + (LR + 12) * Math.sin(a) + 4).toFixed(1), "text-anchor": "middle", "font-size": 11, "font-family": "var(--font-sans)", fill: "var(--muted)", stroke: "#fff", "stroke-width": 3, "paint-order": "stroke" }, gLeadLines);
+    // Upper and side lead names sit just inside the circle (clear of the label columns); lower ones just outside it.
+    var rr = FRONTAL_AX[L] > 0 ? LR + 14 : LR - 28;
+    var tx = el("text", { x: (LC.x + rr * Math.cos(a)).toFixed(1), y: (LC.y + rr * Math.sin(a) + 4).toFixed(1), "text-anchor": "middle", "font-size": 12, "font-family": "var(--font-sans)", fill: "var(--muted)", stroke: "#fff", "stroke-width": 3.5, "paint-order": "stroke" }, gLeadLines);
     tx.textContent = L + (L === "I" ? "\u2002" : " ") + deg + "\u00b0";
-    if (L === "I") { tx.setAttribute("x", (ex - 30).toFixed(1)); tx.setAttribute("y", (ey - 5).toFixed(1)); tx.setAttribute("text-anchor", "end"); }
+    if (L === "I") { tx.setAttribute("x", (ex - 52).toFixed(1)); tx.setAttribute("y", (ey + 16).toFixed(1)); } // clear of the lateral wall markers
     leadLineNodes[L] = { line: line, tx: tx, ex: ex, ey: ey };
   });
 
@@ -267,24 +269,6 @@
     el("path", { d: d, fill: SOFT, stroke: GREY, "stroke-width": 1.2 }, gRegions);
   });
 
-  // Fixed label columns with thin leader lines: [text, label x, label y, target x, target y, anchor, second line].
-  var LABELS = [
-    ["SA node", 100, 42, 177, 50, "end"], ["Internodal paths", 100, 96, 128, 112, "end"], ["Coronary sinus", 100, 132, 230, 140, "end"],
-    ["AV node", 100, 166, 263, 146, "end"], ["Tricuspid valve", 100, 204, 172, 172, "end"], ["Right bundle", 100, 246, 245, 245, "end"],
-    ["Moderator band", 100, 284, 212, 285, "end", "crosses the RV cavity"], ["Purkinje fibres", 100, 336, 147, 226, "end"],
-    ["Bachmann's bundle", 430, 34, 290, 47, "start"], ["Interatrial septum", 430, 66, 264, 100, "start"], ["Mitral valve", 430, 96, 372, 158, "start"],
-    ["Fibrous AV ring", 430, 122, 418, 140, "start"], ["His bundle", 430, 166, 266, 166, "start"], ["Left bundle", 430, 196, 269, 212, "start"],
-    ["Anterior fascicle", 430, 228, 277, 239, "start", "onto the front wall \u2299"], ["Posterior fascicle", 430, 276, 271, 272, "start"],
-    ["Purkinje fibres", 430, 316, 408, 300, "start"], ["Septum", 430, 362, 258, 330, "start"]
-  ];
-  var gLab = el("g", { "class": "ecgc-labels", "aria-hidden": "true" });
-  LABELS.forEach(function (l) {
-    var lx = l[5] === "end" ? l[1] + 4 : l[1] - 4;
-    el("line", { x1: lx, y1: l[2] - 4, x2: l[3], y2: l[4], stroke: INK, "stroke-width": .7, "stroke-opacity": .5 }, gLab);
-    el("circle", { cx: l[3], cy: l[4], r: 1.7, fill: INK }, gLab);
-    el("text", { x: l[1], y: l[2], "text-anchor": l[5], "font-size": 12.5, "font-family": "var(--font-sans)", fill: INK }, gLab).textContent = l[0];
-    if (l[6]) el("text", { x: l[1], y: l[2] + 13, "text-anchor": l[5], "font-size": 11, "font-family": "var(--font-sans)", fill: "var(--muted)" }, gLab).textContent = l[6];
-  });
   var blockText = el("text", { "font-size": 12.5, "font-weight": 700, "font-family": "var(--font-sans)", fill: INK, stroke: "#fff", "stroke-width": 4, "paint-order": "stroke", opacity: 0 }, svg);
   var gMarks = el("g", { "aria-hidden": "true" });
   var gLeadMarks = el("g", {});
@@ -296,6 +280,34 @@
   var gCluster = el("g", { "aria-hidden": "true" });
   var clusterRing = el("circle", { r: 22, fill: "none", "stroke-width": 2, opacity: 0 }, gCluster);
   svg.appendChild(gOut); // out-of-plane markers stay on top of the arrow
+
+  // The whole drawing is scaled down a little inside the frame so the label columns get a clear gutter.
+  var HS = 0.86, HC = { x: 277, y: 215 };
+  var gHeart = document.createElementNS(NS, "g");
+  gHeart.setAttribute("transform", "translate(" + (HC.x * (1 - HS)).toFixed(2) + "," + (HC.y * (1 - HS)).toFixed(2) + ") scale(" + HS + ")");
+  Array.prototype.slice.call(svg.childNodes).forEach(function (n) { if (n !== defs) gHeart.appendChild(n); });
+  svg.appendChild(gHeart);
+  function T(x, y) { return [HC.x + HS * (x - HC.x), HC.y + HS * (y - HC.y)]; }
+
+  // Two aligned label columns, evenly spaced, ordered by target height so leaders never cross. Each leader is a short
+  // horizontal run into the gutter, then one straight segment to a small dot on the target (heart coordinates).
+  var LAB_L = [["SA node", 177, 50], ["Internodal paths", 128, 112], ["Coronary sinus", 230, 140], ["AV node", 263, 146],
+    ["Tricuspid valve", 172, 172], ["Right bundle", 245, 245], ["Moderator band", 212, 285, "crosses the RV cavity"], ["Purkinje fibres", 200, 292]];
+  var LAB_R = [["Bachmann's bundle", 290, 47], ["Interatrial septum", 264, 100], ["Fibrous AV ring", 402, 141], ["Mitral valve", 372, 160],
+    ["His bundle", 266, 166], ["Left bundle", 269, 212], ["Anterior fascicle", 274, 239, "onto the front wall \u2299"], ["Posterior fascicle", 271, 272],
+    ["Purkinje fibres", 408, 300], ["Septum", 258, 330]];
+  var COL = { L: { text: 114, elbow: 124, top: 40, bot: 372 }, R: { text: 442, elbow: 432, top: 34, bot: 386 } };
+  var gLab = el("g", { "class": "ecgc-labels", "aria-hidden": "true" });
+  [["L", LAB_L], ["R", LAB_R]].forEach(function (side) {
+    var c = COL[side[0]], list = side[1], step = (c.bot - c.top) / (list.length - 1), isL = side[0] === "L";
+    list.forEach(function (l, i) {
+      var y = c.top + i * step, tg = T(l[1], l[2]), tx0 = isL ? c.text + 4 : c.text - 4;
+      el("polyline", { points: tx0 + "," + (y - 4) + " " + c.elbow + "," + (y - 4) + " " + tg[0].toFixed(1) + "," + tg[1].toFixed(1), fill: "none", stroke: "#8A9097", "stroke-width": .8 }, gLab);
+      el("circle", { cx: tg[0].toFixed(1), cy: tg[1].toFixed(1), r: 1.8, fill: INK }, gLab);
+      el("text", { x: c.text, y: y, "text-anchor": isL ? "end" : "start", "font-size": 12, "font-family": "var(--font-sans)", fill: INK }, gLab).textContent = l[0];
+      if (l[3]) el("text", { x: c.text, y: y + 12, "text-anchor": isL ? "end" : "start", "font-size": 10, "font-family": "var(--font-sans)", fill: "var(--muted)" }, gLab).textContent = l[3];
+    });
+  });
 
   /* ---------- Activation-time model ---------- */
   function parsePoly(str) { return str.split(" ").map(function (p) { var a = p.split(","); return [+a[0], +a[1]]; }); }
@@ -708,7 +720,7 @@
       var L = state.leads[i], dup = 0;
       for (var j = 0; j < i; j++) if (state.leads[j] === L) dup++;
       if (FRONTAL_AX[L] !== undefined) {
-        var n = leadLineNodes[L], a = FRONTAL_AX[L] * Math.PI / 180, r = LR - dup * 16;
+        var n = leadLineNodes[L], a = FRONTAL_AX[L] * Math.PI / 180, r = FRONTAL_AX[L] > 0 ? LR - dup * 16 : LR + dup * 14;
         n.line.setAttribute("stroke", INK); n.line.setAttribute("stroke-width", i === state.focus ? 2.2 : 1.5); n.line.setAttribute("stroke-dasharray", "none");
         n.tx.setAttribute("fill", INK); n.tx.setAttribute("font-weight", 700);
         g.setAttribute("transform", "translate(" + (LC.x + r * Math.cos(a)).toFixed(1) + "," + (LC.y + r * Math.sin(a)).toFixed(1) + ")");
@@ -932,7 +944,7 @@
     clusterRing.setAttribute("opacity", on ? 1 : 0);
     if (!on) return;
     var sr = stage.getBoundingClientRect(), cr = panels[i].cv.getBoundingClientRect(), col = link.b.slow ? SLOW_C : FAST_C;
-    var m = svg.getScreenCTM(), cp = new DOMPoint(link.b.cluster.x, link.b.cluster.y).matrixTransform(m);
+    var m = gHeart.getScreenCTM(), cp = new DOMPoint(link.b.cluster.x, link.b.cluster.y).matrixTransform(m);
     var x1 = cr.left - sr.left + link.x, y1 = cr.top - sr.top + link.y, x2 = cp.x - sr.left, y2 = cp.y - sr.top;
     var ringR = 22 * m.a, dx = x1 - x2, dy = y1 - y2, dl = Math.hypot(dx, dy) || 1;
     linkLine.setAttribute("x1", x1.toFixed(1)); linkLine.setAttribute("y1", y1.toFixed(1));
