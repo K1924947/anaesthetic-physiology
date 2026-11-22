@@ -767,7 +767,9 @@
   /* ---------- Rendering ---------- */
   function prog(win, t) { if (!win) return -1; return Math.max(0, Math.min(1, (t - win[0]) / win[1])); }
   var linkSvg = document.getElementById("ecgcLink"), stage = document.querySelector(".ecgc-stage");
-  var linkLine = el("line", { "stroke-width": 1.6, opacity: 0 }, linkSvg);
+  // The link line passes beneath label text: a mask cuts a small gap wherever it would cross a word.
+  var linkMask = el("mask", { id: "ecgcLinkMask", maskUnits: "userSpaceOnUse" }, el("defs", {}, linkSvg));
+  var linkLine = el("line", { "stroke-width": 1.6, opacity: 0, mask: "url(#ecgcLinkMask)" }, linkSvg);
   var linkDot = el("circle", { r: 3.5, opacity: 0 }, linkSvg);
   var currentBump = null;
 
@@ -883,9 +885,10 @@
     ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5;
     // 1 mV calibration pulse at the trace gain, on the baseline (moved down only if the baseline is too high to fit it).
     var cb = Math.min(h - 3, Math.max(Y(0), top + GAIN + 2)), ct = cb - GAIN;
-    ctx.beginPath(); ctx.moveTo(4, cb); ctx.lineTo(10, cb); ctx.lineTo(10, ct); ctx.lineTo(18, ct); ctx.lineTo(18, cb); ctx.lineTo(24, cb); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(14, cb); ctx.lineTo(18, cb); ctx.lineTo(18, ct); ctx.lineTo(26, ct); ctx.lineTo(26, cb); ctx.lineTo(31, cb); ctx.stroke();
+    // "1 mV" reads up the left side of the pulse, centred on it, so it never touches the pulse top.
     ctx.fillStyle = "#111"; ctx.font = "11px 'Source Sans 3', sans-serif";
-    ctx.fillText("1 mV", 2, Math.max(isFocus ? top + 9 : 11, ct - 3));
+    ctx.save(); ctx.translate(11, (cb + ct) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText("1 mV", 0, 0); ctx.restore();
     ctx.save(); ctx.beginPath(); ctx.rect(0, top - 2, w, h - top + 2); ctx.clip();
     var cut = Math.max(0, Math.min(CYCLE - 1, Math.floor(t)));
     ctx.lineJoin = "round";
@@ -938,6 +941,27 @@
     return link;
   }
 
+  function textRects() {
+    var out = [];
+    document.querySelectorAll("#ecgcSvg text, #ecgcWheelH text").forEach(function (n) {
+      if (n.textContent && +(n.getAttribute("opacity") || 1) > 0) out.push(n.getBoundingClientRect());
+    });
+    var w = document.createTreeWalker(document.getElementById("ecgcWheels"), NodeFilter.SHOW_TEXT), tn, rg = document.createRange();
+    while ((tn = w.nextNode())) {
+      if (!tn.textContent.trim() || tn.parentNode.closest("svg")) continue;
+      rg.selectNodeContents(tn); Array.prototype.forEach.call(rg.getClientRects(), function (r) { out.push(r); });
+    }
+    return out;
+  }
+  function maskText(x1, y1, x2, y2, sr) {
+    while (linkMask.firstChild) linkMask.removeChild(linkMask.firstChild);
+    el("rect", { x: -2000, y: -2000, width: 6000, height: 6000, fill: "#fff" }, linkMask);
+    var lx = Math.min(x1, x2) - 4, hx = Math.max(x1, x2) + 4, ly = Math.min(y1, y2) - 4, hy = Math.max(y1, y2) + 4;
+    textRects().forEach(function (r) {
+      var x = r.left - sr.left - 3, y = r.top - sr.top - 2, ww = r.width + 6, hh = r.height + 4;
+      if (r.width && x < hx && x + ww > lx && y < hy && y + hh > ly) el("rect", { x: x.toFixed(1), y: y.toFixed(1), width: ww.toFixed(1), height: hh.toFixed(1), fill: "#000" }, linkMask);
+    });
+  }
   function renderLink(link, i) {
     var on = !!link;
     [linkLine, linkDot].forEach(function (n) { n.setAttribute("opacity", on ? 1 : 0); });
@@ -949,6 +973,7 @@
     var ringR = 22 * m.a, dx = x1 - x2, dy = y1 - y2, dl = Math.hypot(dx, dy) || 1;
     linkLine.setAttribute("x1", x1.toFixed(1)); linkLine.setAttribute("y1", y1.toFixed(1));
     linkLine.setAttribute("x2", (x2 + dx / dl * ringR).toFixed(1)); linkLine.setAttribute("y2", (y2 + dy / dl * ringR).toFixed(1));
+    maskText(x1, y1, x2, y2, sr);
     linkLine.setAttribute("stroke", col); linkLine.setAttribute("stroke-dasharray", link.b.slow ? "6 4" : "none");
     linkDot.setAttribute("cx", x1.toFixed(1)); linkDot.setAttribute("cy", y1.toFixed(1)); linkDot.setAttribute("fill", col);
     clusterRing.setAttribute("cx", link.b.cluster.x.toFixed(1)); clusterRing.setAttribute("cy", link.b.cluster.y.toFixed(1));
