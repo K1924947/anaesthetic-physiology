@@ -51,6 +51,13 @@ const r = await page.evaluate(() => {
   f.lbbbT = Object.fromEntries(["I", "aVL", "V6", "V1"].map((L) => [L, [Math.sign(area("lbbb", L, 155, 305)), Math.sign(tPeak("lbbb", L))]]));
   const stS = E.segs("lbbb").find((s) => s[0] === "ST"), stT = Math.round((stS[1] + stS[2]) / 2);
   f.lbbbST = { t: stT, V1: E.sample("lbbb", "V1", stT), V6: E.sample("lbbb", "V6", stT) };
+  // Round 6 additions.
+  f.pr = Object.fromEntries(["normal", "rbbb", "lbbb"].map((c) => [c, E.segs(c).find((s) => s[0] === "PR")[2]]));
+  f.qrsReadout = Object.fromEntries(["normal", "rbbb", "lbbb"].map((c) => { const q = E.segs(c).find((s) => s[0] === "QRS"); return [c, q[2] - q[1]]; }));
+  f.rbbbR = Object.fromEntries(["I", "aVL"].map((L) => [L, { R: Math.max(...tr("rbbb", L, 160, 230)), S: Math.min(...tr("rbbb", L, 235, 290)) }]));
+  f.lbbbV1first = first(tr("lbbb", "V1", 150, 260), .03);
+  const notch = (L) => { const a = tr("lbbb", L, 160, 300); const lobes = peaks(a, .05); const mx = []; for (let i = 1; i < a.length - 1; i++) if (a[i] > a[i - 1] && a[i] >= a[i + 1] && a[i] > .1) mx.push(i); let dip = Infinity; if (mx.length >= 2) for (let i = mx[0]; i <= mx[mx.length - 1]; i++) dip = Math.min(dip, a[i]); return { lobes, maxima: mx.length, dipRatio: mx.length >= 2 ? +(dip / Math.min(a[mx[0]], a[mx[mx.length - 1]])).toFixed(2) : null }; };
+  f.lbbbNotch = Object.fromEntries(["I", "aVL", "V5", "V6"].map((L) => [L, notch(L)]));
   return out;
 });
 
@@ -59,15 +66,20 @@ const f = r.feat;
 check("P upright in II", f.Pwave.II.length === 1 && f.Pwave.II[0] > 0, f.Pwave.II);
 check("P inverted in aVR", f.Pwave.aVR.length === 1 && f.Pwave.aVR[0] < 0, f.Pwave.aVR);
 check("P biphasic in V1 (positive then negative)", f.Pwave.V1.length === 2 && f.Pwave.V1[0] > 0 && f.Pwave.V1[1] < 0, f.Pwave.V1);
-check("normal QRS 70 to 100 ms (LITFL normal range)", f.width.normal >= 70 && f.width.normal <= 100, f.width);
-check("BBB QRS >= 120 ms", f.width.rbbb >= 120 && f.width.lbbb >= 120, f.width);
+check("normal QRS 80 to 100 ms", f.width.normal >= 80 && f.width.normal <= 100, f.width);
+check("RBBB QRS 120 to 140 ms, LBBB QRS 130 to 150 ms", f.width.rbbb >= 120 && f.width.rbbb <= 140 && f.width.lbbb >= 130 && f.width.lbbb <= 150, f.width);
+check("QRS readout: normal 80-100, RBBB 120-140, LBBB 130-150 ms", f.qrsReadout.normal >= 80 && f.qrsReadout.normal <= 100 && f.qrsReadout.rbbb >= 120 && f.qrsReadout.rbbb <= 140 && f.qrsReadout.lbbb >= 130 && f.qrsReadout.lbbb <= 150, f.qrsReadout);
+check("PR 160 ms in every condition", Object.values(f.pr).every((x) => x === 160), f.pr);
 check("normal septal q in I, aVL, V6 and r in V1", f.normalFirst.I < 0 && f.normalFirst.aVL < 0 && f.normalFirst.V6 < 0 && f.normalFirst.V1 > 0, f.normalFirst);
 check("normal T concordant with QRS", Object.values(f.normalT).every(([q, t]) => q === t), f.normalT);
 check("RBBB rSR' in V1 (R' taller than r)", f.rbbbV1.length === 3 && f.rbbbV1[0] > 0 && f.rbbbV1[1] < 0 && f.rbbbV1[2] > f.rbbbV1[0], f.rbbbV1);
 check("RBBB terminal S in I and V6, R' in aVR and V1", f.rbbbTerminal.I < -0.1 && f.rbbbTerminal.V6 < -0.1 && f.rbbbTerminal.aVR > 0.1 && f.rbbbTerminal.V1 > 0.1, f.rbbbTerminal);
+check("RBBB upright R in I and aVL with terminal S", Object.values(f.rbbbR).every((o) => o.R > 0.3 && o.S < -0.1), f.rbbbR);
 check("RBBB T inverted V1-V2, upright I and V6", f.rbbbT.V1 < 0 && f.rbbbT.V2 < 0 && f.rbbbT.I > 0 && f.rbbbT.V6 > 0, f.rbbbT);
 check("LBBB no septal q in I, aVL, V6", Object.values(f.lbbbFirst).every((x) => x > -0.03), f.lbbbFirst);
 check("LBBB dominant S in V1", f.lbbbV1net < 0, f.lbbbV1net);
+check("LBBB no q in V1 (small r allowed)", f.lbbbV1first >= 0, f.lbbbV1first);
+check("LBBB broad notched (M-shaped) R in I, aVL, V5, V6", Object.values(f.lbbbNotch).every((o) => o.lobes.length === 1 && o.lobes[0] > 0 && o.maxima >= 2 && o.dipRatio <= 0.85), f.lbbbNotch);
 check("LBBB broad notched R in V6", f.lbbbV6.length === 1 && f.lbbbV6[0] > 0 && f.lbbbV6notch >= 2, { lobes: f.lbbbV6, maxima: f.lbbbV6notch });
 check("LBBB T discordant in I, aVL, V6, V1", Object.values(f.lbbbT).every(([q, t]) => q === -t), f.lbbbT);
 check("LBBB ST up in V1, down in V6", f.lbbbST.V1 > 0.05 && f.lbbbST.V6 < -0.05, f.lbbbST);

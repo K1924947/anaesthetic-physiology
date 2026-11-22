@@ -66,6 +66,16 @@ await page.mouse.click(tap.x, tap.y);
 const tapped = await page.evaluate(() => ({ t: window.ECGConduction.state.t, playing: window.ECGConduction.state.playing, link: document.querySelector("#ecgcLink line").getAttribute("opacity") }));
 check("tapping a bump sets the clock to it and shows the link", tapped.t === tap.peak && !tapped.playing && tapped.link === "1", { tap, tapped });
 
+// Round 6: anatomy and bundle visibility.
+const cav = await page.evaluate(() => window.ECGConduction.cavityHits());
+check("every conduction route sits in a wall (only the moderator band crosses a cavity)", Object.entries(cav).every(([k, v]) => k === "mod" ? v > 0 : v === 0), cav);
+const lbVis = await page.evaluate(() => { const E = window.ECGConduction, o = {};
+  for (const c of ["normal", "rbbb", "lbbb"]) { E.setCondition(c); o[c] = { lb: E.bundleStyle("lb"), rb: E.bundleStyle("rb") }; }
+  return o; });
+const solid = (s) => s.dash === "none" && s.width >= 3, partDashed = (s) => s.dash !== "none" && parseFloat(s.dash) > 5 && s.width >= 3;
+check("left and right bundles clearly drawn; blocked one solid to the X, dashed beyond",
+  solid(lbVis.normal.lb) && solid(lbVis.normal.rb) && solid(lbVis.rbbb.lb) && partDashed(lbVis.rbbb.rb) && solid(lbVis.lbbb.rb) && partDashed(lbVis.lbbb.lb) && lbVis.lbbb.lb.stroke === "#4E5968", lbVis);
+
 if (SHOT) {
   await page.evaluate(() => window.ECGConduction.setTime(232));
   await page.mouse.move(5, 5);

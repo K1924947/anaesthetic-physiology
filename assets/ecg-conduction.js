@@ -1,7 +1,8 @@
 /* Why the ECG looks like that: conduction teaching page.
    One master clock (state.t, ms after the SA node fires) drives everything.
-   One source of truth: an activation-time map over the ventricular muscle (fast bundle and Purkinje routes,
-   slow cell-to-cell spread) gives the heart vector; every lead trace is that vector projected on the lead axis. */
+   One source of truth for the ECG: a smooth, idealised heart vector per condition; every lead trace is that vector
+   projected on the lead axis, so traces and arrow always agree. An activation-time map over the muscle, re-timed onto
+   the vector's timeline, drives the picture only (blue dots, orange chevrons, bump-to-heart links, story moments). */
 (function () {
   "use strict";
 
@@ -20,14 +21,37 @@
   }
   // Atria are not mapped: the P wave is two idealised components, right atrium then left atrium.
   var P_WAVE = [[35, 14, .03, .12, .07], [65, 14, .10, .06, -.06]];
+  // The heart vector. Each component is [centre ms, width ms, x, y, z] in mV (x = patient's left, y = inferior,
+  // z = anterior), then the muscle region that makes it and whether it is reached slowly, cell to cell (1) or by the fast route (0).
+  var VEC = {
+    normal: [
+      [172, 6, -.15, .05, .17, "SEP", 0],   // septum, left to right: q in I, aVL, V6; small r in V1
+      [186, 8, .3, .4, .38, "LVA", 0],      // apex and anterior wall
+      [200, 10, .9, .75, -.3, "LVW", 0],    // LV free wall dominates: leftward, inferior, posterior
+      [227, 8, -.1, -.2, -.25, "LVB", 0],   // base last: superior, posterior
+      [435, 42, .25, .2, .15]                // T: concordant with the QRS
+    ],
+    rbbb: [
+      [172, 6, -.15, .05, .17, "SEP", 0],   // septum still left to right (left bundle intact)
+      [186, 8, .3, .4, .38, "LVA", 0],
+      [200, 10, .85, .65, -.35, "LVW", 0],  // LV through its own Purkinje fibres
+      [255, 15, -.45, .05, .4, "RV", 1],    // late RV, cell to cell: terminal rightward, anterior vector
+      [460, 42, .3, .2, -.15]                // secondary T, opposite the terminal QRS
+    ],
+    lbbb: [
+      [173, 6, 0, 0, .12, "RV", 0],         // RV via the right bundle: small r in V1 at most
+      [198, 13, .6, .15, -.25, "SEP", 1],   // septum right to left, cell to cell: no septal q; first hump of the R
+      [230, 16, .3, .2, -.5, "LVA", 1],   // slow spread through the apex and anterior LV
+      [262, 15, .85, .05, -.55, "LVW", 1],  // lateral LV last: second hump of the notched R
+      [340, 20, -.08, 0, .12],               // secondary ST shift, opposite the QRS
+      [470, 42, -.3, -.05, .35]              // secondary T, discordant
+    ]
+  };
 
   // Speeds from Klabunde: bundle branches about 2 m/s, Purkinje about 4 m/s, ventricular muscle about 0.3 to 0.5 m/s.
   var MM_PER_UNIT = 0.33;                 // drawing scale: the heart is about 12 cm long
   var V_BUNDLE = 2 / MM_PER_UNIT, V_PURK = 4 / MM_PER_UNIT, V_MYO = 0.5 / MM_PER_UNIT; // drawing units per ms
-  // A flat slice makes long cell-to-cell routes longer than the real 3D routes (the wave spreads over a curved sheet),
-  // so beyond one wall thickness the slice distance is shortened by this factor. A model choice, on the review list.
-  var SLICE = 1.5;
-  var HIS_START = 148;                    // after the AV nodal delay, so the PR interval is about 160 ms
+  var HIS_START = 128;                    // after the AV nodal delay; the first muscle is reached at 160 ms (PR 160 ms)
 
   var SHARED_START = [
     [0, 12, "The SA node fires. It is too small to show on the ECG, so the trace is still flat."],
@@ -38,7 +62,8 @@
 
   var COND = {
     normal: {
-      name: "Normal sinus", fast: ["his", "rb", "lb", "laf", "lpf", "purkR", "purkL"],
+      name: "Normal sinus", fast: ["his", "rb", "mod", "purkR", "purkR2", "lb", "laf", "lpf", "purkL", "purkLA"],
+      qrs: [160, 245], st: [245, 350, 520], ev: [180, 215],
       text: [
         ["his", "qon", "The impulse runs down the His bundle into both bundle branches: the fast highway."],
         ["qon", "q1", "The left bundle reaches the septum first, so the septum depolarises from left to right. That small wavefront heads towards V1 (small r) and away from I, aVL and V6 (small septal q)."],
@@ -49,7 +74,8 @@
       ]
     },
     rbbb: {
-      name: "RBBB", fast: ["his", "lb", "laf", "lpf", "purkL"], blockAt: "rb", blocked: ["rb", "purkR"],
+      name: "RBBB", fast: ["his", "lb", "laf", "lpf", "purkL", "purkLA"], blockAt: "rb", blocked: ["rb", "mod", "purkR", "purkR2"],
+      qrs: [160, 290], st: [290, 370, 550], ev: [185, 232],
       text: [
         ["his", "qon", "The impulse runs down the His bundle. The right bundle is blocked, so only the left bundle carries it on."],
         ["qon", "q1", "The left bundle still activates the septum from left to right, so the QRS starts normally: small r in V1, small q in V6."],
@@ -60,7 +86,8 @@
       ]
     },
     lbbb: {
-      name: "LBBB", fast: ["his", "rb", "purkR"], blockAt: "lb", blocked: ["lb", "laf", "lpf", "purkL"],
+      name: "LBBB", fast: ["his", "rb", "mod", "purkR", "purkR2"], blockAt: "lb", blocked: ["lb", "laf", "lpf", "purkL", "purkLA"],
+      qrs: [160, 300], st: [300, 380, 560], ev: [212, 245],
       text: [
         ["his", "qon", "The impulse runs down the His bundle. The left bundle is blocked, so only the right bundle carries it on."],
         ["qon", "q1", "The right bundle activates the right ventricle and the right side of the septum, so the septum depolarises right to left. The wavefront heads towards I, aVL and V6: no septal q there."],
@@ -86,7 +113,7 @@
   }
   svg.setAttribute("viewBox", "0 4 540 404");
   var INK = "var(--ecgc-ink)", GREY = "var(--ecgc-grey)", SOFT = "var(--ecgc-grey-soft)";
-  var BLUE = "var(--ecgc-blue)", ORANGE = "var(--ecgc-orange)";
+  var BLUE = "var(--ecgc-blue)", ORANGE = "var(--ecgc-orange)", DARK = "#4E5968";
 
   var defs = el("defs", {});
   var dep = el("pattern", { id: "ecgcDep", width: 7, height: 7, patternUnits: "userSpaceOnUse" }, defs);
@@ -115,30 +142,41 @@
   };
   var ATRIAL_SWEEP = { RA: [178, 46, 250, 158], LA: [270, 50, 422, 142] };
   var ATRIAL_TIME = { RA: [5, 70], LA: [25, 65] };
+  // Every route sits in or along a wall: SA node in the RA wall at the SVC junction; internodal routes and Bachmann's
+  // bundle in the atrial walls and interatrial septum; AV node low in the interatrial septum; His bundle through the
+  // fibrous ring to the top of the muscular septum; right bundle under the endocardium of the RV septal surface, then the
+  // moderator band (the one route that crosses a cavity) to the anterior RV free wall; left bundle and posterior fascicle
+  // under the endocardium of the LV septal surface; Purkinje fibres along the endocardium of both ventricles.
+  // The anterior fascicle leaves this slice to run on the front (anterior) wall, so it is drawn as a stub with an
+  // out-of-plane marker, and its Purkinje fibres reappear on the upper lateral wall.
   var PATHS = {
-    intern: "M182,50 C225,62 248,100 250,142",
-    intern2: "M174,54 C135,80 130,140 160,152 L244,146",
-    bach: "M186,48 C225,36 290,38 360,54",
-    avn: "M246,143 L256,149",
-    his: "M256,149 L262,160 L267,176",
-    rb: "M267,176 C254,215 249,275 254,315",
-    lb: "M267,176 L274,190",
-    laf: "M274,190 C305,198 350,196 392,178",
-    lpf: "M274,190 C278,240 292,300 314,354",
-    purkR: "M254,316 C230,312 205,300 190,282 C170,258 152,215 148,172",
-    purkL: "M314,356 C326,380 348,376 364,354 C394,312 400,240 392,160"
+    intern: "M184,50 C214,49 246,54 261,72 L263,138",
+    intern2: "M172,52 C142,58 127,96 128,138 L132,156 L141,158.6 L258,150",
+    bach: "M188,51 C228,43 292,47 358,57",
+    avn: "M261,140 L265,151",
+    his: "M265,151 L266,163 L267,176",
+    rb: "M267,176 C258,184 250,196 247,215 C244,240 243,270 245,300",
+    mod: "M245,298 C224,292 200,282 179,270",
+    purkR: "M179,270 C161,258 147,240 142,220 C138,202 134,186 133,170",
+    purkR2: "M179,270 C195,287 211,302 232,320",
+    lb: "M267,176 C268,192 269,208 270,226",
+    laf: "M270,226 L273,238",
+    lpf: "M270,226 C269,250 271,268 276,290 C281,312 290,334 300,352",
+    purkL: "M300,352 C312,372 326,383 338,381 C352,381 364,369 371,356 C400,316 408,284 407,262",
+    purkLA: "M406,212 C408,226 408,242 407,258"
   };
   var ATRIAL = { intern: 1, intern2: 1, bach: 1, avn: 1 };
+  var BUNDLE = { his: 1, rb: 1, mod: 1, lb: 1, laf: 1, lpf: 1 };
   var ATRIAL_PATH_TIME = { sa: [0, 10], intern: [5, 45], intern2: [5, 45], bach: [5, 40], avn: [50, HIS_START - 50] };
-  var PARENT = { his: null, rb: "his", lb: "his", laf: "lb", lpf: "lb", purkR: "rb", purkL: "lpf" };
-  // How far along its parent a path branches off (1 = at the end). The LV Purkinje network fans out from the fascicles part way down.
-  var PARENT_AT = { purkL: .5 };
+  var FAST_ORDER = ["his", "rb", "mod", "purkR", "purkR2", "lb", "laf", "lpf", "purkL", "purkLA"];
+  var PARENT = { his: null, rb: "his", mod: "rb", purkR: "mod", purkR2: "mod", lb: "his", laf: "lb", lpf: "lb", purkL: "lpf", purkLA: "laf" };
+  var PARENT_AT = {};
   // Where along each path (fraction of its length) it starts exciting the muscle next to it. The His bundle and the upper
-  // bundle branches are insulated; the right bundle reaches the septal surface low down, near the moderator band.
-  var COUPLED = { rb: .45, laf: 0, lpf: .35, purkR: 0, purkL: 0 };
+  // bundle branches are insulated; the right bundle reaches the septal surface low down; the moderator band only at its end.
+  var COUPLED = { rb: .45, laf: 0, lpf: .3, purkR: 0, purkR2: 0, purkL: 0, purkLA: 0 };
   // Which muscle each path can excite: a bundle on the septal surface only excites the septum on its own side.
-  var COUPLE_TO = { rb: { SEP: 1 }, lpf: { SEP: 1 }, laf: { SEP: 1, LVW: 1, LVB: 1, LVA: 1 }, purkR: { RV: 1, SEP: 1 }, purkL: { LVA: 1, LVW: 1, LVB: 1 } };
-  var SPEED = { his: V_BUNDLE, rb: V_BUNDLE, lb: V_BUNDLE, laf: V_BUNDLE, lpf: V_BUNDLE, purkR: V_PURK, purkL: V_PURK };
+  var COUPLE_TO = { rb: { SEP: 1 }, laf: { SEP: 1 }, lpf: { SEP: 1, LVA: 1 }, purkR: { RV: 1 }, purkR2: { RV: 1, SEP: 1 }, purkL: { LVA: 1, LVW: 1 }, purkLA: { LVW: 1 } };
+  var SPEED = { his: V_BUNDLE, rb: V_BUNDLE, mod: V_BUNDLE, lb: V_BUNDLE, laf: V_BUNDLE, lpf: V_BUNDLE, purkR: V_PURK, purkR2: V_PURK, purkL: V_PURK, purkLA: V_PURK };
 
   // SVC stub (drawn first so the right atrium sits on it).
   var gVes = el("g", { "aria-hidden": "true" });
@@ -188,7 +226,7 @@
     var deg = FRONTAL_AX[L] > 0 ? "+" + FRONTAL_AX[L] : String(FRONTAL_AX[L]).replace("-", "\u2212");
     var tx = el("text", { x: (LC.x + (LR + 12) * Math.cos(a)).toFixed(1), y: (LC.y + (LR + 12) * Math.sin(a) + 4).toFixed(1), "text-anchor": "middle", "font-size": 11, "font-family": "var(--font-sans)", fill: "var(--muted)", stroke: "#fff", "stroke-width": 3, "paint-order": "stroke" }, gLeadLines);
     tx.textContent = L + (L === "I" ? "\u2002" : " ") + deg + "\u00b0";
-    if (L === "I") { tx.setAttribute("x", (ex - 4).toFixed(1)); tx.setAttribute("y", (ey - 6).toFixed(1)); tx.setAttribute("text-anchor", "end"); }
+    if (L === "I") { tx.setAttribute("x", (ex - 30).toFixed(1)); tx.setAttribute("y", (ey - 5).toFixed(1)); tx.setAttribute("text-anchor", "end"); }
     leadLineNodes[L] = { line: line, tx: tx, ex: ex, ey: ey };
   });
 
@@ -199,8 +237,8 @@
   var gPaths = el("g", { "aria-hidden": "true" });
   var pathNodes = {};
   Object.keys(PATHS).forEach(function (p) {
-    var w = p === "avn" ? 7 : 3.2, fastW = ATRIAL[p] ? w + 1 : 5;
-    var base = el("path", { d: PATHS[p], fill: "none", stroke: GREY, "stroke-width": w, "stroke-linecap": "round" }, gPaths);
+    var w = p === "avn" ? 7 : BUNDLE[p] ? 3.6 : ATRIAL[p] ? 3.2 : 2.6, fastW = ATRIAL[p] ? w + 1 : 5;
+    var base = el("path", { d: PATHS[p], fill: "none", stroke: BUNDLE[p] ? DARK : GREY, "stroke-width": w, "stroke-linecap": "round" }, gPaths);
     var act = el("path", { d: PATHS[p], fill: "none", stroke: BLUE, "stroke-width": fastW, "stroke-linecap": "round", opacity: 0 }, gPaths);
     var len = act.getTotalLength();
     act.setAttribute("stroke-dasharray", len + " " + len);
@@ -217,14 +255,27 @@
     heads[p] = g;
   });
 
-  // Fixed label columns with thin leader lines: [text, label x, label y, target x, target y, anchor].
+  // Out-of-plane markers (a dot in a circle = running towards the viewer): the anterior fascicle leaves this slice onto the
+  // front wall, and its Purkinje fibres come back into the slice on the upper lateral wall.
+  var gOut = el("g", { "aria-hidden": "true" });
+  [[273, 238], [406, 212]].forEach(function (q) {
+    el("circle", { cx: q[0], cy: q[1], r: 4.6, fill: "#fff", stroke: DARK, "stroke-width": 1.6 }, gOut);
+    el("circle", { cx: q[0], cy: q[1], r: 1.5, fill: DARK }, gOut);
+  });
+  // Papillary muscles (the fascicles end near their bases): posteromedial low on the septal side, anterolateral on the lateral wall.
+  ["M300,352 C308,340 318,334 326,338 C322,348 314,356 306,360 Z", "M398,292 C388,296 382,306 384,316 C392,314 400,306 402,298 Z"].forEach(function (d) {
+    el("path", { d: d, fill: SOFT, stroke: GREY, "stroke-width": 1.2 }, gRegions);
+  });
+
+  // Fixed label columns with thin leader lines: [text, label x, label y, target x, target y, anchor, second line].
   var LABELS = [
-    ["SA node", 100, 42, 176, 50, "end"], ["Internodal paths", 100, 96, 141, 108, "end"], ["Coronary sinus", 100, 132, 230, 140, "end"],
-    ["AV node", 100, 166, 250, 146, "end"], ["Tricuspid valve", 100, 204, 176, 180, "end"], ["Right bundle", 100, 270, 253, 260, "end"],
-    ["Purkinje fibres", 100, 320, 190, 282, "end"],
-    ["Bachmann's bundle", 430, 34, 280, 40, "start"], ["Interatrial septum", 430, 66, 265, 90, "start"], ["Mitral valve", 430, 96, 372, 158, "start"],
-    ["Fibrous AV ring", 430, 122, 418, 140, "start"], ["His bundle", 430, 178, 263, 165, "start"], ["Left bundle", 430, 206, 271, 184, "start"],
-    ["Anterior fascicle", 430, 262, 341, 192, "start"], ["Posterior fascicle", 430, 300, 294, 296, "start"], ["Septum", 430, 360, 261, 280, "start"]
+    ["SA node", 100, 42, 177, 50, "end"], ["Internodal paths", 100, 96, 128, 112, "end"], ["Coronary sinus", 100, 132, 230, 140, "end"],
+    ["AV node", 100, 166, 263, 146, "end"], ["Tricuspid valve", 100, 204, 172, 172, "end"], ["Right bundle", 100, 246, 245, 245, "end"],
+    ["Moderator band", 100, 284, 212, 285, "end", "crosses the RV cavity"], ["Purkinje fibres", 100, 336, 147, 226, "end"],
+    ["Bachmann's bundle", 430, 34, 290, 47, "start"], ["Interatrial septum", 430, 66, 264, 100, "start"], ["Mitral valve", 430, 96, 372, 158, "start"],
+    ["Fibrous AV ring", 430, 122, 418, 140, "start"], ["His bundle", 430, 166, 266, 166, "start"], ["Left bundle", 430, 196, 269, 212, "start"],
+    ["Anterior fascicle", 430, 228, 277, 239, "start", "onto the front wall \u2299"], ["Posterior fascicle", 430, 276, 271, 272, "start"],
+    ["Purkinje fibres", 430, 316, 408, 300, "start"], ["Septum", 430, 362, 258, 330, "start"]
   ];
   var gLab = el("g", { "class": "ecgc-labels", "aria-hidden": "true" });
   LABELS.forEach(function (l) {
@@ -232,6 +283,7 @@
     el("line", { x1: lx, y1: l[2] - 4, x2: l[3], y2: l[4], stroke: INK, "stroke-width": .7, "stroke-opacity": .5 }, gLab);
     el("circle", { cx: l[3], cy: l[4], r: 1.7, fill: INK }, gLab);
     el("text", { x: l[1], y: l[2], "text-anchor": l[5], "font-size": 12.5, "font-family": "var(--font-sans)", fill: INK }, gLab).textContent = l[0];
+    if (l[6]) el("text", { x: l[1], y: l[2] + 13, "text-anchor": l[5], "font-size": 11, "font-family": "var(--font-sans)", fill: "var(--muted)" }, gLab).textContent = l[6];
   });
   var blockText = el("text", { "font-size": 12.5, "font-weight": 700, "font-family": "var(--font-sans)", fill: INK, stroke: "#fff", "stroke-width": 4, "paint-order": "stroke", opacity: 0 }, svg);
   var gMarks = el("g", { "aria-hidden": "true" });
@@ -243,6 +295,7 @@
   var arrowText = el("text", { "font-size": 13, "font-weight": 700, "font-family": "var(--font-sans)", fill: "var(--ecgc-magenta)", stroke: "#fff", "stroke-width": 4, "paint-order": "stroke" }, gArrow);
   var gCluster = el("g", { "aria-hidden": "true" });
   var clusterRing = el("circle", { r: 22, fill: "none", "stroke-width": 2, opacity: 0 }, gCluster);
+  svg.appendChild(gOut); // out-of-plane markers stay on top of the arrow
 
   /* ---------- Activation-time model ---------- */
   function parsePoly(str) { return str.split(" ").map(function (p) { var a = p.split(","); return [+a[0], +a[1]]; }); }
@@ -255,7 +308,7 @@
     return inside;
   }
   var POLY = { RV: parsePoly(CLIP.RV), SEP: parsePoly(CLIP.SEP), LV: parsePoly(CLIP.LV) };
-  var GROUP_NAME = { SEP: "septum", RV: "RV", LVA: "LV apex", LVW: "LV wall", LVB: "LV base" };
+  var GROUP_NAME = { SEP: "septum", RV: "RV", LVA: "LV apex", LVW: "LV lateral wall", LVB: "LV base" };
   var SPACING = 7;
   var GRID = [];
   (function () {
@@ -273,32 +326,25 @@
   })();
   // How far a wavefront travels through muscle before we call it "slow cell to cell" rather than "fast route then through the wall".
   var WALL = { RV: 22, SEP: 42, LVA: 42, LVW: 42, LVB: 42 };
-  // Direction out of the drawing plane (anterior positive), set by anatomy: the RV is in front, the LV lateral wall and base behind.
-  function zOf(g, dx) { return g === "RV" ? 1 : g === "SEP" ? -.2 * dx : g === "LVA" ? .15 : g === "LVB" ? -.5 : -.45; }
 
-  // The RV free wall is about a third as thick as the LV wall; the drawing shows it thicker than that, so its muscle counts 0.75.
-  var RV_W = { RV: .75 };
-  // In this flat slice a slow front crossing a wall shows as a short line; in the real heart it is a broad sheet running
-  // across the whole wall, so slow-route muscle counts this many times more. A model choice, on the review list.
-  var SLOW_W = 3;
+  // The activation map is a visual timing guide only (dots, chevrons, bump-to-heart links, story moments).
+  // Its times are re-mapped onto the idealised vector's timeline, so the picture and the traces line up.
   var MODEL = {};
   function buildModel(c) {
     var C = COND[c], fast = {}, path = {};
     C.fast.forEach(function (p) { fast[p] = 1; });
-    ["his", "rb", "lb", "laf", "lpf", "purkR", "purkL"].forEach(function (p) {
+    FAST_ORDER.forEach(function (p) {
       if (!fast[p]) return;
       var start = PARENT[p] ? path[PARENT[p]][0] + path[PARENT[p]][1] * (PARENT_AT[p] || 1) : HIS_START;
       path[p] = [start, pathNodes[p].len / SPEED[p]];
     });
-    Object.keys(ATRIAL_PATH_TIME).forEach(function (p) { path[p] = ATRIAL_PATH_TIME[p]; });
     // Sources: muscle within reach of a branching (coupled) fast path is excited as the impulse passes.
     var n = GRID.length, ta = new Float64Array(n).fill(Infinity), md = new Float64Array(n), par = new Int32Array(n).fill(-1);
     var sx = new Float64Array(n), sy = new Float64Array(n), done = new Uint8Array(n);
     Object.keys(COUPLED).forEach(function (p) {
       if (!path[p]) return;
       var node = pathNodes[p].act, L = pathNodes[p].len;
-      var from = COUPLED[p] * L;
-      for (var s = from; s <= L; s += 3) {
+      for (var s = COUPLED[p] * L; s <= L; s += 3) {
         var q = node.getPointAtLength(s), ts = path[p][0] + s / SPEED[p];
         for (var i = 0; i < n; i++) {
           var d = Math.hypot(GRID[i].x - q.x, GRID[i].y - q.y);
@@ -309,7 +355,7 @@
         }
       }
     });
-    // Cell-to-cell spread (Dijkstra over neighbouring points at muscle speed).
+    // Cell-to-cell spread (Dijkstra over neighbouring points at one muscle speed).
     for (;;) {
       var best = -1, bt = Infinity;
       for (var i = 0; i < n; i++) if (!done[i] && ta[i] < bt) { bt = ta[i]; best = i; }
@@ -320,69 +366,84 @@
         if (done[j]) continue;
         var d = Math.hypot(GRID[j].x - b.x, GRID[j].y - b.y);
         if (d > SPACING * 1.5) continue;
-        var tt = bt + d / V_MYO / (md[best] > WALL[b.g] ? SLICE : 1);
+        var tt = bt + d / V_MYO;
         if (tt < ta[j]) { ta[j] = tt; md[j] = md[best] + d; par[j] = best; }
       }
     }
     var pts = GRID.map(function (g, i) {
       var fx = par[i] >= 0 ? GRID[par[i]].x : sx[i], fy = par[i] >= 0 ? GRID[par[i]].y : sy[i];
       var dx = g.x - fx, dy = g.y - fy, m = Math.hypot(dx, dy) || 1;
-      dx /= m; dy /= m;
-      var dz = zOf(g.g, dx), m3 = Math.hypot(dx, dy, dz);
-      return { x: g.x, y: g.y, g: g.g, ta: ta[i], slow: md[i] > WALL[g.g], d2: [dx, dy], d3: [dx / m3, dy / m3, dz / m3] };
+      return { x: g.x, y: g.y, g: g.g, ta0: ta[i], ta: ta[i], slow: md[i] > WALL[g.g], d2: [dx / m, dy / m] };
     });
-    // Heart vector: each point contributes a small dipole along its local direction while the wavefront crosses it.
-    var groups = {}, total = { x: new Float32Array(CYCLE), y: new Float32Array(CYCLE), z: new Float32Array(CYCLE) };
-    var SIG = 4.5, F = { x: 0, y: 0, z: 0, n: 0 }, S = { x: 0, y: 0, z: 0, n: 0 };
+    // Re-time the map onto the vector. Each region's muscle keeps its own activation order but is fitted into the
+    // window of the vector component it makes (centre +/- 1.6 widths); fast routes and regions with no component of
+    // their own use one linear map from first to last muscle onto the QRS.
+    var V = VEC[c], qon = C.qrs[0], qend = C.qrs[1];
+    var tmin = Infinity, tmax = 0, rmin = {}, rmax = {};
     pts.forEach(function (p) {
-      var key = p.g + "|" + (p.slow ? "slow" : "fast");
-      if (!groups[key]) groups[key] = { g: p.g, slow: p.slow, x: new Float32Array(CYCLE), y: new Float32Array(CYCLE), z: new Float32Array(CYCLE) };
-      var G = groups[key], c0 = p.ta + SPACING / V_MYO / 2;
-      for (var t = Math.max(0, Math.floor(c0 - 4 * SIG)); t <= Math.min(CYCLE - 1, Math.ceil(c0 + 4 * SIG)); t++) {
-        var e = (t - c0) / SIG, w = Math.exp(-0.5 * e * e);
-        w *= (RV_W[p.g] || 1) * (p.slow ? SLOW_W : 1);
-        G.x[t] += w * p.d3[0]; G.y[t] += w * p.d3[1]; G.z[t] += w * p.d3[2];
-      }
-      var A = p.slow ? S : F; A.x += p.d3[0]; A.y += p.d3[1]; A.z += p.d3[2]; A.n++;
+      if (p.ta0 < tmin) tmin = p.ta0; if (p.ta0 > tmax) tmax = p.ta0;
+      rmin[p.g] = Math.min(rmin[p.g] === undefined ? Infinity : rmin[p.g], p.ta0); rmax[p.g] = Math.max(rmax[p.g] || 0, p.ta0);
     });
-    var tmin = Infinity, tmax = 0;
-    pts.forEach(function (p) { if (p.ta < tmin) tmin = p.ta; if (p.ta > tmax) tmax = p.ta; });
-    var qon = Math.floor(tmin / 5) * 5, qend = Math.ceil((tmax + 6) / 5) * 5, bbb = c !== "normal";
-    var tS = qend + (bbb ? 80 : 105), tE = tS + (bbb ? 180 : 170);
-    C.segs = [["P", 0, 100], ["PR", 100, qon], ["QRS", qon, qend], ["ST", qend, tS], ["T", tS, tE], ["Rest", tE, CYCLE]];
+    function lin(t) {
+      if (t <= tmin) return HIS_START + (t - HIS_START) * (qon + 2 - HIS_START) / Math.max(1, tmin - HIS_START);
+      return qon + 2 + (t - tmin) * (qend - 8 - qon) / Math.max(1, tmax - tmin);
+    }
+    var win = {};
+    V.forEach(function (k) {
+      if (!k[5]) return;
+      var m = Math.hypot(k[2], k[3], k[4]);
+      if (!win[k[5]] || m > win[k[5]].m) win[k[5]] = { m: m, a: Math.max(qon + 1, k[0] - 1.6 * k[1]), b: Math.min(qend - 4, k[0] + 1.6 * k[1]) };
+    });
+    // A region with no component of its own shares the window of the region activated at the most similar time.
+    var rmed = {};
+    Object.keys(rmin).forEach(function (g) { var a = pts.filter(function (p) { return p.g === g; }).map(function (p) { return p.ta0; }).sort(function (x, y) { return x - y; }); rmed[g] = a[a.length >> 1]; });
+    Object.keys(rmin).forEach(function (g) {
+      if (win[g]) return;
+      var bestG = null; Object.keys(win).forEach(function (h) { if (rmed[h] !== undefined && (bestG === null || Math.abs(rmed[h] - rmed[g]) < Math.abs(rmed[bestG] - rmed[g]))) bestG = h; });
+      if (bestG) win[g] = win[bestG];
+    });
+    pts.forEach(function (p) {
+      var w = win[p.g];
+      p.ta = w ? w.a + (p.ta0 - rmin[p.g]) / Math.max(1, rmax[p.g] - rmin[p.g]) * (w.b - w.a) : lin(p.ta0);
+    });
+    // Fast routes: from the His bundle to the first muscle at QRS onset, and the last fast route ends at the centre
+    // of the strongest fast-route component.
+    var lastEnd = 0, tFast = qon + 30, fm = -1;
+    Object.keys(path).forEach(function (p) { lastEnd = Math.max(lastEnd, path[p][0] + path[p][1]); });
+    V.forEach(function (k) { if (k[5] && !k[6]) { var m = Math.hypot(k[2], k[3], k[4]); if (m > fm) { fm = m; tFast = k[0]; } } });
+    function plin(t) {
+      if (t <= tmin) return HIS_START + (t - HIS_START) * (qon + 2 - HIS_START) / Math.max(1, tmin - HIS_START);
+      return qon + 2 + (t - tmin) * (tFast - qon - 2) / Math.max(1, lastEnd - tmin);
+    }
+    Object.keys(path).forEach(function (p) { var s0 = plin(path[p][0]), s1 = plin(path[p][0] + path[p][1]); path[p] = [s0, Math.max(1, s1 - s0)]; });
+    Object.keys(ATRIAL_PATH_TIME).forEach(function (p) { path[p] = ATRIAL_PATH_TIME[p]; });
     C.path = path;
-    return { pts: pts, groups: groups, total: total, F: F, S: S, qon: qon, qend: qend, tS: tS, tE: tE };
+    // The heart vector: smooth idealised components; groups keep each ventricular component's region and route.
+    var groups = {}, total = { x: new Float32Array(CYCLE), y: new Float32Array(CYCLE), z: new Float32Array(CYCLE) };
+    P_WAVE.concat(V).forEach(function (k) {
+      var G = null;
+      if (k[5]) { var key = k[5] + "|" + (k[6] ? "slow" : "fast"); G = groups[key] || (groups[key] = { g: k[5], slow: !!k[6], x: new Float32Array(CYCLE), y: new Float32Array(CYCLE), z: new Float32Array(CYCLE) }); }
+      for (var t = 0; t < CYCLE; t++) {
+        var e = (t - k[0]) / k[1], w = Math.exp(-0.5 * e * e);
+        if (w < 1e-4) continue;
+        total.x[t] += w * k[2]; total.y[t] += w * k[3]; total.z[t] += w * k[4];
+        if (G) { G.x[t] += w * k[2]; G.y[t] += w * k[3]; G.z[t] += w * k[4]; }
+      }
+    });
+    var tS = C.st[1], tE = C.st[2];
+    C.segs = [["P", 0, 100], ["PR", 100, qon], ["QRS", qon, qend], ["ST", qend, tS], ["T", tS, tE], ["Rest", tE, CYCLE]];
+    var M = { pts: pts, groups: groups, total: total, qon: qon, qend: qend, tS: tS, tE: tE };
+    M.fracSlow = pts.filter(function (p) { return p.slow; }).length / pts.length;
+    // Story moments come from the vector: the centre of the strongest matching component.
+    M.med = function (regs, slow) {
+      var best = null, bm = -1;
+      V.forEach(function (k) { if (!k[5] || regs.indexOf(k[5]) < 0 || (slow !== undefined && !!k[6] !== slow)) return; var m = Math.hypot(k[2], k[3], k[4]); if (m > bm) { bm = m; best = k[0]; } });
+      return best === null ? qon : best;
+    };
+    M.ev = { his: HIS_START, qon: qon, qend: qend, tS: tS, tE: tE, q1: C.ev[0], q2: C.ev[1] };
+    return M;
   }
   ["normal", "rbbb", "lbbb"].forEach(function (c) { MODEL[c] = buildModel(c); });
-  // One calibration constant for all conditions: normal lead II R wave about 1.2 mV.
-  function rawSum(M, t) { var v = { x: 0, y: 0, z: 0 }; for (var k in M.groups) { v.x += M.groups[k].x[t]; v.y += M.groups[k].y[t]; v.z += M.groups[k].z[t]; } return v; }
-  var KCAL = (function () { var mx = 0; for (var t = 0; t < CYCLE; t++) mx = Math.max(mx, project(rawSum(MODEL.normal, t), "II")); return 1.2 / (mx || 1); })();
-  function unit(A) { var m = Math.hypot(A.x, A.y, A.z) || 1; return { x: A.x / m, y: A.y / m, z: A.z / m }; }
-  Object.keys(MODEL).forEach(function (c) {
-    var M = MODEL[c];
-    for (var k in M.groups) { var G = M.groups[k]; for (var t = 0; t < CYCLE; t++) { G.x[t] *= KCAL; G.y[t] *= KCAL; G.z[t] *= KCAL; } }
-    // Repolarisation from the same map: fast-route muscle gives a concordant T (epicardium recovers first);
-    // slow-route muscle recovers out of order, giving a secondary ST/T opposite to its own depolarisation.
-    var nF = M.F.n, nS = M.S.n, fs = nS / (nF + nS), uF = unit(M.F), uS = unit(M.S);
-    var Tv = { x: .30 * (1 - fs) * uF.x - .40 * fs * uS.x, y: .30 * (1 - fs) * uF.y - .40 * fs * uS.y, z: .30 * (1 - fs) * uF.z - .40 * fs * uS.z };
-    var sk = -.35 * Math.max(0, (fs - .4) / .6), STv = { x: sk * uS.x, y: sk * uS.y, z: sk * uS.z };
-    var tc = (M.tS + M.tE) / 2, sc = (M.qend + M.tS) / 2 + 5, ss = (M.tS - M.qend) / 4;
-    M.fracSlow = fs;
-    for (var t = 0; t < CYCLE; t++) {
-      var v = rawSum(M, t);
-      for (var i = 0; i < P_WAVE.length; i++) { var d = (t - P_WAVE[i][0]) / P_WAVE[i][1], g = Math.exp(-0.5 * d * d); v.x += g * P_WAVE[i][2]; v.y += g * P_WAVE[i][3]; v.z += g * P_WAVE[i][4]; }
-      var dt = (t - tc) / 42, gt = Math.exp(-0.5 * dt * dt); v.x += gt * Tv.x; v.y += gt * Tv.y; v.z += gt * Tv.z;
-      var ds = (t - sc) / ss, gs = Math.exp(-0.5 * ds * ds); v.x += gs * STv.x; v.y += gs * STv.y; v.z += gs * STv.z;
-      M.total.x[t] = v.x; M.total.y[t] = v.y; M.total.z[t] = v.z;
-    }
-    var E = M.ev = { his: HIS_START, qon: M.qon, qend: M.qend, tS: M.tS, tE: M.tE };
-    function med(g, slow) { var a = M.pts.filter(function (p) { return (!g || g.indexOf(p.g) >= 0) && (slow === undefined || p.slow === slow); }).map(function (p) { return p.ta; }).sort(function (a, b) { return a - b; }); return a.length ? a[Math.floor(a.length / 2)] : M.qon; }
-    M.med = med;
-    if (c === "normal") { E.q1 = Math.round(med(["SEP"])) + 4; E.q2 = M.qend - 22; }
-    else if (c === "rbbb") { E.q1 = M.qon + 22; E.q2 = Math.round(med(["RV"], true)) - 10; }
-    else { E.q1 = Math.round(med(["SEP", "RV"])) + 6; E.q2 = M.qend - 35; }
-    if (E.q1 >= E.q2) E.q2 = E.q1 + 10;
-  });
   function vectorAt(c, t) { var M = MODEL[c], i = Math.max(0, Math.min(CYCLE - 1, Math.round(t))); return { x: M.total.x[i], y: M.total.y[i], z: M.total.z[i] }; }
 
   /* ---------- Trace samples (1 ms) ---------- */
@@ -484,8 +545,9 @@
       b.groups = names.join(" and ");
       var vs = { x: 0, y: 0, z: 0 }, cx = 0, cy = 0, cn = 0;
       keys.forEach(function (k) { var G = M.groups[k]; for (var t = b.start; t <= b.end; t++) { vs.x += G.x[t]; vs.y += G.y[t]; vs.z += G.z[t]; } });
-      M.pts.forEach(function (p) { if (keys.indexOf(p.g + "|" + (p.slow ? "slow" : "fast")) >= 0 && p.ta >= b.start - 10 && p.ta <= b.end) { cx += p.x; cy += p.y; cn++; } });
-      if (!cn) M.pts.forEach(function (p) { if (keys.indexOf(p.g + "|" + (p.slow ? "slow" : "fast")) >= 0) { cx += p.x; cy += p.y; cn++; } });
+      var regs = keys.map(function (k) { return k.split("|")[0]; });
+      M.pts.forEach(function (p) { if (regs.indexOf(p.g) >= 0 && p.ta >= b.start - 10 && p.ta <= b.end) { cx += p.x; cy += p.y; cn++; } });
+      if (!cn) M.pts.forEach(function (p) { if (regs.indexOf(p.g) >= 0) { cx += p.x; cy += p.y; cn++; } });
       b.cluster = { x: cx / (cn || 1), y: cy / (cn || 1) };
       b.dir = dirWords(vs, L);
       var tw = b.sign > 0 ? "towards " + L : "away from " + L;
@@ -707,8 +769,6 @@
       var fade = ATRIAL[p] ? (p === "avn" ? ventFade : atrFade) : ventFade;
       n.act.setAttribute("opacity", f > 0 ? fade : 0);
       n.act.setAttribute("stroke-dashoffset", (n.len * (1 - Math.max(0, f))).toFixed(1));
-      n.base.setAttribute("stroke", isBlock ? ORANGE : GREY);
-      n.base.setAttribute("stroke-dasharray", isBlock || unused ? "5 4" : "none");
       var h = heads[p];
       if (f > 0 && f < 1) {
         var l = n.len * f, pt = n.act.getPointAtLength(l), p2 = n.act.getPointAtLength(Math.min(n.len, l + 1)), p1 = n.act.getPointAtLength(Math.max(0, l - 1));
@@ -741,17 +801,31 @@
     }
   }
 
+  // Solid up to `from`, then dashes: a blocked route stays clearly drawn, but the part the impulse never travels is dashed.
+  function dashAfter(len, from) {
+    var a = [from.toFixed(1)], pos = from;
+    while (pos < len) { a.push(4, 6); pos += 10; }
+    a.push(0, 1000);
+    return a.join(" ");
+  }
   function renderBlock() {
     var c = COND[state.cond];
     while (gBlock.firstChild) gBlock.removeChild(gBlock.firstChild);
     while (gMarks.firstChild) gMarks.removeChild(gMarks.firstChild);
+    Object.keys(pathNodes).forEach(function (p) { pathNodes[p].base.setAttribute("stroke-dasharray", "none"); });
     if (!c.blockAt) { blockText.setAttribute("opacity", 0); return; }
-    el("path", { d: PATHS[c.blockAt], fill: "none", stroke: "url(#ecgcHatch)", "stroke-width": 10, "stroke-linecap": "round", opacity: .8 }, gBlock);
-    var n = pathNodes[c.blockAt], pt = n.act.getPointAtLength(n.len * (c.blockAt === "rb" ? 0.3 : 0.55));
+    var bn = pathNodes[c.blockAt], at = bn.len * (c.blockAt === "rb" ? 0.3 : 0.5), pt = bn.act.getPointAtLength(at);
+    // Orange hatching under every stretch the impulse cannot travel; dark dashed line on top.
+    c.blocked.forEach(function (p) {
+      var n = pathNodes[p], from = p === c.blockAt ? at : 0;
+      el("path", { d: PATHS[p], fill: "none", stroke: "url(#ecgcHatch)", "stroke-width": 9, "stroke-linecap": "butt", opacity: .6,
+        "stroke-dasharray": "0 " + from.toFixed(1) + " " + n.len.toFixed(1) + " 0" }, gBlock);
+      n.base.setAttribute("stroke-dasharray", p === c.blockAt ? dashAfter(n.len, at) : "6 4");
+    });
     el("path", { d: "M-7,-7 L7,7 M7,-7 L-7,7", stroke: INK, "stroke-width": 3.5, "stroke-linecap": "round", transform: "translate(" + pt.x + "," + pt.y + ")" }, gMarks);
     var isR = c.blockAt === "rb";
     blockText.setAttribute("x", isR ? pt.x - 12 : pt.x + 10);
-    blockText.setAttribute("y", isR ? pt.y - 9 : pt.y + 20);
+    blockText.setAttribute("y", isR ? pt.y - 9 : pt.y + 4);
     blockText.setAttribute("text-anchor", isR ? "end" : "start");
     blockText.textContent = "blocked";
     blockText.setAttribute("opacity", 1);
@@ -965,6 +1039,23 @@
     steps: function (c, L) { return stepsFor(c, L || state.leads[state.focus]).map(function (s) { return { id: s.id, t: s.t, text: s.text }; }); },
     stepMode: setStepMode,
     goStep: function (id) { var st = curSteps(); for (var i = 0; i < st.length; i++) if (st[i].id === id) { goStep(i); return true; } return false; },
+    // Anatomy check: samples of each drawn conduction route that fall inside a chamber cavity (the moderator band is allowed to).
+    cavityHits: function () {
+      var out = {};
+      Object.keys(PATHS).forEach(function (p) {
+        var n = pathNodes[p], hits = 0;
+        var outside = 0;
+        for (var s = 0; s <= n.len; s += 2) {
+          var q = n.base.getPointAtLength(s), pt = new DOMPoint(q.x, q.y);
+          if (!silPath.isPointInFill(pt)) outside++;
+          for (var k = 0; k < cavityNodes.length; k++) if (cavityNodes[k].isPointInFill(pt)) { hits++; break; }
+        }
+        out[p] = hits;
+        if (outside) out[p + ":outsideHeart"] = outside;
+      });
+      return out;
+    },
+    bundleStyle: function (p) { var b = pathNodes[p].base; return { stroke: b.getAttribute("stroke"), width: +b.getAttribute("stroke-width"), dash: b.getAttribute("stroke-dasharray") || "none" }; },
     model: function (c) { var M = MODEL[c]; return { qon: M.qon, qend: M.qend, fracSlow: M.fracSlow, points: M.pts.length, slowPoints: M.pts.filter(function (p) { return p.slow; }).length }; },
     qrsWidth: function () { var q = seg(state.cond, "QRS"); return q[2] - q[1]; }
   };

@@ -101,18 +101,15 @@
       <details>
         <summary>For anaesthetist review</summary>
         <ul>
-          <li>One activation-time map drives everything: the arrows, dots and chevrons on the heart, the net vector, every lead trace, the bump labels and the step-through story. Every trace is the projection of that one summed vector (a single dipole) on the lead's axis, so polarity always matches the arrow. Not recordings; real ECGs also contain non-dipole and electrode-proximity effects.</li>
-          <li>The map is a flat 2D slice: muscle points on a 7-unit grid (about 2.3 mm), scale chosen by hand so the heart is about 10 cm long. Speeds from Klabunde: bundle branches 2 m/s, Purkinje fibres 4 m/s, ventricular muscle 0.5 m/s (one speed for all muscle, no fibre direction).</li>
-          <li>Because a flat slice makes long cell-to-cell routes longer than the real 3D routes, muscle spread beyond one wall thickness is treated as 1.5 times quicker (a model choice, not a measured speed).</li>
-          <li>Hand-set model choices: where each fast path starts exciting muscle (insulated His bundle and upper bundle branches; right bundle reaching the septum low down; LV Purkinje network branching half way down the posterior fascicle); the coupling distance (12 units); how far muscle spread runs before it is called "slow, cell to cell" (RV 22 units, elsewhere 42); the out-of-plane (front to back) direction given to each region; the RV counted at 0.75 because its wall is thinner than drawn; and slow fronts counted 3 times, because in a slice a slow front crossing a wall shows as a short line but in the heart it is a broad sheet.</li>
-          <li>One calibration constant for all conditions: normal lead II R wave set to 1.2 mV. Chest leads share one gain.</li>
+          <li>The ECG comes from one smoothed, idealised heart vector per condition (a few hand-set components, each with a time, width and direction, tagged with the muscle region that makes it and whether that region is reached by the fast route or slowly, cell to cell). Every lead trace is the projection of that one vector on the lead's axis (a single dipole), so polarity always matches the arrow. Shapes are chosen to reproduce the textbook patterns in Hampton and LITFL; they are not recordings, and real ECGs also contain non-dipole and electrode-proximity effects. Chest leads share one gain.</li>
+          <li>Timings: PR 160 ms in all three conditions; QRS 85 ms normal, 130 ms RBBB, 140 ms LBBB (readout), with ST and T placed after them. Idealised values for one beat at 75 per minute, checked against Klabunde's sequence.</li>
           <li>The atria are not mapped: the P wave is two hand-set components (right then left atrium).</li>
-          <li>Repolarisation is a simple rule from the same map: fast-route muscle gives a concordant T (epicardium recovers first); slow-route muscle gives a secondary ST/T opposite to its own depolarisation. Typical patterns; individual patients vary.</li>
-          <li>Bump labels: each QRS deflection of the focus lead is split at clear notches and credited to the muscle regions whose own projection on that lead has the bump's sign; the top one or two are named. A teaching attribution, not a measured one.</li>
-          <li>Timings in this model: PR about 155 ms (165 ms to the first muscle in LBBB, where the first muscle is reached via the right bundle); QRS 75 ms normal, 160 ms RBBB, 195 ms LBBB from first to last muscle activation (the low-amplitude tail makes the readout longer than a measured surface QRS).</li>
-          <li>Known gaps: in RBBB the model's R wave in I and aVL is smaller than typical (aVL is mostly negative), and LBBB inferior leads are more multiphasic than usual.</li>
+          <li>ST and T are hand-set components: concordant T in normal conduction (epicardium recovers first); secondary, discordant ST/T in LBBB and inverted T in V1 to V2 in RBBB. Typical patterns; individual patients vary.</li>
+          <li>The dots, chevrons and arrowheads on the heart come from a flat activation-time map (bundle branches 2 m/s, Purkinje fibres 4 m/s, muscle 0.5 m/s, from Klabunde), used only as a picture. Each region's activation order is kept but re-timed into the window of the vector component it makes, so the picture lines up with the trace; the map does not change the traces. Which muscle counts as "slow, cell to cell" (more than one wall thickness from a fast route) is a hand-set threshold.</li>
+          <li>Bump labels: each QRS deflection of the focus lead is split at clear notches and credited to the vector components whose projection on that lead has the bump's sign; the region named is the one tagged on that component. A teaching attribution, not a measured one.</li>
+          <li>Conduction routes are drawn in or along the walls: SA node at the SVC junction; internodal routes and Bachmann's bundle in the atrial walls and interatrial septum; AV node low in the interatrial septum near the coronary sinus; His bundle through the fibrous ring; right bundle under the endocardium of the RV septal surface, then the moderator band (the one route that crosses a cavity) to the anterior RV free wall; left bundle and posterior fascicle along the LV septal surface towards the posteromedial papillary muscle; Purkinje fibres along the endocardium. The anterior fascicle runs on the front wall, out of this slice, so it is shown as a stub with an out-of-plane marker; its Purkinje fibres reappear on the lateral wall. Positions are schematic.</li>
           <li>The frontal lead lines on the heart and the chest wheel show the same vector: frontal (x, y) on the heart, horizontal (x, z) on the wheel; dashed during ST and T. Chest lead angles are standard approximations.</li>
-          <li>The heart is a flat, simplified four-chamber cut-through; valve, vessel and conduction positions are schematic.</li>
+          <li>The heart is a flat, simplified four-chamber cut-through; valve, vessel and papillary muscle positions are schematic.</li>
           <li>Time is stretched so one beat fills each panel: thin vertical lines are 40 ms, horizontal lines 0.5 mV. The ms readout is the model's true time.</li>
         </ul>
       </details>
@@ -136,6 +133,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-conduction.js?v=20261122b"></script>
+<script src="assets/ecg-conduction.js?v=20261122c"></script>
 </body>
 </html>
