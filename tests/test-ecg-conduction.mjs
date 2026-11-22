@@ -66,6 +66,22 @@ await page.mouse.click(tap.x, tap.y);
 const tapped = await page.evaluate(() => ({ t: window.ECGConduction.state.t, playing: window.ECGConduction.state.playing, link: document.querySelector("#ecgcLink line").getAttribute("opacity") }));
 check("tapping a bump sets the clock to it and shows the link", tapped.t === tap.peak && !tapped.playing && tapped.link === "1", { tap, tapped });
 
+// Round 7: both lead wheels, narration for every step, and everything still fits at every step.
+const wh = await page.evaluate(() => { const E = window.ECGConduction; E.setCondition("lbbb"); E.setLead(0, "aVL"); E.setLead(1, "V1"); E.setFocus(0); E.setTime(230);
+  return Object.assign(E.wheels(), { focusAxis: !!document.querySelector("#ecgcSvg line[stroke-dasharray='6 5']"), papillary: document.querySelectorAll("#ecgcSvg path[d^='M300,352 C308']").length }); });
+check("limb (hexaxial) and chest wheels exist with live vector and markers", wh.limb.length === 6 && wh.chest.length === 6 && wh.limbVec === "1" && wh.chestVec === "1" &&
+  wh.marks[0].wheel === "ecgcWheelF" && wh.marks[1].wheel === "ecgcWheelH" && wh.focusAxis && wh.papillary === 0, wh);
+const narr = await page.evaluate(() => { const E = window.ECGConduction, bad = [], over = []; let n = 0;
+  for (const c of ["normal", "rbbb", "lbbb"]) for (const L of ["aVL", "II", "V1", "V6"]) {
+    E.setCondition(c); E.setLead(0, L); E.setFocus(0); E.stepMode(true);
+    for (const s of E.steps(c, L)) { n++; const x = E.narration(c, L, s.t), lines = [x.where, x.how, x.sees, x.trace].filter((v) => v && v.length > 15);
+      if (lines.length < 4 || !x.title || (c !== "normal" && s.t >= 128 && s.t < 560 && !x.diff)) bad.push([c, L, s.id]);
+      E.goStep(s.id); const p = document.querySelector(".ecgc-narr");
+      if (document.documentElement.scrollHeight > innerHeight || p.scrollHeight > p.clientHeight + 1 || !document.getElementById("ecgcNSees").textContent.startsWith(L + " looks")) over.push([c, L, s.id]); }
+    E.stepMode(false); }
+  return { n, bad, over }; });
+check("every step has narration lines (Where, How, lead sees, On the trace; Different from normal in blocks) and fits", narr.n > 100 && !narr.bad.length && !narr.over.length, narr);
+
 // Round 6: anatomy and bundle visibility.
 const cav = await page.evaluate(() => window.ECGConduction.cavityHits());
 check("every conduction route sits in a wall (only the moderator band crosses a cavity)", Object.entries(cav).every(([k, v]) => k === "mod" ? v > 0 : v === 0), cav);

@@ -58,7 +58,6 @@
     [12, 100, "The impulse spreads through the right atrium, then along Bachmann's bundle to the left atrium: the P wave. Its vector points down and to the left (about +60\u00b0), so P is upright in II, inverted in aVR and biphasic in V1."],
     [100, "his", "The AV node slows the impulse so the atria can finish contracting first. Too little tissue is active to show, so the trace is flat: the PR segment."]
   ];
-  var REST = "The heart is at rest, waiting for the SA node to fire again.";
 
   var COND = {
     normal: {
@@ -215,22 +214,13 @@
     el("text", { x: c[1], y: c[2], "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: INK, "font-family": "var(--font-sans)" }, gRegions).textContent = c[0];
   });
 
-  // Frontal lead lines radiating from the centre of the heart, inside a faint circle.
+  // Only the focus lead's axis is drawn across the heart (faint, labelled at its positive end); the full limb-lead
+  // hexaxial wheel sits beside the chest wheel.
   var LC = { x: 276, y: 232 }, LR = 158;
-  var gLeadLines = el("g", { "aria-hidden": "true" });
-  el("circle", { cx: LC.x, cy: LC.y, r: LR, fill: "none", stroke: GREY, "stroke-width": 1, "stroke-dasharray": "2 5", opacity: .8 }, gLeadLines);
-  var leadLineNodes = {};
-  Object.keys(FRONTAL_AX).forEach(function (L) {
-    var a = FRONTAL_AX[L] * Math.PI / 180, ex = LC.x + LR * Math.cos(a), ey = LC.y + LR * Math.sin(a);
-    var line = el("line", { x1: LC.x, y1: LC.y, x2: ex.toFixed(1), y2: ey.toFixed(1), stroke: GREY, "stroke-width": 1, "stroke-dasharray": "4 4", opacity: .75 }, gLeadLines);
-    var deg = FRONTAL_AX[L] > 0 ? "+" + FRONTAL_AX[L] : String(FRONTAL_AX[L]).replace("-", "\u2212");
-    // Upper and side lead names sit just inside the circle (clear of the label columns); lower ones just outside it.
-    var rr = FRONTAL_AX[L] > 0 ? LR + 14 : LR - 28;
-    var tx = el("text", { x: (LC.x + rr * Math.cos(a)).toFixed(1), y: (LC.y + rr * Math.sin(a) + 4).toFixed(1), "text-anchor": "middle", "font-size": 12, "font-family": "var(--font-sans)", fill: "var(--muted)", stroke: "#fff", "stroke-width": 3.5, "paint-order": "stroke" }, gLeadLines);
-    tx.textContent = L + (L === "I" ? "\u2002" : " ") + deg + "\u00b0";
-    if (L === "I") { tx.setAttribute("x", (ex - 52).toFixed(1)); tx.setAttribute("y", (ey + 16).toFixed(1)); } // clear of the lateral wall markers
-    leadLineNodes[L] = { line: line, tx: tx, ex: ex, ey: ey };
-  });
+  var gFocusAx = el("g", { "aria-hidden": "true" });
+  var focusAxLine = el("line", { stroke: "#7B8189", "stroke-width": 1.4, "stroke-dasharray": "6 5", opacity: 0 }, gFocusAx);
+  var focusAxPlus = el("circle", { r: 3, fill: "#7B8189", opacity: 0 }, gFocusAx);
+  var focusAxText = el("text", { "text-anchor": "middle", "font-size": 13, "font-weight": 600, "font-family": "var(--font-sans)", fill: INK, stroke: "#fff", "stroke-width": 4, "paint-order": "stroke", opacity: 0 }, gFocusAx);
 
   // Myocardium sample points (filled in by the model): blue dots = fast route, orange chevrons = slow cell to cell.
   var gMyo = el("g", { "aria-hidden": "true" });
@@ -264,11 +254,6 @@
     el("circle", { cx: q[0], cy: q[1], r: 4.6, fill: "#fff", stroke: DARK, "stroke-width": 1.6 }, gOut);
     el("circle", { cx: q[0], cy: q[1], r: 1.5, fill: DARK }, gOut);
   });
-  // Papillary muscles (the fascicles end near their bases): posteromedial low on the septal side, anterolateral on the lateral wall.
-  ["M300,352 C308,340 318,334 326,338 C322,348 314,356 306,360 Z", "M398,292 C388,296 382,306 384,316 C392,314 400,306 402,298 Z"].forEach(function (d) {
-    el("path", { d: d, fill: SOFT, stroke: GREY, "stroke-width": 1.2 }, gRegions);
-  });
-
   var blockText = el("text", { "font-size": 12.5, "font-weight": 700, "font-family": "var(--font-sans)", fill: INK, stroke: "#fff", "stroke-width": 4, "paint-order": "stroke", opacity: 0 }, svg);
   var gMarks = el("g", { "aria-hidden": "true" });
   var gLeadMarks = el("g", {});
@@ -647,20 +632,26 @@
     else if (s === "B") el("rect", { x: -5.5 * k, y: -5.5 * k, width: 11 * k, height: 11 * k, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
     else el("path", { d: "M0," + (-7 * k) + " L" + (6.5 * k) + "," + (5.5 * k) + " L" + (-6.5 * k) + "," + (5.5 * k) + " Z", fill: "#fff", stroke: INK, "stroke-width": 2, "stroke-linejoin": "round" }, g);
   }
-  var wheelSvg = document.getElementById("ecgcWheelH");
-  var wheelH = (function () {
-    var W = { angles: HORIZ_AX, axes: {}, labels: {} };
-    el("circle", { cx: 0, cy: 0, r: 44, fill: "none", stroke: GREY, "stroke-width": 1 }, wheelSvg);
-    Object.keys(HORIZ_AX).forEach(function (L) {
-      var a = HORIZ_AX[L] * Math.PI / 180;
-      W.axes[L] = el("line", { x1: 0, y1: 0, x2: (44 * Math.cos(a)).toFixed(1), y2: (44 * Math.sin(a)).toFixed(1), stroke: GREY, "stroke-width": 1 }, wheelSvg);
-      var t = el("text", { x: (57 * Math.cos(a)).toFixed(1), y: (57 * Math.sin(a) + 3.5).toFixed(1), "text-anchor": "middle", "font-size": 10, "font-family": "var(--font-sans)", fill: "var(--muted)" }, wheelSvg);
-      t.textContent = L; W.labels[L] = t;
+  // Two wheels, same size: limb leads (frontal plane, hexaxial) and chest leads (horizontal plane, front at the bottom).
+  function degTxt(d) { return (d > 0 ? "+" + d : String(d).replace("-", "\u2212")) + "\u00b0"; }
+  function makeWheel(svgEl, AX, limb) {
+    var W = { axes: {}, labels: {}, svg: svgEl };
+    el("circle", { cx: 0, cy: 0, r: 40, fill: "none", stroke: GREY, "stroke-width": 1 }, svgEl);
+    Object.keys(AX).forEach(function (L) {
+      var a = AX[L] * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      if (limb) el("line", { x1: 0, y1: 0, x2: (-40 * c).toFixed(1), y2: (-40 * sn).toFixed(1), stroke: GREY, "stroke-width": .8, "stroke-dasharray": "2 3" }, svgEl);
+      W.axes[L] = el("line", { x1: 0, y1: 0, x2: (40 * c).toFixed(1), y2: (40 * sn).toFixed(1), stroke: GREY, "stroke-width": 1 }, svgEl);
+      // Label radii are staggered where neighbours would touch (aVF below II and III; V3 below V2 and V4).
+      var r = limb ? (L === "aVF" ? 62 : 52) : (L === "V3" ? 63 : L === "V6" ? 53 : 52);
+      var t = el("text", { x: (r * c).toFixed(1), y: (r * sn + 4).toFixed(1), "text-anchor": "middle", "font-size": 11, "font-family": "var(--font-sans)", fill: "var(--muted)" }, svgEl);
+      t.textContent = limb ? L + " " + degTxt(AX[L]) : L; W.labels[L] = t;
     });
-    W.vec = el("line", { x1: 0, y1: 0, x2: 0, y2: 0, stroke: "var(--ecgc-magenta)", "stroke-width": 4, "stroke-linecap": "round", "marker-end": "url(#ecgcHead)" }, wheelSvg);
-    W.markG = el("g", {}, wheelSvg);
+    W.vec = el("line", { x1: 0, y1: 0, x2: 0, y2: 0, stroke: "var(--ecgc-magenta)", "stroke-width": 4, "stroke-linecap": "round", "marker-end": "url(#ecgcHead)" }, svgEl);
+    W.markG = el("g", {}, svgEl);
     return W;
-  })();
+  }
+  var wheelF = makeWheel(document.getElementById("ecgcWheelF"), FRONTAL_AX, true);
+  var wheelH = makeWheel(document.getElementById("ecgcWheelH"), HORIZ_AX, false);
   var leadMarks = SLOTS.map(function (s) {
     var g = document.createElementNS(NS, "g");
     g.setAttribute("id", "ecgcWheelMark-" + s);
@@ -708,39 +699,46 @@
   });
 
   function layoutLeads() {
-    Object.keys(leadLineNodes).forEach(function (L) {
-      var n = leadLineNodes[L]; n.line.setAttribute("stroke", GREY); n.line.setAttribute("stroke-width", 1); n.line.setAttribute("stroke-dasharray", "4 4");
-      n.tx.setAttribute("fill", "var(--muted)"); n.tx.setAttribute("font-weight", 400);
+    [[wheelF, FRONTAL_AX], [wheelH, HORIZ_AX]].forEach(function (w) {
+      Object.keys(w[1]).forEach(function (L) {
+        w[0].axes[L].setAttribute("stroke", GREY); w[0].axes[L].setAttribute("stroke-width", 1);
+        w[0].labels[L].setAttribute("fill", "var(--muted)"); w[0].labels[L].setAttribute("font-weight", 400);
+      });
     });
-    Object.keys(HORIZ_AX).forEach(function (L) {
-      wheelH.axes[L].setAttribute("stroke", GREY); wheelH.axes[L].setAttribute("stroke-width", 1);
-      wheelH.labels[L].setAttribute("fill", "var(--muted)"); wheelH.labels[L].setAttribute("font-weight", 400);
-    });
+    var FL = state.leads[state.focus], fOn = FRONTAL_AX[FL] !== undefined;
+    [focusAxLine, focusAxPlus, focusAxText].forEach(function (n) { n.setAttribute("opacity", fOn ? 1 : 0); });
+    if (fOn) {
+      var fa = FRONTAL_AX[FL] * Math.PI / 180, ux = Math.cos(fa), uy = Math.sin(fa), rr = 0;
+      focusAxLine.setAttribute("x1", (LC.x - LR * ux).toFixed(1)); focusAxLine.setAttribute("y1", (LC.y - LR * uy).toFixed(1));
+      focusAxLine.setAttribute("x2", (LC.x + LR * ux).toFixed(1)); focusAxLine.setAttribute("y2", (LC.y + LR * uy).toFixed(1));
+      focusAxPlus.setAttribute("cx", (LC.x + LR * ux).toFixed(1)); focusAxPlus.setAttribute("cy", (LC.y + LR * uy).toFixed(1));
+      // Label runs along the axis near its positive end, kept upright.
+      var lx = LC.x + .76 * LR * ux, ly = LC.y + .76 * LR * uy, rot = FRONTAL_AX[FL], up = rot > 90 || rot < -90;
+      if (up) rot += 180;
+      var rr2 = rot * Math.PI / 180;
+      lx -= 13 * Math.sin(rr2); ly += 13 * Math.cos(rr2); // just below the line
+      focusAxText.setAttribute("x", lx.toFixed(1)); focusAxText.setAttribute("y", ly.toFixed(1));
+      focusAxText.setAttribute("transform", "rotate(" + rot + " " + lx.toFixed(1) + " " + ly.toFixed(1) + ")");
+      focusAxText.textContent = FL + " " + degTxt(FRONTAL_AX[FL]);
+    }
     leadMarks.forEach(function (g, i) {
       var L = state.leads[i], dup = 0;
       for (var j = 0; j < i; j++) if (state.leads[j] === L) dup++;
-      if (FRONTAL_AX[L] !== undefined) {
-        var n = leadLineNodes[L], a = FRONTAL_AX[L] * Math.PI / 180, r = FRONTAL_AX[L] > 0 ? LR - dup * 16 : LR + dup * 14;
-        n.line.setAttribute("stroke", INK); n.line.setAttribute("stroke-width", i === state.focus ? 2.2 : 1.5); n.line.setAttribute("stroke-dasharray", "none");
-        n.tx.setAttribute("fill", INK); n.tx.setAttribute("font-weight", 700);
-        g.setAttribute("transform", "translate(" + (LC.x + r * Math.cos(a)).toFixed(1) + "," + (LC.y + r * Math.sin(a)).toFixed(1) + ")");
-        gLeadMarks.appendChild(g);
-      } else {
-        var b = HORIZ_AX[L] * Math.PI / 180, r2 = 44 - dup * 14;
-        wheelH.axes[L].setAttribute("stroke", INK); wheelH.axes[L].setAttribute("stroke-width", 2);
-        wheelH.labels[L].setAttribute("fill", INK); wheelH.labels[L].setAttribute("font-weight", 700);
-        g.setAttribute("transform", "translate(" + (r2 * Math.cos(b)).toFixed(1) + "," + (r2 * Math.sin(b)).toFixed(1) + ")");
-        wheelH.markG.appendChild(g);
-      }
+      var W = FRONTAL_AX[L] !== undefined ? wheelF : wheelH, ax = (FRONTAL_AX[L] !== undefined ? FRONTAL_AX : HORIZ_AX)[L];
+      var b = ax * Math.PI / 180, r2 = 29 - dup * 11; // inside the circle, clear of the lead names
+      W.axes[L].setAttribute("stroke", INK); W.axes[L].setAttribute("stroke-width", i === state.focus ? 2.4 : 1.8);
+      W.labels[L].setAttribute("fill", INK); W.labels[L].setAttribute("font-weight", 700);
+      g.setAttribute("transform", "translate(" + (r2 * Math.cos(b)).toFixed(1) + "," + (r2 * Math.sin(b)).toFixed(1) + ")");
+      W.markG.appendChild(g);
       g.setAttribute("data-lead", L);
       panels[i].cv.setAttribute("aria-label", "Lead " + L + " trace, " + COND[state.cond].name + (i === state.focus ? ". Focus lead: tap a bump to jump to the moment that made it." : ""));
       panels[i].wrap.classList.toggle("is-focus", i === state.focus);
       panels[i].btn.setAttribute("aria-pressed", i === state.focus ? "true" : "false");
       panels[i].note.textContent = i === state.focus ? "" : s0(i);
     });
-    document.getElementById("ecgcWheels").setAttribute("aria-label", "Chest lead wheel. Selected leads: " + SLOTS.map(function (s, i) { return s + " " + state.leads[i]; }).join(", "));
+    document.getElementById("ecgcWheels").setAttribute("aria-label", "Limb and chest lead wheels. Selected leads: " + SLOTS.map(function (s, i) { return s + " " + state.leads[i]; }).join(", "));
   }
-  function s0(i) { return SLOTS[i] + (FRONTAL_AX[state.leads[i]] !== undefined ? " on the heart" : " on the chest wheel"); }
+  function s0(i) { return SLOTS[i] + (FRONTAL_AX[state.leads[i]] !== undefined ? " on the limb wheel" : " on the chest wheel"); }
 
   /* ---------- Timeline ---------- */
   var segsBox = document.getElementById("ecgcSegs");
@@ -806,9 +804,12 @@
     var v = vectorAt(state.cond, t), isT = t >= M.tS && t <= M.tE, isST = t >= M.qend && t < M.tS, dashed = isT || isST;
     var o = t < 100 ? { x: 240, y: 100 } : LC;
     var fm = Math.hypot(v.x, v.y), hm = Math.hypot(v.x, v.z), rad = Math.atan2(v.y, v.x);
-    var onH = hm >= .03, LH = onH ? Math.min(42, 8 + 28 * hm) / hm : 0;
+    var onH = hm >= .03, LH = onH ? Math.min(38, 8 + 26 * hm) / hm : 0;
     wheelH.vec.setAttribute("x2", (v.x * LH).toFixed(1)); wheelH.vec.setAttribute("y2", (v.z * LH).toFixed(1));
     wheelH.vec.setAttribute("opacity", onH ? 1 : 0); wheelH.vec.setAttribute("stroke-dasharray", dashed ? "5 4" : "none");
+    var onF = fm >= .03, LF = onF ? Math.min(38, 8 + 26 * fm) / fm : 0;
+    wheelF.vec.setAttribute("x2", (v.x * LF).toFixed(1)); wheelF.vec.setAttribute("y2", (v.y * LF).toFixed(1));
+    wheelF.vec.setAttribute("opacity", onF ? 1 : 0); wheelF.vec.setAttribute("stroke-dasharray", dashed ? "5 4" : "none");
     var show = fm >= 0.03;
     gArrow.setAttribute("opacity", show ? 1 : 0);
     if (show) {
@@ -982,13 +983,128 @@
 
   var lastSentence = "";
   function evT(c, e) { return typeof e === "number" ? e : MODEL[c].ev[e]; }
-  function sentenceAt(t) {
-    if (state.step) { var st = curSteps(); var s = st[state.stepIdx]; return "Step " + (state.stepIdx + 1) + " of " + st.length + ": " + s.text; }
-    var lists = [SHARED_START, COND[state.cond].text];
-    for (var j = 0; j < lists.length; j++) for (var i = 0; i < lists[j].length; i++) {
-      var s2 = lists[j][i]; if (t >= evT(state.cond, s2[0]) && t < evT(state.cond, s2[1])) return s2[2];
+
+
+  /* ---------- Narration: Where, How, what the focus lead sees, the result on the trace (and, in a block, what differs) ---------- */
+  // Moments are [from, to, title, where, how, different from normal]; times are ms or model events.
+  var N_SHARED = [
+    [0, 12, "The SA node fires", "SA node, in the wall of the right atrium where the superior vena cava joins.",
+      "Pacemaker cells drift up to threshold on their own and fire. The impulse starts to spread into the atrial muscle around them."],
+    [12, 100, "The atria depolarise", "Right atrium first, then the left atrium through Bachmann's bundle. Internodal routes carry the impulse on to the AV node.",
+      "Cell to cell through atrial muscle, helped by these preferential routes. The atria have little muscle mass, so the P wave is small."],
+    [100, "his", "The AV node holds the impulse", "AV node, low in the interatrial septum near the opening of the coronary sinus.",
+      "The slowest conduction in the heart. The delay lets the atria finish emptying; the fibrous ring blocks every other route."]
+  ];
+  var N_REST = ["rest", CYCLE, "At rest", "The whole heart has recovered.", "Nothing changes charge until the SA node fires again."];
+  var N_COND = {
+    normal: [
+      ["his", "qon", "Into the fast highway", "His bundle, through the fibrous ring, then the right and left bundle branches down either side of the septum.",
+        "Fast: insulated bundle fibres carry the impulse at about 2 m/s without exciting the muscle around them yet."],
+      ["qon", "q1", "Septum, left to right", "The middle of the interventricular septum.",
+        "The left bundle sends fibres into the septum early, so the septum depolarises from its left side to its right."],
+      ["q1", "q2", "Apex and free walls", "Apex, then the free walls of both ventricles, endocardium to epicardium.",
+        "Fast: Purkinje fibres (about 4 m/s) reach most muscle almost at once. The thick left ventricle wins: the net wavefront points left and down."],
+      ["q2", "qend", "The base, last", "Base of the ventricles and the top of the septum.",
+        "Still reached through the fast network, so the whole of both ventricles is activated quickly and the QRS stays narrow."],
+      ["qend", "tS", "Plateau: no current flows", "All ventricular muscle is depolarised.",
+        "Every cell sits in its plateau phase at a similar voltage, so no current flows between regions."],
+      ["tS", "tE", "Repolarisation", "Ventricular muscle, recovering from the outside (epicardium) in.",
+        "Epicardial action potentials are shorter, so recovery runs outside to inside. Reversed charge and reversed direction cancel: T matches the QRS."]
+    ],
+    rbbb: [
+      ["his", "qon", "Right bundle blocked", "His bundle, then only the left bundle branch. The right bundle is blocked (X).",
+        "Fast down the left bundle only: there is no fast route into the right ventricle.", "Normally both bundle branches conduct together."],
+      ["qon", "q1", "Septum, still left to right", "The middle of the interventricular septum.",
+        "The septal fibres come from the left bundle, which still works, so the septum depolarises left to right as usual.", "Nothing yet: the start of the QRS is normal in RBBB."],
+      ["q1", "q2", "Left ventricle, on time", "Apex and the left ventricular free wall.",
+        "Fast, through the left bundle and its Purkinje fibres.", "The left ventricle is activated normally, but the right ventricle has not started yet."],
+      ["q2", "qend", "Right ventricle, late and slow", "Right ventricular free wall, reached from the septum.",
+        "Slow, cell to cell through gap junctions (muscle conducts at about 0.3 to 0.5 m/s), because the right bundle is blocked.",
+        "Normally the RV is activated with the LV and hidden by it. Here it comes last, unopposed, heading right and forwards: R' in V1, wide slurred S in I and V6, QRS 120 ms or more."],
+      ["qend", "tS", "Plateau", "All ventricular muscle is depolarised.",
+        "Every cell sits in its plateau phase, so little current flows.", "Secondary change: the ST segment may be depressed in V1 to V3."],
+      ["tS", "tE", "Repolarisation, out of order", "Ventricular muscle, recovering.",
+        "Muscle activated late and out of order also recovers out of order: a secondary change.", "T wave inversion in V1 to V3 is expected in RBBB."]
+    ],
+    lbbb: [
+      ["his", "qon", "Left bundle blocked", "His bundle, then only the right bundle branch. The left bundle is blocked (X).",
+        "Fast down the right bundle only: there is no fast route into the left ventricle.", "Normally both bundle branches conduct together."],
+      ["qon", "q1", "Right side first", "Right ventricle and the right side of the septum.",
+        "Fast, through the right bundle and its Purkinje fibres; the septum is entered from the right.",
+        "Normally the septum depolarises left to right. Here it goes right to left, so the small septal q in I, aVL, V5 and V6 is lost."],
+      ["q1", "q2", "Slow crawl through the LV wall", "Across the septum, then into the left ventricular wall.",
+        "Slow, cell to cell through gap junctions (about 0.3 to 0.5 m/s), because the left bundle is blocked.",
+        "Normally the left Purkinje fibres activate the left ventricle almost at once. Here it takes much longer, so the QRS widens to 120 ms or more."],
+      ["q2", "qend", "Lateral wall, last", "Lateral wall of the left ventricle.",
+        "Still slow, cell to cell; the wavefront keeps heading left and backwards.",
+        "This late leftward wave makes the broad, notched (M-shaped) R in I, aVL, V5 and V6 and the deep, broad S in V1."],
+      ["qend", "tS", "Abnormal recovery begins", "All ventricular muscle is depolarised.",
+        "Abnormal activation means abnormal recovery: a secondary change.",
+        "ST shifts opposite to the main QRS (appropriate discordance): raised in V1 to V3, depressed in I, aVL, V5 and V6."],
+      ["tS", "tE", "Repolarisation, discordant", "Ventricular muscle, recovering.",
+        "Recovery follows the abnormal activation order.", "T points opposite to the main QRS (discordant): the expected secondary pattern in LBBB."]
+    ]
+  };
+  var LOOKS = {
+    I: "from the left (0\u00b0)", II: "from below and to the left (+60\u00b0)", III: "from below and to the right (+120\u00b0)", aVF: "from directly below (+90\u00b0)",
+    aVL: "from up and to the left (\u221230\u00b0)", aVR: "from up and to the right (\u2212150\u00b0)",
+    V1: "from the front, just right of the sternum", V2: "from the front, just left of the sternum", V3: "from the front, between V2 and V4",
+    V4: "from the front, over the apex", V5: "from the front of the left side", V6: "from the left side"
+  };
+  function momentAt(c, t) {
+    var list = N_SHARED.concat(N_COND[c]);
+    for (var i = 0; i < list.length; i++) if (t >= evT(c, list[i][0]) && t < evT(c, list[i][1])) return list[i];
+    return N_REST;
+  }
+  function seesLine(c, L, t, isT) {
+    var v = vectorAt(c, t), frontal = FRONTAL_AX[L] !== undefined, mag = frontal ? Math.hypot(v.x, v.y) : CHEST_GAIN * Math.hypot(v.x, v.z), p = project(v, L);
+    var head = L + " looks " + LOOKS[L] + ". ";
+    if (mag < .03) return head + "No wavefront is big enough to see, so the trace stays on the baseline.";
+    var what = isT ? "The net recovery vector" : "The net wavefront";
+    if (Math.abs(p) < .3 * mag) return head + what + " runs nearly at right angles to " + L + ", so it barely moves the trace.";
+    return head + what + " points " + (p > 0 ? "towards " + L + ", so the trace goes up." : "away from " + L + ", so the trace goes down.");
+  }
+  function traceLine(c, L, t) {
+    var M = MODEL[c], arr = SAMPLES[c][L], sg = null, segs = COND[c].segs;
+    for (var i = 0; i < segs.length; i++) if (t >= segs[i][1] && t < segs[i][2]) sg = segs[i][0];
+    if (sg === "QRS") {
+      var bs = bumpsFor(c, L), hit = null;
+      bs.forEach(function (b) { if (t >= b.start && t <= b.end) hit = b; });
+      var qw = seg(c, "QRS"); qw = qw[2] - qw[1];
+      if (hit) return hit.name + " in " + L + ": " + (hit.sign > 0 ? "upward" : "downward") + ", made by the " + hit.groups + " (" + (hit.slow ? "slow, cell to cell" : "fast route") + "). QRS " + qw + " ms.";
+      return "QRS in " + L + ", between deflections. QRS " + qw + " ms.";
     }
-    return REST;
+    if (sg === "P") {
+      var pmax = 0, pmin = 0; for (var a = 0; a <= 100; a++) { pmax = Math.max(pmax, arr[a]); pmin = Math.min(pmin, arr[a]); }
+      return "P wave in " + L + ": " + (pmax > .02 && pmin < -.02 ? "biphasic (up then down)" : pmax >= -pmin ? "upright" : "inverted") + ".";
+    }
+    if (sg === "PR") return "PR segment: flat. The PR interval is 160 ms here (normal 120 to 200 ms).";
+    var qa = 0; for (var q = M.qon; q <= M.qend; q++) qa += arr[q];
+    if (sg === "ST") { var sv = arr[Math.round((M.qend + M.tS) / 2) + 5]; return "ST segment in " + L + ": " + (Math.abs(sv) < .04 ? "on the baseline." : sv > 0 ? "raised." : "depressed.") + (Math.abs(sv) >= .04 ? " The main QRS here is " + (qa > 0 ? "upward." : "downward.") : ""); }
+    if (sg === "T") { var tv = 0; for (var u = M.tS; u <= M.tE; u++) if (Math.abs(arr[u]) > Math.abs(tv)) tv = arr[u];
+      return "T wave in " + L + ": " + (tv > 0 ? "upright" : "inverted") + ", " + ((tv > 0) === (qa > 0) ? "the same way as" : "opposite to") + " the main QRS."; }
+    return "Back on the baseline until the next P wave.";
+  }
+  function narration(c, L, t) {
+    t = Math.max(0, Math.min(CYCLE - 1, Math.round(t)));
+    var m = momentAt(c, t), M = MODEL[c], isT = t >= M.tS && t <= M.tE, tr = traceLine(c, L, t);
+    var title = m[2], bs = bumpsFor(c, L);
+    bs.forEach(function (b) { if (t >= b.start && t <= b.end) title = m[2] + ": " + b.name + " in " + L; });
+    return { title: title, where: m[3], how: m[4], sees: seesLine(c, L, t, isT), trace: tr, diff: c === "normal" ? "" : (m[5] || "") };
+  }
+  var narrNodes = { title: document.getElementById("ecgcSentence"), where: document.getElementById("ecgcNWhere"), how: document.getElementById("ecgcNHow"),
+    sees: document.getElementById("ecgcNSees"), seesLab: document.getElementById("ecgcNSeesLab"), trace: document.getElementById("ecgcNTrace"),
+    diff: document.getElementById("ecgcNDiff"), diffRow: document.getElementById("ecgcNDiffRow") };
+  function renderNarration(t) {
+    var L = state.leads[state.focus], n = narration(state.cond, L, t), head = n.title;
+    if (state.step) { var st = curSteps(); head = "Step " + (state.stepIdx + 1) + " of " + st.length + ": " + n.title; }
+    var key = head + "|" + n.sees + "|" + n.trace + "|" + L;
+    if (key === lastSentence) return;
+    lastSentence = key;
+    narrNodes.title.textContent = head;
+    narrNodes.where.textContent = n.where; narrNodes.how.textContent = n.how;
+    narrNodes.seesLab.textContent = L + " sees"; narrNodes.sees.textContent = n.sees; narrNodes.trace.textContent = n.trace;
+    narrNodes.diff.textContent = n.diff; narrNodes.diffRow.hidden = !n.diff;
   }
 
   function render() {
@@ -1004,8 +1120,7 @@
     var segs = COND[state.cond].segs;
     for (var j = 0; j < segs.length; j++) segNodes[j].classList.toggle("is-now", t >= segs[j][1] && t < segs[j][2]);
     // Paused on a bump of the focus lead: explain that bump.
-    var s = !state.step && !state.playing && link && t >= link.b.start && t <= link.b.end ? link.b.sentence : sentenceAt(t);
-    if (s !== lastSentence) { document.getElementById("ecgcSentence").textContent = s; lastSentence = s; }
+    renderNarration(t);
   }
 
   /* ---------- Clock and controls ---------- */
@@ -1091,6 +1206,9 @@
     axes: { frontal: FRONTAL_AX, horizontal: HORIZ_AX, chestGain: CHEST_GAIN },
     segs: function (c) { return COND[c].segs; },
     bumps: function (c, L) { return bumpsFor(c, L).map(function (b) { return { name: b.name, start: b.start, end: b.end, peak: b.peak, amp: b.amp, slow: b.slow, label: b.label }; }); },
+    narration: narration,
+    wheels: function () { return { limb: Object.keys(wheelF.axes), chest: Object.keys(wheelH.axes), limbVec: wheelF.vec.getAttribute("opacity"), chestVec: wheelH.vec.getAttribute("opacity"),
+      marks: leadMarks.map(function (g) { return { lead: g.dataset.lead, wheel: g.ownerSVGElement.id }; }) }; },
     steps: function (c, L) { return stepsFor(c, L || state.leads[state.focus]).map(function (s) { return { id: s.id, t: s.t, text: s.text }; }); },
     stepMode: setStepMode,
     goStep: function (id) { var st = curSteps(); for (var i = 0; i < st.length; i++) if (st[i].id === id) { goStep(i); return true; } return false; },

@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261118">
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261122d">
+<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261122f">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -67,17 +67,17 @@
         <svg id="ecgcSvg" viewBox="0 0 600 470" role="img" aria-labelledby="ecgcHeartTitle ecgcHeartCap">
           <title id="ecgcHeartTitle">Flat diagram of the heart and its conduction system</title>
         </svg>
-        <figcaption id="ecgcHeartCap" class="ecgc-rule"><span class="ecgc-rule-arrow" aria-hidden="true">&#10142;</span> Net wavefront <strong>towards</strong> a lead = <strong>upward</strong> deflection; <strong>away</strong> = <strong>downward</strong>. Dashed in ST and T.</figcaption>
+        <figcaption id="ecgcHeartCap" class="ecgc-rule"><span class="ecgc-rule-arrow" aria-hidden="true">&#10142;</span> Net wavefront <strong>towards</strong> a lead = <strong>up</strong>; <strong>away</strong> = <strong>down</strong>. Dashed in ST and T.</figcaption>
       </figure>
 
-      <figure class="ecgc-wheels" id="ecgcWheels" role="img" aria-label="Chest lead wheel">
+      <figure class="ecgc-wheels" id="ecgcWheels" role="img" aria-label="Limb and chest lead wheels">
+        <p class="ecgc-wheel-title">Limb leads<br><span>frontal plane, hexaxial</span></p>
+        <svg id="ecgcWheelF" viewBox="-78 -46 156 116" aria-hidden="true"></svg>
         <p class="ecgc-wheel-title">Chest leads<br><span>horizontal plane, front at the bottom</span></p>
-        <svg id="ecgcWheelH" viewBox="-70 -66 140 132" aria-hidden="true"></svg>
-        <p class="ecgc-wheel-note">Limb leads are the lines on the heart.</p>
-        <figcaption class="ecgc-wheel-cap">A lead reads positive when the wavefront points towards it.</figcaption>
+        <svg id="ecgcWheelH" viewBox="-78 -46 156 116" aria-hidden="true"></svg>
         <ul class="ecgc-key" aria-label="Key">
-          <li><span class="k-fast" aria-hidden="true">&#9654;</span> Fast route: bundle branches and Purkinje fibres (blue, solid)</li>
-          <li><span class="k-slow" aria-hidden="true">&raquo;</span> Slow route: cell to cell through gap junctions (orange, chevrons)</li>
+          <li><span class="k-fast" aria-hidden="true">&#9654;</span> Fast route: bundles and Purkinje fibres (blue, solid)</li>
+          <li><span class="k-slow" aria-hidden="true">&raquo;</span> Slow route: cell to cell (orange, chevrons)</li>
         </ul>
       </figure>
 
@@ -86,16 +86,24 @@
     </div>
 
     <div class="ecgc-timeline">
-      <div class="ecgc-time-head">
-        <p class="ecgc-readout" id="ecgcReadout" aria-live="off"><strong id="ecgcMs">0</strong> ms after the SA node fires</p>
-        <p class="ecgc-qrs" id="ecgcQrs">QRS 90 ms</p>
-      </div>
+      <p class="ecgc-readout" id="ecgcReadout" aria-live="off"><strong id="ecgcMs">0</strong> ms after the SA node fires</p>
       <div class="ecgc-scrub">
         <div class="ecgc-segs" id="ecgcSegs" aria-hidden="true"></div>
         <input type="range" id="ecgcScrub" min="0" max="799" step="1" value="0" aria-label="Time in the cardiac cycle, in ms after the SA node fires">
       </div>
-      <p class="ecgc-sentence" id="ecgcSentence" aria-live="polite"></p>
+      <p class="ecgc-qrs" id="ecgcQrs">QRS 90 ms</p>
     </div>
+
+    <section class="ecgc-narr" aria-live="polite" aria-labelledby="ecgcSentence">
+      <h2 class="ecgc-narr-title" id="ecgcSentence"></h2>
+      <dl class="ecgc-narr-grid">
+        <div><dt>Where</dt><dd id="ecgcNWhere"></dd></div>
+        <div><dt id="ecgcNSeesLab">Lead sees</dt><dd id="ecgcNSees"></dd></div>
+        <div><dt>How</dt><dd id="ecgcNHow"></dd></div>
+        <div><dt>On the trace</dt><dd id="ecgcNTrace"></dd></div>
+        <div class="ecgc-narr-diff" id="ecgcNDiffRow" hidden><dt>Different from normal:</dt><dd id="ecgcNDiff"></dd></div>
+      </dl>
+    </section>
 
     <div class="ecgc-extras">
       <details>
@@ -107,9 +115,10 @@
           <li>ST and T are hand-set components: concordant T in normal conduction (epicardium recovers first); secondary, discordant ST/T in LBBB and inverted T in V1 to V2 in RBBB. Typical patterns; individual patients vary.</li>
           <li>The dots, chevrons and arrowheads on the heart come from a flat activation-time map (bundle branches 2 m/s, Purkinje fibres 4 m/s, muscle 0.5 m/s, from Klabunde), used only as a picture. Each region's activation order is kept but re-timed into the window of the vector component it makes, so the picture lines up with the trace; the map does not change the traces. Which muscle counts as "slow, cell to cell" (more than one wall thickness from a fast route) is a hand-set threshold.</li>
           <li>Bump labels: each QRS deflection of the focus lead is split at clear notches and credited to the vector components whose projection on that lead has the bump's sign; the region named is the one tagged on that component. A teaching attribution, not a measured one.</li>
-          <li>Conduction routes are drawn in or along the walls: SA node at the SVC junction; internodal routes and Bachmann's bundle in the atrial walls and interatrial septum; AV node low in the interatrial septum near the coronary sinus; His bundle through the fibrous ring; right bundle under the endocardium of the RV septal surface, then the moderator band (the one route that crosses a cavity) to the anterior RV free wall; left bundle and posterior fascicle along the LV septal surface towards the posteromedial papillary muscle; Purkinje fibres along the endocardium. The anterior fascicle runs on the front wall, out of this slice, so it is shown as a stub with an out-of-plane marker; its Purkinje fibres reappear on the lateral wall. Positions are schematic.</li>
-          <li>The frontal lead lines on the heart and the chest wheel show the same vector: frontal (x, y) on the heart, horizontal (x, z) on the wheel; dashed during ST and T. Chest lead angles are standard approximations.</li>
-          <li>The heart is a flat, simplified four-chamber cut-through; valve, vessel and papillary muscle positions are schematic.</li>
+          <li>Conduction routes are drawn in or along the walls: SA node at the SVC junction; internodal routes and Bachmann's bundle in the atrial walls and interatrial septum; AV node low in the interatrial septum near the coronary sinus; His bundle through the fibrous ring; right bundle under the endocardium of the RV septal surface, then the moderator band (the one route that crosses a cavity) to the anterior RV free wall; left bundle and posterior fascicle along the LV septal surface towards the posteromedial papillary muscle (papillary muscles are not drawn); Purkinje fibres along the endocardium. The anterior fascicle runs on the front wall, out of this slice, so it is shown as a stub with an out-of-plane marker; its Purkinje fibres reappear on the lateral wall. Positions are schematic.</li>
+          <li>The limb-lead (hexaxial) wheel and the chest wheel show the same vector: frontal (x, y) on the limb wheel, horizontal (x, z) on the chest wheel; dashed during ST and T. Only the focus lead's axis is drawn across the heart (faint dashed line, dot at the positive end). Chest lead angles are standard approximations.</li>
+          <li>Narration (Where, How, what the focus lead sees, On the trace, and Different from normal in the blocks) is written from Klabunde, LITFL and Hampton. The "sees" and "On the trace" lines are generated from the model (projection of the vector on the focus lead, and the bump labels), so they describe the model trace, not every patient. Please check: AV node as the slowest conduction in the heart, its delay letting the atria finish emptying; internodal routes described as preferential pathways (their anatomy is debated); bundle about 2 m/s, Purkinje about 4 m/s, muscle 0.3 to 0.5 m/s; small P because atrial muscle mass is small; normal T explained by shorter epicardial action potentials; RBBB: possible ST depression and expected T inversion in V1 to V3; LBBB: "appropriate discordance" of ST and T; PR normal 120 to 200 ms; plain-word lead viewpoints (for example aVL "from up and to the left", V4 "over the apex"), which are simplified.</li>
+          <li>The heart is a flat, simplified four-chamber cut-through; valve and vessel positions are schematic.</li>
           <li>Time is stretched so one beat fills each panel: thin vertical lines are 40 ms, horizontal lines 0.5 mV. The ms readout is the model's true time.</li>
         </ul>
       </details>
@@ -133,6 +142,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-conduction.js?v=20261122e"></script>
+<script src="assets/ecg-conduction.js?v=20261122f"></script>
 </body>
 </html>
