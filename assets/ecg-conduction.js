@@ -72,9 +72,9 @@
       region: { RA: [5, 70], LA: [25, 65], SEP: [160, 40], RV: [180, 45], LV: [180, 60] },
       sepDir: "lr",
       blocked: [],
-      arrow: [[0, 55, 0], [20, 55, .3], [50, 55, .4], [85, 55, .2], [100, 55, 0],
-        [160, 170, 0], [168, 170, .3], [180, 170, .3], [192, 45, .8], [205, 40, 1], [222, -60, .35], [238, -90, .12], [245, -90, 0],
-        [350, 40, 0], [435, 40, .35], [520, 40, 0]],
+      arrow: [[0, 55, 20, 0], [20, 55, 20, .3], [50, 55, 20, .4], [85, 55, 20, .2], [100, 55, 20, 0],
+        [160, 170, 120, 0], [168, 170, 120, .3], [180, 170, 120, .3], [192, 45, -10, .8], [205, 40, -20, 1], [222, -60, -80, .35], [238, -90, -110, .12], [245, -90, -110, 0],
+        [350, 40, 30, 0], [435, 40, 30, .35], [520, 40, 30, 0]],
       text: [
         [145, 160, "The impulse leaves the AV node and races down the His bundle into the right and left bundle branches."],
         [160, 185, "The septum depolarises first, from left to right. That small wavefront heads towards V1 (small r wave) and away from V6 (small q wave)."],
@@ -92,9 +92,11 @@
       sepDir: "lr",
       blocked: ["rb", "purkR"],
       blockAt: "rb",
-      arrow: [[0, 55, 0], [20, 55, .3], [50, 55, .4], [85, 55, .2], [100, 55, 0],
-        [160, 170, 0], [168, 170, .3], [182, 170, .3], [195, 40, .75], [215, 35, .85], [235, 190, .3], [250, 190, .5], [275, 190, .55], [293, 190, .2], [300, 190, 0],
-        [380, 20, 0], [470, 20, .3], [560, 20, 0]],
+      arrow: [[0, 55, 20, 0], [20, 55, 20, .3], [50, 55, 20, .4], [85, 55, 20, .2], [100, 55, 20, 0],
+        [160, 170, 120, 0], [168, 170, 120, .3], [182, 170, 120, .3], [195, 40, -15, .75], [215, 35, -20, .85], [235, 190, 150, .3], [250, 190, 150, .5], [275, 190, 150, .55], [293, 190, 150, .2], [300, 190, 150, 0],
+        [380, 20, -30, 0], [470, 20, -30, .3], [560, 20, -30, 0]],
+      sweep: { RV: [290, 300, 150, 240] },
+      late: "0,190 244,190 300,392 280,420 0,420",
       text: [
         [145, 160, "The impulse races down the His bundle. The right bundle is blocked, so only the left bundle carries it on."],
         [160, 185, "The left bundle still activates the septum from left to right, so the QRS starts normally: small r in V1, small q in V6."],
@@ -112,9 +114,11 @@
       sepDir: "rl",
       blocked: ["lb", "laf", "lpf", "purkL"],
       blockAt: "lb",
-      arrow: [[0, 55, 0], [20, 55, .3], [50, 55, .4], [85, 55, .2], [100, 55, 0],
-        [160, 0, 0], [172, 5, .3], [200, 15, .6], [230, 10, .9], [260, 0, .8], [290, -10, .4], [300, -10, 0],
-        [380, 195, 0], [470, 195, .35], [560, 195, 0]],
+      arrow: [[0, 55, 20, 0], [20, 55, 20, .3], [50, 55, 20, .4], [85, 55, 20, .2], [100, 55, 20, 0],
+        [160, 0, -10, 0], [172, 5, -10, .3], [200, 15, -20, .6], [230, 10, -25, .9], [260, 0, -20, .8], [290, -10, -15, .4], [300, -10, -15, 0],
+        [380, 195, 160, 0], [470, 195, 160, .35], [560, 195, 160, 0]],
+      sweep: { LV: [285, 280, 430, 260] },
+      late: "372,185 540,185 540,420 340,420 360,350",
       text: [
         [145, 160, "The impulse races down the His bundle. The left bundle is blocked, so only the right bundle carries it on."],
         [160, 200, "The septum is activated from the right side, so it depolarises right to left. The wavefront heads away from V1 and towards V6: no septal q in I, aVL, V5 or V6."],
@@ -158,7 +162,7 @@
   var state = { t: 0, cond: "normal", playing: !reduced, speed: 0.25, leads: ["II", "V1", "V6"] };
   if (reduced) state.t = 205;
 
-  /* ---------- Heart SVG ---------- */
+  /* ---------- Heart SVG: flat four-chamber cut-through ---------- */
   var svg = document.getElementById("ecgcSvg");
   function el(name, attrs, parent) {
     var n = document.createElementNS(NS, name);
@@ -166,126 +170,197 @@
     (parent || svg).appendChild(n);
     return n;
   }
-  svg.setAttribute("viewBox", "-60 20 640 450");
+  svg.setAttribute("viewBox", "0 4 540 404");
+  var INK = "var(--ecgc-ink)", GREY = "var(--ecgc-grey)", SOFT = "var(--ecgc-grey-soft)";
 
   var defs = el("defs", {});
-  var dep = el("pattern", { id: "ecgcDep", width: 8, height: 8, patternUnits: "userSpaceOnUse" }, defs);
-  el("rect", { width: 8, height: 8, fill: "var(--ecgc-blue)", "fill-opacity": .22 }, dep);
-  el("circle", { cx: 4, cy: 4, r: 1.5, fill: "var(--ecgc-blue)" }, dep);
-  var hatch = el("pattern", { id: "ecgcHatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
-  el("rect", { width: 6, height: 6, fill: "#fff" }, hatch);
-  el("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: "var(--ecgc-orange)", "stroke-width": 3 }, hatch);
+  var dep = el("pattern", { id: "ecgcDep", width: 7, height: 7, patternUnits: "userSpaceOnUse" }, defs);
+  el("rect", { width: 7, height: 7, fill: "var(--ecgc-blue)", "fill-opacity": .22 }, dep);
+  el("circle", { cx: 3.5, cy: 3.5, r: 1.3, fill: "var(--ecgc-blue)" }, dep);
+  // Light, sparse hatch for blocked or late-activated areas.
+  var hatch = el("pattern", { id: "ecgcHatch", width: 9, height: 9, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
+  el("line", { x1: 0, y1: 0, x2: 0, y2: 9, stroke: "var(--ecgc-orange)", "stroke-width": 1.6 }, hatch);
   var mk = el("marker", { id: "ecgcHead", viewBox: "0 0 10 10", refX: 6, refY: 5, markerWidth: 4, markerHeight: 4, orient: "auto-start-reverse" }, defs);
   el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--ecgc-magenta)" }, mk);
 
+  // Outer muscle shapes (cavities are drawn over them in white).
+  var VENT = "M150,212 L404,188 C432,240 430,320 385,368 C360,392 335,402 318,398 C285,392 250,370 215,345 C170,312 146,265 150,212 Z";
   var REGIONS = {
-    RA: "M150,95 C118,102 108,150 124,186 L216,190 L220,112 C200,96 176,90 150,95 Z",
-    LA: "M236,96 C270,80 330,84 350,110 C366,136 360,170 346,186 L240,190 Z",
-    RV: "M124,196 L220,198 L268,362 C230,374 186,354 160,324 C134,292 120,242 124,196 Z",
-    SEP: "M220,198 L242,198 L290,392 C282,380 275,370 268,362 Z",
-    LV: "M242,198 L350,192 C392,226 398,300 372,348 C352,386 318,400 290,392 Z"
+    RA: { d: "M150,212 L120,212 C108,170 115,112 160,90 L176,82 L206,82 C232,92 248,116 252,150 L254,207 Z" },
+    LA: { d: "M282,191 C276,150 282,114 305,104 L380,100 C405,110 412,150 404,188 Z" },
+    RV: { d: VENT, clip: "0,190 244,190 300,392 280,420 0,420" },
+    SEP: { d: VENT, clip: "244,190 274,190 334,392 300,392" },
+    LV: { d: VENT, clip: "274,190 540,190 540,420 280,420 300,392 334,392" }
   };
-  // Direction of the activation sweep in each region: [x1, y1, x2, y2].
+  var CAVITY = {
+    RA: "M150,206 L128,206 C120,170 126,120 166,100 L178,94 L204,94 C226,102 238,122 241,150 L243,203 Z",
+    LA: "M292,189 C288,154 292,124 310,114 L376,110 C396,120 400,152 394,188 Z",
+    RV: "M162,213 L246,206 C262,270 285,330 305,372 C280,372 250,356 222,336 C184,308 160,264 162,213 Z",
+    LV: "M272,203 L382,194 C400,240 394,305 364,345 C350,362 336,370 326,366 C306,330 288,270 272,203 Z"
+  };
+  // Direction of the activation sweep in each region: [x1, y1, x2, y2]. Conditions may override.
   var SWEEP = {
-    RA: [160, 95, 215, 190], LA: [235, 95, 355, 175],
-    RV: [250, 300, 120, 220], LV: [265, 375, 365, 195],
-    SEP: { lr: [262, 290, 232, 290], rl: [232, 290, 262, 290] }
+    RA: [175, 88, 205, 212], LA: [290, 100, 404, 190],
+    RV: [295, 365, 150, 215], LV: [322, 392, 418, 200],
+    SEP: { lr: [298, 284, 266, 294], rl: [266, 294, 298, 284] }
   };
   var PATHS = {
-    intern: "M165,100 C180,130 200,160 224,186",
-    bach: "M168,98 C200,85 250,82 300,100",
-    avn: "M220,182 L230,198",
-    his: "M230,198 L234,222",
-    rb: "M234,222 C238,260 250,310 262,350",
-    lb: "M234,222 L250,232",
-    laf: "M250,232 C280,238 315,240 345,232",
-    lpf: "M250,232 C262,280 272,330 282,372",
-    purkR: "M262,352 C230,362 190,352 165,325 C145,300 135,260 137,215",
-    purkL: "M282,375 C310,388 350,375 372,340 C390,305 392,260 378,215"
+    intern: "M180,90 C222,100 240,150 244,191",
+    intern2: "M170,96 C138,136 150,192 238,198",
+    bach: "M182,88 C225,78 280,90 330,106",
+    avn: "M238,193 L249,199",
+    his: "M249,199 L253,208 L259,224",
+    rb: "M259,224 C266,265 284,320 302,362",
+    lb: "M259,224 L272,240",
+    laf: "M272,240 C305,250 345,248 380,232",
+    lpf: "M272,240 C290,290 305,330 318,352",
+    purkR: "M302,364 C262,362 216,340 186,305 C166,280 160,250 164,222",
+    purkL: "M318,354 C330,372 350,362 366,340 C386,310 392,255 384,206"
   };
-  var ATRIAL = { intern: 1, bach: 1, avn: 1 };
+  var ATRIAL = { intern: 1, intern2: 1, bach: 1, avn: 1 };
+
+  // Great vessels as short stubs (drawn first so the chambers sit on top).
+  var gVes = el("g", { "aria-hidden": "true" });
+  function tube(d, parent) { el("path", { d: d, fill: "#fff", stroke: GREY, "stroke-width": 1.6 }, parent || gVes); }
+  tube("M290,100 L318,26 L344,32 L314,106 Z");                 // pulmonary trunk
+  tube("M258,203 L258,22 L284,22 L284,201 Z");                 // aorta
+  [["Aorta", 271, 16, "middle"], ["Pulmonary trunk", 334, 22, "start"], ["SVC", 191, 16, "middle"], ["IVC", 136, 268, "middle"]].forEach(function (v) {
+    el("text", { x: v[1], y: v[2], "text-anchor": v[3], "font-size": 12, "font-family": "var(--font-sans)", fill: INK }, gVes).textContent = v[0];
+  });
 
   var gRegions = el("g", { "aria-hidden": "true" });
   var regionNodes = {};
   Object.keys(REGIONS).forEach(function (r) {
-    el("path", { d: REGIONS[r], fill: "var(--ecgc-grey-soft)", stroke: "var(--ecgc-grey)", "stroke-width": 1.5 }, gRegions);
+    var R = REGIONS[r], cp = null;
+    if (R.clip) { var c = el("clipPath", { id: "ecgcC" + r }, defs); el("polygon", { points: R.clip }, c); cp = "url(#ecgcC" + r + ")"; }
+    var base = el("path", { d: R.d, fill: SOFT, stroke: GREY, "stroke-width": 1.6 }, gRegions);
+    if (cp) base.setAttribute("clip-path", cp);
     var grad = el("linearGradient", { id: "ecgcG" + r, gradientUnits: "userSpaceOnUse" }, defs);
-    var s0 = el("stop", { offset: 0, "stop-color": "#fff" }, grad);
+    el("stop", { offset: 0, "stop-color": "#fff" }, grad);
     var s1 = el("stop", { offset: 0, "stop-color": "#fff" }, grad);
     var s2 = el("stop", { offset: 0, "stop-color": "#000" }, grad);
     el("stop", { offset: 1, "stop-color": "#000" }, grad);
-    var mask = el("mask", { id: "ecgcM" + r, maskUnits: "userSpaceOnUse", x: -60, y: 0, width: 640, height: 470 }, defs);
-    el("rect", { x: -60, y: 0, width: 640, height: 470, fill: "url(#ecgcG" + r + ")" }, mask);
-    var over = el("path", { d: REGIONS[r], fill: "url(#ecgcDep)", mask: "url(#ecgcM" + r + ")", opacity: 0 }, gRegions);
+    var mask = el("mask", { id: "ecgcM" + r, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: 540, height: 420 }, defs);
+    el("rect", { x: 0, y: 0, width: 540, height: 420, fill: "url(#ecgcG" + r + ")" }, mask);
+    var wrap = el("g", cp ? { "clip-path": cp } : {}, gRegions);
+    var over = el("path", { d: R.d, fill: "url(#ecgcDep)", mask: "url(#ecgcM" + r + ")", opacity: 0 }, wrap);
     regionNodes[r] = { grad: grad, s1: s1, s2: s2, over: over };
   });
-  // Chamber names inside the chambers.
-  [["RA", 160, 160], ["LA", 298, 145], ["RV", 178, 280], ["LV", 342, 352]].forEach(function (c) {
-    el("text", { x: c[1], y: c[2], "text-anchor": "middle", "class": "ecgc-chamber", "font-size": 18, "font-weight": 700, fill: "var(--ecgc-ink)", "font-family": "var(--font-sans)" }, gRegions).textContent = c[0];
+  // Subtle late-activated zone (hatched), set per condition.
+  var lateClip = el("clipPath", { id: "ecgcLate" }, defs);
+  var latePoly = el("polygon", { points: "0,0 0,0 0,0" }, lateClip);
+  var lateZone = el("path", { d: VENT, fill: "url(#ecgcHatch)", "clip-path": "url(#ecgcLate)", opacity: 0 }, gRegions);
+  // Cavities in white over the muscle, which leaves thin atrial and RV walls, a thick LV wall and a muscular septum.
+  Object.keys(CAVITY).forEach(function (k) {
+    el("path", { d: CAVITY[k], fill: "#fff", stroke: GREY, "stroke-width": 1.4 }, gRegions);
+  });
+  // White openings where the SVC and IVC enter the right atrium.
+  el("rect", { x: 179, y: 22, width: 24, height: 76, fill: "#fff" }, gRegions);
+  el("path", { d: "M178,22 L178,94 M204,22 L204,94", stroke: GREY, "stroke-width": 1.6 }, gRegions);
+  el("rect", { x: 125, y: 203, width: 22, height: 52, fill: "#fff" }, gRegions);
+  el("path", { d: "M124,202 L124,255 M148,207 L148,255", stroke: GREY, "stroke-width": 1.6 }, gRegions);
+  // Coronary sinus opening.
+  el("ellipse", { cx: 226, cy: 197, rx: 7, ry: 4, fill: "#fff", stroke: GREY, "stroke-width": 1.4 }, gRegions);
+
+  // Fibrous AV ring: an electrical insulator; the only way through is the AV node and His bundle.
+  el("path", { d: "M120,212 L404,188", stroke: "#6B7075", "stroke-width": 3.5, "stroke-linecap": "round" }, gRegions);
+  // Valves as simple flaps.
+  var VALVES = [
+    "M168,210 Q172,232 186,238 Q180,224 180,209 Z", "M232,204 Q228,226 214,234 Q220,220 220,205 Z",           // tricuspid
+    "M296,198 Q300,222 316,230 Q308,214 310,197 Z", "M372,191 Q368,215 352,223 Q360,207 358,192 Z",           // mitral
+    "M259,202 Q265,188 271,200 Z", "M271,200 Q277,187 283,200 Z",                                             // aortic
+    "M298,88 Q304,77 308,91 Z", "M308,91 Q314,80 316,95 Z"                                                    // pulmonary
+  ];
+  VALVES.forEach(function (d) { el("path", { d: d, fill: "#fff", stroke: "#6B7075", "stroke-width": 1.5, "stroke-linejoin": "round" }, gRegions); });
+
+  [["RA", 186, 150], ["LA", 346, 152], ["RV", 208, 285], ["LV", 340, 338]].forEach(function (c) {
+    el("text", { x: c[1], y: c[2], "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: INK, "font-family": "var(--font-sans)" }, gRegions).textContent = c[0];
   });
 
   var gBlock = el("g", { "aria-hidden": "true" });
   var gPaths = el("g", { "aria-hidden": "true" });
   var pathNodes = {};
   Object.keys(PATHS).forEach(function (p) {
-    var w = p === "avn" ? 8 : 3.5;
-    var base = el("path", { d: PATHS[p], fill: "none", stroke: "var(--ecgc-grey)", "stroke-width": w, "stroke-linecap": "round" }, gPaths);
+    var w = p === "avn" ? 7 : 3.2;
+    var base = el("path", { d: PATHS[p], fill: "none", stroke: GREY, "stroke-width": w, "stroke-linecap": "round" }, gPaths);
     var act = el("path", { d: PATHS[p], fill: "none", stroke: "var(--ecgc-blue)", "stroke-width": w + 1, "stroke-linecap": "round", opacity: 0 }, gPaths);
     var len = act.getTotalLength();
     act.setAttribute("stroke-dasharray", len + " " + len);
     pathNodes[p] = { base: base, act: act, len: len };
   });
-  var saNode = el("ellipse", { cx: 165, cy: 100, rx: 9, ry: 6, fill: "var(--ecgc-grey)", stroke: "var(--ecgc-ink)", "stroke-width": 1 }, gPaths);
+  var saNode = el("ellipse", { cx: 176, cy: 90, rx: 8, ry: 5.5, fill: GREY, stroke: INK, "stroke-width": 1 }, gPaths);
   var gHeads = el("g", { "aria-hidden": "true" });
   var heads = {};
   Object.keys(PATHS).forEach(function (p) {
     var g = el("g", { opacity: 0 }, gHeads);
-    if (!reduced) el("circle", { r: 11, fill: "var(--ecgc-blue)", "fill-opacity": .25 }, g);
-    el("circle", { r: 5.5, fill: "var(--ecgc-blue)", stroke: "#fff", "stroke-width": 1.5 }, g);
+    if (!reduced) el("circle", { r: 10, fill: "var(--ecgc-blue)", "fill-opacity": .25 }, g);
+    el("circle", { r: 5, fill: "var(--ecgc-blue)", stroke: "#fff", "stroke-width": 1.5 }, g);
     heads[p] = g;
   });
 
-  // Fixed labels outside the heart, with thin leader lines.
+  // Fixed label columns with thin leader lines: [text, label x, label y, target x, target y, anchor].
   var LABELS = [
-    ["SA node", 50, 62, 160, 98, "end"], ["Internodal paths", 50, 140, 188, 145, "end"], ["AV node", 50, 196, 220, 188, "end"],
-    ["Right bundle", 50, 262, 244, 290, "end"], ["Purkinje fibres", 50, 352, 168, 330, "end"],
-    ["Bachmann's bundle", 470, 62, 282, 90, "start"], ["His bundle", 470, 152, 233, 208, "start"], ["Left bundle", 470, 200, 244, 228, "start"],
-    ["Anterior fascicle", 470, 236, 330, 238, "start"], ["Posterior fascicle", 470, 318, 272, 330, "start"], ["Septum", 470, 398, 279, 372, "start"]
+    ["SA node", 100, 52, 172, 89, "end"], ["Internodal paths", 100, 112, 150, 140, "end"], ["Coronary sinus", 100, 170, 220, 197, "end"],
+    ["AV node", 100, 200, 240, 194, "end"], ["Tricuspid valve", 100, 238, 172, 224, "end"], ["Right bundle", 100, 300, 280, 300, "end"],
+    ["Purkinje fibres", 100, 352, 192, 312, "end"],
+    ["Pulmonary valve", 430, 50, 312, 86, "start"], ["Bachmann's bundle", 430, 82, 300, 95, "start"], ["Aortic valve", 430, 128, 280, 196, "start"],
+    ["Mitral valve", 430, 168, 362, 206, "start"], ["Fibrous AV ring", 430, 196, 400, 189, "start"], ["His bundle", 430, 222, 254, 212, "start"],
+    ["Left bundle", 430, 250, 266, 232, "start"], ["Anterior fascicle", 430, 278, 360, 242, "start"], ["Posterior fascicle", 430, 316, 300, 312, "start"],
+    ["Septum", 430, 372, 300, 352, "start"]
   ];
-  var gLab = el("g", { "class": "ecgc-labels" });
+  var gLab = el("g", { "class": "ecgc-labels", "aria-hidden": "true" });
   LABELS.forEach(function (l) {
     var lx = l[5] === "end" ? l[1] + 4 : l[1] - 4;
-    el("line", { x1: lx, y1: l[2] - 4, x2: l[3], y2: l[4], stroke: "var(--ecgc-ink)", "stroke-width": .8, "stroke-opacity": .6 }, gLab);
-    el("circle", { cx: l[3], cy: l[4], r: 1.8, fill: "var(--ecgc-ink)" }, gLab);
-    el("text", { x: l[1], y: l[2], "text-anchor": l[5], "font-size": 13, "font-family": "var(--font-sans)", fill: "var(--ecgc-ink)" }, gLab).textContent = l[0];
+    el("line", { x1: lx, y1: l[2] - 4, x2: l[3], y2: l[4], stroke: INK, "stroke-width": .7, "stroke-opacity": .55 }, gLab);
+    el("circle", { cx: l[3], cy: l[4], r: 1.7, fill: INK }, gLab);
+    el("text", { x: l[1], y: l[2], "text-anchor": l[5], "font-size": 12.5, "font-family": "var(--font-sans)", fill: INK }, gLab).textContent = l[0];
   });
-  var blockText = el("text", { "font-size": 13, "font-weight": 700, "font-family": "var(--font-sans)", fill: "var(--ecgc-ink)", stroke: "#fff", "stroke-width": 4, "paint-order": "stroke", opacity: 0 }, svg);
-
-  // Electrodes: limb leads at their frontal angles; chest leads on an inner arc (projected, see review note).
-  var C = { x: 262, y: 255 };
-  var ANG = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150, V1: 160, V2: 130, V3: 105, V4: 80, V5: 45, V6: 15 };
-  function elecPos(L) { var r = L.charAt(0) === "V" ? 180 : 205, a = ANG[L] * Math.PI / 180; return { x: C.x + r * Math.cos(a), y: C.y + r * Math.sin(a), a: a }; }
-  var SLOTS = ["A", "B", "C"];
-  var SHAPES = {
-    A: function (g) { el("circle", { r: 9, fill: "#fff", stroke: "var(--ecgc-ink)", "stroke-width": 2.5 }, g); },
-    B: function (g) { el("rect", { x: -8.5, y: -8.5, width: 17, height: 17, fill: "#fff", stroke: "var(--ecgc-ink)", "stroke-width": 2.5 }, g); },
-    C: function (g) { el("path", { d: "M0,-10 L10,8 L-10,8 Z", fill: "#fff", stroke: "var(--ecgc-ink)", "stroke-width": 2.5, "stroke-linejoin": "round" }, g); }
-  };
-  var gElec = el("g", {});
-  var elecNodes = SLOTS.map(function (s) {
-    var g = el("g", { id: "ecgcElec-" + s, "class": "ecgc-elec", role: "img" }, gElec);
-    var line = el("line", { stroke: "var(--ecgc-ink)", "stroke-width": 1.2, "stroke-dasharray": "4 4", "stroke-opacity": .7 }, g);
-    var m = el("g", {}, g);
-    SHAPES[s](m);
-    el("text", { y: 4.5, "text-anchor": "middle", "font-size": 11, "font-weight": 700, "font-family": "var(--font-sans)", fill: "var(--ecgc-ink)" }, m).textContent = s;
-    var tx = el("text", { "font-size": 13, "font-weight": 700, "font-family": "var(--font-sans)", fill: "var(--ecgc-ink)", stroke: "#fff", "stroke-width": 4, "paint-order": "stroke" }, g);
-    return { g: g, line: line, m: m, tx: tx };
-  });
+  var blockText = el("text", { "font-size": 12.5, "font-weight": 700, "font-family": "var(--font-sans)", fill: INK, stroke: "#fff", "stroke-width": 4, "paint-order": "stroke", opacity: 0 }, svg);
+  var gMarks = el("g", { "aria-hidden": "true" });
 
   var gArrow = el("g", { "aria-hidden": "true" });
   var arrowLine = el("line", { stroke: "var(--ecgc-magenta)", "stroke-width": 7, "stroke-linecap": "round", "marker-end": "url(#ecgcHead)" }, gArrow);
   var arrowTail = el("circle", { r: 4, fill: "var(--ecgc-magenta)" }, gArrow);
   var arrowText = el("text", { "font-size": 13, "font-weight": 700, "font-family": "var(--font-sans)", fill: "var(--ecgc-magenta)", stroke: "#fff", "stroke-width": 4, "paint-order": "stroke" }, gArrow);
+
+  /* ---------- Vector wheels ---------- */
+  var SLOTS = ["A", "B", "C"];
+  var FRONTAL = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150 };
+  var HORIZ = { V1: 115, V2: 94, V3: 75, V4: 60, V5: 30, V6: 0 }; // approximate; positive = anterior (drawn downwards)
+  function shape(s, g, size) {
+    var k = size || 1;
+    if (s === "A") el("circle", { r: 6 * k, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
+    else if (s === "B") el("rect", { x: -5.5 * k, y: -5.5 * k, width: 11 * k, height: 11 * k, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
+    else el("path", { d: "M0," + (-7 * k) + " L" + (6.5 * k) + "," + (5.5 * k) + " L" + (-6.5 * k) + "," + (5.5 * k) + " Z", fill: "#fff", stroke: INK, "stroke-width": 2, "stroke-linejoin": "round" }, g);
+  }
+  function makeWheel(svgEl, angles) {
+    var W = { svg: svgEl, angles: angles, axes: {}, labels: {}, marks: {} };
+    function add(name, attrs, parent) { var n = document.createElementNS(NS, name); for (var k in attrs) n.setAttribute(k, attrs[k]); (parent || svgEl).appendChild(n); return n; }
+    add("circle", { cx: 0, cy: 0, r: 44, fill: "none", stroke: GREY, "stroke-width": 1 });
+    Object.keys(angles).forEach(function (L) {
+      var a = angles[L] * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+      W.axes[L] = add("line", { x1: 0, y1: 0, x2: (44 * ca).toFixed(1), y2: (44 * sa).toFixed(1), stroke: GREY, "stroke-width": 1 });
+      var t = add("text", { x: (57 * ca).toFixed(1), y: (57 * sa + 3.5).toFixed(1), "text-anchor": "middle", "font-size": 10, "font-family": "var(--font-sans)", fill: "var(--muted)" });
+      t.textContent = L;
+      W.labels[L] = t;
+    });
+    W.vec = add("line", { x1: 0, y1: 0, x2: 0, y2: 0, stroke: "var(--ecgc-magenta)", "stroke-width": 4, "stroke-linecap": "round", "marker-end": "url(#ecgcHead)" });
+    W.markG = add("g", {});
+    return W;
+  }
+  var wheelF = makeWheel(document.getElementById("ecgcWheelF"), FRONTAL);
+  var wheelH = makeWheel(document.getElementById("ecgcWheelH"), HORIZ);
+  var wheelMarks = SLOTS.map(function (s) {
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("id", "ecgcWheelMark-" + s);
+    g.setAttribute("class", "ecgc-wheelmark");
+    shape(s, g, 0.95);
+    var tx = document.createElementNS(NS, "text");
+    tx.setAttribute("y", 3.5); tx.setAttribute("text-anchor", "middle"); tx.setAttribute("font-size", 8.5); tx.setAttribute("font-weight", 700);
+    tx.setAttribute("font-family", "var(--font-sans)"); tx.setAttribute("fill", "#111"); tx.textContent = s;
+    g.appendChild(tx);
+    return g;
+  });
 
   /* ---------- Lead panels ---------- */
   var leadsBox = document.getElementById("ecgcLeads");
@@ -301,7 +376,7 @@
     var opts = LEADS.map(function (L) { return '<option value="' + L + '">' + L + "</option>"; }).join("");
     wrap.innerHTML = '<div class="ecgc-lead-head"><svg viewBox="0 0 18 18" aria-hidden="true">' + SHAPE_ICON[s] + "</svg>" +
       "<span>" + s + '</span><label>Lead <select data-slot="' + i + '" aria-label="Lead shown in trace ' + s + '">' + opts + "</select></label>" +
-      '<span class="ecgc-lead-note">Electrode ' + s + " on the heart</span></div>" +
+      '<span class="ecgc-lead-note">' + s + " on the vector wheels</span></div>" +
       '<canvas role="img"></canvas>';
     leadsBox.appendChild(wrap);
     var sel = wrap.querySelector("select");
@@ -311,21 +386,26 @@
   });
 
   function layoutElectrodes() {
-    elecNodes.forEach(function (n, i) {
-      var L = state.leads[i], p = elecPos(L);
-      var near = { x: C.x + 118 * Math.cos(p.a), y: C.y + 118 * Math.sin(p.a) };
-      n.line.setAttribute("x1", p.x); n.line.setAttribute("y1", p.y);
-      n.line.setAttribute("x2", near.x); n.line.setAttribute("y2", near.y);
-      n.m.setAttribute("transform", "translate(" + p.x.toFixed(1) + "," + p.y.toFixed(1) + ")");
-      var right = Math.cos(p.a) >= -0.2;
-      n.tx.setAttribute("x", (p.x + (right ? 14 : -14)).toFixed(1));
-      n.tx.setAttribute("y", (p.y + (Math.sin(p.a) > 0.5 ? 18 : 5)).toFixed(1));
-      n.tx.setAttribute("text-anchor", right ? "start" : "end");
-      n.tx.textContent = L;
-      n.g.setAttribute("data-lead", L);
-      n.g.setAttribute("aria-label", "Electrode " + SLOTS[i] + ", lead " + L);
+    [wheelF, wheelH].forEach(function (W) {
+      Object.keys(W.angles).forEach(function (L) {
+        W.axes[L].setAttribute("stroke", GREY); W.axes[L].setAttribute("stroke-width", 1);
+        W.labels[L].setAttribute("fill", "var(--muted)"); W.labels[L].setAttribute("font-weight", 400);
+      });
+    });
+    wheelMarks.forEach(function (g, i) {
+      var L = state.leads[i], W = FRONTAL[L] !== undefined ? wheelF : wheelH, a = W.angles[L] * Math.PI / 180;
+      W.axes[L].setAttribute("stroke", INK); W.axes[L].setAttribute("stroke-width", 2);
+      W.labels[L].setAttribute("fill", INK); W.labels[L].setAttribute("font-weight", 700);
+      // Two slots on the same lead: nudge so both shapes show.
+      var dup = 0; for (var j = 0; j < i; j++) if (state.leads[j] === L) dup++;
+      var r = 44 - dup * 14;
+      g.setAttribute("transform", "translate(" + (r * Math.cos(a)).toFixed(1) + "," + (r * Math.sin(a)).toFixed(1) + ")");
+      g.setAttribute("data-lead", L);
+      W.markG.appendChild(g);
       panels[i].cv.setAttribute("aria-label", "Lead " + L + " trace, " + COND[state.cond].name);
     });
+    document.getElementById("ecgcWheels").setAttribute("aria-label", "Vector wheels. Selected leads: " +
+      SLOTS.map(function (s, i) { return s + " " + state.leads[i]; }).join(", "));
   }
 
   /* ---------- Timeline ---------- */
@@ -359,10 +439,10 @@
     for (var i = 0; i < k.length - 1; i++) {
       if (t >= k[i][0] && t <= k[i + 1][0]) {
         var f = (t - k[i][0]) / ((k[i + 1][0] - k[i][0]) || 1);
-        return { ang: lerp(k[i][1], k[i + 1][1], f), mag: lerp(k[i][2], k[i + 1][2], f) };
+        return { ang: lerp(k[i][1], k[i + 1][1], f), h: lerp(k[i][2], k[i + 1][2], f), mag: lerp(k[i][3], k[i + 1][3], f) };
       }
     }
-    return { ang: 0, mag: 0 };
+    return { ang: 0, h: 0, mag: 0 };
   }
 
   function renderHeart(t) {
@@ -370,19 +450,20 @@
     var ventFade = t < tw[1] ? 1 : Math.max(0, 1 - (t - tw[1]) / (tw[2] - tw[1]));
     var atrFade = t < 150 ? 1 : Math.max(0, 1 - (t - 150) / (qrs[2] - 150));
     Object.keys(regionNodes).forEach(function (r) {
-      var n = regionNodes[r], f = prog(c.region[r], t), sw = r === "SEP" ? SWEEP.SEP[c.sepDir] : SWEEP[r];
+      var n = regionNodes[r], f = prog(c.region[r], t);
+      var sw = (c.sweep && c.sweep[r]) || (r === "SEP" ? SWEEP.SEP[c.sepDir] : SWEEP[r]);
       n.grad.setAttribute("x1", sw[0]); n.grad.setAttribute("y1", sw[1]); n.grad.setAttribute("x2", sw[2]); n.grad.setAttribute("y2", sw[3]);
       n.s1.setAttribute("offset", f); n.s2.setAttribute("offset", Math.min(1, f + 0.05));
       var fade = (r === "RA" || r === "LA") ? atrFade : ventFade;
       n.over.setAttribute("opacity", f > 0 ? fade : 0);
     });
     Object.keys(pathNodes).forEach(function (p) {
-      var n = pathNodes[p], f = prog(c.path[p], t), blocked = c.blocked.indexOf(p) >= 0;
+      var n = pathNodes[p], f = prog(c.path[p], t), isBlock = c.blockAt === p, unused = !c.path[p] && !isBlock;
       var fade = ATRIAL[p] ? (p === "avn" ? ventFade : atrFade) : ventFade;
       n.act.setAttribute("opacity", f > 0 ? fade : 0);
       n.act.setAttribute("stroke-dashoffset", (n.len * (1 - Math.max(0, f))).toFixed(1));
-      n.base.setAttribute("stroke", blocked ? "var(--ecgc-orange)" : "var(--ecgc-grey)");
-      n.base.setAttribute("stroke-dasharray", blocked ? "5 4" : "none");
+      n.base.setAttribute("stroke", isBlock ? "var(--ecgc-orange)" : GREY);
+      n.base.setAttribute("stroke-dasharray", isBlock || unused ? "5 4" : "none");
       var h = heads[p];
       if (f > 0 && f < 1) {
         var pt = n.act.getPointAtLength(n.len * f);
@@ -390,19 +471,22 @@
         h.setAttribute("opacity", 1);
       } else h.setAttribute("opacity", 0);
     });
-    var saOn = t >= 0 && t < 14;
-    saNode.setAttribute("fill", saOn ? "var(--ecgc-blue)" : "var(--ecgc-grey)");
+    saNode.setAttribute("fill", t >= 0 && t < 14 ? "var(--ecgc-blue)" : GREY);
 
-    // Arrow
+    // One live vector: frontal component on the heart and frontal wheel, horizontal component on the horizontal wheel.
     var a = arrowAt(state.cond, t), isT = t >= tw[1] && t <= tw[2];
-    var isP = t < 100;
-    var o = isP ? { x: 235, y: 140 } : { x: 275, y: 285 };
-    if (a.mag < 0.06) {
-      gArrow.setAttribute("opacity", 0);
-    } else {
-      var len = 28 + 72 * a.mag, rad = a.ang * Math.PI / 180;
+    var o = t < 100 ? { x: 262, y: 140 } : { x: 312, y: 288 };
+    var show = a.mag >= 0.06, rad = a.ang * Math.PI / 180, hrad = a.h * Math.PI / 180;
+    gArrow.setAttribute("opacity", show ? 1 : 0);
+    [[wheelF, rad], [wheelH, hrad]].forEach(function (w) {
+      var L = show ? 10 + 30 * a.mag : 0;
+      w[0].vec.setAttribute("x2", (L * Math.cos(w[1])).toFixed(1)); w[0].vec.setAttribute("y2", (L * Math.sin(w[1])).toFixed(1));
+      w[0].vec.setAttribute("opacity", show ? 1 : 0);
+      w[0].vec.setAttribute("stroke-dasharray", isT ? "5 4" : "none");
+    });
+    if (show) {
+      var len = 28 + 72 * a.mag;
       var ex = o.x + len * Math.cos(rad), ey = o.y + len * Math.sin(rad);
-      gArrow.setAttribute("opacity", 1);
       arrowLine.setAttribute("x1", o.x); arrowLine.setAttribute("y1", o.y);
       arrowLine.setAttribute("x2", ex.toFixed(1)); arrowLine.setAttribute("y2", ey.toFixed(1));
       arrowLine.setAttribute("stroke-dasharray", isT ? "10 7" : "none");
@@ -416,20 +500,23 @@
 
   function renderBlock() {
     var c = COND[state.cond];
-    var g = svg.querySelectorAll(".ecgc-blockmark");
-    for (var i = 0; i < g.length; i++) g[i].parentNode.removeChild(g[i]);
+    while (gBlock.firstChild) gBlock.removeChild(gBlock.firstChild);
+    while (gMarks.firstChild) gMarks.removeChild(gMarks.firstChild);
+    lateZone.setAttribute("opacity", c.late ? .75 : 0);
+    if (c.late) latePoly.setAttribute("points", c.late);
     if (!c.blockAt) { blockText.setAttribute("opacity", 0); return; }
-    c.blocked.forEach(function (p) {
-      el("path", { d: PATHS[p], fill: "none", stroke: "url(#ecgcHatch)", "stroke-width": 14, "stroke-linecap": "round", "class": "ecgc-blockmark", opacity: .9 }, gBlock);
-    });
-    var n = pathNodes[c.blockAt], pt = n.act.getPointAtLength(n.len * (c.blockAt === "rb" ? 0.35 : 0.55));
-    var x = el("path", { d: "M-8,-8 L8,8 M8,-8 L-8,8", stroke: "var(--ecgc-ink)", "stroke-width": 4, "stroke-linecap": "round", transform: "translate(" + pt.x + "," + pt.y + ")", "class": "ecgc-blockmark" }, svg);
-    svg.insertBefore(x, gElec);
+    el("path", { d: PATHS[c.blockAt], fill: "none", stroke: "url(#ecgcHatch)", "stroke-width": 10, "stroke-linecap": "round", opacity: .8 }, gBlock);
+    var n = pathNodes[c.blockAt], pt = n.act.getPointAtLength(n.len * (c.blockAt === "rb" ? 0.3 : 0.55));
+    el("path", { d: "M-7,-7 L7,7 M7,-7 L-7,7", stroke: INK, "stroke-width": 3.5, "stroke-linecap": "round", transform: "translate(" + pt.x + "," + pt.y + ")" }, gMarks);
     var isR = c.blockAt === "rb";
-    blockText.setAttribute("x", isR ? pt.x - 14 : pt.x + 4);
-    blockText.setAttribute("y", isR ? pt.y + 5 : pt.y + 26);
+    blockText.setAttribute("x", isR ? pt.x - 14 : pt.x + 22);
+    blockText.setAttribute("y", isR ? pt.y + 4 : pt.y + 30);
     blockText.setAttribute("text-anchor", isR ? "end" : "start");
-    blockText.textContent = isR ? "Right bundle blocked" : "Left bundle blocked";
+    blockText.innerHTML = "";
+    var t1 = document.createElementNS(NS, "tspan"); t1.textContent = isR ? "Right bundle blocked" : "Left bundle blocked";
+    var t2 = document.createElementNS(NS, "tspan"); t2.setAttribute("x", blockText.getAttribute("x")); t2.setAttribute("dy", 15);
+    t2.setAttribute("font-weight", 400); t2.textContent = isR ? "RV activated late" : "LV activated late";
+    blockText.appendChild(t1); blockText.appendChild(t2);
     blockText.setAttribute("opacity", 1);
   }
 

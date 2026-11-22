@@ -22,9 +22,9 @@ await page.click('[data-cond="lbbb"]');
 const q1 = await page.$eval("#ecgcQrs", (e) => +e.dataset.qrs);
 check("condition switch widens QRS", q0 < 120 && q1 >= 120, { normal: q0, lbbb: q1 });
 
-const before = await page.$eval("#ecgcElec-B", (g) => ({ lead: g.dataset.lead, t: g.querySelector("g").getAttribute("transform") }));
+const before = await page.$eval("#ecgcWheelMark-B", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
 await page.selectOption('select[data-slot="1"]', "aVL");
-const after = await page.$eval("#ecgcElec-B", (g) => ({ lead: g.dataset.lead, t: g.querySelector("g").getAttribute("transform") }));
+const after = await page.$eval("#ecgcWheelMark-B", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
 check("dropdown changes lead and electrode marker", before.lead === "V1" && after.lead === "aVL" && before.t !== after.t, { before, after });
 await page.selectOption('select[data-slot="1"]', "V1");
 

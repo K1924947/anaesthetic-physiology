@@ -31,9 +31,14 @@
 .ecgc select { font: 14px var(--font-sans); padding: 3px 6px; border: 1px solid var(--text); border-radius: 6px; background: var(--surface); color: var(--text); }
 .ecgc button:focus-visible, .ecgc select:focus-visible, .ecgc input:focus-visible, .ecgc summary:focus-visible { outline: 3px solid var(--ecgc-blue); outline-offset: 2px; }
 
-.ecgc-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr); gap: 12px; align-items: start; }
+.ecgc-stage { display: grid; grid-template-columns: minmax(0, 1.22fr) 150px minmax(0, 1fr); gap: 10px; align-items: start; }
+.ecgc-wheels { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px 4px 6px; text-align: center; }
+.ecgc-wheels svg { display: block; width: 100%; height: auto; }
+.ecgc-wheel-title { margin: 2px 0 0; font: 600 13px/1.15 var(--font-sans); }
+.ecgc-wheel-title span { font-weight: 400; font-size: 11px; color: var(--muted); }
+.ecgc-wheel-cap { font: 12.5px/1.3 var(--font-sans); margin: 2px 2px 0; }
 .ecgc-heart { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px 6px; }
-.ecgc-heart svg { display: block; width: 100%; height: auto; max-height: 410px; }
+.ecgc-heart svg { display: block; width: 100%; height: auto; max-height: 418px; }
 .ecgc-rule { font: 14px var(--font-sans); margin: 2px 4px 2px; color: var(--text); }
 .ecgc-rule-arrow { color: var(--ecgc-magenta); font-weight: 700; }
 
