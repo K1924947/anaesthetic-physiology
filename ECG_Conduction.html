@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261118">
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123c">
+<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123d">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -76,9 +76,10 @@
         <p class="ecgc-wheel-title">Chest leads<br><span>horizontal plane, front at the bottom</span></p>
         <svg id="ecgcWheelH" viewBox="-78 -46 156 116" aria-hidden="true"></svg>
         <ul class="ecgc-key" aria-label="Key">
-          <li><span class="k-fast" aria-hidden="true">&#9654;</span> Fast route: bundles and Purkinje fibres (blue, solid)</li>
-          <li><span class="k-slow" aria-hidden="true">&raquo;</span> Slow route: cell to cell (orange, chevrons)</li>
-          <li><span class="k-rec" aria-hidden="true">&#8942;&rsaquo;</span> Recovery front (grey, dashed)</li>
+          <li><span class="k-fast" aria-hidden="true">&#9654;</span> Fast route: bundles, Purkinje</li>
+          <li><span class="k-slow" aria-hidden="true">&raquo;</span> Slow route: cell to cell</li>
+          <li title="Small blue dots: muscle still depolarised, lit until its own recovery time, then grey"><svg class="k-sym" width="16" height="10" viewBox="0 0 16 10" aria-hidden="true"><circle cx="3" cy="5" r="1.7" fill="#005A9E"/><circle cx="8" cy="5" r="1.7" fill="#005A9E"/><circle cx="13" cy="5" r="1.7" fill="#005A9E"/></svg> Still depolarised</li>
+          <li title="Dark dashes with small arrowheads: the recovery front, recovering now; arrowheads point the way it travels, epicardium to endocardium"><svg class="k-sym" width="16" height="10" viewBox="0 0 16 10" aria-hidden="true"><path d="M2,1.4 L2,8.6 M3.6,2.6 L6.2,5 L3.6,7.4 M10,1.4 L10,8.6 M11.6,2.6 L14.2,5 L11.6,7.4" fill="none" stroke="#383D44" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Recovering: epi to endo</li>
         </ul>
       </figure>
 
@@ -147,6 +148,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-conduction.js?v=20261123c"></script>
+<script src="assets/ecg-conduction.js?v=20261123d"></script>
 </body>
 </html>

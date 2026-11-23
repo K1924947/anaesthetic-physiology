@@ -94,7 +94,8 @@
 .ecgc-link { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .ecgc-wheel-note { margin: 0 2px; font: 11.5px/1.25 var(--font-sans); color: var(--muted); }
 .ecgc-key { list-style: none; margin: 6px 2px 0; padding: 0; text-align: left; font: 11.5px/1.25 var(--font-sans); }
-.ecgc-key li { margin-top: 4px; }
+.ecgc-key li { margin-top: 3px; }
+.ecgc .ecgc-key svg.k-sym { flex: none; max-width: none; max-height: none; margin: 0; display: inline-block; width: 16px; height: 10px; vertical-align: -1px; }
 .k-fast { color: var(--ecgc-blue); font-weight: 700; }
 .k-slow { color: var(--ecgc-orange); font-weight: 700; font-size: 14px; }
 .k-rec { color: #4A5059; font-weight: 700; }
