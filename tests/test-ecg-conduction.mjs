@@ -40,7 +40,7 @@ check("scrubber is keyboard operable", ms2 === ms + 1, { ms, ms2 });
 
 // Round 5: step-through story, bump labels on the focus lead, tap a bump to jump the clock.
 const steps = await page.evaluate(() => { const E = window.ECGConduction; const o = {};
-  for (const c of ["normal", "rbbb", "lbbb"]) { const st = E.steps(c, "aVL"); o[c] = { n: st.length, ids: st.map((s) => s.id), allText: st.every((s) => s.text && s.text.length > 20 && s.t >= 0) }; }
+  for (const c of ["normal", "rbbb", "lbbb"]) { const st = E.steps(c, "aVL"); o[c] = { n: st.length, ids: st.flatMap((s) => s.ids), allText: st.every((s) => s.text && s.text.length > 20 && s.t >= 0) }; }
   return o; });
 check("step-through steps exist for all 3 conditions",
   ["normal", "rbbb", "lbbb"].every((c) => steps[c].n >= 8 && steps[c].allText && steps[c].ids.includes("bump1") && steps[c].ids.includes("t")) &&
@@ -91,6 +91,34 @@ const lbVis = await page.evaluate(() => { const E = window.ECGConduction, o = {}
 const solid = (s) => s.dash === "none" && s.width >= 3, partDashed = (s) => s.dash !== "none" && parseFloat(s.dash) > 5 && s.width >= 3;
 check("left and right bundles clearly drawn; blocked one solid to the X, dashed beyond",
   solid(lbVis.normal.lb) && solid(lbVis.normal.rb) && solid(lbVis.rbbb.lb) && partDashed(lbVis.rbbb.rb) && solid(lbVis.lbbb.rb) && partDashed(lbVis.lbbb.lb) && lbVis.lbbb.lb.stroke === "#4E5968", lbVis);
+
+// Round 8: animation matches the vector and the ECG.
+const anim = await page.evaluate(() => { const E = window.ECGConduction, o = { unsorted: [], dup: [] };
+  for (const c of ["normal", "rbbb", "lbbb"]) for (const L of ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]) {
+    const st = E.steps(c, L);
+    for (let i = 1; i < st.length; i++) { if (st[i].t < st[i - 1].t) o.unsorted.push([c, L, st[i].id]); if (st[i].t - st[i - 1].t < 5) o.dup.push([c, L, st[i - 1].id, st[i].id]); } }
+  o.paths = { normal: E.paths("normal"), rbbb: E.paths("rbbb"), lbbb: E.paths("lbbb") };
+  o.reg = { normal: E.regions("normal"), rbbb: E.regions("rbbb"), lbbb: E.regions("lbbb") };
+  o.slowNormal = E.model("normal").slowPoints;
+  o.gap = { rbbb: E.activationGap("rbbb"), lbbb: E.activationGap("lbbb") };
+  o.aVL2 = (E.bumps("lbbb", "aVL").find((b) => b.name === "2nd R") || {}).peak;
+  o.v1 = (E.bumps("lbbb", "V1").find((b) => /QS|S/.test(b.name)) || {}).label || "";
+  o.lbTitles = E.steps("lbbb", "aVL").map((s) => E.narration("lbbb", "aVL", s.t).title);
+  return o; });
+check("steps are in time order with no two under 5 ms apart (all conditions, all 12 leads)", !anim.unsorted.length && !anim.dup.length, { unsorted: anim.unsorted, dup: anim.dup });
+const speedBad = [];
+for (const k of Object.keys(anim.paths.normal)) for (const c of ["rbbb", "lbbb"]) { const a = anim.paths.normal[k], b = anim.paths[c][k];
+  if (b && (Math.abs(a.len / a.dur - b.len / b.dur) > 1e-6 || Math.abs(a.start - b.start) > 1e-6)) speedBad.push([k, c]); }
+check("each fast route has the same drawn speed and timing in every condition", !speedBad.length && Object.keys(anim.paths.rbbb).length > 5, speedBad);
+check("Normal: no slow (orange chevron) muscle anywhere", anim.slowNormal === 0, anim.slowNormal);
+const lw = anim.reg.lbbb.LVW, la = anim.reg.lbbb.LVA;
+check("LBBB lateral wall lights up with its vector and the 2nd R in aVL (within 5 ms); apex with its component",
+  Math.abs(lw.median - 262) <= 5 && Math.abs(lw.median - anim.aVL2) <= 5 && Math.abs(la.median - 230) <= 5, { lw, la, aVL2: anim.aVL2 });
+check("LBBB septum crossing is mostly slow; RBBB slow front is continuous; unaffected LV base keeps Normal timing in RBBB",
+  anim.reg.lbbb.SEP.slowFrac > .6 && anim.gap.rbbb < 10 && anim.reg.rbbb.RV.first - anim.reg.rbbb.SEP.last < 10 &&
+  Math.abs(anim.reg.rbbb.LVB.median - anim.reg.normal.LVB.median) < 1, { sep: anim.reg.lbbb.SEP, gap: anim.gap, rbbbRV: anim.reg.rbbb.RV, lvb: [anim.reg.rbbb.LVB, anim.reg.normal.LVB] });
+check("LBBB steps include the slow crawl through the LV wall, and V1 QS credits the septum first", anim.lbTitles.some((t) => /Slow crawl through the LV wall/.test(t)) &&
+  anim.lbTitles.some((t) => /Slow crawl across the septum/.test(t)) && /septum, then/.test(anim.v1), { titles: anim.lbTitles, v1: anim.v1 });
 
 if (SHOT) {
   await page.evaluate(() => window.ECGConduction.setTime(232));

@@ -20,7 +20,7 @@
     var h = HORIZ_AX[L] * Math.PI / 180; return CHEST_GAIN * (v.x * Math.cos(h) + v.z * Math.sin(h));
   }
   // Atria are not mapped: the P wave is two idealised components, right atrium then left atrium.
-  var P_WAVE = [[35, 14, .04, .156, .09], [65, 14, .13, .078, -.078]]; // II peak about 0.17 mV
+  var P_WAVE = [[35, 14, .04, .156, .09], [65, 14, .10, .078, -.01]]; // II peak about 0.16 mV; V1 biphasic with similar halves (LITFL)
   // The heart vector. Each component is [centre ms, width ms, x, y, z] in mV (x = patient's left, y = inferior,
   // z = anterior), then the muscle region that makes it and whether it is reached slowly, cell to cell (1) or by the fast route (0).
   var VEC = {
@@ -28,18 +28,18 @@
       [172, 6, -.15, .05, .17, "SEP", 0],   // septum, left to right: q in I, aVL, V6; small r in V1
       [186, 8, .3, .4, .38, "LVA", 0],      // apex and anterior wall
       [200, 10, .9, .75, -.3, "LVW", 0],    // LV free wall dominates: leftward, inferior, posterior
-      [227, 8, -.1, -.2, -.25, "LVB", 0],   // base last: superior, posterior
-      [435, 42, .25, .2, .15]                // T: concordant with the QRS
+      [224, 10, -.1, -.2, -.15, "LVB", 0],  // base last: superior, posterior (blends into the S in V2, no notch)
+      [435, 42, .25, .2, .08]                // T: concordant in most leads; slightly negative in V1, inverted in aVR (LITFL)
     ],
     rbbb: [
       [172, 6, -.15, .05, .17, "SEP", 0],   // septum still left to right (left bundle intact)
       [186, 8, .3, .4, .38, "LVA", 0],
-      [200, 10, .85, .65, -.35, "LVW", 0],  // LV through its own Purkinje fibres
-      [255, 15, -.45, .05, .4, "RV", 1],    // late RV, cell to cell: terminal rightward, anterior vector
+      [200, 10, .85, .65, -.2, "LVW", 0],   // LV through its own Purkinje fibres
+      [255, 15, -.45, .05, .48, "RV", 1],   // late RV, cell to cell: terminal rightward, anterior vector (R' at least as big as S in V1)
       [460, 42, .3, .2, -.15]                // secondary T, opposite the terminal QRS
     ],
     lbbb: [
-      [173, 6, 0, 0, .12, "RV", 0],         // RV via the right bundle: small r in V1 at most
+      [176, 6, 0, 0, .14, "RV", 0],         // RV via the right bundle (after the moderator band): small r in V1 at most
       [198, 13, .6, .15, -.25, "SEP", 1],   // septum right to left, cell to cell: no septal q; first hump of the R
       [230, 16, .3, .2, -.5, "LVA", 1],   // slow spread through the apex and anterior LV
       [262, 15, .85, .05, -.55, "LVW", 1],  // lateral LV last: second hump of the notched R
@@ -51,7 +51,7 @@
   // Speeds from Klabunde: bundle branches about 2 m/s, Purkinje about 4 m/s, ventricular muscle about 0.3 to 0.5 m/s.
   var MM_PER_UNIT = 0.33;                 // drawing scale: the heart is about 12 cm long
   var V_BUNDLE = 2 / MM_PER_UNIT, V_PURK = 4 / MM_PER_UNIT, V_MYO = 0.5 / MM_PER_UNIT; // drawing units per ms
-  var HIS_START = 128;                    // after the AV nodal delay; the first muscle is reached at 160 ms (PR 160 ms)
+  var HIS_START = 148;                    // after the AV nodal delay; routes then run at their true speeds and the first muscle is reached at about 160 ms (PR 160 ms)
 
   var SHARED_START = [
     [0, 12, "The SA node fires. It is too small to show on the ECG, so the trace is still flat."],
@@ -61,7 +61,7 @@
 
   var COND = {
     normal: {
-      name: "Normal sinus", fast: ["his", "rb", "mod", "purkR", "purkR2", "lb", "laf", "lpf", "purkL", "purkLA"],
+      name: "Normal sinus", fast: ["his", "rb", "mod", "purkR", "purkR2", "lb", "laf", "lpf", "purkL", "purkLA"], slowAt: {},
       qrs: [160, 245], st: [245, 350, 520], ev: [180, 215],
       text: [
         ["his", "qon", "The impulse runs down the His bundle into both bundle branches: the fast highway."],
@@ -74,6 +74,7 @@
     },
     rbbb: {
       name: "RBBB", fast: ["his", "lb", "laf", "lpf", "purkL", "purkLA"], blockAt: "rb", blocked: ["rb", "mod", "purkR", "purkR2"],
+      slowAt: { RV: 0 }, leadIn: { RV: [184, .2] }, // the slow front leaves the septum as soon as it is depolarised
       qrs: [160, 290], st: [290, 370, 550], ev: [185, 232],
       text: [
         ["his", "qon", "The impulse runs down the His bundle. The right bundle is blocked, so only the left bundle carries it on."],
@@ -86,7 +87,8 @@
     },
     lbbb: {
       name: "LBBB", fast: ["his", "rb", "mod", "purkR", "purkR2"], blockAt: "lb", blocked: ["lb", "laf", "lpf", "purkL", "purkLA"],
-      qrs: [160, 300], st: [300, 380, 560], ev: [212, 245],
+      slowAt: { SEP: 8, LVA: 0, LVW: 0, LVB: 0 }, // only the right-side edge of the septum, next to the right bundle, is fast
+      qrs: [160, 300], st: [300, 380, 560], ev: [214, 246, 190],
       text: [
         ["his", "qon", "The impulse runs down the His bundle. The left bundle is blocked, so only the right bundle carries it on."],
         ["qon", "q1", "The right bundle activates the right ventricle and the right side of the septum, so the septum depolarises right to left. The wavefront heads towards I, aVL and V6: no septal q there."],
@@ -276,7 +278,7 @@
 
   // Two aligned label columns, evenly spaced, ordered by target height so leaders never cross. Each leader is a short
   // horizontal run into the gutter, then one straight segment to a small dot on the target (heart coordinates).
-  var LAB_L = [["SA node", 177, 50], ["Internodal paths", 128, 112], ["Coronary sinus", 230, 140], ["AV node", 263, 146],
+  var LAB_L = [["SA node", 177, 50], ["Internodal routes", 128, 112], ["Coronary sinus", 230, 140], ["AV node", 263, 146],
     ["Tricuspid valve", 172, 172], ["Right bundle", 245, 245], ["Moderator band", 212, 285, "crosses the RV cavity"], ["Purkinje fibres", 200, 292]];
   var LAB_R = [["Bachmann's bundle", 290, 47], ["Interatrial septum", 264, 100], ["Fibrous AV ring", 402, 141], ["Mitral valve", 372, 160],
     ["His bundle", 266, 166], ["Left bundle", 269, 212], ["Anterior fascicle", 274, 239, "onto the front wall \u2299"], ["Posterior fascicle", 271, 272],
@@ -322,11 +324,22 @@
     }
   })();
   // How far a wavefront travels through muscle before we call it "slow cell to cell" rather than "fast route then through the wall".
-  var WALL = { RV: 22, SEP: 42, LVA: 42, LVW: 42, LVB: 42 };
 
   // The activation map is a visual timing guide only (dots, chevrons, bump-to-heart links, story moments).
   // Its times are re-mapped onto the idealised vector's timeline, so the picture and the traces line up.
   var MODEL = {};
+  // Standard normal CDF and its inverse (Acklam's approximation), for bell-shaped activation timing.
+  function normCdf(z) { var t = 1 / (1 + .2316419 * Math.abs(z)), d = .3989423 * Math.exp(-z * z / 2), q = d * t * (.3193815 + t * (-.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - q : q; }
+  function normInv(p) {
+    var a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239],
+      b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572],
+      c = [-.007784894002430293, -.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783],
+      d = [.007784695709041462, .3224671290700398, 2.445134137142996, 3.754408661907416], q, r;
+    if (p < .02425) { q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    if (p > 1 - .02425) { q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    q = p - .5; r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  }
   function buildModel(c) {
     var C = COND[c], fast = {}, path = {};
     C.fast.forEach(function (p) { fast[p] = 1; });
@@ -370,7 +383,10 @@
     var pts = GRID.map(function (g, i) {
       var fx = par[i] >= 0 ? GRID[par[i]].x : sx[i], fy = par[i] >= 0 ? GRID[par[i]].y : sy[i];
       var dx = g.x - fx, dy = g.y - fy, m = Math.hypot(dx, dy) || 1;
-      return { x: g.x, y: g.y, g: g.g, ta0: ta[i], ta: ta[i], slow: md[i] > WALL[g.g], d2: [dx / m, dy / m] };
+      // Slow (orange chevrons) only where the block forces cell-to-cell spread; elsewhere the short hop from the
+      // Purkinje ends through the wall is part of the normal fast activation and is drawn blue.
+      var sa = C.slowAt[g.g];
+      return { x: g.x, y: g.y, g: g.g, ta0: ta[i], ta: ta[i], slow: sa !== undefined && md[i] > sa, d2: [dx / m, dy / m] };
     });
     // Re-time the map onto the vector. Each region's muscle keeps its own activation order but is fitted into the
     // window of the vector component it makes (centre +/- 1.6 widths); fast routes and regions with no component of
@@ -391,7 +407,9 @@
       var m = Math.hypot(k[2], k[3], k[4]);
       if (!win[k[5]] || m > win[k[5]].m) win[k[5]] = { m: m, a: Math.max(qon + 1, k[0] - 1.6 * k[1]), b: Math.min(qend - 4, k[0] + 1.6 * k[1]) };
     });
-    // A region with no component of its own shares the window of the region activated at the most similar time.
+    // A region with no component of its own keeps its Normal window if the block does not affect it; otherwise it
+    // shares the window of the region activated at the most similar time.
+    if (c !== "normal") Object.keys(rmin).forEach(function (g) { if (!win[g] && C.slowAt[g] === undefined && MODEL.normal && MODEL.normal.win[g]) win[g] = MODEL.normal.win[g]; });
     var rmed = {};
     Object.keys(rmin).forEach(function (g) { var a = pts.filter(function (p) { return p.g === g; }).map(function (p) { return p.ta0; }).sort(function (x, y) { return x - y; }); rmed[g] = a[a.length >> 1]; });
     Object.keys(rmin).forEach(function (g) {
@@ -399,20 +417,24 @@
       var bestG = null; Object.keys(win).forEach(function (h) { if (rmed[h] !== undefined && (bestG === null || Math.abs(rmed[h] - rmed[g]) < Math.abs(rmed[bestG] - rmed[g]))) bestG = h; });
       if (bestG) win[g] = win[bestG];
     });
-    pts.forEach(function (p) {
-      var w = win[p.g];
-      p.ta = w ? w.a + (p.ta0 - rmin[p.g]) / Math.max(1, rmax[p.g] - rmin[p.g]) * (w.b - w.a) : lin(p.ta0);
+    // Each region keeps its own activation order (rank), and its activation density follows the vector component's
+    // bell shape, so the muscle lights up most at the moment its component peaks. A lead-in lets a slow front start
+    // as soon as its neighbour is depolarised (RBBB: from the septum into the RV).
+    var byReg = {};
+    pts.forEach(function (p) { (byReg[p.g] = byReg[p.g] || []).push(p); });
+    Object.keys(byReg).forEach(function (g) {
+      var w = win[g], arr = byReg[g].slice().sort(function (a, b) { return a.ta0 - b.ta0; }), n = arr.length, li = C.leadIn && C.leadIn[g];
+      if (!w) { arr.forEach(function (p) { p.ta = lin(p.ta0); }); return; }
+      var cw = (w.a + w.b) / 2, hw = (w.b - w.a) / 2, z0 = 1.6, lo = normCdf(-z0), hi = normCdf(z0);
+      arr.forEach(function (p, r) {
+        var u = (r + .5) / n;
+        if (li && u < li[1]) { p.ta = li[0] + u / li[1] * (w.a - li[0]); return; }
+        if (li) u = (u - li[1]) / (1 - li[1]);
+        p.ta = cw + hw / z0 * normInv(lo + u * (hi - lo));
+      });
     });
-    // Fast routes: from the His bundle to the first muscle at QRS onset, and the last fast route ends at the centre
-    // of the strongest fast-route component.
-    var lastEnd = 0, tFast = qon + 30, fm = -1;
-    Object.keys(path).forEach(function (p) { lastEnd = Math.max(lastEnd, path[p][0] + path[p][1]); });
-    V.forEach(function (k) { if (k[5] && !k[6]) { var m = Math.hypot(k[2], k[3], k[4]); if (m > fm) { fm = m; tFast = k[0]; } } });
-    function plin(t) {
-      if (t <= tmin) return HIS_START + (t - HIS_START) * (qon + 2 - HIS_START) / Math.max(1, tmin - HIS_START);
-      return qon + 2 + (t - tmin) * (tFast - qon - 2) / Math.max(1, lastEnd - tmin);
-    }
-    Object.keys(path).forEach(function (p) { var s0 = plin(path[p][0]), s1 = plin(path[p][0] + path[p][1]); path[p] = [s0, Math.max(1, s1 - s0)]; });
+    // Fast routes run at their true speeds (Klabunde: bundles about 2 m/s, Purkinje about 4 m/s) in every condition,
+    // so a route takes the same time whichever condition is shown; only blocked and slow routes differ.
     Object.keys(ATRIAL_PATH_TIME).forEach(function (p) { path[p] = ATRIAL_PATH_TIME[p]; });
     C.path = path;
     // The heart vector: smooth idealised components; groups keep each ventricular component's region and route.
@@ -429,7 +451,7 @@
     });
     var tS = C.st[1], tE = C.st[2];
     C.segs = [["P", 0, 100], ["PR", 100, qon], ["QRS", qon, qend], ["ST", qend, tS], ["T", tS, tE], ["Rest", tE, CYCLE]];
-    var M = { pts: pts, groups: groups, total: total, qon: qon, qend: qend, tS: tS, tE: tE };
+    var M = { pts: pts, groups: groups, total: total, qon: qon, qend: qend, tS: tS, tE: tE, win: win };
     M.fracSlow = pts.filter(function (p) { return p.slow; }).length / pts.length;
     // Story moments come from the vector: the centre of the strongest matching component.
     M.med = function (regs, slow) {
@@ -437,7 +459,7 @@
       V.forEach(function (k) { if (!k[5] || regs.indexOf(k[5]) < 0 || (slow !== undefined && !!k[6] !== slow)) return; var m = Math.hypot(k[2], k[3], k[4]); if (m > bm) { bm = m; best = k[0]; } });
       return best === null ? qon : best;
     };
-    M.ev = { his: HIS_START, qon: qon, qend: qend, tS: tS, tE: tE, q1: C.ev[0], q2: C.ev[1] };
+    M.ev = { his: HIS_START, hisEnd: Math.round(path.his[0] + path.his[1]), qon: qon, qend: qend, tS: tS, tE: tE, q1: C.ev[0], q2: C.ev[1], q1a: C.ev[2] || C.ev[0] };
     return M;
   }
   ["normal", "rbbb", "lbbb"].forEach(function (c) { MODEL[c] = buildModel(c); });
@@ -545,13 +567,25 @@
         if (s > 0) score.push({ k: k, g: G.g, slow: G.slow, s: s });
       });
       score.sort(function (a, b2) { return b2.s - a.s; });
-      var top = score[0] || { g: "LVW", slow: false, k: "LVW|fast" }, names = [GROUP_NAME[top.g]], keys = [top.k];
-      if (score[1] && score[1].slow === top.slow && score[1].s >= .6 * top.s && score[1].g !== top.g) { names.push(GROUP_NAME[score[1].g]); keys.push(score[1].k); }
+      var top = score[0] || { g: "LVW", slow: false, k: "LVW|fast" };
+      // Up to three contributors of the same kind (fast or slow), told in the order they were activated.
+      var used = score.filter(function (o) { return o.slow === top.slow && o.s >= .35 * top.s; }).slice(0, 3);
+      if (!used.length) used = [top];
+      used.forEach(function (o) {
+        var G = M.groups[o.k], w = 0, tw0 = 0;
+        for (var t = b.start; t <= b.end; t++) { var p = Math.max(0, project({ x: G.x[t], y: G.y[t], z: G.z[t] }, L) * b.sign); w += p; tw0 += p * t; }
+        o.tc = w ? tw0 / w : b.peak;
+        var pk = project({ x: G.x[b.peak], y: G.y[b.peak], z: G.z[b.peak] }, L) * b.sign; o.pk = pk;
+      });
+      used.sort(function (a2, b2) { return a2.tc - b2.tc; });
+      var keys = used.map(function (o) { return o.k; }), gtxt = GROUP_NAME[used[0].g];
+      for (var u = 1; u < used.length; u++) gtxt += (used[u].tc - used[u - 1].tc >= 15 ? ", then " : " and ") + GROUP_NAME[used[u].g];
+      var atPeak = used.slice().sort(function (a2, b2) { return b2.pk - a2.pk; })[0];
       b.slow = top.slow;
-      b.groups = names.join(" and ");
+      b.groups = gtxt;
       var vs = { x: 0, y: 0, z: 0 }, cx = 0, cy = 0, cn = 0;
       keys.forEach(function (k) { var G = M.groups[k]; for (var t = b.start; t <= b.end; t++) { vs.x += G.x[t]; vs.y += G.y[t]; vs.z += G.z[t]; } });
-      var regs = keys.map(function (k) { return k.split("|")[0]; });
+      var regs = [atPeak.g]; // the ring marks the muscle making most of the bump at its peak
       M.pts.forEach(function (p) { if (regs.indexOf(p.g) >= 0 && p.ta >= b.start - 10 && p.ta <= b.end) { cx += p.x; cy += p.y; cn++; } });
       if (!cn) M.pts.forEach(function (p) { if (regs.indexOf(p.g) >= 0) { cx += p.x; cy += p.y; cn++; } });
       b.cluster = { x: cx / (cn || 1), y: cy / (cn || 1) };
@@ -581,7 +615,7 @@
     add("sa", 4, "The SA node fires, high in the right atrium where the SVC joins. Too little tissue to show on the ECG yet.");
     add("atria", 50, "Watch " + L + ": the atria depolarise cell to cell, heading down and to the left, so " + L + " shows a " + pw + " P wave.");
     add("av", 125, "The AV node holds the impulse back so the atria can empty first. The fibrous ring blocks every other route, so the trace stays flat.");
-    add("his", HIS_START + 3, "The impulse enters the His bundle, the only way through the fibrous ring: the start of the fast highway.");
+    add("his", (HIS_START + E.hisEnd) / 2, "The impulse enters the His bundle, the only way through the fibrous ring: the start of the fast highway.");
     var K = function (g, s) { return g.map(function (x) { return x + "|" + s; }); };
     if (c === "normal") {
       add("bundles", E.qon - 2, "Fast highway: both bundle branches carry the impulse down either side of the septum (bold blue arrows).");
@@ -589,14 +623,15 @@
       var tw = M.med(["LVW", "LVA", "RV"]); add("walls", tw, "Purkinje fibres reach the apex and both walls almost at once (blue dots). The thick left ventricle wins. Watch " + L + ": the net wavefront is " + sideWord(c, L, Math.round(tw)) + ".");
       var tb = M.med(["LVB"]); add("base", tb, "The base of the ventricles is reached last. Watch " + L + ": that wavefront is " + sideWord(c, L, Math.round(tb), K(["LVB"], "fast").concat(K(["LVB"], "slow"))) + ".");
     } else if (c === "rbbb") {
-      add("block", HIS_START + 8, "The right bundle is blocked (X): there is no fast route into the right ventricle.");
+      add("block", E.hisEnd + 3, "The right bundle is blocked (X): there is no fast route into the right ventricle.");
       var tl = M.med(["SEP", "LVW", "LVA"], false); add("fast-left", tl, "Fast highway: the left bundle and its Purkinje fibres activate the septum (left to right) and the left ventricle quickly. Watch " + L + ": the wavefront is " + sideWord(c, L, Math.round(tl)) + ".");
       var tr = M.med(["RV"], true); add("slow-rv", tr, "Slow route: the right ventricle is reached cell to cell through gap junctions from the septum (orange chevrons). Watch " + L + ": that wavefront heads " + sideWord(c, L, Math.round(tr), K(["RV"], "slow")) + ".");
     } else {
-      add("block", HIS_START + 8, "The left bundle is blocked (X): there is no fast route into the left ventricle.");
+      add("block", E.hisEnd + 3, "The left bundle is blocked (X): there is no fast route into the left ventricle.");
       var tf = M.med(["RV", "SEP"], false); add("fast-rv", tf, "Fast highway: the right bundle and its Purkinje fibres activate the right ventricle quickly (bold blue arrow). Watch " + L + ": the wavefront is " + sideWord(c, L, Math.round(tf)) + ".");
       var tsp = M.med(["SEP"], true); add("slow-septum", tsp, "Slow route: the impulse crawls cell to cell through gap junctions, right to left across the septum (orange chevrons). Watch " + L + ": that wavefront is " + sideWord(c, L, Math.round(tsp), K(["SEP"], "slow")) + ".");
-      var tlv = M.med(["LVW", "LVB", "LVA"], true); add("slow-lv", tlv, "Still slow, cell to cell: the wavefront crawls on through the left ventricular wall, round to the lateral wall. Watch " + L + ": it is heading " + sideWord(c, L, Math.round(tlv), K(["LVW", "LVB", "LVA"], "slow")) + ".");
+      var tla = M.med(["LVA"], true); add("slow-lv-wall", tla, "Still slow, cell to cell: the wavefront crawls on through the left ventricular apex and anterior wall. Watch " + L + ": it is heading " + sideWord(c, L, Math.round(tla), K(["LVA"], "slow")) + ".");
+      var tlv = M.med(["LVW"], true); add("slow-lv", tlv, "Last, the lateral wall of the left ventricle, still cell to cell. Watch " + L + ": it is heading " + sideWord(c, L, Math.round(tlv), K(["LVW"], "slow")) + ".");
     }
     bumpsFor(c, L).forEach(function (b, i) { add("bump" + (i + 1), b.peak, b.sentence); });
     var sv = arr[Math.round((M.qend + M.tS) / 2) + 5], tv = 0;
@@ -606,7 +641,21 @@
       "Watch " + L + ": every cell is in its plateau phase, so no current flows and the ST segment stays " + (Math.abs(sv) < .04 ? "flat." : sv > 0 ? "slightly up." : "slightly down."));
     add("t", (M.tS + M.tE) / 2, "Watch " + L + ": the T wave is " + (tv > 0 ? "upright" : "inverted") + ", " + ((tv > 0) === (qa > 0) ? "the same way as" : "opposite to") + " the main QRS. " +
       (c === "normal" ? "The epicardium recovers first, so the reversed charge and reversed direction cancel." : "Slowly activated muscle recovers out of order: a secondary change."));
-    return steps;
+    // Time order, and one step for moments under 5 ms apart (the story step keeps its text; a bump's id is kept as an alias).
+    steps.forEach(function (st, i) { st.n = i; });
+    steps.sort(function (a, b) { return a.t - b.t || a.n - b.n; });
+    var out = [];
+    steps.forEach(function (st) {
+      var pv = out[out.length - 1];
+      if (pv && st.t - pv.t < 5) {
+        var sb = /^bump/.test(st.id), pb = /^bump/.test(pv.id);
+        if (sb && !pb) { pv.ids.push(st.id); pv.t = st.t; return; }
+        if (pb && !sb) { out[out.length - 1] = { id: st.id, ids: [st.id].concat(pv.ids), t: pv.t, text: st.text }; return; }
+        pv.ids.push(st.id); return;
+      }
+      out.push({ id: st.id, ids: [st.id], t: st.t, text: st.text });
+    });
+    return out;
   }
 
   /* ---------- Muscle points on the heart ---------- */
@@ -990,15 +1039,18 @@
   var N_SHARED = [
     [0, 12, "The SA node fires", "SA node, in the wall of the right atrium where the superior vena cava joins.",
       "Pacemaker cells drift up to threshold on their own and fire. The impulse starts to spread into the atrial muscle around them."],
-    [12, 100, "The atria depolarise", "Right atrium first, then the left atrium through Bachmann's bundle. Internodal routes carry the impulse on to the AV node.",
-      "Cell to cell through atrial muscle, helped by these preferential routes. The atria have little muscle mass, so the P wave is small."],
+    [12, 100, "The atria depolarise", "Right atrium first, then the left atrium through Bachmann's bundle, on to the AV node.",
+      "Mainly cell to cell through atrial muscle; faster internodal routes are described but debated. The atria have little muscle mass, so the P wave is small."],
     [100, "his", "The AV node holds the impulse", "AV node, low in the interatrial septum near the opening of the coronary sinus.",
-      "The slowest conduction in the heart. The delay lets the atria finish emptying; the fibrous ring blocks every other route."]
+      "The slowest conduction in the heart. The delay lets the atria finish emptying; the fibrous ring blocks every other route."],
+    ["his", "hisEnd", "Through the His bundle", "His bundle, the only route through the fibrous ring.",
+      "Fast: insulated fibres carry the impulse at about 2 m/s. Too little tissue to show on the ECG.",
+      "Same as normal so far: the block is further down, in one bundle branch."]
   ];
   var N_REST = ["rest", CYCLE, "At rest", "The whole heart has recovered.", "Nothing changes charge until the SA node fires again."];
   var N_COND = {
     normal: [
-      ["his", "qon", "Into the fast highway", "His bundle, through the fibrous ring, then the right and left bundle branches down either side of the septum.",
+      ["hisEnd", "qon", "Down the bundle branches", "Right and left bundle branches, down either side of the septum.",
         "Fast: insulated bundle fibres carry the impulse at about 2 m/s without exciting the muscle around them yet."],
       ["qon", "q1", "Septum, left to right", "The middle of the interventricular septum.",
         "The left bundle sends fibres into the septum early, so the septum depolarises from its left side to its right."],
@@ -1009,35 +1061,38 @@
       ["qend", "tS", "Plateau: no current flows", "All ventricular muscle is depolarised.",
         "Every cell sits in its plateau phase at a similar voltage, so no current flows between regions."],
       ["tS", "tE", "Repolarisation", "Ventricular muscle, recovering from the outside (epicardium) in.",
-        "Epicardial action potentials are shorter, so recovery runs outside to inside. Reversed charge and reversed direction cancel: T matches the QRS."]
+        "Shorter epicardial action potentials make recovery run outside to inside. Reversed charge and direction cancel, so T usually points the same way as the main QRS (normally inverted in aVR, often in V1)."]
     ],
     rbbb: [
-      ["his", "qon", "Right bundle blocked", "His bundle, then only the left bundle branch. The right bundle is blocked (X).",
+      ["hisEnd", "qon", "Right bundle blocked", "His bundle, then only the left bundle branch. The right bundle is blocked (X).",
         "Fast down the left bundle only: there is no fast route into the right ventricle.", "Normally both bundle branches conduct together."],
       ["qon", "q1", "Septum, still left to right", "The middle of the interventricular septum.",
         "The septal fibres come from the left bundle, which still works, so the septum depolarises left to right as usual.", "Nothing yet: the start of the QRS is normal in RBBB."],
       ["q1", "q2", "Left ventricle, on time", "Apex and the left ventricular free wall.",
-        "Fast, through the left bundle and its Purkinje fibres.", "The left ventricle is activated normally, but the right ventricle has not started yet."],
+        "Fast, through the left bundle and its Purkinje fibres. A slow front starts creeping from the septum into the RV (orange chevrons).", "The left ventricle is activated normally, but most of the right ventricle has not started yet."],
       ["q2", "qend", "Right ventricle, late and slow", "Right ventricular free wall, reached from the septum.",
         "Slow, cell to cell through gap junctions (muscle conducts at about 0.3 to 0.5 m/s), because the right bundle is blocked.",
         "Normally the RV is activated with the LV and hidden by it. Here it comes last, unopposed, heading right and forwards: R' in V1, wide slurred S in I and V6, QRS 120 ms or more."],
       ["qend", "tS", "Plateau", "All ventricular muscle is depolarised.",
-        "Every cell sits in its plateau phase, so little current flows.", "Secondary change: the ST segment may be depressed in V1 to V3."],
+        "Every cell sits in its plateau phase, so little current flows.", "Secondary ST depression in V1 to V3 is typical (appropriate discordance)."],
       ["tS", "tE", "Repolarisation, out of order", "Ventricular muscle, recovering.",
-        "Muscle activated late and out of order also recovers out of order: a secondary change.", "T wave inversion in V1 to V3 is expected in RBBB."]
+        "Muscle activated late and out of order also recovers out of order: a secondary change.", "Secondary T inversion in V1 to V3 is typical (appropriate discordance)."]
     ],
     lbbb: [
-      ["his", "qon", "Left bundle blocked", "His bundle, then only the right bundle branch. The left bundle is blocked (X).",
+      ["hisEnd", "qon", "Left bundle blocked", "His bundle, then only the right bundle branch. The left bundle is blocked (X).",
         "Fast down the right bundle only: there is no fast route into the left ventricle.", "Normally both bundle branches conduct together."],
-      ["qon", "q1", "Right side first", "Right ventricle and the right side of the septum.",
+      ["qon", "q1a", "Right side first", "Right ventricle and the right side of the septum.",
         "Fast, through the right bundle and its Purkinje fibres; the septum is entered from the right.",
+        "Normally the left side of the septum starts first. Here the right side starts first."],
+      ["q1a", "q1", "Slow crawl across the septum", "Across the interventricular septum, right to left.",
+        "Slow, cell to cell through gap junctions (muscle conducts at about 0.3 to 0.5 m/s), because the left bundle is blocked.",
         "Normally the septum depolarises left to right. Here it goes right to left, so the small septal q in I, aVL, V5 and V6 is lost."],
-      ["q1", "q2", "Slow crawl through the LV wall", "Across the septum, then into the left ventricular wall.",
-        "Slow, cell to cell through gap junctions (about 0.3 to 0.5 m/s), because the left bundle is blocked.",
+      ["q1", "q2", "Slow crawl through the LV wall", "Left ventricular apex and anterior wall.",
+        "Still slow, cell to cell through gap junctions: there is no left Purkinje network to spread the impulse.",
         "Normally the left Purkinje fibres activate the left ventricle almost at once. Here it takes much longer, so the QRS widens to 120 ms or more."],
       ["q2", "qend", "Lateral wall, last", "Lateral wall of the left ventricle.",
         "Still slow, cell to cell; the wavefront keeps heading left and backwards.",
-        "This late leftward wave makes the broad, notched (M-shaped) R in I, aVL, V5 and V6 and the deep, broad S in V1."],
+        "This late leftward wave makes a broad R in I, aVL, V5 and V6, often notched (M-shaped), and a deep, broad S (rS or QS) in V1."],
       ["qend", "tS", "Abnormal recovery begins", "All ventricular muscle is depolarised.",
         "Abnormal activation means abnormal recovery: a secondary change.",
         "ST shifts opposite to the main QRS (appropriate discordance): raised in V1 to V3, depressed in I, aVL, V5 and V6."],
@@ -1060,9 +1115,10 @@
     var v = vectorAt(c, t), frontal = FRONTAL_AX[L] !== undefined, mag = frontal ? Math.hypot(v.x, v.y) : CHEST_GAIN * Math.hypot(v.x, v.z), p = project(v, L);
     var head = L + " looks " + LOOKS[L] + ". ";
     if (mag < .03) return head + "No wavefront is big enough to see, so the trace stays on the baseline.";
-    var what = isT ? "The net recovery vector" : "The net wavefront";
+    var what = isT ? "The T vector (net direction of the recovery currents)" : "The net wavefront";
     if (Math.abs(p) < .3 * mag) return head + what + " runs nearly at right angles to " + L + ", so it barely moves the trace.";
-    return head + what + " points " + (p > 0 ? "towards " + L + ", so the trace goes up." : "away from " + L + ", so the trace goes down.");
+    var tail = isT && c === "normal" ? " The recovery wave itself travels the other way, epicardium to endocardium." : "";
+    return head + what + " points " + (p > 0 ? "towards " + L + ", so the trace goes up." : "away from " + L + ", so the trace goes down.") + tail;
   }
   function traceLine(c, L, t) {
     var M = MODEL[c], arr = SAMPLES[c][L], sg = null, segs = COND[c].segs;
@@ -1209,9 +1265,9 @@
     narration: narration,
     wheels: function () { return { limb: Object.keys(wheelF.axes), chest: Object.keys(wheelH.axes), limbVec: wheelF.vec.getAttribute("opacity"), chestVec: wheelH.vec.getAttribute("opacity"),
       marks: leadMarks.map(function (g) { return { lead: g.dataset.lead, wheel: g.ownerSVGElement.id }; }) }; },
-    steps: function (c, L) { return stepsFor(c, L || state.leads[state.focus]).map(function (s) { return { id: s.id, t: s.t, text: s.text }; }); },
+    steps: function (c, L) { return stepsFor(c, L || state.leads[state.focus]).map(function (s) { return { id: s.id, ids: s.ids.slice(), t: s.t, text: s.text }; }); },
     stepMode: setStepMode,
-    goStep: function (id) { var st = curSteps(); for (var i = 0; i < st.length; i++) if (st[i].id === id) { goStep(i); return true; } return false; },
+    goStep: function (id) { var st = curSteps(); for (var i = 0; i < st.length; i++) if (st[i].ids.indexOf(id) >= 0) { goStep(i); return true; } return false; },
     // Anatomy check: samples of each drawn conduction route that fall inside a chamber cavity (the moderator band is allowed to).
     cavityHits: function () {
       var out = {};
@@ -1229,6 +1285,16 @@
       return out;
     },
     bundleStyle: function (p) { var b = pathNodes[p].base; return { stroke: b.getAttribute("stroke"), width: +b.getAttribute("stroke-width"), dash: b.getAttribute("stroke-dasharray") || "none" }; },
+    paths: function (c) { var o = {}, P = COND[c].path; Object.keys(P).forEach(function (k) { if (P[k] && pathNodes[k]) o[k] = { start: P[k][0], dur: P[k][1], len: pathNodes[k].len }; }); return o; },
+    regions: function (c) {
+      var o = {}; MODEL[c].pts.forEach(function (p) { (o[p.g] = o[p.g] || []).push(p); });
+      Object.keys(o).forEach(function (g) {
+        var a = o[g].map(function (p) { return p.ta; }).sort(function (x, y) { return x - y; });
+        o[g] = { first: a[0], median: a[a.length >> 1], last: a[a.length - 1], slowFrac: o[g].filter(function (p) { return p.slow; }).length / a.length, n: a.length };
+      });
+      return o;
+    },
+    activationGap: function (c) { var a = MODEL[c].pts.map(function (p) { return p.ta; }).sort(function (x, y) { return x - y; }), g = 0; for (var i = 1; i < a.length; i++) g = Math.max(g, a[i] - a[i - 1]); return g; },
     model: function (c) { var M = MODEL[c]; return { qon: M.qon, qend: M.qend, fracSlow: M.fracSlow, points: M.pts.length, slowPoints: M.pts.filter(function (p) { return p.slow; }).length }; },
     qrsWidth: function () { var q = seg(state.cond, "QRS"); return q[2] - q[1]; }
   };
