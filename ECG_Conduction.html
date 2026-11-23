@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261118">
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123a">
+<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123b">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -122,7 +122,7 @@
           <li>The limb-lead (hexaxial) wheel and the chest wheel show the same vector: frontal (x, y) on the limb wheel, horizontal (x, z) on the chest wheel; dashed during ST and T. Only the focus lead's axis is drawn across the heart (faint dashed line, dot at the positive end). Chest lead angles are standard approximations.</li>
           <li>Narration (Where, How, what the focus lead sees, On the trace, and Different from normal in the blocks) is written from Klabunde, LITFL and Hampton. The "sees" and "On the trace" lines are generated from the model (projection of the vector on the focus lead, and the bump labels), so they describe the model trace, not every patient. Please check: AV node as the slowest conduction in the heart, its delay letting the atria finish emptying; internodal routes described as faster routes that are debated (the impulse reaches the AV node mainly cell to cell); bundle about 2 m/s, Purkinje about 4 m/s, muscle 0.3 to 0.5 m/s; small P because atrial muscle mass is small; normal T explained by shorter epicardial action potentials; RBBB: secondary ST depression and/or T inversion in V1 to V3 as typical (appropriate discordance); LBBB: "appropriate discordance" of ST and T, lateral R "often notched (M-shaped)", V1 "rS or QS"; the T line saying the T vector points one way while the recovery wave travels epicardium to endocardium; normal T "usually" the same way as the main QRS, inverted in aVR and often V1; PR normal 120 to 200 ms; plain-word lead viewpoints (for example aVL "from up and to the left", V4 "over the apex"), which are simplified.</li>
           <li>The heart is a flat, simplified four-chamber cut-through; valve and vessel positions are schematic.</li>
-          <li>Time is stretched so one beat fills each panel: thin vertical lines are 40 ms, horizontal lines 0.5 mV. The ms readout is the model's true time.</li>
+          <li>Time is stretched so one beat fills each panel: the grid is standard ECG paper, small boxes 40 ms by 0.1 mV and large boxes 200 ms by 0.5 mV, but stretched sideways, so the boxes are wider than they are tall. The light bands and the P and T letters mark the model's P and T windows. The ms readout is the model's true time.</li>
         </ul>
       </details>
       <details>
@@ -147,6 +147,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-conduction.js?v=20261123a"></script>
+<script src="assets/ecg-conduction.js?v=20261123b"></script>
 </body>
 </html>

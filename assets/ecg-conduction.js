@@ -710,13 +710,13 @@
 
   /* ---------- Muscle points on the heart ---------- */
   // Recovery front: short thin grey dashes across the front, small arrowheads (every third point) in its direction of travel.
-  var REC_C = "#4A5059", gRec = el("g", { "aria-hidden": "true", "pointer-events": "none" });
+  var REC_C = "#383D44", gRec = el("g", { "aria-hidden": "true", "pointer-events": "none" });
   gPaths.parentNode.insertBefore(gRec, gPaths.nextSibling);
   var myoNodes = GRID.map(function (g, i) {
     var dot = el("circle", { cx: g.x, cy: g.y, r: 1.7, fill: BLUE, opacity: 0 }, gMyo);
     var chev = el("path", { d: "M-2.5,-3 L1.5,0 L-2.5,3", fill: "none", stroke: ORANGE, "stroke-width": 1.6, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0 }, gMyo);
     var arrowed = ((g.x / SPACING | 0) + (g.y / SPACING | 0)) % 2 === 0;
-    var rec = el("path", { d: "M0,-3.2 L0,3.2" + (arrowed ? " M1.6,-2.4 L4.2,0 L1.6,2.4" : ""), fill: "none", stroke: REC_C, "stroke-width": 1.5, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0 }, gRec);
+    var rec = el("path", { d: "M0,-3.6 L0,3.6" + (arrowed ? " M2,-2.9 L5.2,0 L2,2.9" : ""), fill: "none", stroke: REC_C, "stroke-width": 2.3, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0 }, gRec);
     return { dot: dot, chev: chev, rec: rec, on: -1, ro: -1, op: -1 };
   });
   function layoutMyo() {
@@ -890,7 +890,7 @@
     // recovery is happening now.
     M.pts.forEach(function (p, i) {
       var on = t >= p.ta ? (p.slow ? 2 : 1) : 0, n = myoNodes[i];
-      var op = on ? Math.round(Math.max(0, Math.min(1, (p.tr - t) / 8)) * 10) / 10 : 0, ro = Math.abs(t - p.tr) <= 5 ? 1 : 0;
+      var op = on ? Math.round(Math.max(0, Math.min(1, (p.tr - t) / 8)) * 10) / 10 : 0, ro = Math.abs(t - p.tr) <= 6 ? 1 : 0;
       if (on !== n.on || op !== n.op) { n.dot.setAttribute("opacity", on === 1 ? op : 0); n.chev.setAttribute("opacity", on === 2 ? op : 0); n.on = on; n.op = op; }
       if (ro !== n.ro) { n.rec.setAttribute("opacity", ro); n.ro = ro; }
     });
@@ -983,15 +983,24 @@
     var y0 = span <= avail ? top + dr[1] * GAIN + (avail - span) / 2 : top + avail / 2 + (dr[1] + dr[0]) / 2 * GAIN;
     function Y(mv) { return y0 - mv * GAIN; }
     var rg = [(y0 - h) / GAIN, (y0 - top) / GAIN];
+    // Light P and T bands from the model's own P and T windows (letters on the trace carry the meaning).
+    var segP = COND[state.cond].segs[0], segT = COND[state.cond].segs[4];
+    ctx.fillStyle = "rgba(0,90,158,.07)"; ctx.fillRect(X(segP[1]), 0, X(segP[2]) - X(segP[1]), h);
+    ctx.fillStyle = "rgba(78,89,104,.08)"; ctx.fillRect(X(segT[1]), 0, X(segT[2]) - X(segT[1]), h);
+    // Standard ECG paper in one grey family: 1 mm boxes (40 ms by 0.1 mV) faint, 5 mm boxes (200 ms by 0.5 mV) darker.
+    // Time is stretched so one beat fills the panel, so the boxes are wider than they are tall.
     ctx.lineWidth = 1;
-    for (var ms = 0; ms <= CYCLE; ms += 40) {
-      ctx.strokeStyle = ms % 200 === 0 ? "#C9C5BE" : "#ECE9E4";
-      ctx.beginPath(); ctx.moveTo(X(ms) + .5, 0); ctx.lineTo(X(ms) + .5, h); ctx.stroke();
-    }
-    for (var mv = Math.ceil(rg[0] * 2) / 2; mv <= rg[1]; mv += .5) {
-      ctx.strokeStyle = mv === 0 ? "#B9B5AE" : "#DDD9D2";
-      ctx.beginPath(); ctx.moveTo(left, Math.round(Y(mv)) + .5); ctx.lineTo(w, Math.round(Y(mv)) + .5); ctx.stroke();
-    }
+    var gx = [], gy = [];
+    for (var ms = 0; ms <= CYCLE; ms += 40) gx.push([Math.round(X(ms)) + .5, ms % 200 === 0]);
+    for (var mm = Math.ceil(rg[0] * 10); mm <= rg[1] * 10; mm++) gy.push([Math.round(Y(mm / 10)) + .5, mm % 5 === 0, mm === 0]);
+    [false, true].forEach(function (major) {
+      ctx.strokeStyle = major ? "#D6D2CB" : "#EFECE7";
+      ctx.beginPath();
+      gx.forEach(function (g) { if (g[1] === major) { ctx.moveTo(g[0], 0); ctx.lineTo(g[0], h); } });
+      gy.forEach(function (g) { if (g[1] === major && !g[2]) { ctx.moveTo(left, g[0]); ctx.lineTo(w, g[0]); } });
+      ctx.stroke();
+    });
+    ctx.strokeStyle = "#B9B5AE"; ctx.beginPath(); ctx.moveTo(left, Math.round(Y(0)) + .5); ctx.lineTo(w, Math.round(Y(0)) + .5); ctx.stroke();
     ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5;
     // 1 mV calibration pulse at the trace gain, on the baseline (moved down only if the baseline is too high to fit it).
     var cb = Math.min(h - 3, Math.max(Y(0), top + GAIN + 2)), ct = cb - GAIN;
@@ -1002,11 +1011,11 @@
     ctx.save(); ctx.beginPath(); ctx.rect(0, top - 2, w, h - top + 2); ctx.clip();
     var cut = Math.max(0, Math.min(CYCLE - 1, Math.floor(t)));
     ctx.lineJoin = "round";
-    ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 2.2;
     ctx.beginPath();
     for (var k = cut; k < CYCLE; k++) { if (k === cut) ctx.moveTo(X(k), Y(data[k])); else ctx.lineTo(X(k), Y(data[k])); }
     ctx.stroke();
-    ctx.strokeStyle = "#111"; ctx.lineWidth = 2.2;
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 3.3;
     ctx.beginPath();
     for (k = 0; k <= cut; k++) { if (k === 0) ctx.moveTo(X(k), Y(data[k])); else ctx.lineTo(X(k), Y(data[k])); }
     ctx.stroke();
@@ -1019,7 +1028,7 @@
       bs.forEach(function (b, bi) {
         if (b.start > cut) return;
         var col = b.slow ? SLOW_C : FAST_C, e = Math.min(b.end, cut);
-        ctx.strokeStyle = col; ctx.lineWidth = 3.2; ctx.setLineDash(b.slow ? [6, 3] : []);
+        ctx.strokeStyle = col; ctx.lineWidth = 4.4; ctx.setLineDash(b.slow ? [6, 3] : []);
         ctx.beginPath();
         for (var t2 = b.start; t2 <= e; t2++) { if (t2 === b.start) ctx.moveTo(X(t2), Y(data[t2])); else ctx.lineTo(X(t2), Y(data[t2])); }
         ctx.stroke(); ctx.setLineDash([]);
@@ -1046,6 +1055,17 @@
     ctx.beginPath(); ctx.moveTo(X(t), 0); ctx.lineTo(X(t), h); ctx.stroke();
     ctx.fillStyle = "#4E5968";
     ctx.beginPath(); ctx.arc(X(t), Y(data[cut]), 3.5, 0, Math.PI * 2); ctx.fill();
+    // "P" and "T" above each wave, at its largest deflection in this lead (above the baseline when the wave is inverted).
+    ctx.font = "700 12px 'Source Sans 3', sans-serif"; ctx.textAlign = "center";
+    [["P", segP], ["T", segT]].forEach(function (wv) {
+      var pk = wv[1][1], big = 0, hi = 0;
+      for (var u = wv[1][1]; u < wv[1][2]; u++) { if (Math.abs(data[u]) > Math.abs(big)) { big = data[u]; pk = u; } hi = Math.max(hi, data[u]); }
+      if (Math.abs(big) < .015) return;
+      var ly = Math.max(top + 10, Y(hi) - 6), lx = X(pk);
+      ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillRect(lx - 5, ly - 10, 10, 12);
+      ctx.fillStyle = "#222"; ctx.fillText(wv[0], lx, ly);
+    });
+    ctx.textAlign = "start";
     ctx.fillStyle = "#111"; ctx.font = "700 13px 'Source Sans 3', sans-serif";
     ctx.fillText(L, w - 30, isFocus ? 44 : 14);
     return link;
