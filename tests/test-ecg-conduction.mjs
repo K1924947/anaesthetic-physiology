@@ -84,7 +84,9 @@ check("every step has narration lines (Where, How, lead sees, On the trace; Diff
 
 // Round 6: anatomy and bundle visibility.
 const cav = await page.evaluate(() => window.ECGConduction.cavityHits());
-check("every conduction route sits in a wall (only the moderator band crosses a cavity)", Object.entries(cav).every(([k, v]) => k === "mod" ? v > 0 : v === 0), cav);
+// The anterior fascicle's front-wall stretch (lafF) is drawn in front of the slice, so it may cross the LV cavity.
+check("every conduction route sits in a wall (only the moderator band crosses a cavity; the front-wall fascicle is in front of the slice)",
+  Object.entries(cav).every(([k, v]) => k === "mod" ? v > 0 : /^lafF/.test(k) ? true : v === 0) && cav.lafF > 0, cav);
 const lbVis = await page.evaluate(() => { const E = window.ECGConduction, o = {};
   for (const c of ["normal", "rbbb", "lbbb"]) { E.setCondition(c); o[c] = { lb: E.bundleStyle("lb"), rb: E.bundleStyle("rb") }; }
   return o; });
@@ -127,7 +129,7 @@ check("paper is 25 mm/s and 10 mm/mV: 1 mm = 5.6 px both ways, 200 ms = 28 px, o
 
 // Round 9: repolarisation (recovery) map.
 const rep = await page.evaluate(() => { const E = window.ECGConduction, o = {}, AX = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150 };
-  for (const c of ["normal", "rbbb", "lbbb"]) { const r = E.recovery(c), T = {}, agree = [];
+  for (const c of ["normal", "rbbb", "lbbb", "lafb", "bifasc"]) { const r = E.recovery(c), T = {}, agree = [];
     for (const L of ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]) { let big = 0, tp = 0; for (let t = r.tS; t <= r.tE; t++) { const v = E.sample(c, L, t); if (Math.abs(v) > Math.abs(big)) { big = v; tp = t; } } T[L] = { v: big, tp }; }
     for (const L of Object.keys(AX)) if (Math.abs(T[L].v) >= .15) { const a = AX[L] * Math.PI / 180, p = r.dipole.x * Math.cos(a) + r.dipole.y * Math.sin(a); agree.push([L, Math.sign(p) === Math.sign(T[L].v)]); }
     o[c] = { T, agree, rec: r, peakII: T.II.tp, peakMax: Object.values(T).sort((x, y) => Math.abs(y.v) - Math.abs(x.v))[0].tp }; }
@@ -138,12 +140,35 @@ check("T polarity: Normal I, II, V5, V6 up, aVR down, V1 flat or negative; RBBB 
   ["I", "II", "V5", "V6"].every((L) => sg("normal", L) > 0) && sg("normal", "aVR") < 0 && rep.normal.T.V1.v <= .05 &&
   ["V1", "V2", "V3"].every((L) => sg("rbbb", L) < 0) && ["I", "aVL", "V5", "V6"].every((L) => sg("lbbb", L) < 0) && ["V1", "V2", "V3"].every((L) => sg("lbbb", L) > 0),
   Object.fromEntries(["normal", "rbbb", "lbbb"].map((c) => [c, Object.fromEntries(Object.entries(rep[c].T).map(([L, x]) => [L, +x.v.toFixed(2)]))])));
-check("recovery map dipole gives the same T polarity as the trace in every limb lead with a clear T (all 3 conditions)",
-  ["normal", "rbbb", "lbbb"].every((c) => rep[c].agree.length >= 3 && rep[c].agree.every((x) => x[1])), Object.fromEntries(["normal", "rbbb", "lbbb"].map((c) => [c, rep[c].agree])));
-check("T peak within 10 ms of the middle of recovery (all 3 conditions)", ["normal", "rbbb", "lbbb"].every((c) => Math.abs(rep[c].peakMax - rep[c].rec.median) <= 10),
-  Object.fromEntries(["normal", "rbbb", "lbbb"].map((c) => [c, [rep[c].peakMax, Math.round(rep[c].rec.median)]])));
+check("recovery map dipole gives the same T polarity as the trace in every limb lead with a clear T (all 5 conditions)",
+  ["normal", "rbbb", "lbbb", "lafb", "bifasc"].every((c) => rep[c].agree.length >= 3 && rep[c].agree.every((x) => x[1])), Object.fromEntries(["normal", "rbbb", "lbbb", "lafb", "bifasc"].map((c) => [c, rep[c].agree])));
+check("T peak within 10 ms of the middle of recovery (all 5 conditions)", ["normal", "rbbb", "lbbb", "lafb", "bifasc"].every((c) => Math.abs(rep[c].peakMax - rep[c].rec.median) <= 10),
+  Object.fromEntries(["normal", "rbbb", "lbbb", "lafb", "bifasc"].map((c) => [c, [rep[c].peakMax, Math.round(rep[c].rec.median)]])));
 check("heart: all muscle lit through ST, a recovery front shown mid-T, all back to grey after T",
   rep.shown.st.lit === rep.shown.st.total && rep.shown.st.front === 0 && rep.shown.mid.front > 10 && rep.shown.mid.lit > 0 && rep.shown.mid.lit < rep.shown.mid.total && rep.shown.after.lit === 0, rep.shown);
+
+// Round 13: LAFB and bifascicular block; the anterior fascicle's front-wall stretch.
+const fas = await page.evaluate(() => {
+  const E = window.ECGConduction, o = {};
+  o.btns = [...document.querySelectorAll(".ecgc-cond-btn")].map((b) => b.dataset.cond);
+  for (const c of ["lafb", "bifasc"]) { const st = E.steps(c, "aVL"); o[c] = { n: st.length, ids: st.flatMap((s) => s.ids), allText: st.every((s) => s.text && s.text.length > 20), titles: st.map((s) => E.narration(c, "aVL", s.t).title), diffs: st.map((s) => E.narration(c, "aVL", s.t).diff).join(" | ") }; }
+  o.paths = { normal: E.paths("normal").lafF, rbbb: E.paths("rbbb").lafF, lafb: E.paths("lafb").lafF, bifasc: E.paths("bifasc").lafF, lbbb: E.paths("lbbb").lafF };
+  o.style = {}; for (const c of ["normal", "lafb", "bifasc"]) { E.setCondition(c); o.style[c] = { lafF: E.bundleStyle("lafF"), laf: E.bundleStyle("laf"), rb: E.bundleStyle("rb"), marks: document.querySelectorAll("#ecgcSvg path[d='M-7,-7 L7,7 M7,-7 L-7,7']").length }; }
+  o.tips = [...document.querySelectorAll("#ecgcSvg title")].map((t) => t.textContent);
+  o.reg = { lafb: E.regions("lafb"), bifasc: E.regions("bifasc") };
+  E.setCondition("normal"); return o; });
+const dotted = (s) => s.dash !== "none" && parseFloat(s.dash) < 2 && s.width < 2;
+check("condition toggle has LAFB and RBBB + LAFB; both have a full step-through story",
+  fas.btns.includes("lafb") && fas.btns.includes("bifasc") && ["lafb", "bifasc"].every((c) => fas[c].n >= 8 && fas[c].allText && fas[c].ids.includes("block") && fas[c].ids.includes("slow-lv-up") && fas[c].ids.includes("t")) && fas.bifasc.ids.includes("slow-rv"), fas);
+check("front-wall anterior fascicle: lit (fast) in Normal and RBBB, not in LBBB, LAFB or bifascicular; same timing where it conducts",
+  !!fas.paths.normal && !!fas.paths.rbbb && !fas.paths.lafb && !fas.paths.bifasc && !fas.paths.lbbb && Math.abs(fas.paths.normal.start - fas.paths.rbbb.start) < 1e-6, fas.paths);
+check("front-wall stretch drawn faint and dotted (not the recovery dash or a chevron); X on the anterior fascicle in LAFB, two X in bifascicular",
+  dotted(fas.style.normal.lafF) && dotted(fas.style.lafb.lafF) && fas.style.normal.marks === 0 && fas.style.lafb.marks === 1 && fas.style.bifasc.marks === 2 && fas.style.lafb.laf.dash !== "none", fas.style);
+check("hover notes: front-wall stretch is the anterior fascicle; the upper lateral-wall line is its Purkinje fibres re-entering the slice, not a separate pathway",
+  fas.tips.some((t) => /anterior fascicle, on the front wall/i.test(t)) && fas.tips.some((t) => /re-?enter|coming back into this slice/i.test(t) && /not a separate pathway/.test(t)), fas.tips);
+check("LAFB/bifascicular: upper LV wall partly slow (chevrons), base slow; septum and inferior wall fast; bifascicular RV slow",
+  ["lafb", "bifasc"].every((c) => fas.reg[c].LVW.slowFrac > .2 && fas.reg[c].LVW.slowFrac < .9 && fas.reg[c].LVB.slowFrac > .8 && fas.reg[c].SEP.slowFrac === 0 && fas.reg[c].LVA.slowFrac === 0) && fas.reg.bifasc.RV.slowFrac > .8, fas.reg);
+check("bifascicular narration flags the risk of complete heart block", /complete heart block/.test(fas.bifasc.diffs), fas.bifasc.diffs);
 
 // Round 12: 0.01x speed, smooth at sub-millisecond steps (no rounding of the clock, pen between whole ms).
 const slow = await page.evaluate(async () => {

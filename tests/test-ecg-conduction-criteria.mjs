@@ -17,7 +17,7 @@ await page.waitForFunction(() => !!window.ECGConduction);
 
 const m = await page.evaluate(() => {
   const E = window.ECGConduction, LEADS = ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"], TH = .02, out = {};
-  for (const c of ["normal", "rbbb", "lbbb"]) {
+  for (const c of ["normal", "rbbb", "lbbb", "lafb", "bifasc"]) {
     const s = (L, t) => E.sample(c, L, t), seg = Object.fromEntries(E.segs(c).map((x) => [x[0], [x[1], x[2]]]));
     const any = (t) => LEADS.some((L) => Math.abs(s(L, t)) > TH);
     let pOn = null, pOff = null; for (let t = 0; t < 140; t++) if (any(t)) { if (pOn === null) pOn = t; pOff = t; }
@@ -43,7 +43,7 @@ const m = await page.evaluate(() => {
   }
   return out;
 });
-const f = (x, d = 2) => +x.toFixed(d), N = m.normal, RB = m.rbbb, LB = m.lbbb, LIMB = ["I", "II", "III", "aVR", "aVL", "aVF"], CHEST = ["V1", "V2", "V3", "V4", "V5", "V6"];
+const f = (x, d = 2) => +x.toFixed(d), N = m.normal, RB = m.rbbb, LB = m.lbbb, LA = m.lafb, BF = m.bifasc, LIMB = ["I", "II", "III", "aVR", "aVL", "aVF"], CHEST = ["V1", "V2", "V3", "V4", "V5", "V6"];
 const LP = "LITFL P wave", LQ = "LITFL Q wave", LT = "LITFL T wave", LTMP = "LITFL ECG exam template", K = "Klabunde a009";
 // ---- Normal ----
 check("Normal", "P duration (ms)", N.pDur, "< 120 (LITFL); 80 to 100 (Klabunde)", LP + "; " + K, N.pDur < 120 && N.pDur >= 80 && N.pDur <= 100);
@@ -104,7 +104,26 @@ const stRatio = ["V1", "V2", "V3"].map((l) => LB.L[l].st / LB.L[l].s);
 check("LBBB", "ST elevation V1 to V3 as % of the S", stRatio.map((x) => Math.round(100 * x) + "%").join(", "), "> 0 and < 25% (appropriate discordance)", LL, stRatio.every((x) => x > 0 && x < .25));
 check("LBBB", "lateral ST down and T inverted (I, aVL, V5, V6): T (mV)", ["I", "aVL", "V5", "V6"].map((l) => f(LB.L[l].t)).join(", "), "T inverted, ST not raised", LL + "; " + LT, ["I", "aVL", "V5", "V6"].every((l) => LB.L[l].t < -.05 && LB.L[l].st <= .01));
 check("LBBB", "poor R wave progression: R in V3 (mV)", f(LB.L.V3.r), "<= 0.3 (associated feature)", LL + "; LITFL PRWP", LB.L.V3.r <= .3);
-for (const [c, x] of [["RBBB", RB], ["LBBB", LB]]) check(c, "P and PR unchanged from Normal (ms)", x.pDur + " / " + x.pr, "same as Normal within 5 ms", K, Math.abs(x.pDur - N.pDur) <= 5 && Math.abs(x.pr - N.pr) <= 5);
+// ---- LAFB and bifascicular block (RBBB + LAFB) ----
+const LAF = "LITFL LAFB", LBF = "LITFL bifascicular block";
+const qR = (x, l) => x.L[l].bumpAmp.length >= 2 && x.L[l].bumpAmp[0] < 0 && x.L[l].bumpAmp[1] > 0 && x.L[l].bumpAmp[1] > 2 * -x.L[l].bumpAmp[0];
+const rS = (x, l) => x.L[l].bumpAmp.length >= 2 && x.L[l].bumpAmp[0] > 0 && x.L[l].bumpAmp[1] < 0 && -x.L[l].bumpAmp[1] > 2 * x.L[l].bumpAmp[0];
+const show = (x, ls) => ls.map((l) => l + " " + x.L[l].bumps.join(" ")).join("; ");
+check("LAFB", "QRS duration (ms)", LA.qrs, "< 120; normal or slightly prolonged, 80 to 110", LAF, LA.qrs < 120 && LA.qrs >= 80 && LA.qrs <= 110);
+check("LAFB", "QRS axis (degrees)", f(LA.qrsAxis, 0), "left axis deviation, usually -45 to -90", LAF, LA.qrsAxis <= -45 && LA.qrsAxis >= -90);
+check("LAFB", "qR in I and aVL", show(LA, ["I", "aVL"]), "small q, then tall R", LAF, ["I", "aVL"].every((l) => qR(LA, l)));
+check("LAFB", "rS in II, III and aVF", show(LA, ["II", "III", "aVF"]), "small r, then deep S", LAF, ["II", "III", "aVF"].every((l) => rS(LA, l)));
+check("LAFB", "R wave peak time in aVL (ms)", LA.L.aVL.rpt, "> 45 (prolonged)", LAF, LA.L.aVL.rpt > 45);
+check("LAFB", "increased limb lead voltage: R in aVL (mV), Normal in brackets", f(LA.L.aVL.r) + " (" + f(N.L.aVL.r) + ")", "larger than Normal (associated feature)", LAF, LA.L.aVL.r > N.L.aVL.r);
+check("LAFB", "no RBBB pattern: V1 ends with S, no R'", show(LA, ["V1"]), "rS", LAF, LA.L.V1.bumpAmp[LA.L.V1.bumpAmp.length - 1] < 0);
+check("RBBB + LAFB", "QRS duration (ms)", BF.qrs, ">= 120 (RBBB)", LBF + "; " + LR, BF.qrs >= 120);
+check("RBBB + LAFB", "RSR' in V1 to V3 (deflections)", show(BF, ["V1", "V2", "V3"]), "positive, S, then R'", LBF + "; " + LR,
+  ["V1", "V2", "V3"].every((l) => BF.L[l].bumps.length >= 3 && BF.L[l].bumpAmp[0] > 0 && BF.L[l].bumpAmp[1] < 0 && BF.L[l].bumpAmp[2] > 0 && /R'|r'/.test(BF.L[l].bumps[2])));
+check("RBBB + LAFB", "wide, slurred S in I and V6: S duration (ms)", ["I", "V6"].map((l) => l + " " + BF.L[l].sW).join(", "), "at least 40 ms (model's number, as for RBBB)", LBF + "; " + LR, ["I", "V6"].every((l) => BF.L[l].sW >= 40));
+check("RBBB + LAFB", "QRS axis (degrees)", f(BF.qrsAxis, 0), "left axis deviation (LAFB), -45 to -90", LBF + "; " + LAF, BF.qrsAxis <= -45 && BF.qrsAxis >= -90);
+check("RBBB + LAFB", "qR in aVL, rS in II, III and aVF", show(BF, ["aVL", "II", "III", "aVF"]), "as in LAFB", LBF + "; " + LAF, qR(BF, "aVL") && ["II", "III", "aVF"].every((l) => rS(BF, l)));
+check("RBBB + LAFB", "secondary T inversion V1 to V2: T (mV)", ["V1", "V2"].map((l) => f(BF.L[l].t)).join(", "), "inverted (as in RBBB)", LBF + "; " + LR + "; " + LT, ["V1", "V2"].every((l) => BF.L[l].t < -.05));
+for (const [c, x] of [["RBBB", RB], ["LBBB", LB], ["LAFB", LA], ["RBBB + LAFB", BF]]) check(c, "P and PR unchanged from Normal (ms)", x.pDur + " / " + x.pr, "same as Normal within 5 ms", K, Math.abs(x.pDur - N.pDur) <= 5 && Math.abs(x.pr - N.pr) <= 5);
 
 if (process.env.CRITERIA_OUT) {
   const md = ["| Condition | Criterion | Model value | Range | Source | Result |", "| --- | --- | --- | --- | --- | --- |"].concat(rows.map((r) => "| " + r.join(" | ") + " |"));
