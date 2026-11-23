@@ -30,16 +30,16 @@ const layout = await page.evaluate(() => { const E = window.ECGConduction, vis =
   const marks = () => [...document.querySelectorAll("[id^=ecgcWheelMark]")].filter((g) => g.isConnected && g.ownerSVGElement).map((g) => g.id + ":" + g.dataset.lead);
   o.def = { panels: vis().length, marks: marks(), gain: E.paper().pxPerMv };
   for (const n of [2, 3]) { E.setLeadCount(n); const p = E.paper(), cv = vis().map((w) => w.querySelector("canvas").getBoundingClientRect());
-    o[n] = { panels: vis().length, marks: marks(), gain: p.pxPerMv, square: Math.abs(p.pxPerMs * 400 - p.pxPerMv) < 1e-9, noOverlap: cv.every((r, i) => !i || r.top >= cv[i - 1].bottom), sh: document.documentElement.scrollHeight }; }
+    o[n] = { panels: vis().length, marks: marks(), gain: p.pxPerMv, square: Math.abs(p.pxPerMs * 400 - p.pxPerMv) < 1e-9, noOverlap: cv.every((r, i) => !i || r.top >= cv[i - 1].bottom), equal: cv.every((r) => Math.abs(r.height - cv[0].height) < .5), sh: document.documentElement.scrollHeight }; }
   E.setLeadCount(1);
   o.focusBtns = document.querySelectorAll(".ecgc-focus").length; o.options = document.querySelectorAll('select[data-slot="0"] option').length;
   o.speeds = [...document.querySelectorAll("#ecgcSpeed option")].map((x) => x.value); o.counts = [...document.querySelectorAll("#ecgcNLeads option")].map((x) => x.value);
   const st = document.querySelector(".ecgc-stage").children; o.order = [...st].map((n) => n.className.baseVal === undefined ? n.className.split(" ")[0] : n.getAttribute("class"));
   return o; });
-check("lead count 1, 2 or 3 (default 1): gain 100 px/mV with one lead, scaled down to fit more, paper stays square; one shaped, lettered marker per shown lead; dropdown moves it between wheels; speeds 0.01 to 1x",
+check("lead count 1, 2 or 3 (default 1): gain 100 px/mV with one lead, scaled down only to fit more, identical panels, paper stays square; one shaped, lettered marker per shown lead; dropdown moves it between wheels; speeds 0.01 to 1x",
   before.lead === "II" && before.wheel === "ecgcWheelF" && after.lead === "V1" && after.wheel === "ecgcWheelH" && layout.def.panels === 1 && layout.def.gain === 100 && layout.def.marks.length === 1 &&
   layout[2].panels === 2 && layout[3].panels === 3 && layout[2].marks.length === 2 && layout[3].marks.length === 3 && layout[2].gain < 100 && layout[3].gain <= layout[2].gain && layout[2].square && layout[3].square &&
-  layout[2].noOverlap && layout[3].noOverlap && layout[2].sh <= 800 && layout[3].sh <= 800 && layout.focusBtns === 0 && layout.options === 12 && layout.counts.join() === "1,2,3" &&
+  layout[2].noOverlap && layout[3].noOverlap && layout[2].equal && layout[3].equal && layout[3].gain >= 45 && layout[2].sh <= 800 && layout[3].sh <= 800 && layout.focusBtns === 0 && layout.options === 12 && layout.counts.join() === "1,2,3" &&
   layout.speeds.join() === "0.01,0.02,0.05,0.1,0.25,0.5,1", { before, after, layout });
 check("ECG panel(s) next to the heart, wheels on the far right", layout.order.indexOf("ecgc-heart") === 0 && layout.order.indexOf("ecgc-leads") === 1 && layout.order.indexOf("ecgc-wheels") === 2, layout.order);
 await page.selectOption('select[data-slot="0"]', "II");

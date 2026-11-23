@@ -47,16 +47,16 @@
 .ecgc-rule { font: 14px var(--font-sans); margin: 2px 4px 2px; color: var(--text); }
 .ecgc-rule-arrow { color: var(--ecgc-magenta); font-weight: 700; }
 
-.ecgc-leads { display: flex; flex-direction: column; gap: 5px; }
-.ecgc-lead { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3px 8px 3px; }
-.ecgc-lead-head { display: flex; align-items: center; gap: 8px; font: 600 14px var(--font-sans); }
-.ecgc-lead-head svg { width: 18px; height: 18px; flex: none; }
+.ecgc-leads { display: flex; flex-direction: column; gap: 4px; }
+.ecgc-lead { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 2px 7px 2px; }
+.ecgc-lead-head { display: flex; align-items: center; gap: 6px; font: 600 13px var(--font-sans); height: 20px; }
+.ecgc-lead-head svg { width: 15px; height: 15px; flex: none; }
 .ecgc-lead-note { margin-left: auto; font-weight: 400; color: var(--muted); font-size: 12px; }
 .ecgc-lead canvas { display: block; width: 100%; height: 384px; }
 .ecgc-leads[data-n="2"] .ecgc-lead canvas { height: 174px; }
 .ecgc-leads[data-n="3"] .ecgc-lead canvas { height: 104px; }
 .ecgc-lead[hidden] { display: none; }
-.ecgc-lead-head select { font-size: 13px; padding: 1px 4px; }
+.ecgc-lead-head select { font-size: 12px; padding: 0 2px; height: 19px; }
 
 .ecgc-timeline { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px 12px 6px; }
 .ecgc-time-head { display: flex; justify-content: space-between; align-items: baseline; }
@@ -104,7 +104,7 @@
 .k-rec { color: #4A5059; font-weight: 700; }
 .ecgc-focus { font: 600 12px var(--font-sans); padding: 1px 8px; border: 1px solid var(--text); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
 .ecgc-focus[aria-pressed="true"] { background: var(--text); color: var(--surface); }
-.ecgc-lead.is-focus { border: 2px solid var(--text); padding: 2px 7px 2px; }
+.ecgc-lead.is-focus { border: 2px solid var(--text); padding: 1px 6px 1px; }
 .ecgc-lead canvas { cursor: pointer; }
 .ecgc-lead-note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; text-align: right; }
 .ecgc-lead-head { flex-wrap: nowrap; white-space: nowrap; min-width: 0; }

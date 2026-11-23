@@ -1029,10 +1029,21 @@
   // Standard ECG paper: 25 mm/s and 10 mm/mV, so at 100 px/mV one 1 mm box is 10 px each way (40 ms by 0.1 mV).
   // The strip is a rhythm strip at 75 per minute: earlier beats to the left, the beat being explained drawn last.
   var PX_MS, STRIP_LEFT, TAG_BAND = 25;
+  // Panels share the full height of the heart column equally (identical canvases), so the shared gain is as large as fits.
+  function sizePanels() {
+    var fig = document.querySelector(".ecgc-heart"), H = fig ? fig.getBoundingClientRect().height : 0, n = state.nLeads, over = 0;
+    if (!H) return;
+    var gap = parseFloat(getComputedStyle(leadsBox).rowGap) || 0;
+    for (var i = 0; i < n; i++) over += panels[i].wrap.offsetHeight - panels[i].cv.offsetHeight;
+    var ch = Math.max(60, Math.floor((H - over - gap * (n - 1)) / n));
+    for (i = 0; i < n; i++) if (panels[i].cv.style.height !== ch + "px") panels[i].cv.style.height = ch + "px";
+  }
   function setGain(g) { GAIN = g; PX_MS = g / 10 / 40; STRIP_LEFT = Math.round(200 * PX_MS + 30); } // room for the 1 mV pulse (200 ms wide) and its label
   setGain(GAIN_MAX);
   // One gain for every shown panel, set by the shortest canvas so the tallest beat of any lead or condition fits.
   function fitGain() {
+    TAG_BAND = state.nLeads === 3 ? 14 : 25; // one row of bump tags with 3 leads
+    sizePanels();
     var hmin = Infinity; for (var i = 0; i < state.nLeads; i++) { var h = panels[i].cv.clientHeight; if (h) hmin = Math.min(hmin, h); }
     var g = hmin === Infinity ? GAIN_MAX : Math.min(GAIN_MAX, Math.floor((hmin - TAG_BAND - 6) / MAX_SPAN));
     if (g !== GAIN) setGain(g);
@@ -1121,7 +1132,7 @@
         var tag = b.name + (b.slow ? " \u00bb slow" : " \u25b6 fast");
         var tw = ctx.measureText(tag).width, px = X(b.peak);
         var tx0 = Math.max(left, Math.min(w - tw - 34, px - tw / 2));
-        var c0 = Math.max(tx0, rowEnd[0] + 6), c1 = Math.max(tx0, rowEnd[1] + 6), row = c0 <= c1 ? 0 : 1, tx = row ? c1 : c0;
+        var c0 = Math.max(tx0, rowEnd[0] + 6), c1 = Math.max(tx0, rowEnd[1] + 6), row = c0 <= c1 || state.nLeads === 3 ? 0 : 1, tx = row ? c1 : c0; // one row of tags with 3 leads
         rowEnd[row] = tx + tw;
         var ty = row ? 22 : 10;
         ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash(b.slow ? [2, 2] : []);
