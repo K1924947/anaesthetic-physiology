@@ -513,7 +513,11 @@
     return M;
   }
   ["normal", "rbbb", "lbbb"].forEach(function (c) { MODEL[c] = buildModel(c); });
-  function vectorAt(c, t) { var M = MODEL[c], i = Math.max(0, Math.min(CYCLE - 1, Math.round(t))); return { x: M.total.x[i], y: M.total.y[i], z: M.total.z[i] }; }
+  function vectorAt(c, t) {
+    // Linear between whole milliseconds, so the vector glides at very slow speeds (0.01x) instead of stepping.
+    var M = MODEL[c], u = Math.max(0, Math.min(CYCLE - 1, t)), i = Math.floor(u), j = Math.min(CYCLE - 1, i + 1), f = u - i, T = M.total;
+    return { x: T.x[i] + (T.x[j] - T.x[i]) * f, y: T.y[i] + (T.y[j] - T.y[i]) * f, z: T.z[i] + (T.z[j] - T.z[i]) * f };
+  }
 
   /* ---------- Trace samples (1 ms) ---------- */
   var SAMPLES = {};
@@ -890,7 +894,7 @@
     // recovery is happening now.
     M.pts.forEach(function (p, i) {
       var on = t >= p.ta ? (p.slow ? 2 : 1) : 0, n = myoNodes[i];
-      var op = on ? Math.round(Math.max(0, Math.min(1, (p.tr - t) / 8)) * 10) / 10 : 0, ro = Math.abs(t - p.tr) <= 6 ? 1 : 0;
+      var op = on ? Math.round(Math.max(0, Math.min(1, (p.tr - t) / 8)) * 50) / 50 : 0, dr = Math.abs(t - p.tr), ro = dr <= 6 ? 1 : dr < 7 ? Math.round((7 - dr) * 10) / 10 : 0;
       if (on !== n.on || op !== n.op) { n.dot.setAttribute("opacity", on === 1 ? op : 0); n.chev.setAttribute("opacity", on === 2 ? op : 0); n.on = on; n.op = op; }
       if (ro !== n.ro) { n.rec.setAttribute("opacity", ro); n.ro = ro; }
     });
@@ -1013,6 +1017,8 @@
     ctx.save(); ctx.translate(c0 - 7, (cb + ct) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText("1 mV", 0, 0); ctx.restore();
     ctx.save(); ctx.beginPath(); ctx.rect(0, top - 2, w, h - top + 2); ctx.clip();
     var cut = Math.max(0, Math.min(CYCLE - 1, Math.floor(t)));
+    // The pen sits between whole milliseconds (linear), so trace, dot and cursor move together at very slow speeds.
+    var tp = Math.max(0, Math.min(CYCLE - 1, t)), yp = data[cut] + ((data[Math.min(CYCLE - 1, cut + 1)] - data[cut]) * (tp - cut));
     ctx.lineJoin = "round";
     // Earlier beats of the strip (already recorded), then this beat: black up to the cursor, faint grey after it.
     ctx.strokeStyle = "#111"; ctx.lineWidth = 1.8;
@@ -1023,11 +1029,13 @@
     }
     ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 1.5;
     ctx.beginPath();
-    for (var k = cut; k < CYCLE; k++) { if (k === cut) ctx.moveTo(X(k), Y(data[k])); else ctx.lineTo(X(k), Y(data[k])); }
+    ctx.moveTo(X(tp), Y(yp));
+    for (var k = cut + 1; k < CYCLE; k++) ctx.lineTo(X(k), Y(data[k]));
     ctx.stroke();
     ctx.strokeStyle = "#111"; ctx.lineWidth = 1.8;
     ctx.beginPath();
     for (k = 0; k <= cut; k++) { if (k === 0) ctx.moveTo(X(k), Y(data[k])); else ctx.lineTo(X(k), Y(data[k])); }
+    ctx.lineTo(X(tp), Y(yp));
     ctx.stroke();
     ctx.restore();
     var link = null;
@@ -1041,6 +1049,7 @@
         ctx.strokeStyle = col; ctx.lineWidth = 2.6; ctx.setLineDash(b.slow ? [4, 2] : []);
         ctx.beginPath();
         for (var t2 = b.start; t2 <= e; t2++) { if (t2 === b.start) ctx.moveTo(X(t2), Y(data[t2])); else ctx.lineTo(X(t2), Y(data[t2])); }
+        if (tp < b.end && tp > e) ctx.lineTo(X(tp), Y(yp));
         ctx.stroke(); ctx.setLineDash([]);
         // Tag in the band above the trace (two staggered rows), with a thin leader down to the bump's peak.
         var tag = b.name + (b.slow ? " \u00bb slow" : " \u25b6 fast");
@@ -1064,7 +1073,7 @@
     ctx.strokeStyle = "#4E5968"; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(X(t), 0); ctx.lineTo(X(t), h); ctx.stroke();
     ctx.fillStyle = "#4E5968";
-    ctx.beginPath(); ctx.arc(X(t), Y(data[cut]), 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(X(t), Y(yp), 3.5, 0, Math.PI * 2); ctx.fill();
     // "P" and "T" above each wave, at its largest deflection in this lead (above the baseline when the wave is inverted).
     ctx.font = "700 12px 'Source Sans 3', sans-serif"; ctx.textAlign = "center";
     [["P", segP], ["T", segT]].forEach(function (wv) {

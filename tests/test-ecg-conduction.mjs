@@ -145,6 +145,22 @@ check("T peak within 10 ms of the middle of recovery (all 3 conditions)", ["norm
 check("heart: all muscle lit through ST, a recovery front shown mid-T, all back to grey after T",
   rep.shown.st.lit === rep.shown.st.total && rep.shown.st.front === 0 && rep.shown.mid.front > 10 && rep.shown.mid.lit > 0 && rep.shown.mid.lit < rep.shown.mid.total && rep.shown.after.lit === 0, rep.shown);
 
+// Round 12: 0.01x speed, smooth at sub-millisecond steps (no rounding of the clock, pen between whole ms).
+const slow = await page.evaluate(async () => {
+  const E = window.ECGConduction, sel = document.getElementById("ecgcSpeed");
+  const hasOpt = [...sel.options].some((o) => o.value === "0.01");
+  const snap = () => { const cv = document.querySelector(".ecgc-panel canvas, canvas"); return cv.toDataURL(); };
+  E.setCondition("normal"); E.setTime(300); const a = snap(); E.setTime(300.5); const b = snap();
+  sel.value = "0.01"; sel.dispatchEvent(new Event("change"));
+  E.setTime(200); document.getElementById("ecgcPlay").click();
+  const ts = []; await new Promise((res) => { const f = () => { ts.push(E.state.t); ts.length < 90 ? requestAnimationFrame(f) : res(); }; requestAnimationFrame(f); });
+  document.getElementById("ecgcPlay").click(); sel.value = "0.25"; sel.dispatchEvent(new Event("change"));
+  const d = ts.slice(1).map((t, i) => t - ts[i]);
+  return { hasOpt, subMsMoves: a !== b, maxStep: Math.max(...d), minStep: Math.min(...d), adv: ts[ts.length - 1] - ts[0], frac: ts.some((t) => t % 1) };
+});
+check("0.01x speed: option present, clock advances in small sub-ms steps, trace moves between whole ms",
+  slow.hasOpt && slow.subMsMoves && slow.minStep >= 0 && slow.maxStep < 1.01 && slow.adv > 5 && slow.adv < 30 && slow.frac, slow);
+
 if (SHOT) {
   await page.evaluate(() => window.ECGConduction.setTime(232));
   await page.mouse.move(5, 5);
