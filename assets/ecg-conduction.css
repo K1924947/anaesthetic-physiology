@@ -97,6 +97,7 @@
 .ecgc-key li { margin-top: 4px; }
 .k-fast { color: var(--ecgc-blue); font-weight: 700; }
 .k-slow { color: var(--ecgc-orange); font-weight: 700; font-size: 14px; }
+.k-rec { color: #4A5059; font-weight: 700; }
 .ecgc-focus { font: 600 12px var(--font-sans); padding: 1px 8px; border: 1px solid var(--text); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
 .ecgc-focus[aria-pressed="true"] { background: var(--text); color: var(--surface); }
 .ecgc-lead.is-focus { border: 2px solid var(--text); padding: 2px 7px 2px; }

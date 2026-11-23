@@ -323,7 +323,27 @@
       GRID.push({ x: x, y: y, g: g });
     }
   })();
-  // How far a wavefront travels through muscle before we call it "slow cell to cell" rather than "fast route then through the wall".
+  // Depth through the wall for each point: 0 at the endocardium (cavity side), 1 at the epicardium (outer surface).
+  (function () {
+    var epi = [], endo = [];
+    for (var y = 120; y <= 432; y += 3) for (var x = 96; x <= 466; x += 3) {
+      var pt = new DOMPoint(x, y);
+      if (!silPath.isPointInFill(pt)) { if (y > groove(x) + 2) epi.push([x, y]); continue; }
+      for (var k = 0; k < cavityNodes.length; k++) if (cavityNodes[k].isPointInFill(pt)) { endo.push([x, y]); break; }
+    }
+    GRID.forEach(function (g) {
+      var de = Infinity, dn = Infinity;
+      epi.forEach(function (q) { var d = Math.hypot(q[0] - g.x, q[1] - g.y); if (d < de) de = d; });
+      endo.forEach(function (q) { var d = Math.hypot(q[0] - g.x, q[1] - g.y); if (d < dn) dn = d; });
+      g.depth = dn / Math.max(1, dn + de);
+    });
+  })();
+  // Recovery (repolarisation) map, a teaching picture: recovery time = activation time + local action potential
+  // duration (APD). APD belongs to the place, not the condition: it is shorter at the epicardium (Klabunde; Franz 1987:
+  // epicardium recovers about 6% of QT, roughly 25 ms, before the endocardium) and shorter where normal activation is
+  // later (Franz 1987: slope -1.32). In a bundle branch block the APDs stay put but activation changes, so recovery
+  // follows the abnormal activation: the secondary T wave change.
+  var APD_EPI = 25, APD_SLOPE = 1.32;
 
   // The activation map is a visual timing guide only (dots, chevrons, bump-to-heart links, story moments).
   // Its times are re-mapped onto the idealised vector's timeline, so the picture and the traces line up.
@@ -459,6 +479,35 @@
       V.forEach(function (k) { if (!k[5] || regs.indexOf(k[5]) < 0 || (slow !== undefined && !!k[6] !== slow)) return; var m = Math.hypot(k[2], k[3], k[4]); if (m > bm) { bm = m; best = k[0]; } });
       return best === null ? qon : best;
     };
+    // Recovery: order from activation time + APD; timed (bell-shaped, like activation) onto the T component, so the
+    // middle of recovery falls at the T peak. ST stays fully depolarised.
+    var TK = V.filter(function (k) { return !k[5]; }).sort(function (a, b) { return b[0] - a[0]; })[0];
+    var ref = c === "normal" ? pts : MODEL.normal.pts, t0 = Infinity;
+    ref.forEach(function (p) { t0 = Math.min(t0, p.ta); });
+    pts.forEach(function (p, i) { p.depth = GRID[i].depth; p.apd = -APD_SLOPE * (ref[i].ta - t0) - APD_EPI * p.depth; p.tr0 = p.ta + p.apd; });
+    (function () {
+      var arr = pts.slice().sort(function (a, b) { return a.tr0 - b.tr0; }), n = arr.length, z0 = 1.6, lo = normCdf(-z0), hi = normCdf(z0);
+      arr.forEach(function (p, r) { p.tr = Math.max(tS + 2, Math.min(tE - 2, TK[0] + TK[1] * normInv(lo + (r + .5) / n * (hi - lo)))); });
+    })();
+    // Direction the recovery front travels at each point (gradient of recovery time over neighbours).
+    pts.forEach(function (p) {
+      var gx = 0, gy = 0, sxx = 0, syy = 0, sxy = 0;
+      pts.forEach(function (q) {
+        var dx = q.x - p.x, dy = q.y - p.y; if (q === p || dx * dx + dy * dy > 2.3 * SPACING * SPACING) return;
+        var dt = q.tr - p.tr; gx += dx * dt; gy += dy * dt; sxx += dx * dx; syy += dy * dy; sxy += dx * dy;
+      });
+      var det = sxx * syy - sxy * sxy, ax = det ? (syy * gx - sxy * gy) / det : 0, ay = det ? (sxx * gy - sxy * gx) / det : 0, m = Math.hypot(ax, ay) || 1;
+      p.rd = [ax / m, ay / m]; p.rg = [ax, ay];
+    });
+    var trs = pts.map(function (p) { return p.tr; }).sort(function (a, b) { return a - b; });
+    M.rec = { first: trs[0], median: trs[trs.length >> 1], last: trs[trs.length - 1] };
+    // Recovery dipole in the picture plane (x right = patient's left, y down = inferior): points towards the muscle
+    // that recovers early, opposite to the way the recovery front travels.
+    M.recDipole = (function () {
+      var cx = 0, cy = 0, mt = 0; pts.forEach(function (p) { cx += p.x; cy += p.y; mt += p.tr; }); cx /= pts.length; cy /= pts.length; mt /= pts.length;
+      var dx = 0, dy = 0; pts.forEach(function (p) { dx += (p.x - cx) * (mt - p.tr); dy += (p.y - cy) * (mt - p.tr); });
+      return { x: dx, y: dy };
+    })();
     M.ev = { his: HIS_START, hisEnd: Math.round(path.his[0] + path.his[1]), qon: qon, qend: qend, tS: tS, tE: tE, q1: C.ev[0], q2: C.ev[1], q1a: C.ev[2] || C.ev[0] };
     return M;
   }
@@ -659,17 +708,24 @@
   }
 
   /* ---------- Muscle points on the heart ---------- */
-  var myoNodes = GRID.map(function (g) {
+  // Recovery front: short thin grey dashes across the front, small arrowheads (every third point) in its direction of travel.
+  var REC_C = "#4A5059", gRec = el("g", { "aria-hidden": "true", "pointer-events": "none" });
+  gPaths.parentNode.insertBefore(gRec, gPaths.nextSibling);
+  var myoNodes = GRID.map(function (g, i) {
     var dot = el("circle", { cx: g.x, cy: g.y, r: 1.7, fill: BLUE, opacity: 0 }, gMyo);
     var chev = el("path", { d: "M-2.5,-3 L1.5,0 L-2.5,3", fill: "none", stroke: ORANGE, "stroke-width": 1.6, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0 }, gMyo);
-    return { dot: dot, chev: chev, on: -1 };
+    var arrowed = ((g.x / SPACING | 0) + (g.y / SPACING | 0)) % 2 === 0;
+    var rec = el("path", { d: "M0,-3.2 L0,3.2" + (arrowed ? " M1.6,-2.4 L4.2,0 L1.6,2.4" : ""), fill: "none", stroke: REC_C, "stroke-width": 1.5, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0 }, gRec);
+    return { dot: dot, chev: chev, rec: rec, on: -1, ro: -1, op: -1 };
   });
   function layoutMyo() {
     var M = MODEL[state.cond];
     M.pts.forEach(function (p, i) {
       var a = Math.atan2(p.d2[1], p.d2[0]) * 180 / Math.PI;
       myoNodes[i].chev.setAttribute("transform", "translate(" + p.x + "," + p.y + ") rotate(" + a.toFixed(0) + ")");
-      myoNodes[i].on = -1;
+      var ra = Math.atan2(p.rd[1], p.rd[0]) * 180 / Math.PI;
+      myoNodes[i].rec.setAttribute("transform", "translate(" + p.x + "," + p.y + ") rotate(" + ra.toFixed(0) + ")");
+      myoNodes[i].on = -1; myoNodes[i].ro = -1; myoNodes[i].op = -1;
     });
   }
 
@@ -829,11 +885,14 @@
       n.s1.setAttribute("offset", f); n.s2.setAttribute("offset", Math.min(1, f + 0.05));
       n.over.setAttribute("opacity", f > 0 ? atrFade : 0);
     });
+    // Each point stays lit through ST and fades back to grey at its own recovery time; the front is drawn where
+    // recovery is happening now.
     M.pts.forEach(function (p, i) {
       var on = t >= p.ta ? (p.slow ? 2 : 1) : 0, n = myoNodes[i];
-      if (on !== n.on) { n.dot.setAttribute("opacity", on === 1 ? 1 : 0); n.chev.setAttribute("opacity", on === 2 ? 1 : 0); n.on = on; }
+      var op = on ? Math.round(Math.max(0, Math.min(1, (p.tr - t) / 8)) * 10) / 10 : 0, ro = Math.abs(t - p.tr) <= 5 ? 1 : 0;
+      if (on !== n.on || op !== n.op) { n.dot.setAttribute("opacity", on === 1 ? op : 0); n.chev.setAttribute("opacity", on === 2 ? op : 0); n.on = on; n.op = op; }
+      if (ro !== n.ro) { n.rec.setAttribute("opacity", ro); n.ro = ro; }
     });
-    gMyo.setAttribute("opacity", ventFade.toFixed(2));
     Object.keys(pathNodes).forEach(function (p) {
       var n = pathNodes[p], f = prog(c.path[p], t), isBlock = c.blockAt === p, unused = !c.path[p] && !isBlock;
       var fade = ATRIAL[p] ? (p === "avn" ? ventFade : atrFade) : ventFade;
@@ -1061,7 +1120,7 @@
       ["qend", "tS", "Plateau: no current flows", "All ventricular muscle is depolarised.",
         "Every cell sits in its plateau phase at a similar voltage, so no current flows between regions."],
       ["tS", "tE", "Repolarisation", "Ventricular muscle, recovering from the outside (epicardium) in.",
-        "Shorter epicardial action potentials make recovery run outside to inside. Reversed charge and direction cancel, so T usually points the same way as the main QRS (normally inverted in aVR, often in V1)."]
+        "Epicardial action potentials are shorter, so recovery runs outside in (grey dashed front). Reversed charge and direction cancel: T usually matches the main QRS (inverted in aVR, often V1)."]
     ],
     rbbb: [
       ["hisEnd", "qon", "Right bundle blocked", "His bundle, then only the left bundle branch. The right bundle is blocked (X).",
@@ -1076,7 +1135,7 @@
       ["qend", "tS", "Plateau", "All ventricular muscle is depolarised.",
         "Every cell sits in its plateau phase, so little current flows.", "Secondary ST depression in V1 to V3 is typical (appropriate discordance)."],
       ["tS", "tE", "Repolarisation, out of order", "Ventricular muscle, recovering.",
-        "Muscle activated late and out of order also recovers out of order: a secondary change.", "Secondary T inversion in V1 to V3 is typical (appropriate discordance)."]
+        "The RV, activated last, also recovers last (grey dashed front): a secondary change.", "Secondary T inversion in V1 to V3 is typical (appropriate discordance)."]
     ],
     lbbb: [
       ["hisEnd", "qon", "Left bundle blocked", "His bundle, then only the right bundle branch. The left bundle is blocked (X).",
@@ -1097,7 +1156,7 @@
         "Abnormal activation means abnormal recovery: a secondary change.",
         "ST shifts opposite to the main QRS (appropriate discordance): raised in V1 to V3, depressed in I, aVL, V5 and V6."],
       ["tS", "tE", "Repolarisation, discordant", "Ventricular muscle, recovering.",
-        "Recovery follows the abnormal activation order.", "T points opposite to the main QRS (discordant): the expected secondary pattern in LBBB."]
+        "Recovery follows the abnormal activation (grey dashed front): RV and septum first, lateral LV wall last.", "T points opposite to the main QRS (discordant): the expected secondary pattern in LBBB."]
     ]
   };
   var LOOKS = {
@@ -1117,7 +1176,7 @@
     if (mag < .03) return head + "No wavefront is big enough to see, so the trace stays on the baseline.";
     var what = isT ? "The T vector (net direction of the recovery currents)" : "The net wavefront";
     if (Math.abs(p) < .3 * mag) return head + what + " runs nearly at right angles to " + L + ", so it barely moves the trace.";
-    var tail = isT && c === "normal" ? " The recovery wave itself travels the other way, epicardium to endocardium." : "";
+    var tail = isT ? (c === "normal" ? " The recovery wave travels the other way, epicardium to endocardium." : "") : "";
     return head + what + " points " + (p > 0 ? "towards " + L + ", so the trace goes up." : "away from " + L + ", so the trace goes down.") + tail;
   }
   function traceLine(c, L, t) {
@@ -1294,6 +1353,8 @@
       });
       return o;
     },
+    recovery: function (c) { var M = MODEL[c]; return { first: M.rec.first, median: M.rec.median, last: M.rec.last, dipole: { x: M.recDipole.x, y: M.recDipole.y }, tS: M.tS, tE: M.tE }; },
+    recoveryShown: function () { var lit = 0, front = 0; myoNodes.forEach(function (n) { if (+n.dot.getAttribute("opacity") > 0 || +n.chev.getAttribute("opacity") > 0) lit++; if (n.rec.getAttribute("opacity") === "1") front++; }); return { lit: lit, front: front, total: myoNodes.length }; },
     activationGap: function (c) { var a = MODEL[c].pts.map(function (p) { return p.ta; }).sort(function (x, y) { return x - y; }), g = 0; for (var i = 1; i < a.length; i++) g = Math.max(g, a[i] - a[i - 1]); return g; },
     model: function (c) { var M = MODEL[c]; return { qon: M.qon, qend: M.qend, fracSlow: M.fracSlow, points: M.pts.length, slowPoints: M.pts.filter(function (p) { return p.slow; }).length }; },
     qrsWidth: function () { var q = seg(state.cond, "QRS"); return q[2] - q[1]; }

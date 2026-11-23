@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261118">
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261122g">
+<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123a">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -78,6 +78,7 @@
         <ul class="ecgc-key" aria-label="Key">
           <li><span class="k-fast" aria-hidden="true">&#9654;</span> Fast route: bundles and Purkinje fibres (blue, solid)</li>
           <li><span class="k-slow" aria-hidden="true">&raquo;</span> Slow route: cell to cell (orange, chevrons)</li>
+          <li><span class="k-rec" aria-hidden="true">&#8942;&rsaquo;</span> Recovery front (grey, dashed)</li>
         </ul>
       </figure>
 
@@ -112,7 +113,8 @@
           <li>The ECG comes from one smoothed, idealised heart vector per condition (a few hand-set components, each with a time, width and direction, tagged with the muscle region that makes it and whether that region is reached by the fast route or slowly, cell to cell). Every lead trace is the projection of that one vector on the lead's axis (a single dipole), so polarity always matches the arrow. Shapes are chosen to reproduce the textbook patterns in Hampton and LITFL; they are not recordings, and real ECGs also contain non-dipole and electrode-proximity effects. Chest leads share one gain.</li>
           <li>Timings: PR 160 ms in all three conditions; QRS 85 ms normal, 130 ms RBBB, 140 ms LBBB (readout), with ST and T placed after them. Idealised values for one beat at 75 per minute, checked against Klabunde's sequence.</li>
           <li>The atria are not mapped: the P wave is two hand-set components (right then left atrium), set so V1 is biphasic with a negative half no bigger than the positive half (not a left atrial enlargement pattern).</li>
-          <li>ST and T are hand-set components: T usually the same way as the main QRS in normal conduction (epicardium recovers first; inverted in aVR, slightly negative in V1 here); secondary, discordant ST/T in LBBB, and secondary ST depression and T inversion in V1 to V3 in RBBB. Typical patterns; individual patients vary. Recovery is not animated on the heart: the muscle simply fades back to grey during the T wave.</li>
+          <li>ST and T are hand-set components: T usually the same way as the main QRS in normal conduction (epicardium recovers first; inverted in aVR, slightly negative in V1 here); secondary, discordant ST/T in LBBB, and secondary ST depression and T inversion in V1 to V3 in RBBB. Typical patterns; individual patients vary. </li>
+          <li>Recovery on the heart (a simplified teaching picture): each point's recovery time is its activation time plus a local action potential duration that belongs to the place, not the condition: shorter at the epicardium (about 25 ms, from Franz 1987: epicardium about 6% of QT earlier) and shorter where normal activation is later (slope 1.32, Franz 1987). In the blocks those durations stay put but activation changes, so recovery follows the abnormal order. Depth through the wall comes from the flat drawing. Recovery times are then spread over the hand-set T wave so the middle of recovery falls at the T peak; the map does not make the T wave. A test checks that the map's recovery dipole (towards the muscle that recovers first, in the plane of the picture) gives the same T polarity as the trace in the limb leads; chest-lead polarity cannot be checked from a flat picture.</li>
           <li>The dots, chevrons and arrowheads on the heart come from a flat activation-time map (bundle branches about 2 m/s and Purkinje fibres about 4 m/s from Klabunde; muscle 0.3 to 0.5 m/s from Guyton and Hall), used only as a picture. Fast routes run at these speeds and take the same time in every condition; only blocked and slow routes differ. Each muscle region's activation order is kept but re-timed to the vector component it makes (most muscle lights at the component's peak), so the picture lines up with the trace; the map does not change the traces. In RBBB the slow front starts from the septum as soon as it is depolarised, and the LV base keeps its normal timing; in LBBB the lateral wall lights with the 2nd R. Only muscle reached cell to cell because of a block is drawn slow (orange chevrons); the short hop from Purkinje fibres through the normal wall is drawn as part of the fast network. In LBBB the right-side edge of the septum, next to the right bundle, is drawn fast; that edge is a hand-set choice.</li>
           <li>Bump labels: each QRS deflection of the focus lead is split at clear notches and credited to the vector components whose projection on that lead has the bump's sign (up to three, in the order they are activated, for example LBBB V1 "septum, then LV apex, then LV lateral wall"); the region named is the one tagged on that component. A teaching attribution, not a measured one.</li>
           <li>Conduction routes are drawn in or along the walls: SA node at the SVC junction; internodal routes and Bachmann's bundle in the atrial walls and interatrial septum; AV node low in the interatrial septum near the coronary sinus; His bundle through the fibrous ring; right bundle under the endocardium of the RV septal surface, then the moderator band (the one route that crosses a cavity) to the anterior RV free wall; left bundle and posterior fascicle along the LV septal surface towards the posteromedial papillary muscle (papillary muscles are not drawn); Purkinje fibres along the endocardium. The anterior fascicle runs on the front wall, out of this slice, so it is shown as a stub with an out-of-plane marker; its Purkinje fibres reappear on the lateral wall. Positions are schematic.</li>
@@ -128,6 +130,7 @@
           <li>Klabunde RE. CV Physiology Concepts: <a href="https://cvphysiology.com/arrhythmias/a003" target="_blank" rel="noopener">conduction system</a> and <a href="https://cvphysiology.com/arrhythmias/a009" target="_blank" rel="noopener">the ECG</a>.</li>
           <li>Life in the Fast Lane (LITFL): <a href="https://litfl.com/right-bundle-branch-block-rbbb-ecg-library/" target="_blank" rel="noopener">RBBB</a>, <a href="https://litfl.com/left-bundle-branch-block-lbbb-ecg-library/" target="_blank" rel="noopener">LBBB</a>, <a href="https://litfl.com/p-wave-ecg-library/" target="_blank" rel="noopener">P wave</a> and <a href="https://litfl.com/t-wave-ecg-library/" target="_blank" rel="noopener">T wave</a> ECG library.</li>
           <li>Hampton J, Hampton J. <cite>The ECG Made Easy</cite>, 9th ed. Elsevier, 2019 (chapter 3, Conduction and its problems).</li>
+          <li>Franz MR, Bargheer K, Rafflenbeul W, Haverich A, Lichtlen PR. <a href="https://www.ahajournals.org/doi/10.1161/01.CIR.75.2.379" target="_blank" rel="noopener">Monophasic action potential mapping in human subjects with normal electrocardiograms: direct evidence for the genesis of the T wave</a>. <cite>Circulation</cite> 1987;75:379-386.</li>
           <li>Hall JE. <cite>Guyton and Hall Textbook of Medical Physiology</cite>, 12th ed. Saunders Elsevier, 2011 (chapters 9 and 10: conduction speeds, including ventricular muscle 0.3 to 0.5 m/s).</li>
         </ul>
       </details>
@@ -143,6 +146,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-conduction.js?v=20261122g"></script>
+<script src="assets/ecg-conduction.js?v=20261123a"></script>
 </body>
 </html>

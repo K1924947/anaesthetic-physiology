@@ -120,6 +120,26 @@ check("LBBB septum crossing is mostly slow; RBBB slow front is continuous; unaff
 check("LBBB steps include the slow crawl through the LV wall, and V1 QS credits the septum first", anim.lbTitles.some((t) => /Slow crawl through the LV wall/.test(t)) &&
   anim.lbTitles.some((t) => /Slow crawl across the septum/.test(t)) && /septum, then/.test(anim.v1), { titles: anim.lbTitles, v1: anim.v1 });
 
+// Round 9: repolarisation (recovery) map.
+const rep = await page.evaluate(() => { const E = window.ECGConduction, o = {}, AX = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150 };
+  for (const c of ["normal", "rbbb", "lbbb"]) { const r = E.recovery(c), T = {}, agree = [];
+    for (const L of ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]) { let big = 0, tp = 0; for (let t = r.tS; t <= r.tE; t++) { const v = E.sample(c, L, t); if (Math.abs(v) > Math.abs(big)) { big = v; tp = t; } } T[L] = { v: big, tp }; }
+    for (const L of Object.keys(AX)) if (Math.abs(T[L].v) >= .15) { const a = AX[L] * Math.PI / 180, p = r.dipole.x * Math.cos(a) + r.dipole.y * Math.sin(a); agree.push([L, Math.sign(p) === Math.sign(T[L].v)]); }
+    o[c] = { T, agree, rec: r, peakII: T.II.tp, peakMax: Object.values(T).sort((x, y) => Math.abs(y.v) - Math.abs(x.v))[0].tp }; }
+  E.setCondition("normal"); E.setTime(300); const st = E.recoveryShown(); E.setTime(435); const mid = E.recoveryShown(); E.setTime(560); const after = E.recoveryShown();
+  o.shown = { st, mid, after }; return o; });
+const sg = (c, L) => Math.sign(rep[c].T[L].v) * (Math.abs(rep[c].T[L].v) >= .05 ? 1 : 0);
+check("T polarity: Normal I, II, V5, V6 up, aVR down, V1 flat or negative; RBBB V1 to V3 inverted; LBBB I, aVL, V5, V6 inverted, V1 to V3 upright",
+  ["I", "II", "V5", "V6"].every((L) => sg("normal", L) > 0) && sg("normal", "aVR") < 0 && rep.normal.T.V1.v <= .05 &&
+  ["V1", "V2", "V3"].every((L) => sg("rbbb", L) < 0) && ["I", "aVL", "V5", "V6"].every((L) => sg("lbbb", L) < 0) && ["V1", "V2", "V3"].every((L) => sg("lbbb", L) > 0),
+  Object.fromEntries(["normal", "rbbb", "lbbb"].map((c) => [c, Object.fromEntries(Object.entries(rep[c].T).map(([L, x]) => [L, +x.v.toFixed(2)]))])));
+check("recovery map dipole gives the same T polarity as the trace in every limb lead with a clear T (all 3 conditions)",
+  ["normal", "rbbb", "lbbb"].every((c) => rep[c].agree.length >= 3 && rep[c].agree.every((x) => x[1])), Object.fromEntries(["normal", "rbbb", "lbbb"].map((c) => [c, rep[c].agree])));
+check("T peak within 10 ms of the middle of recovery (all 3 conditions)", ["normal", "rbbb", "lbbb"].every((c) => Math.abs(rep[c].peakMax - rep[c].rec.median) <= 10),
+  Object.fromEntries(["normal", "rbbb", "lbbb"].map((c) => [c, [rep[c].peakMax, Math.round(rep[c].rec.median)]])));
+check("heart: all muscle lit through ST, a recovery front shown mid-T, all back to grey after T",
+  rep.shown.st.lit === rep.shown.st.total && rep.shown.st.front === 0 && rep.shown.mid.front > 10 && rep.shown.mid.lit > 0 && rep.shown.mid.lit < rep.shown.mid.total && rep.shown.after.lit === 0, rep.shown);
+
 if (SHOT) {
   await page.evaluate(() => window.ECGConduction.setTime(232));
   await page.mouse.move(5, 5);
