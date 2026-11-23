@@ -1311,6 +1311,133 @@
   ];
   var N_HIS_DIFF = { lafb: "Same as normal so far: the block is further down, in the anterior fascicle of the left bundle.",
     bifasc: "Same as normal so far: the blocks are further down, in the right bundle and the left anterior fascicle." };
+  // Teaching content (Steps 'Why' lines, Key points, Clinical, Pitfalls, Quiz). Sources only from the page's reference set:
+  // Klabunde (cvphysiology a009), LITFL RBBB, LBBB, LAFB and bifascicular block pages, Guyton & Hall (ch. 10), Franz 1987.
+  // Each Why line is keyed by the moment's start event; a condition's own line wins over the shared ("*") one.
+  var WHY = {
+    "*": { 0: "Pacemaker cells have no steady resting potential: they drift up to threshold by themselves, so the SA node sets the rate (Guyton & Hall).",
+      12: "The P wave is atrial depolarisation spreading out from the SA node; it usually lasts 80 to 100 ms (Klabunde).",
+      100: "PR runs from the start of atrial to the start of ventricular depolarisation: normally 120 to 200 ms; over 200 ms is first-degree block (Klabunde).",
+      his: "The fibrous ring insulates atria from ventricles, so in sinus rhythm every beat must pass through the AV node and His bundle (Guyton & Hall).",
+      rest: "Every cell is back at its resting potential, so no current flows and the trace stays flat until the next P wave (Klabunde)." },
+    normal: { hisEnd: "Bundle branches and Purkinje fibres conduct many times faster than muscle, so a large mass depolarises quickly: QRS 60 to 100 ms (Klabunde; Guyton & Hall).",
+      qon: "Septal activation runs left to right, the opposite way to the main wave, which gives small q waves in the lateral leads (LITFL).",
+      q1: "The QRS is short despite the large ventricular mass because the fast network reaches most muscle almost at once (Klabunde).",
+      q2: "Activation still uses the fast network to the end, so the whole QRS stays inside 100 ms (Klabunde).",
+      qend: "ST matches the plateau of the ventricular action potential, when all cells are depolarised: that is why ischaemia shows here (Klabunde).",
+      tS: "Subepicardial cells fire last but have shorter action potentials, so recover first; recovery moving away from a lead gives a positive T (Klabunde)." },
+    rbbb: { hisEnd: "With no fast route into the right ventricle, it can only be reached across the septum from the left (LITFL).",
+      qon: "The septum is still activated from the left bundle, so the start of the QRS is unchanged (LITFL).",
+      q1: "Left ventricular activation is normal, so the axis stays normal in isolated RBBB (LITFL).",
+      q2: "The late right ventricular front is unopposed: it gives R' in V1 to V3 and a wide, slurred S in the lateral leads (LITFL).",
+      qend: "Abnormal depolarisation is followed by abnormal repolarisation: ST depression in V1 to V3 (appropriate discordance, LITFL).",
+      tS: "Recovery follows the late right ventricular activation, so T inverts in V1 to V3: appropriate discordance, not ischaemia by itself (LITFL)." },
+    lbbb: { hisEnd: "Impulses travel first down the right bundle to the right ventricle, then to the left ventricle through the septum (LITFL).",
+      qon: "Septal activation is reversed, right to left, which removes the small lateral q waves (LITFL).",
+      q1a: "Without the left Purkinje network the impulse crawls through muscle, so the left ventricle is reached late (LITFL; Klabunde).",
+      q1: "The delayed overall conduction time to the left ventricle extends the QRS to 120 ms or more (LITFL).",
+      q2: "The delay between right and left ventricular activation gives the M-shaped R in the lateral leads (LITFL).",
+      qend: "Leads with deep S waves may show some ST elevation (generally under 25% of the S wave) without ischaemia; concordant change is concerning (LITFL).",
+      tS: "Lateral leads with tall, broad R waves often show ST depression and T inversion: the expected, discordant pattern (LITFL)." },
+    lafb: { hisEnd: "The posterior fascicle inserts into the inferoseptal LV wall on its endocardial surface, so the LV is entered from below (LITFL).",
+      qon: "Spread runs endocardium to epicardium from that inferior entry, so the first vector heads down and right: small q in I and aVL (LITFL).",
+      q1: "The main wave is slightly delayed and spreads up and left: tall R in I and aVL, deep S in II, III and aVF (LITFL).",
+      q2: "The overall delay is only about 20 ms against both fascicles working, so the QRS widens only slightly (LITFL).",
+      qend: "As in normal conduction, ST matches the plateau, when all ventricular cells are depolarised (Klabunde).",
+      tS: "T is longer than the QRS because recovery spreads cell to cell, without the fast bundle branch and Purkinje system (Klabunde)." },
+    bifasc: { hisEnd: "Conduction to the ventricles now depends on the single remaining fascicle, here the left posterior fascicle (LITFL).",
+      qon: "The left bundle still activates the septum, and the posterior fascicle enters the LV from below, as in LAFB (LITFL).",
+      q1: "As in LAFB, the main left ventricular wave spreads up and left, giving the left axis deviation (LITFL).",
+      q2: "As in RBBB, the right ventricle is reached late across the septum, giving R' in V1 and a slurred lateral S (LITFL).",
+      qend: "Abnormal depolarisation is followed by abnormal repolarisation: ST depression in V1 to V3, as in RBBB (LITFL).",
+      tS: "RBBB + LAFB is the commoner bifascicular pattern because the anterior fascicle has a single blood supply, from the LAD (LITFL)." }
+  };
+  function whyFor(c, from) { var w = WHY[c] && WHY[c][from]; return w || WHY["*"][from] || ""; }
+  // [what to look for, why it happens, source]
+  var TEACH = {
+    normal: {
+      key: [["PR 120 to 200 ms", "the AV node delays the impulse before the ventricles", "Klabunde"],
+        ["QRS 60 to 100 ms", "the fast bundle branch and Purkinje network reaches most muscle almost at once", "Klabunde"],
+        ["Small q in I, aVL, V5, V6", "the septum depolarises left to right", "LITFL"],
+        ["T upright in most leads", "the epicardium recovers first, so recovery runs the other way", "Klabunde; Franz 1987"],
+        ["QTc 440 ms or less", "QT roughly estimates an average ventricular action potential", "Klabunde"]],
+      clin: [["When it matters", "PR over 200 ms is first-degree heart block.", "Klabunde"],
+        ["When it matters", "A prolonged QT can show susceptibility to certain tachyarrhythmias, so QTc is worth measuring.", "Klabunde"],
+        ["When it matters", "ST depression or elevation can mean ventricular ischaemia or hypoxia.", "Klabunde"]],
+      pit: [["Incomplete RBBB (RSR' in V1 to V3, QRS under 120 ms) is a normal variant, common in children.", "LITFL"],
+        ["Small septal q waves in the lateral leads are normal, not a sign of infarction.", "LITFL"],
+        ["QT shortens as heart rate rises: correct it (QTc) before calling it long.", "Klabunde"]],
+      quiz: [["Repolarisation is the opposite charge change to depolarisation. Why is T still upright in II?", "Recovery also runs the opposite way (epicardium first, shorter action potentials), so the two reversals cancel.", "Klabunde"],
+        ["What is the normal QRS duration, and why is it so short?", "60 to 100 ms: the fast network depolarises the large ventricular mass almost at once.", "Klabunde"]]
+    },
+    rbbb: {
+      key: [["QRS over 120 ms", "the right ventricle is reached slowly, through muscle", "LITFL"],
+        ["RSR' (M shape) in V1 to V3", "the late right ventricular front heads right and forwards", "LITFL"],
+        ["Wide, slurred S in I, aVL, V5, V6", "the same late front points away from the lateral leads", "LITFL"],
+        ["Normal axis in isolated RBBB", "the left ventricle is still activated normally", "LITFL"],
+        ["ST depression, T inversion in V1 to V3", "abnormal depolarisation, abnormal repolarisation (appropriate discordance)", "LITFL"]],
+      clin: [["Causes", "RV hypertrophy or cor pulmonale, pulmonary embolus, ischaemic, rheumatic or congenital heart disease (e.g. ASD), myocarditis, cardiomyopathy, Len\u00e8gre-Lev disease.", "LITFL RBBB"],
+        ["When it matters", "A new RBBB with chest pain is highly concerning for occlusion MI (OMI); the right bundle is usually supplied by LAD perforators.", "LITFL RBBB"],
+        ["Anaesthetic angle", "Check the axis on a pre-op ECG: RBBB with left axis deviation is RBBB + LAFB, a bifascicular block.", "LITFL bifascicular"]],
+      pit: [["RSR' with QRS under 120 ms is incomplete RBBB, a normal variant, not RBBB.", "LITFL"],
+        ["Brugada syndrome can also give RSR' in V1 to V3.", "LITFL"],
+        ["V1 may show a broad monophasic R or a qR instead of RSR'.", "LITFL"],
+        ["T inversion in V1 to V3 is expected in RBBB (appropriate discordance).", "LITFL"]],
+      quiz: [["Why is the first part of the QRS unchanged in RBBB?", "The septum and left ventricle are still activated through the left bundle.", "LITFL"],
+        ["Where does the R' in V1 come from?", "The right ventricle, depolarised late and unopposed, across the septum from the left.", "LITFL"]]
+    },
+    lbbb: {
+      key: [["QRS 120 ms or more", "the left ventricle is reached late, cell to cell", "LITFL"],
+        ["Dominant S in V1 (rS or QS)", "the overall vector runs right to left, away from V1", "LITFL"],
+        ["Broad R in I, aVL, V5, V6, no lateral q", "the septum is activated right to left", "LITFL"],
+        ["R wave peak time over 60 ms in V5 to V6", "impulses reach the left-sided leads late", "LITFL"],
+        ["Discordant ST and T", "abnormal depolarisation, abnormal repolarisation", "LITFL"]],
+      clin: [["Causes", "Aortic stenosis, ischaemic heart disease, hypertension, dilated cardiomyopathy, anterior MI, Len\u00e8gre-Lev disease, hyperkalaemia, digoxin toxicity.", "LITFL LBBB"],
+        ["When it matters", "LBBB is unusual without organic disease. New LBBB with chest pain carries little increased risk of acute MI at presentation; look for excessive discordance or concordant ST change.", "LITFL LBBB"],
+        ["Anaesthetic angle", "On a pre-op ECG, LBBB points to underlying organic disease; on monitoring, discordant ST shift is expected and concordant change is the concern.", "LITFL LBBB"]],
+      pit: [["LBBB masks ischaemia: discordant ST elevation in V1 to V3 (generally under 25% of the S wave) is expected; look for concordant change.", "LITFL; Sgarbossa"],
+        ["Right ventricular pacing looks similar; look for pacing spikes.", "LITFL"],
+        ["LV hypertrophy can mimic LBBB (wide QRS, lateral ST depression, T inversion).", "LITFL"],
+        ["Typical morphology with QRS under 120 ms is incomplete LBBB.", "LITFL"]],
+      quiz: [["Why are the small lateral q waves lost in LBBB?", "The septum is activated right to left, from the right bundle.", "LITFL"],
+        ["Known LBBB: ST elevation in V2, less than a quarter of the S wave before it. Ischaemia?", "Not by itself: discordant ST elevation generally under 25% of the S wave is allowed; concordant change would be concerning.", "LITFL"]]
+    },
+    lafb: {
+      key: [["Left axis deviation (usually \u221245\u00b0 to \u221290\u00b0)", "the main wave spreads up and to the left", "LITFL"],
+        ["qR in I and aVL", "first vector down and right, then up and left", "LITFL"],
+        ["rS in II, III, aVF", "the same sequence, seen from below", "LITFL"],
+        ["R wave peak time in aVL over 45 ms", "impulses reach the left-sided leads later", "LITFL"],
+        ["QRS normal or slightly long (80 to 110 ms)", "the extra delay is only about 20 ms", "LITFL"]],
+      clin: [["Blood supply", "The anterior fascicle has a single blood supply, from the LAD.", "LITFL bifascicular"],
+        ["When it matters", "Occlusion of LAD perforators may show as a new RBBB with or without LAFB.", "LITFL RBBB"],
+        ["Anaesthetic angle", "Look for RBBB as well on a pre-op ECG: RBBB + LAFB is bifascicular block.", "LITFL bifascicular"]],
+      pit: [["aVL may exceed 11 mm (LVH voltage) in LAFB, but with no strain pattern.", "LITFL"],
+        ["Left axis alone is not enough: check for qR in I and aVL and rS in II, III and aVF.", "LITFL"],
+        ["The QRS is only slightly wide: LAFB is not a bundle branch block.", "LITFL"]],
+      quiz: [["In LAFB, why is there a small r in II, III and aVF?", "The LV is entered from below by the posterior fascicle, so the first vector points down and right.", "LITFL"],
+        ["Which R wave peak time is prolonged in LAFB?", "aVL, over 45 ms.", "LITFL"]]
+    },
+    bifasc: {
+      key: [["RBBB pattern", "the right ventricle is reached late, through muscle", "LITFL"],
+        ["Plus left axis deviation", "the LAFB part: the LV is entered from below", "LITFL"],
+        ["One fascicle left", "only the left posterior fascicle still conducts to the ventricles", "LITFL"],
+        ["Risk of complete heart block", "damage to the last fascicle stops conduction", "LITFL"]],
+      clin: [["Causes", "Ischaemic heart disease (40 to 60%), structural heart disease (50 to 80%), aortic stenosis, anterior MI, Len\u00e8gre-Lev disease, congenital heart disease, hyperkalaemia.", "LITFL bifascicular"],
+        ["When it matters", "Progression to complete heart block: 1 to 4% a year overall, about 1% if symptom free, 17% after syncope. New bifascicular block with chest pain suggests proximal LAD occlusion.", "LITFL bifascicular"],
+        ["Anaesthetic angle", "Ask about syncope or presyncope pre-op: with bifascicular block it calls for admission and monitoring, and a pacemaker if no other cause is found.", "LITFL bifascicular"]],
+      pit: [["Check the axis in every RBBB: left axis deviation makes it bifascicular.", "LITFL"],
+        ["RBBB with right axis may be RBBB + LPFB, but exclude RV hypertrophy first.", "LITFL"],
+        ["LBBB is sometimes called bifascicular, but clinically the term is kept for RBBB + LAFB or LPFB.", "LITFL"]],
+      quiz: [["In RBBB + LAFB, which fascicle still conducts?", "The left posterior fascicle.", "LITFL"],
+        ["A patient with bifascicular block reports a faint. What does LITFL advise?", "Admission and monitoring; a pacemaker if no other cause of syncope is found.", "LITFL"]]
+    }
+  };
+  // Condition menu as data: add a condition to COND, N_COND, WHY and TEACH, then list it here (groups become <optgroup>s).
+  var COND_MENU = [
+    { group: "Normal", items: [["normal", "Normal sinus"]] },
+    { group: "Bundle branch blocks", items: [["rbbb", "RBBB"], ["lbbb", "LBBB"]] },
+    { group: "Fascicular blocks", items: [["lafb", "LAFB"], ["bifasc", "RBBB + LAFB (bifascicular)"]] }
+  ];
   var LOOKS = {
     I: "from the left (0\u00b0)", II: "from below and to the left (+60\u00b0)", III: "from below and to the right (+120\u00b0)", aVF: "from directly below (+90\u00b0)",
     aVL: "from up and to the left (\u221230\u00b0)", aVR: "from up and to the right (\u2212150\u00b0)",
@@ -1360,11 +1487,11 @@
     var m = momentAt(c, t), M = MODEL[c], isT = t >= M.tS && t <= M.tE, tr = traceLine(c, L, t);
     var title = m[2], bs = bumpsFor(c, L);
     bs.forEach(function (b) { if (t >= b.start && t <= b.end) title = m[2] + ": " + b.name + " in " + L; });
-    return { title: title, where: m[3], how: m[4], sees: seesLine(c, L, t, isT), trace: tr, diff: c === "normal" ? "" : (m[5] || "") };
+    return { title: title, where: m[3], how: m[4], sees: seesLine(c, L, t, isT), trace: tr, diff: c === "normal" ? "" : (m[5] || ""), why: whyFor(c, m[0]) };
   }
   var narrNodes = { title: document.getElementById("ecgcSentence"), where: document.getElementById("ecgcNWhere"), how: document.getElementById("ecgcNHow"),
     sees: document.getElementById("ecgcNSees"), seesLab: document.getElementById("ecgcNSeesLab"), trace: document.getElementById("ecgcNTrace"),
-    diff: document.getElementById("ecgcNDiff"), diffRow: document.getElementById("ecgcNDiffRow") };
+    diff: document.getElementById("ecgcNDiff"), diffRow: document.getElementById("ecgcNDiffRow"), why: document.getElementById("ecgcNWhy") };
   function renderNarration(t) {
     var L = state.leads[state.focus], n = narration(state.cond, L, t), head = n.title;
     if (state.step) { var st = curSteps(); head = "Step " + (state.stepIdx + 1) + " of " + st.length + ": " + n.title; }
@@ -1375,6 +1502,7 @@
     narrNodes.where.textContent = n.where; narrNodes.how.textContent = n.how;
     narrNodes.seesLab.textContent = L + " sees"; narrNodes.sees.textContent = n.sees; narrNodes.trace.textContent = n.trace;
     narrNodes.diff.textContent = n.diff; narrNodes.diffRow.hidden = !n.diff;
+    narrNodes.why.textContent = n.why;
   }
 
   function render() {
@@ -1445,22 +1573,71 @@
     layoutLeads();
     if (state.step) goStep(Math.min(state.stepIdx, curSteps().length - 1)); else { lastSentence = ""; render(); }
   }
-  var condBtns = Array.prototype.slice.call(document.querySelectorAll(".ecgc-cond-btn"));
+  // Condition dropdown, built from COND_MENU.
+  var condSel = document.getElementById("ecgcCond");
+  COND_MENU.forEach(function (g) {
+    var og = document.createElement("optgroup"); og.label = g.group;
+    g.items.forEach(function (it) { if (!COND[it[0]]) return; var o = document.createElement("option"); o.value = it[0]; o.textContent = it[1]; og.appendChild(o); });
+    condSel.appendChild(og);
+  });
   function setCondition(c) {
     if (!COND[c]) return;
     state.cond = c;
-    condBtns.forEach(function (b) { var on = b.getAttribute("data-cond") === c; b.setAttribute("aria-checked", on ? "true" : "false"); b.tabIndex = on ? 0 : -1; });
-    buildSegs(); renderBlock(); layoutMyo(); layoutLeads(); lastSentence = "";
+    condSel.value = c;
+    buildSegs(); renderBlock(); layoutMyo(); layoutLeads(); renderTeach(); lastSentence = "";
     if (state.step) goStep(0); else render();
   }
-  condBtns.forEach(function (b, i) {
-    b.addEventListener("click", function () { setCondition(b.getAttribute("data-cond")); });
+  condSel.addEventListener("change", function () { setCondition(condSel.value); });
+
+  // Teaching tabs (Steps, Key points, Clinical, Pitfalls, Quiz) under the narration.
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".ecgc-tab"));
+  var TAB_IDS = tabs.map(function (b) { return b.getAttribute("data-tab"); });
+  state.tab = "steps";
+  function hel(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function src(t) { return hel("span", "ecgc-src", " (" + t + ")"); }
+  function renderTeach() {
+    var T = TEACH[state.cond], nm = COND[state.cond].name, pane;
+    pane = document.getElementById("ecgcPane-key"); pane.textContent = "";
+    var ul = hel("ul", "ecgc-teach-list");
+    T.key.forEach(function (k) { var li = hel("li"); li.appendChild(hel("strong", "", k[0])); li.appendChild(document.createTextNode(": " + k[1] + ".")); li.appendChild(src(k[2])); ul.appendChild(li); });
+    pane.appendChild(hel("p", "ecgc-teach-head", "Key points: " + nm)); pane.appendChild(ul);
+    pane = document.getElementById("ecgcPane-clin"); pane.textContent = "";
+    var hd = hel("p", "ecgc-teach-head", "Clinical: " + nm + " "); hd.appendChild(hel("span", "ecgc-review-badge", "Needs anaesthetist review")); pane.appendChild(hd);
+    ul = hel("ul", "ecgc-teach-list ecgc-teach-one");
+    T.clin.forEach(function (k) { var li = hel("li"); li.appendChild(hel("strong", "", k[0])); li.appendChild(document.createTextNode(": " + k[1])); li.appendChild(src(k[2])); ul.appendChild(li); });
+    pane.appendChild(ul);
+    pane = document.getElementById("ecgcPane-pit"); pane.textContent = "";
+    pane.appendChild(hel("p", "ecgc-teach-head", "Pitfalls: " + nm));
+    ul = hel("ul", "ecgc-teach-list");
+    T.pit.forEach(function (k) { var li = hel("li", "", k[0]); li.appendChild(src(k[1])); ul.appendChild(li); });
+    pane.appendChild(ul);
+    pane = document.getElementById("ecgcPane-quiz"); pane.textContent = "";
+    pane.appendChild(hel("p", "ecgc-teach-head", "Quiz: " + nm));
+    ul = hel("ol", "ecgc-teach-list ecgc-teach-one ecgc-quiz");
+    T.quiz.forEach(function (k, i) {
+      var li = hel("li"), id = "ecgcQuizA-" + i, b = hel("button", "ecgc-btn ecgc-reveal", "Show answer"), a = hel("span", "ecgc-quiz-a", k[1]);
+      b.type = "button"; b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-controls", id); a.id = id; a.hidden = true; a.appendChild(src(k[2]));
+      b.addEventListener("click", function () { var open = a.hidden; a.hidden = !open; b.setAttribute("aria-expanded", open ? "true" : "false"); b.textContent = open ? "Hide answer" : "Show answer"; });
+      li.appendChild(hel("span", "ecgc-quiz-q", k[0] + " ")); li.appendChild(b); li.appendChild(a); ul.appendChild(li);
+    });
+    pane.appendChild(ul);
+  }
+  function setTab(id, focus) {
+    if (TAB_IDS.indexOf(id) < 0) return;
+    state.tab = id;
+    tabs.forEach(function (b) {
+      var on = b.getAttribute("data-tab") === id;
+      b.setAttribute("aria-selected", on ? "true" : "false"); b.tabIndex = on ? 0 : -1;
+      document.getElementById(b.getAttribute("aria-controls")).hidden = !on;
+      if (on && focus) b.focus();
+    });
+  }
+  tabs.forEach(function (b, i) {
+    b.addEventListener("click", function () { setTab(b.getAttribute("data-tab")); });
     b.addEventListener("keydown", function (e) {
-      var d = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : (e.key === "ArrowLeft" || e.key === "ArrowUp") ? -1 : 0;
-      if (!d) return;
-      e.preventDefault();
-      var nb = condBtns[(i + d + condBtns.length) % condBtns.length];
-      setCondition(nb.getAttribute("data-cond")); nb.focus();
+      var n = tabs.length, j = e.key === "ArrowRight" ? (i + 1) % n : e.key === "ArrowLeft" ? (i - 1 + n) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
+      if (j < 0) return;
+      e.preventDefault(); setTab(TAB_IDS[j], true);
     });
   });
   window.addEventListener("resize", render);
@@ -1481,6 +1658,10 @@
     sample: function (c, L, t) { return SAMPLES[c][L][t]; },
     axes: { frontal: FRONTAL_AX, horizontal: HORIZ_AX, chestGain: CHEST_GAIN },
     segs: function (c) { return COND[c].segs; },
+    setTab: function (id) { setTab(id); },
+    teach: function (c) { return TEACH[c]; },
+    why: function (c, t) { return narration(c, state.leads[state.focus], t).why; },
+    condMenu: COND_MENU,
     bumps: function (c, L) { return bumpsFor(c, L).map(function (b) { return { name: b.name, start: b.start, end: b.end, peak: b.peak, amp: b.amp, slow: b.slow, label: b.label }; }); },
     narration: narration,
     wheels: function () { return { limb: Object.keys(wheelF.axes), chest: Object.keys(wheelH.axes), limbVec: wheelF.vec.getAttribute("opacity"), chestVec: wheelH.vec.getAttribute("opacity"),

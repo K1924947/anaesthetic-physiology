@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261118">
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123j">
+<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123k">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -41,13 +41,9 @@
 
   <main id="ecgc" class="ecgc">
     <div class="ecgc-controls" role="group" aria-label="Tool controls">
-      <div class="ecgc-cond" role="radiogroup" aria-label="Condition">
-        <button type="button" role="radio" class="ecgc-cond-btn" data-cond="normal" aria-checked="true">Normal sinus</button>
-        <button type="button" role="radio" class="ecgc-cond-btn" data-cond="rbbb" aria-checked="false">RBBB</button>
-        <button type="button" role="radio" class="ecgc-cond-btn" data-cond="lbbb" aria-checked="false">LBBB</button>
-        <button type="button" role="radio" class="ecgc-cond-btn" data-cond="lafb" aria-checked="false">LAFB</button>
-        <button type="button" role="radio" class="ecgc-cond-btn" data-cond="bifasc" aria-checked="false" title="Bifascicular block: RBBB with LAFB">RBBB + LAFB</button>
-      </div>
+      <label class="ecgc-speed ecgc-cond-pick">Condition
+        <select id="ecgcCond" aria-label="Condition"></select>
+      </label>
       <div class="ecgc-play">
         <button type="button" id="ecgcPlay" class="ecgc-btn" aria-pressed="false">Pause</button>
         <button type="button" id="ecgcReplay" class="ecgc-btn">Replay</button>
@@ -109,15 +105,31 @@
       <p class="ecgc-qrs" id="ecgcQrs">QRS 90 ms</p>
     </div>
 
-    <section class="ecgc-narr" aria-live="polite" aria-labelledby="ecgcSentence">
-      <h2 class="ecgc-narr-title" id="ecgcSentence"></h2>
+    <section class="ecgc-narr" aria-labelledby="ecgcSentence">
+      <div class="ecgc-narr-head">
+        <h2 class="ecgc-narr-title" id="ecgcSentence" aria-live="polite"></h2>
+        <div class="ecgc-tabs" role="tablist" aria-label="Teaching notes">
+          <button type="button" role="tab" class="ecgc-tab" id="ecgcTab-steps" data-tab="steps" aria-controls="ecgcPane-steps" aria-selected="true">Steps</button>
+          <button type="button" role="tab" class="ecgc-tab" id="ecgcTab-key" data-tab="key" aria-controls="ecgcPane-key" aria-selected="false" tabindex="-1">Key points</button>
+          <button type="button" role="tab" class="ecgc-tab" id="ecgcTab-clin" data-tab="clin" aria-controls="ecgcPane-clin" aria-selected="false" tabindex="-1">Clinical <span class="ecgc-review-tag">review</span></button>
+          <button type="button" role="tab" class="ecgc-tab" id="ecgcTab-pit" data-tab="pit" aria-controls="ecgcPane-pit" aria-selected="false" tabindex="-1">Pitfalls</button>
+          <button type="button" role="tab" class="ecgc-tab" id="ecgcTab-quiz" data-tab="quiz" aria-controls="ecgcPane-quiz" aria-selected="false" tabindex="-1">Quiz</button>
+        </div>
+      </div>
+      <div class="ecgc-pane" role="tabpanel" id="ecgcPane-steps" aria-labelledby="ecgcTab-steps" aria-live="polite">
       <dl class="ecgc-narr-grid">
         <div><dt>Where</dt><dd id="ecgcNWhere"></dd></div>
         <div><dt id="ecgcNSeesLab">Lead sees</dt><dd id="ecgcNSees"></dd></div>
         <div><dt>How</dt><dd id="ecgcNHow"></dd></div>
         <div><dt>On the trace</dt><dd id="ecgcNTrace"></dd></div>
         <div class="ecgc-narr-diff" id="ecgcNDiffRow" hidden><dt>Different from normal:</dt><dd id="ecgcNDiff"></dd></div>
+        <div class="ecgc-narr-why" id="ecgcNWhyRow"><dt>Why:</dt><dd id="ecgcNWhy"></dd></div>
       </dl>
+      </div>
+      <div class="ecgc-pane" role="tabpanel" id="ecgcPane-key" aria-labelledby="ecgcTab-key" tabindex="0" hidden></div>
+      <div class="ecgc-pane" role="tabpanel" id="ecgcPane-clin" aria-labelledby="ecgcTab-clin" tabindex="0" hidden></div>
+      <div class="ecgc-pane" role="tabpanel" id="ecgcPane-pit" aria-labelledby="ecgcTab-pit" tabindex="0" hidden></div>
+      <div class="ecgc-pane" role="tabpanel" id="ecgcPane-quiz" aria-labelledby="ecgcTab-quiz" hidden></div>
     </section>
 
     <div class="ecgc-extras">
@@ -140,6 +152,7 @@
           <li>Bifascicular block: the narration notes the risk of progression to complete heart block if the last fascicle is damaged (LITFL: about 1 to 4% a year overall, about 1% a year without symptoms, 17% a year after syncope). Please check the wording, and whether anaesthetic implications should be added (none are given, as they are not in the source set).</li>
           <li>Anterior fascicle: drawn as a short stub leaving the slice (&#8857;), a faint dotted line in front of the slice across the front of the LV, and its Purkinje fibres coming back into the slice on the upper lateral wall (&#8857;). The dotted line is a schematic route: its drawn length gives about 23 ms at bundle speed (2 m/s), which is not from a source.</li>
           <li>The traces are drawn on standard ECG paper: 25 mm/s and 10 mm/mV, so the boxes are square (small box 40 ms by 0.1 mV, large box 200 ms by 0.5 mV) and the calibration pulse is the standard 10 mm by 200 ms. Each panel is a short rhythm strip at 75 per minute: the same idealised beat repeats, and the last beat on the right is the one being explained (black up to the cursor). The P and T letters mark the model's P and T windows on that beat. The ms readout is the model's true time within the beat.</li>
+          <li>Teaching tabs: every line in the Clinical tab (causes, when it matters, anaesthetic angle) is taken from the LITFL RBBB, LBBB, LAFB and bifascicular block pages or Klabunde, and is shortened for space; the anaesthetic-angle lines apply those sources to pre-op and monitoring settings and need checking. The Why, Key points, Pitfalls and Quiz lines are shortened from the same sources (plus Guyton &amp; Hall and Franz 1987).</li>
         </ul>
       </details>
       <details>
@@ -164,6 +177,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-conduction.js?v=20261123j"></script>
+<script src="assets/ecg-conduction.js?v=20261123k"></script>
 </body>
 </html>

@@ -18,7 +18,7 @@ const fit = await page.evaluate(() => ({ sh: document.documentElement.scrollHeig
 check("fits 1280x800 without scrolling", fit.sh <= fit.ih && fit.sw <= 1280, fit);
 
 const q0 = await page.$eval("#ecgcQrs", (e) => +e.dataset.qrs);
-await page.click('[data-cond="lbbb"]');
+await page.selectOption("#ecgcCond", "lbbb");
 const q1 = await page.$eval("#ecgcQrs", (e) => +e.dataset.qrs);
 check("condition switch widens QRS", q0 < 120 && q1 >= 120, { normal: q0, lbbb: q1 });
 
@@ -166,7 +166,7 @@ check("heart: all muscle lit through ST, a recovery front shown mid-T, all back 
 // Round 13: LAFB and bifascicular block; the anterior fascicle's front-wall stretch.
 const fas = await page.evaluate(() => {
   const E = window.ECGConduction, o = {};
-  o.btns = [...document.querySelectorAll(".ecgc-cond-btn")].map((b) => b.dataset.cond);
+  o.btns = [...document.querySelectorAll("#ecgcCond option")].map((b) => b.value);
   for (const c of ["lafb", "bifasc"]) { const st = E.steps(c, "aVL"); o[c] = { n: st.length, ids: st.flatMap((s) => s.ids), allText: st.every((s) => s.text && s.text.length > 20), titles: st.map((s) => E.narration(c, "aVL", s.t).title), diffs: st.map((s) => E.narration(c, "aVL", s.t).diff).join(" | ") }; }
   o.paths = { normal: E.paths("normal").lafF, rbbb: E.paths("rbbb").lafF, lafb: E.paths("lafb").lafF, bifasc: E.paths("bifasc").lafF, lbbb: E.paths("lbbb").lafF };
   o.style = {}; for (const c of ["normal", "lafb", "bifasc"]) { E.setCondition(c); o.style[c] = { lafF: E.bundleStyle("lafF"), laf: E.bundleStyle("laf"), rb: E.bundleStyle("rb"), marks: document.querySelectorAll("#ecgcSvg path[d='M-7,-7 L7,7 M7,-7 L-7,7']").length }; }
@@ -201,6 +201,64 @@ const slow = await page.evaluate(async () => {
 });
 check("0.01x speed: option present, clock advances in small sub-ms steps, trace moves between whole ms",
   slow.hasOpt && slow.subMsMoves && slow.minStep >= 0 && slow.maxStep < 1.01 && slow.adv > 5 && slow.adv < 30 && slow.frac, slow);
+
+// Round 14: condition dropdown (data-driven, grouped) and teaching tabs under the narration.
+const CONDS = ["normal", "rbbb", "lbbb", "lafb", "bifasc"];
+const dd = await page.evaluate(() => { const sel = document.getElementById("ecgcCond"), lab = sel.closest("label");
+  return { tag: sel.tagName, label: lab ? lab.textContent.trim().split(/\s+/)[0] : "", aria: sel.getAttribute("aria-label"), groups: [...sel.querySelectorAll("optgroup")].map((g) => [g.label, [...g.children].map((o) => o.value)]),
+    menu: window.ECGConduction.condMenu.map((g) => g.group), oldBtns: document.querySelectorAll(".ecgc-cond-btn").length }; });
+check("condition picker is one labelled native <select> built from the menu data, grouped (Bundle branch blocks, Fascicular blocks), no old buttons",
+  dd.tag === "SELECT" && dd.label === "Condition" && dd.aria === "Condition" && dd.oldBtns === 0 && dd.groups.flatMap((g) => g[1]).join() === CONDS.join() &&
+  dd.groups.some((g) => g[0] === "Bundle branch blocks" && g[1].join() === "rbbb,lbbb") && dd.groups.some((g) => g[0] === "Fascicular blocks" && g[1].join() === "lafb,bifasc") && dd.groups.map((g) => g[0]).join() === dd.menu.join(), dd);
+await page.selectOption("#ecgcCond", "rbbb");
+const viaSel = await page.evaluate(() => ({ cond: window.ECGConduction.state.cond, qrs: +document.getElementById("ecgcQrs").dataset.qrs, title: document.querySelector("#ecgcPane-key .ecgc-teach-head").textContent }));
+await page.focus("#ecgcCond"); await page.keyboard.press("ArrowDown");
+const viaKey = await page.evaluate(() => window.ECGConduction.state.cond);
+check("selecting from the dropdown (mouse or keyboard) drives the condition, QRS readout and teaching content",
+  viaSel.cond === "rbbb" && viaSel.qrs >= 120 && /RBBB/.test(viaSel.title) && viaKey === "lbbb", { viaSel, viaKey });
+await page.selectOption("#ecgcCond", "normal");
+
+const tb = await page.evaluate(() => { const list = document.querySelector(".ecgc-narr [role=tablist]"), tabs = [...list.querySelectorAll("[role=tab]")];
+  return { label: list.getAttribute("aria-label"), names: tabs.map((t) => t.textContent.replace(/\s+/g, " ").trim()), sel: tabs.map((t) => t.getAttribute("aria-selected")),
+    panes: tabs.map((t) => { const p = document.getElementById(t.getAttribute("aria-controls")); return !!p && p.getAttribute("role") === "tabpanel" && p.getAttribute("aria-labelledby") === t.id; }),
+    tabindex: tabs.map((t) => t.tabIndex), visible: [...document.querySelectorAll(".ecgc-narr [role=tabpanel]")].filter((p) => !p.hidden).map((p) => p.id) }; });
+check("tab bar: role=tablist with Steps, Key points, Clinical, Pitfalls, Quiz; Steps selected; panels linked; roving tabindex",
+  tb.names.join("|") === "Steps|Key points|Clinical review|Pitfalls|Quiz" && tb.sel.join() === "true,false,false,false,false" && tb.panes.every(Boolean) &&
+  tb.tabindex.join() === "0,-1,-1,-1,-1" && tb.visible.join() === "ecgcPane-steps", tb);
+await page.focus("#ecgcTab-steps");
+const keys = [];
+for (const k of ["ArrowRight", "ArrowRight", "ArrowLeft", "End", "Home", "ArrowLeft"]) { await page.keyboard.press(k);
+  keys.push(await page.evaluate(() => [document.activeElement.dataset.tab, document.querySelector("[role=tab][aria-selected=true]").dataset.tab, [...document.querySelectorAll(".ecgc-narr [role=tabpanel]")].filter((p) => !p.hidden).map((p) => p.id).join()])); }
+check("tabs: arrow keys, Home and End move focus and selection, one panel shown",
+  keys.map((k) => k[1]).join() === "key,clin,key,quiz,steps,quiz" && keys.every((k) => k[0] === k[1] && k[2] === "ecgcPane-" + k[1]), keys);
+await page.click("#ecgcTab-clin");
+const tc = await page.evaluate((CONDS) => { const E = window.ECGConduction, o = {}, n = document.querySelector(".ecgc-narr");
+  const fits = () => { const nb = n.getBoundingClientRect().bottom - 6; return [...n.querySelectorAll(".ecgc-pane:not([hidden]) *")].every((e) => e.getBoundingClientRect().bottom <= nb + .5); };
+  for (const c of CONDS) { E.setCondition(c); const T = E.teach(c), r = { fit: {} };
+    r.key = T.key.length; r.clin = T.clin.length; r.pit = T.pit.length; r.quiz = T.quiz.length;
+    r.keyLis = document.querySelectorAll("#ecgcPane-key li").length; r.badge = (document.querySelector("#ecgcPane-clin .ecgc-review-badge") || {}).textContent;
+    r.clinHead = document.querySelector("#ecgcPane-clin .ecgc-teach-head").textContent;
+    r.keyWhy = T.key.every((k) => k[0] && k[1] && k[2]); r.srcs = [...new Set([].concat(T.key, T.clin, T.pit, T.quiz).map((k) => k[k.length - 1]))];
+    for (const tab of ["steps", "key", "clin", "pit", "quiz"]) { E.setTab(tab); if (tab === "quiz") document.querySelectorAll("#ecgcPane-quiz .ecgc-reveal").forEach((b) => b.click()); r.fit[tab] = fits(); }
+    const qa = [...document.querySelectorAll("#ecgcPane-quiz .ecgc-quiz-a")]; r.revealed = qa.every((a) => !a.hidden) && [...document.querySelectorAll("#ecgcPane-quiz .ecgc-reveal")].every((b) => b.getAttribute("aria-expanded") === "true");
+    E.setTab("clin");
+    const st = E.steps(c, "II"); r.why = st.map((s) => E.why(c, s.t)); r.text = JSON.stringify(T) + r.why.join(" ");
+    o[c] = r; }
+  E.setCondition("normal"); E.setTab("steps"); return o; }, CONDS);
+check("each condition: 3-5 key points (criterion + why + source), Clinical marked 'Needs anaesthetist review', pitfalls, 1-2 quiz questions",
+  CONDS.every((c) => tc[c].key >= 3 && tc[c].key <= 5 && tc[c].keyLis === tc[c].key && tc[c].keyWhy && tc[c].clin >= 2 && /Needs anaesthetist review/.test(tc[c].badge) && tc[c].pit >= 2 && tc[c].quiz >= 1 && tc[c].quiz <= 2),
+  Object.fromEntries(CONDS.map((c) => [c, [tc[c].key, tc[c].clin, tc[c].pit, tc[c].quiz, tc[c].badge]])));
+check("tab content switches with the condition", CONDS.every((c, i) => CONDS.every((d, j) => i === j || tc[c].clinHead !== tc[d].clinHead)) && new Set(CONDS.map((c) => tc[c].text)).size === 5,
+  CONDS.map((c) => tc[c].clinHead));
+check("every step has a Why line, all differ from step to step within a condition", CONDS.every((c) => tc[c].why.every((w) => w.length > 30) && new Set(tc[c].why).size >= tc[c].why.length - 2),
+  Object.fromEntries(CONDS.map((c) => [c, tc[c].why.length])));
+check("teaching sources only from the reference set; British English, no em dashes, no Wikipedia",
+  CONDS.every((c) => tc[c].srcs.every((s) => /^(Klabunde|LITFL|Guyton & Hall|Franz 1987|Hampton)/.test(s.split("; ")[0])) && !/\u2014|wikipedia|wikimedia/i.test(tc[c].text) && !/\b(color|center|anesthe)/i.test(tc[c].text)),
+  Object.fromEntries(CONDS.map((c) => [c, tc[c].srcs])));
+check("quiz: tap to reveal sets aria-expanded and shows the answer", CONDS.every((c) => tc[c].revealed), CONDS.map((c) => tc[c].revealed));
+check("every tab fits the narration box for every condition (no overflow)", CONDS.every((c) => Object.values(tc[c].fit).every(Boolean)), Object.fromEntries(CONDS.map((c) => [c, tc[c].fit])));
+const fit2 = await page.evaluate(() => ({ sh: document.documentElement.scrollHeight, ih: innerHeight, sw: document.documentElement.scrollWidth }));
+check("still fits 1280x800 with the tab bar", fit2.sh <= fit2.ih && fit2.sw <= 1280, fit2);
 
 if (SHOT) {
   await page.evaluate(() => window.ECGConduction.setTime(232));
