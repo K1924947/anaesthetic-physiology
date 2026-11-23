@@ -709,7 +709,7 @@
   }
 
   /* ---------- Muscle points on the heart ---------- */
-  // Recovery front: short thin grey dashes across the front, small arrowheads (every third point) in its direction of travel.
+  // Recovery front: short dark dashes across the front, small arrowheads (every second point) in its direction of travel.
   var REC_C = "#383D44", gRec = el("g", { "aria-hidden": "true", "pointer-events": "none" });
   gPaths.parentNode.insertBefore(gRec, gPaths.nextSibling);
   var myoNodes = GRID.map(function (g, i) {
@@ -1151,7 +1151,7 @@
       ["qend", "tS", "Plateau: no current flows", "All ventricular muscle is depolarised.",
         "Every cell sits in its plateau phase at a similar voltage, so no current flows between regions."],
       ["tS", "tE", "Repolarisation", "Ventricular muscle, recovering from the outside (epicardium) in.",
-        "Epicardial action potentials are shorter, so recovery runs outside in (grey dashed front). Reversed charge and direction cancel: T usually matches the main QRS (inverted in aVR, often V1)."]
+        "Epicardial action potentials are shorter, so recovery runs outside in (dark dashed front). Reversed charge and direction cancel: T usually matches the main QRS (inverted in aVR, often V1)."]
     ],
     rbbb: [
       ["hisEnd", "qon", "Right bundle blocked", "His bundle, then only the left bundle branch. The right bundle is blocked (X).",
@@ -1166,7 +1166,7 @@
       ["qend", "tS", "Plateau", "All ventricular muscle is depolarised.",
         "Every cell sits in its plateau phase, so little current flows.", "Secondary ST depression in V1 to V3 is typical (appropriate discordance)."],
       ["tS", "tE", "Repolarisation, out of order", "Ventricular muscle, recovering.",
-        "The RV, activated last, also recovers last (grey dashed front): a secondary change.", "Secondary T inversion in V1 to V3 is typical (appropriate discordance)."]
+        "The RV, activated last, also recovers last (dark dashed front): a secondary change.", "Secondary T inversion in V1 to V3 is typical (appropriate discordance)."]
     ],
     lbbb: [
       ["hisEnd", "qon", "Left bundle blocked", "His bundle, then only the right bundle branch. The left bundle is blocked (X).",
@@ -1187,7 +1187,7 @@
         "Abnormal activation means abnormal recovery: a secondary change.",
         "ST shifts opposite to the main QRS (appropriate discordance): raised in V1 to V3, depressed in I, aVL, V5 and V6."],
       ["tS", "tE", "Repolarisation, discordant", "Ventricular muscle, recovering.",
-        "Recovery follows the abnormal activation (grey dashed front): RV and septum first, lateral LV wall last.", "T points opposite to the main QRS (discordant): the expected secondary pattern in LBBB."]
+        "Recovery follows the abnormal activation (dark dashed front): RV and septum first, lateral LV wall last.", "T points opposite to the main QRS (discordant): the expected secondary pattern in LBBB."]
     ]
   };
   var LOOKS = {
