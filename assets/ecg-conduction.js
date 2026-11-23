@@ -25,16 +25,17 @@
   // z = anterior), then the muscle region that makes it and whether it is reached slowly, cell to cell (1) or by the fast route (0).
   var VEC = {
     normal: [
-      [172, 6, -.15, .05, .17, "SEP", 0],   // septum, left to right: q in I, aVL, V6; small r in V1
-      [186, 8, .3, .4, .38, "LVA", 0],      // apex and anterior wall
-      [200, 10, .9, .75, -.3, "LVW", 0],    // LV free wall dominates: leftward, inferior, posterior
-      [224, 10, -.1, -.2, -.15, "LVB", 0],  // base last: superior, posterior (blends into the S in V2, no notch)
+      [172, 6, -.14, -.05, .1, "SEP", 0],   // septum, left to right: small q in I, aVL, V5, V6 (under 25% of R); small r in V1
+      [186, 8, .3, .4, .3, "LVA", 0],       // apex and anterior wall
+      [200, 10, .9, .65, -.45, "LVW", 0],  // LV free wall dominates: leftward, inferior, posterior
+      [224, 10, -.1, -.2, -.28, "LVB", 0],  // base last: superior, posterior (blends into the S in V2, no notch)
       [435, 42, .25, .2, .08]                // T: concordant in most leads; slightly negative in V1, inverted in aVR (LITFL)
     ],
     rbbb: [
-      [172, 6, -.15, .05, .17, "SEP", 0],   // septum still left to right (left bundle intact)
-      [186, 8, .3, .4, .38, "LVA", 0],
-      [200, 10, .85, .65, -.2, "LVW", 0],   // LV through its own Purkinje fibres
+      [172, 6, -.14, -.05, .1, "SEP", 0],   // septum still left to right (left bundle intact)
+      [186, 8, .3, .4, .3, "LVA", 0],       // apex as in Normal
+      [200, 10, .85, .65, -.2, "LVW", 0],   // LV through its own Purkinje fibres (posterior pull partly offset by the early RV front)
+      [224, 10, -.1, -.2, -.28, "LVB", 0],  // LV base on time, as in Normal: the S between R and R' in V1 to V3
       [255, 15, -.45, .05, .48, "RV", 1],   // late RV, cell to cell: terminal rightward, anterior vector (R' at least as big as S in V1)
       [460, 42, .3, .2, -.15]                // secondary T, opposite the terminal QRS
     ],
