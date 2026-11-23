@@ -22,11 +22,16 @@ await page.click('[data-cond="lbbb"]');
 const q1 = await page.$eval("#ecgcQrs", (e) => +e.dataset.qrs);
 check("condition switch widens QRS", q0 < 120 && q1 >= 120, { normal: q0, lbbb: q1 });
 
-const before = await page.$eval("#ecgcWheelMark-B", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
-await page.selectOption('select[data-slot="1"]', "aVL");
-const after = await page.$eval("#ecgcWheelMark-B", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
-check("dropdown changes lead and electrode marker", before.lead === "V1" && after.lead === "aVL" && before.t !== after.t, { before, after });
-await page.selectOption('select[data-slot="1"]', "V1");
+// One large lead panel: its dropdown picks any of the 12 leads and moves the electrode marker to the right wheel.
+const before = await page.$eval("#ecgcWheelMark", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
+await page.selectOption('select[data-slot="0"]', "V1");
+const after = await page.$eval("#ecgcWheelMark", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
+const layout = await page.evaluate(() => ({ panels: document.querySelectorAll(".ecgc-lead").length, canvases: document.querySelectorAll(".ecgc-lead canvas").length, focusBtns: document.querySelectorAll(".ecgc-focus").length,
+  marks: document.querySelectorAll("[id^=ecgcWheelMark]").length, options: document.querySelectorAll('select[data-slot="0"] option').length, speeds: [...document.querySelectorAll("#ecgcSpeed option")].map((o) => o.value) }));
+check("one lead panel (12-lead dropdown, no Focus buttons or slot shapes); dropdown moves the electrode marker between wheels; speeds 0.01 to 1x",
+  before.lead === "II" && before.wheel === "ecgcWheelF" && after.lead === "V1" && after.wheel === "ecgcWheelH" && layout.panels === 1 && layout.canvases === 1 && layout.focusBtns === 0 && layout.marks === 1 && layout.options === 12 &&
+  layout.speeds.join() === "0.01,0.02,0.05,0.1,0.25,0.5,1", { before, after, layout });
+await page.selectOption('select[data-slot="0"]', "II");
 
 const box = await page.$eval("#ecgcScrub", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
 await page.mouse.click(box.x + box.w * 0.29, box.y + box.h / 2);
@@ -67,10 +72,10 @@ const tapped = await page.evaluate(() => ({ t: window.ECGConduction.state.t, pla
 check("tapping a bump sets the clock to it and shows the link", tapped.t === tap.peak && !tapped.playing && tapped.link === "1", { tap, tapped });
 
 // Round 7: both lead wheels, narration for every step, and everything still fits at every step.
-const wh = await page.evaluate(() => { const E = window.ECGConduction; E.setCondition("lbbb"); E.setLead(0, "aVL"); E.setLead(1, "V1"); E.setFocus(0); E.setTime(230);
-  return Object.assign(E.wheels(), { focusAxis: !!document.querySelector("#ecgcSvg line[stroke-dasharray='6 5']"), papillary: document.querySelectorAll("#ecgcSvg path[d^='M300,352 C308']").length }); });
+const wh = await page.evaluate(() => { const E = window.ECGConduction; E.setCondition("lbbb"); E.setLead(0, "V1"); E.setFocus(0); const chestMark = E.wheels().marks[0].wheel; E.setLead(0, "aVL"); E.setTime(230);
+  return Object.assign(E.wheels(), { chestMark }, { focusAxis: !!document.querySelector("#ecgcSvg line[stroke-dasharray='6 5']"), papillary: document.querySelectorAll("#ecgcSvg path[d^='M300,352 C308']").length }); });
 check("limb (hexaxial) and chest wheels exist with live vector and markers", wh.limb.length === 6 && wh.chest.length === 6 && wh.limbVec === "1" && wh.chestVec === "1" &&
-  wh.marks[0].wheel === "ecgcWheelF" && wh.marks[1].wheel === "ecgcWheelH" && wh.focusAxis && wh.papillary === 0, wh);
+  wh.marks.length === 1 && wh.marks[0].wheel === "ecgcWheelF" && wh.chestMark === "ecgcWheelH" && wh.focusAxis && wh.papillary === 0, wh);
 const narr = await page.evaluate(() => { const E = window.ECGConduction, bad = [], over = []; let n = 0;
   for (const c of ["normal", "rbbb", "lbbb"]) for (const L of ["aVL", "II", "V1", "V6"]) {
     E.setCondition(c); E.setLead(0, L); E.setFocus(0); E.stepMode(true);
@@ -122,10 +127,10 @@ check("LBBB septum crossing is mostly slow; RBBB slow front is continuous; unaff
 check("LBBB steps include the slow crawl through the LV wall, and V1 QS credits the septum first", anim.lbTitles.some((t) => /Slow crawl through the LV wall/.test(t)) &&
   anim.lbTitles.some((t) => /Slow crawl across the septum/.test(t)) && /septum, then/.test(anim.v1), { titles: anim.lbTitles, v1: anim.v1 });
 
-// Round 11: standard paper, 25 mm/s and 10 mm/mV (square 5.6 px boxes), rhythm strip with the explained beat last.
+// Round 11: standard paper, 25 mm/s and 10 mm/mV (square 10 px boxes at 100 px/mV), rhythm strip with the explained beat last.
 const paper = await page.evaluate(() => { const E = window.ECGConduction, p = E.paper(); return { p, w0: E.traceX(0, 0), w200: E.traceX(0, 200), w800: E.traceX(0, 800), right: document.querySelectorAll(".ecgc-lead canvas")[0].getBoundingClientRect().right }; });
-check("paper is 25 mm/s and 10 mm/mV: 1 mm = 5.6 px both ways, 200 ms = 28 px, one beat fits on the strip",
-  Math.abs(paper.p.pxPerMs * 40 - 5.6) < 1e-9 && paper.p.pxPerMv === 56 && Math.abs(paper.w200 - paper.w0 - 28) < 1e-6 && paper.w800 <= paper.right - 4, paper);
+check("paper is 25 mm/s and 10 mm/mV: 1 mm = 10 px both ways, 200 ms = 50 px, one beat fits on the strip",
+  Math.abs(paper.p.pxPerMs * 40 - 10) < 1e-9 && paper.p.pxPerMv === 100 && Math.abs(paper.w200 - paper.w0 - 50) < 1e-6 && paper.w800 <= paper.right - 4, paper);
 
 // Round 9: repolarisation (recovery) map.
 const rep = await page.evaluate(() => { const E = window.ECGConduction, o = {}, AX = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150 };

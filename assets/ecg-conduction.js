@@ -133,7 +133,7 @@
   function seg(c, name) { var s = COND[c].segs; for (var i = 0; i < s.length; i++) if (s[i][0] === name) return s[i]; return null; }
 
   /* ---------- State ---------- */
-  var state = { t: 0, cond: "normal", playing: !reduced, speed: 0.25, leads: ["II", "V1", "V6"], focus: 0, step: false, stepIdx: 0 };
+  var state = { t: 0, cond: "normal", playing: !reduced, speed: 0.25, leads: ["II"], focus: 0, step: false, stepIdx: 0 };
 
   /* ---------- Heart SVG: flat four-chamber cut-through ---------- */
   var svg = document.getElementById("ecgcSvg");
@@ -572,7 +572,7 @@
     });
   });
   // Vertical gain: about standard paper proportions for this time scale (10 mm/mV against 25 mm/s would be about 60 px/mV here).
-  var GAIN = 56; // px per mV, same for the trace and the 1 mV calibration pulse
+  var GAIN = 100; // px per mV (10 px per mm at 10 mm/mV), same for the trace and the 1 mV calibration pulse
   var DATA_RANGE = {};
   function dataRange(c, L) {
     var k = c + "|" + L; if (DATA_RANGE[k]) return DATA_RANGE[k];
@@ -783,13 +783,8 @@
   }
 
   /* ---------- Horizontal-plane wheel and lead markers ---------- */
-  var SLOTS = ["A", "B", "C"];
-  function shape(s, g, k) {
-    k = k || 1;
-    if (s === "A") el("circle", { r: 6 * k, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
-    else if (s === "B") el("rect", { x: -5.5 * k, y: -5.5 * k, width: 11 * k, height: 11 * k, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
-    else el("path", { d: "M0," + (-7 * k) + " L" + (6.5 * k) + "," + (5.5 * k) + " L" + (-6.5 * k) + "," + (5.5 * k) + " Z", fill: "#fff", stroke: INK, "stroke-width": 2, "stroke-linejoin": "round" }, g);
-  }
+  // One lead panel; its electrode is marked on whichever wheel holds the selected lead.
+  var SLOTS = ["A"];
   // Two wheels, same size: limb leads (frontal plane, hexaxial) and chest leads (horizontal plane, front at the bottom).
   function degTxt(d) { return (d > 0 ? "+" + d : String(d).replace("-", "\u2212")) + "\u00b0"; }
   function makeWheel(svgEl, AX, limb) {
@@ -810,37 +805,28 @@
   }
   var wheelF = makeWheel(document.getElementById("ecgcWheelF"), FRONTAL_AX, true);
   var wheelH = makeWheel(document.getElementById("ecgcWheelH"), HORIZ_AX, false);
-  var leadMarks = SLOTS.map(function (s) {
+  var leadMarks = SLOTS.map(function () {
     var g = document.createElementNS(NS, "g");
-    g.setAttribute("id", "ecgcWheelMark-" + s);
-    shape(s, g, .95);
-    var tx = el("text", { y: 3.5, "text-anchor": "middle", "font-size": 8.5, "font-weight": 700, "font-family": "var(--font-sans)", fill: "#111" }, g);
-    tx.textContent = s;
+    g.setAttribute("id", "ecgcWheelMark");
+    el("circle", { r: 5, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
+    el("circle", { r: 2, fill: INK }, g);
     return g;
   });
 
   /* ---------- Lead panels ---------- */
   var leadsBox = document.getElementById("ecgcLeads");
-  var SHAPE_ICON = {
-    A: '<circle cx="9" cy="9" r="7" fill="#fff" stroke="currentColor" stroke-width="2"/>',
-    B: '<rect x="2.5" y="2.5" width="13" height="13" fill="#fff" stroke="currentColor" stroke-width="2"/>',
-    C: '<path d="M9,1.5 L16.5,15.5 L1.5,15.5 Z" fill="#fff" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'
-  };
   var panels = SLOTS.map(function (s, i) {
     var wrap = document.createElement("section");
     wrap.className = "ecgc-lead";
-    wrap.setAttribute("aria-label", "Trace " + s);
+    wrap.setAttribute("aria-label", "ECG trace");
     var opts = LEADS.map(function (L) { return '<option value="' + L + '">' + L + "</option>"; }).join("");
-    wrap.innerHTML = '<div class="ecgc-lead-head"><svg viewBox="0 0 18 18" aria-hidden="true">' + SHAPE_ICON[s] + "</svg>" +
-      "<span>" + s + '</span><label>Lead <select data-slot="' + i + '" aria-label="Lead shown in trace ' + s + '">' + opts + "</select></label>" +
-      '<button type="button" class="ecgc-focus" data-slot="' + i + '" aria-pressed="false" aria-label="Make trace ' + s + ' the focus lead">Focus</button>' +
+    wrap.innerHTML = '<div class="ecgc-lead-head"><label>Lead <select data-slot="' + i + '" aria-label="Lead shown on the trace">' + opts + "</select></label>" +
       '<span class="ecgc-lead-note" aria-live="polite"></span></div>' +
       '<canvas role="img"></canvas>';
     leadsBox.appendChild(wrap);
     var sel = wrap.querySelector("select");
     sel.value = state.leads[i];
     sel.addEventListener("change", function () { state.leads[i] = sel.value; leadsChanged(); });
-    wrap.querySelector(".ecgc-focus").addEventListener("click", function () { state.focus = i; leadsChanged(); });
     var cv = wrap.querySelector("canvas");
     cv.addEventListener("click", function (e) {
       var r = cv.getBoundingClientRect();
@@ -853,7 +839,7 @@
       state.t = hit ? hit.peak : tc;
       render();
     });
-    return { wrap: wrap, sel: sel, cv: cv, note: wrap.querySelector(".ecgc-lead-note"), btn: wrap.querySelector(".ecgc-focus") };
+    return { wrap: wrap, sel: sel, cv: cv, note: wrap.querySelector(".ecgc-lead-note") };
   });
 
   function layoutLeads() {
@@ -891,12 +877,9 @@
       g.setAttribute("data-lead", L);
       panels[i].cv.setAttribute("aria-label", "Lead " + L + " trace, " + COND[state.cond].name + (i === state.focus ? ". Focus lead: tap a bump to jump to the moment that made it." : ""));
       panels[i].wrap.classList.toggle("is-focus", i === state.focus);
-      panels[i].btn.setAttribute("aria-pressed", i === state.focus ? "true" : "false");
-      panels[i].note.textContent = i === state.focus ? "" : s0(i);
     });
-    document.getElementById("ecgcWheels").setAttribute("aria-label", "Limb and chest lead wheels. Selected leads: " + SLOTS.map(function (s, i) { return s + " " + state.leads[i]; }).join(", "));
+    document.getElementById("ecgcWheels").setAttribute("aria-label", "Limb and chest lead wheels. Selected lead: " + state.leads[state.focus]);
   }
-  function s0(i) { return SLOTS[i] + (FRONTAL_AX[state.leads[i]] !== undefined ? " on the limb wheel" : " on the chest wheel"); }
 
   /* ---------- Timeline ---------- */
   var segsBox = document.getElementById("ecgcSegs");
@@ -1022,11 +1005,11 @@
   }
 
   var FAST_C = "#005A9E", SLOW_C = "#C85A00";
-  // Standard ECG paper: 25 mm/s and 10 mm/mV, so at 56 px/mV one 1 mm box is 5.6 px each way (40 ms by 0.1 mV).
+  // Standard ECG paper: 25 mm/s and 10 mm/mV, so at 100 px/mV one 1 mm box is 10 px each way (40 ms by 0.1 mV).
   // The strip is a rhythm strip at 75 per minute: earlier beats to the left, the beat being explained drawn last.
-  var PX_MS = GAIN / 10 / 40, STRIP_LEFT = 50;
+  var PX_MS = GAIN / 10 / 40, STRIP_LEFT = Math.round(200 * GAIN / 10 / 40 + 30); // room for the 1 mV pulse (200 ms wide) and its label
   function stripGeom(w) {
-    var stripMs = (w - STRIP_LEFT - 4) / PX_MS, A = Math.max(0, Math.floor((stripMs - CYCLE - 60) / 200) * 200 + 40);
+    var stripMs = (w - STRIP_LEFT - 4) / PX_MS, A = Math.max(0, Math.floor((stripMs - CYCLE - 20) / 40) * 40); // explained beat last, on a 1 mm line
     return { left: STRIP_LEFT, A: A, stripMs: stripMs, X: function (ms) { return STRIP_LEFT + (A + ms) * PX_MS; }, XS: function (sm) { return STRIP_LEFT + sm * PX_MS; },
       toMs: function (x) { return (x - STRIP_LEFT) / PX_MS - A; } };
   }

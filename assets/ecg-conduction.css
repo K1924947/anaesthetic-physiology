@@ -52,7 +52,7 @@
 .ecgc-lead-head { display: flex; align-items: center; gap: 8px; font: 600 14px var(--font-sans); }
 .ecgc-lead-head svg { width: 18px; height: 18px; flex: none; }
 .ecgc-lead-note { margin-left: auto; font-weight: 400; color: var(--muted); font-size: 12px; }
-.ecgc-lead canvas { display: block; width: 100%; height: 104px; }
+.ecgc-lead canvas { display: block; width: 100%; height: 384px; }
 .ecgc-lead-head select { font-size: 13px; padding: 1px 4px; }
 
 .ecgc-timeline { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px 12px 6px; }
