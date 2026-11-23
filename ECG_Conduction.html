@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261118">
 <link rel="stylesheet" href="assets/layout.css?v=20261118">
-<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123h">
+<link rel="stylesheet" href="assets/ecg-conduction.css?v=20261123i">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -54,6 +54,13 @@
         <button type="button" id="ecgcStep" class="ecgc-btn" aria-pressed="false">Step through</button>
         <button type="button" id="ecgcBack" class="ecgc-btn" hidden>Back</button>
         <button type="button" id="ecgcNext" class="ecgc-btn" hidden>Next</button>
+        <label class="ecgc-speed">Leads
+          <select id="ecgcNLeads" aria-label="Number of leads shown">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </label>
         <label class="ecgc-speed">Speed
           <select id="ecgcSpeed" aria-label="Playback speed">
             <option value="0.01">0.01x</option>
@@ -76,6 +83,7 @@
         <figcaption id="ecgcHeartCap" class="ecgc-rule"><span class="ecgc-rule-arrow" aria-hidden="true">&#10142;</span> Net wavefront <strong>towards</strong> a lead = <strong>up</strong>; <strong>away</strong> = <strong>down</strong>. Dashed in ST and T.</figcaption>
       </figure>
 
+      <div class="ecgc-leads" id="ecgcLeads"></div>
       <figure class="ecgc-wheels" id="ecgcWheels" role="img" aria-label="Limb and chest lead wheels">
         <p class="ecgc-wheel-title">Limb leads<br><span>frontal plane, hexaxial</span></p>
         <svg id="ecgcWheelF" viewBox="-78 -46 156 116" aria-hidden="true"></svg>
@@ -89,7 +97,6 @@
         </ul>
       </figure>
 
-      <div class="ecgc-leads" id="ecgcLeads"></div>
       <svg class="ecgc-link" id="ecgcLink" aria-hidden="true"></svg>
     </div>
 
@@ -157,6 +164,6 @@
     </p>
   </footer>
 </div>
-<script src="assets/ecg-conduction.js?v=20261123h"></script>
+<script src="assets/ecg-conduction.js?v=20261123i"></script>
 </body>
 </html>

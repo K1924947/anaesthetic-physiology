@@ -23,14 +23,25 @@ const q1 = await page.$eval("#ecgcQrs", (e) => +e.dataset.qrs);
 check("condition switch widens QRS", q0 < 120 && q1 >= 120, { normal: q0, lbbb: q1 });
 
 // One large lead panel: its dropdown picks any of the 12 leads and moves the electrode marker to the right wheel.
-const before = await page.$eval("#ecgcWheelMark", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
+const before = await page.$eval("#ecgcWheelMark-A", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
 await page.selectOption('select[data-slot="0"]', "V1");
-const after = await page.$eval("#ecgcWheelMark", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
-const layout = await page.evaluate(() => ({ panels: document.querySelectorAll(".ecgc-lead").length, canvases: document.querySelectorAll(".ecgc-lead canvas").length, focusBtns: document.querySelectorAll(".ecgc-focus").length,
-  marks: document.querySelectorAll("[id^=ecgcWheelMark]").length, options: document.querySelectorAll('select[data-slot="0"] option').length, speeds: [...document.querySelectorAll("#ecgcSpeed option")].map((o) => o.value) }));
-check("one lead panel (12-lead dropdown, no Focus buttons or slot shapes); dropdown moves the electrode marker between wheels; speeds 0.01 to 1x",
-  before.lead === "II" && before.wheel === "ecgcWheelF" && after.lead === "V1" && after.wheel === "ecgcWheelH" && layout.panels === 1 && layout.canvases === 1 && layout.focusBtns === 0 && layout.marks === 1 && layout.options === 12 &&
+const after = await page.$eval("#ecgcWheelMark-A", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
+const layout = await page.evaluate(() => { const E = window.ECGConduction, vis = () => [...document.querySelectorAll(".ecgc-lead")].filter((w) => !w.hidden), o = {};
+  const marks = () => [...document.querySelectorAll("[id^=ecgcWheelMark]")].filter((g) => g.isConnected && g.ownerSVGElement).map((g) => g.id + ":" + g.dataset.lead);
+  o.def = { panels: vis().length, marks: marks(), gain: E.paper().pxPerMv };
+  for (const n of [2, 3]) { E.setLeadCount(n); const p = E.paper(), cv = vis().map((w) => w.querySelector("canvas").getBoundingClientRect());
+    o[n] = { panels: vis().length, marks: marks(), gain: p.pxPerMv, square: Math.abs(p.pxPerMs * 400 - p.pxPerMv) < 1e-9, noOverlap: cv.every((r, i) => !i || r.top >= cv[i - 1].bottom), sh: document.documentElement.scrollHeight }; }
+  E.setLeadCount(1);
+  o.focusBtns = document.querySelectorAll(".ecgc-focus").length; o.options = document.querySelectorAll('select[data-slot="0"] option').length;
+  o.speeds = [...document.querySelectorAll("#ecgcSpeed option")].map((x) => x.value); o.counts = [...document.querySelectorAll("#ecgcNLeads option")].map((x) => x.value);
+  const st = document.querySelector(".ecgc-stage").children; o.order = [...st].map((n) => n.className.baseVal === undefined ? n.className.split(" ")[0] : n.getAttribute("class"));
+  return o; });
+check("lead count 1, 2 or 3 (default 1): gain 100 px/mV with one lead, scaled down to fit more, paper stays square; one shaped, lettered marker per shown lead; dropdown moves it between wheels; speeds 0.01 to 1x",
+  before.lead === "II" && before.wheel === "ecgcWheelF" && after.lead === "V1" && after.wheel === "ecgcWheelH" && layout.def.panels === 1 && layout.def.gain === 100 && layout.def.marks.length === 1 &&
+  layout[2].panels === 2 && layout[3].panels === 3 && layout[2].marks.length === 2 && layout[3].marks.length === 3 && layout[2].gain < 100 && layout[3].gain <= layout[2].gain && layout[2].square && layout[3].square &&
+  layout[2].noOverlap && layout[3].noOverlap && layout[2].sh <= 800 && layout[3].sh <= 800 && layout.focusBtns === 0 && layout.options === 12 && layout.counts.join() === "1,2,3" &&
   layout.speeds.join() === "0.01,0.02,0.05,0.1,0.25,0.5,1", { before, after, layout });
+check("ECG panel(s) next to the heart, wheels on the far right", layout.order.indexOf("ecgc-heart") === 0 && layout.order.indexOf("ecgc-leads") === 1 && layout.order.indexOf("ecgc-wheels") === 2, layout.order);
 await page.selectOption('select[data-slot="0"]', "II");
 
 const box = await page.$eval("#ecgcScrub", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
@@ -127,10 +138,10 @@ check("LBBB septum crossing is mostly slow; RBBB slow front is continuous; unaff
 check("LBBB steps include the slow crawl through the LV wall, and V1 QS credits the septum first", anim.lbTitles.some((t) => /Slow crawl through the LV wall/.test(t)) &&
   anim.lbTitles.some((t) => /Slow crawl across the septum/.test(t)) && /septum, then/.test(anim.v1), { titles: anim.lbTitles, v1: anim.v1 });
 
-// Round 11: standard paper, 25 mm/s and 10 mm/mV (square 10 px boxes at 100 px/mV), rhythm strip with the explained beat last.
-const paper = await page.evaluate(() => { const E = window.ECGConduction, p = E.paper(); return { p, w0: E.traceX(0, 0), w200: E.traceX(0, 200), w800: E.traceX(0, 800), right: document.querySelectorAll(".ecgc-lead canvas")[0].getBoundingClientRect().right }; });
-check("paper is 25 mm/s and 10 mm/mV: 1 mm = 10 px both ways, 200 ms = 50 px, one beat fits on the strip",
-  Math.abs(paper.p.pxPerMs * 40 - 10) < 1e-9 && paper.p.pxPerMv === 100 && Math.abs(paper.w200 - paper.w0 - 50) < 1e-6 && paper.w800 <= paper.right - 4, paper);
+// Round 11: standard paper, 25 mm/s and 10 mm/mV (square 10 px boxes at 100 px/mV), rhythm strip with the explained beat first.
+const paper = await page.evaluate(() => { const E = window.ECGConduction, p = E.paper(); const r = document.querySelectorAll(".ecgc-lead canvas")[0].getBoundingClientRect(); return { p, w0: E.traceX(0, 0), w200: E.traceX(0, 200), w800: E.traceX(0, 800), left: r.left, right: r.right }; });
+check("paper is 25 mm/s and 10 mm/mV: 1 mm = 10 px both ways, 200 ms = 50 px; the explained beat is first, just after the 1 mV pulse",
+  Math.abs(paper.p.pxPerMs * 40 - 10) < 1e-9 && paper.p.pxPerMv === 100 && Math.abs(paper.w200 - paper.w0 - 50) < 1e-6 && paper.w800 <= paper.right - 4 && paper.w0 - paper.left < 120, paper);
 
 // Round 9: repolarisation (recovery) map.
 const rep = await page.evaluate(() => { const E = window.ECGConduction, o = {}, AX = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150 };

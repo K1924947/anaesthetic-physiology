@@ -133,7 +133,7 @@
   function seg(c, name) { var s = COND[c].segs; for (var i = 0; i < s.length; i++) if (s[i][0] === name) return s[i]; return null; }
 
   /* ---------- State ---------- */
-  var state = { t: 0, cond: "normal", playing: !reduced, speed: 0.25, leads: ["II"], focus: 0, step: false, stepIdx: 0 };
+  var state = { t: 0, cond: "normal", playing: !reduced, speed: 0.25, leads: ["II", "V1", "V6"], nLeads: 1, focus: 0, step: false, stepIdx: 0 };
 
   /* ---------- Heart SVG: flat four-chamber cut-through ---------- */
   var svg = document.getElementById("ecgcSvg");
@@ -572,13 +572,16 @@
     });
   });
   // Vertical gain: about standard paper proportions for this time scale (10 mm/mV against 25 mm/s would be about 60 px/mV here).
-  var GAIN = 100; // px per mV (10 px per mm at 10 mm/mV), same for the trace and the 1 mV calibration pulse
+  // Gain in px per mV: 100 (10 px per mm at 10 mm/mV) with one lead, scaled down only as needed to fit 2 or 3 panels.
+  // The same gain drives the trace, the grid (square boxes) and the 1 mV calibration pulse.
+  var GAIN_MAX = 100, GAIN = GAIN_MAX, MAX_SPAN = 0;
   var DATA_RANGE = {};
   function dataRange(c, L) {
     var k = c + "|" + L; if (DATA_RANGE[k]) return DATA_RANGE[k];
     var a = SAMPLES[c][L], lo = 0, hi = 0; for (var i = 0; i < a.length; i++) { if (a[i] < lo) lo = a[i]; if (a[i] > hi) hi = a[i]; }
     return (DATA_RANGE[k] = [lo, hi]);
   }
+  Object.keys(SAMPLES).forEach(function (c) { LEADS.forEach(function (L) { var r = dataRange(c, L); MAX_SPAN = Math.max(MAX_SPAN, r[1] - r[0]); }); });
   var LEAD_RANGE = {};
   LEADS.forEach(function (L) {
     var hi = .6, lo = -.6;
@@ -783,8 +786,14 @@
   }
 
   /* ---------- Horizontal-plane wheel and lead markers ---------- */
-  // One lead panel; its electrode is marked on whichever wheel holds the selected lead.
-  var SLOTS = ["A"];
+  // Up to three lead panels (A, B, C), each marked on its wheel by its own shape and letter.
+  var SLOTS = ["A", "B", "C"];
+  function shape(s, g, k) {
+    k = k || 1;
+    if (s === "A") el("circle", { r: 6 * k, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
+    else if (s === "B") el("rect", { x: -5.5 * k, y: -5.5 * k, width: 11 * k, height: 11 * k, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
+    else el("path", { d: "M0," + (-7 * k) + " L" + (6.5 * k) + "," + (5.5 * k) + " L" + (-6.5 * k) + "," + (5.5 * k) + " Z", fill: "#fff", stroke: INK, "stroke-width": 2, "stroke-linejoin": "round" }, g);
+  }
   // Two wheels, same size: limb leads (frontal plane, hexaxial) and chest leads (horizontal plane, front at the bottom).
   function degTxt(d) { return (d > 0 ? "+" + d : String(d).replace("-", "\u2212")) + "\u00b0"; }
   function makeWheel(svgEl, AX, limb) {
@@ -805,22 +814,29 @@
   }
   var wheelF = makeWheel(document.getElementById("ecgcWheelF"), FRONTAL_AX, true);
   var wheelH = makeWheel(document.getElementById("ecgcWheelH"), HORIZ_AX, false);
-  var leadMarks = SLOTS.map(function () {
+  var leadMarks = SLOTS.map(function (s) {
     var g = document.createElementNS(NS, "g");
-    g.setAttribute("id", "ecgcWheelMark");
-    el("circle", { r: 5, fill: "#fff", stroke: INK, "stroke-width": 2 }, g);
-    el("circle", { r: 2, fill: INK }, g);
+    g.setAttribute("id", "ecgcWheelMark-" + s);
+    shape(s, g, .95);
+    var tx = el("text", { y: 3.5, "text-anchor": "middle", "font-size": 8.5, "font-weight": 700, "font-family": "var(--font-sans)", fill: "#111" }, g);
+    tx.textContent = s;
     return g;
   });
 
   /* ---------- Lead panels ---------- */
   var leadsBox = document.getElementById("ecgcLeads");
+  var SHAPE_ICON = {
+    A: '<circle cx="9" cy="9" r="7" fill="#fff" stroke="currentColor" stroke-width="2"/>',
+    B: '<rect x="2.5" y="2.5" width="13" height="13" fill="#fff" stroke="currentColor" stroke-width="2"/>',
+    C: '<path d="M9,1.5 L16.5,15.5 L1.5,15.5 Z" fill="#fff" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'
+  };
   var panels = SLOTS.map(function (s, i) {
     var wrap = document.createElement("section");
     wrap.className = "ecgc-lead";
-    wrap.setAttribute("aria-label", "ECG trace");
+    wrap.setAttribute("aria-label", "Trace " + s);
     var opts = LEADS.map(function (L) { return '<option value="' + L + '">' + L + "</option>"; }).join("");
-    wrap.innerHTML = '<div class="ecgc-lead-head"><label>Lead <select data-slot="' + i + '" aria-label="Lead shown on the trace">' + opts + "</select></label>" +
+    wrap.innerHTML = '<div class="ecgc-lead-head"><svg viewBox="0 0 18 18" aria-hidden="true">' + SHAPE_ICON[s] + "</svg>" +
+      "<span>" + s + '</span><label>Lead <select data-slot="' + i + '" aria-label="Lead shown in trace ' + s + '">' + opts + "</select></label>" +
       '<span class="ecgc-lead-note" aria-live="polite"></span></div>' +
       '<canvas role="img"></canvas>';
     leadsBox.appendChild(wrap);
@@ -830,7 +846,8 @@
     var cv = wrap.querySelector("canvas");
     cv.addEventListener("click", function (e) {
       var r = cv.getBoundingClientRect();
-      var tc = Math.max(0, Math.min(CYCLE - 1, stripGeom(r.width).toMs(e.clientX - r.left)));
+      // A tap on a later beat of the strip counts as the same moment of the explained beat.
+      var tm = stripGeom(r.width).toMs(e.clientX - r.left), tc = Math.max(0, Math.min(CYCLE - 1, tm >= CYCLE ? tm % CYCLE : tm));
       if (state.focus !== i) { state.focus = i; leadsChanged(); }
       var bs = bumpsFor(state.cond, state.leads[i]), hit = null;
       bs.forEach(function (b) { if (tc >= b.start - 6 && tc <= b.end + 6 && (!hit || Math.abs(b.peak - tc) < Math.abs(hit.peak - tc))) hit = b; });
@@ -865,7 +882,11 @@
       focusAxText.setAttribute("transform", "rotate(" + rot + " " + lx.toFixed(1) + " " + ly.toFixed(1) + ")");
       focusAxText.textContent = FL + " " + degTxt(FRONTAL_AX[FL]);
     }
+    if (state.focus >= state.nLeads) state.focus = 0;
+    panels.forEach(function (pn, i) { pn.wrap.hidden = i >= state.nLeads; });
+    leadsBox.setAttribute("data-n", state.nLeads);
     leadMarks.forEach(function (g, i) {
+      if (i >= state.nLeads) { if (g.parentNode) g.parentNode.removeChild(g); return; }
       var L = state.leads[i], dup = 0;
       for (var j = 0; j < i; j++) if (state.leads[j] === L) dup++;
       var W = FRONTAL_AX[L] !== undefined ? wheelF : wheelH, ax = (FRONTAL_AX[L] !== undefined ? FRONTAL_AX : HORIZ_AX)[L];
@@ -878,7 +899,7 @@
       panels[i].cv.setAttribute("aria-label", "Lead " + L + " trace, " + COND[state.cond].name + (i === state.focus ? ". Focus lead: tap a bump to jump to the moment that made it." : ""));
       panels[i].wrap.classList.toggle("is-focus", i === state.focus);
     });
-    document.getElementById("ecgcWheels").setAttribute("aria-label", "Limb and chest lead wheels. Selected lead: " + state.leads[state.focus]);
+    document.getElementById("ecgcWheels").setAttribute("aria-label", "Limb and chest lead wheels. Shown leads: " + SLOTS.slice(0, state.nLeads).map(function (s, i) { return s + " " + state.leads[i]; }).join(", "));
   }
 
   /* ---------- Timeline ---------- */
@@ -1007,9 +1028,17 @@
   var FAST_C = "#005A9E", SLOW_C = "#C85A00";
   // Standard ECG paper: 25 mm/s and 10 mm/mV, so at 100 px/mV one 1 mm box is 10 px each way (40 ms by 0.1 mV).
   // The strip is a rhythm strip at 75 per minute: earlier beats to the left, the beat being explained drawn last.
-  var PX_MS = GAIN / 10 / 40, STRIP_LEFT = Math.round(200 * GAIN / 10 / 40 + 30); // room for the 1 mV pulse (200 ms wide) and its label
+  var PX_MS, STRIP_LEFT, TAG_BAND = 25;
+  function setGain(g) { GAIN = g; PX_MS = g / 10 / 40; STRIP_LEFT = Math.round(200 * PX_MS + 30); } // room for the 1 mV pulse (200 ms wide) and its label
+  setGain(GAIN_MAX);
+  // One gain for every shown panel, set by the shortest canvas so the tallest beat of any lead or condition fits.
+  function fitGain() {
+    var hmin = Infinity; for (var i = 0; i < state.nLeads; i++) { var h = panels[i].cv.clientHeight; if (h) hmin = Math.min(hmin, h); }
+    var g = hmin === Infinity ? GAIN_MAX : Math.min(GAIN_MAX, Math.floor((hmin - TAG_BAND - 6) / MAX_SPAN));
+    if (g !== GAIN) setGain(g);
+  }
   function stripGeom(w) {
-    var stripMs = (w - STRIP_LEFT - 4) / PX_MS, A = Math.max(0, Math.floor((stripMs - CYCLE - 20) / 40) * 40); // explained beat last, on a 1 mm line
+    var stripMs = (w - STRIP_LEFT - 4) / PX_MS, A = 80; // explained beat first, 2 mm after the pulse; later beats to its right
     return { left: STRIP_LEFT, A: A, stripMs: stripMs, X: function (ms) { return STRIP_LEFT + (A + ms) * PX_MS; }, XS: function (sm) { return STRIP_LEFT + sm * PX_MS; },
       toMs: function (x) { return (x - STRIP_LEFT) / PX_MS - A; } };
   }
@@ -1024,7 +1053,7 @@
     var L = state.leads[i], data = SAMPLES[state.cond][L], isFocus = i === state.focus;
     var G = stripGeom(w), left = G.left, X = G.X, XS = G.XS;
     // Fixed gain; the baseline is placed per lead so this beat's tallest R and deepest S both fit (centred if it is tight).
-    var top = isFocus ? 25 : 3, dr = dataRange(state.cond, L), span = (dr[1] - dr[0]) * GAIN;
+    var top = isFocus ? TAG_BAND : 3, dr = dataRange(state.cond, L), span = (dr[1] - dr[0]) * GAIN;
     if (isFocus && span > h - top - 3) top = 3; // a very tall beat may run up behind the bump tags rather than be clipped
     var avail = h - top - 3;
     var y0 = span <= avail ? top + dr[1] * GAIN + (avail - span) / 2 : top + avail / 2 + (dr[1] + dr[0]) / 2 * GAIN;
@@ -1056,11 +1085,12 @@
     // The pen sits between whole milliseconds (linear), so trace, dot and cursor move together at very slow speeds.
     var tp = Math.max(0, Math.min(CYCLE - 1, t)), yp = data[cut] + ((data[Math.min(CYCLE - 1, cut + 1)] - data[cut]) * (tp - cut));
     ctx.lineJoin = "round";
-    // Earlier beats of the strip (already recorded), then this beat: black up to the cursor, faint grey after it.
-    ctx.strokeStyle = "#111"; ctx.lineWidth = 1.8;
-    for (var b0 = G.A - CYCLE; b0 + CYCLE > -left / PX_MS; b0 -= CYCLE) {
+    // This beat first: black up to the cursor, faint grey after it. Later beats of the strip are not recorded yet, so
+    // they are drawn faint grey too (the same beat repeating at 75 per minute).
+    ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 1.5;
+    for (var b0 = G.A + CYCLE; XS(b0) < w; b0 += CYCLE) {
       ctx.beginPath();
-      for (var k0 = 0, on0 = false; k0 < CYCLE; k0++) { var xs = XS(b0 + k0); if (xs < left) continue; if (!on0) { ctx.moveTo(xs, Y(data[k0])); on0 = true; } else ctx.lineTo(xs, Y(data[k0])); }
+      for (var k0 = 0; k0 < CYCLE; k0++) { var xs = XS(b0 + k0); if (xs > w) break; if (!k0) ctx.moveTo(xs, Y(data[k0])); else ctx.lineTo(xs, Y(data[k0])); }
       ctx.stroke();
     }
     ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 1.5;
@@ -1340,7 +1370,8 @@
     var t = state.t;
     renderHeart(t);
     var link = null;
-    for (var i = 0; i < panels.length; i++) { var l = renderPanel(i, t); if (l) link = l; }
+    fitGain();
+    for (var i = 0; i < state.nLeads; i++) { var l = renderPanel(i, t); if (l) link = l; }
     renderLink(link, state.focus);
     document.getElementById("ecgcMs").textContent = Math.round(t);
     scrub.value = Math.round(t);
@@ -1391,6 +1422,9 @@
   }
   playBtn.addEventListener("click", function () { setPlaying(!state.playing); });
   document.getElementById("ecgcReplay").addEventListener("click", function () { state.t = 0; setPlaying(true); render(); });
+  var nSel = document.getElementById("ecgcNLeads");
+  function setLeadCount(n) { state.nLeads = Math.max(1, Math.min(3, n | 0)); leadsChanged(); }
+  nSel.addEventListener("change", function () { setLeadCount(+nSel.value); });
   document.getElementById("ecgcSpeed").addEventListener("change", function (e) { state.speed = parseFloat(e.target.value) || 0.25; });
   // Pressing the scrubber pauses even when the press lands on the moving thumb (which sends no input event).
   scrub.addEventListener("pointerdown", function () { setStepMode(false); setPlaying(false); render(); });
@@ -1439,7 +1473,7 @@
     bumps: function (c, L) { return bumpsFor(c, L).map(function (b) { return { name: b.name, start: b.start, end: b.end, peak: b.peak, amp: b.amp, slow: b.slow, label: b.label }; }); },
     narration: narration,
     wheels: function () { return { limb: Object.keys(wheelF.axes), chest: Object.keys(wheelH.axes), limbVec: wheelF.vec.getAttribute("opacity"), chestVec: wheelH.vec.getAttribute("opacity"),
-      marks: leadMarks.map(function (g) { return { lead: g.dataset.lead, wheel: g.ownerSVGElement.id }; }) }; },
+      marks: leadMarks.filter(function (g) { return !!g.ownerSVGElement; }).map(function (g) { return { lead: g.dataset.lead, wheel: g.ownerSVGElement.id }; }) }; },
     steps: function (c, L) { return stepsFor(c, L || state.leads[state.focus]).map(function (s) { return { id: s.id, ids: s.ids.slice(), t: s.t, text: s.text }; }); },
     stepMode: setStepMode,
     goStep: function (id) { var st = curSteps(); for (var i = 0; i < st.length; i++) if (st[i].ids.indexOf(id) >= 0) { goStep(i); return true; } return false; },
@@ -1472,7 +1506,8 @@
     recovery: function (c) { var M = MODEL[c]; return { first: M.rec.first, median: M.rec.median, last: M.rec.last, dipole: { x: M.recDipole.x, y: M.recDipole.y }, tS: M.tS, tE: M.tE }; },
     recoveryShown: function () { var lit = 0, front = 0; myoNodes.forEach(function (n) { if (+n.dot.getAttribute("opacity") > 0 || +n.chev.getAttribute("opacity") > 0) lit++; if (n.rec.getAttribute("opacity") === "1") front++; }); return { lit: lit, front: front, total: myoNodes.length }; },
     traceX: function (i, ms) { var cv = panels[i].cv, r = cv.getBoundingClientRect(); return r.left + stripGeom(r.width).X(ms); },
-    paper: function () { return { pxPerMs: PX_MS, pxPerMv: GAIN, mmPx: GAIN / 10, calWidthMs: 200, calHeightMv: 1 }; },
+    paper: function () { return { pxPerMs: PX_MS, pxPerMv: GAIN, mmPx: GAIN / 10, calWidthMs: 200, calHeightMv: 1, nLeads: state.nLeads }; },
+    setLeadCount: function (n) { nSel.value = String(n); setLeadCount(n); },
     activationGap: function (c) { var a = MODEL[c].pts.map(function (p) { return p.ta; }).sort(function (x, y) { return x - y; }), g = 0; for (var i = 1; i < a.length; i++) g = Math.max(g, a[i] - a[i - 1]); return g; },
     model: function (c) { var M = MODEL[c]; return { qon: M.qon, qend: M.qend, fracSlow: M.fracSlow, points: M.pts.length, slowPoints: M.pts.filter(function (p) { return p.slow; }).length }; },
     qrsWidth: function () { var q = seg(state.cond, "QRS"); return q[2] - q[1]; }
