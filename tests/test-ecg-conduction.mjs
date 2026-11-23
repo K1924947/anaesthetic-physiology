@@ -60,8 +60,8 @@ check("bump labels exist for the focus lead", lab.focusLead === "aVL" && lab.nam
   lab.seen.every((t, i) => t.startsWith(lab.names[i] + ":")), lab);
 
 const tap = await page.evaluate(() => { const E = window.ECGConduction; const b = E.bumps("lbbb", "aVL").find((x) => x.name === "2nd R") || E.bumps("lbbb", "aVL")[0];
-  E.setTime(40); const cv = document.querySelector(".ecgc-lead.is-focus canvas"), r = cv.getBoundingClientRect(), left = 34, pw = r.width - left - 4;
-  return { peak: b.peak, x: r.left + left + (b.peak + 4) / 800 * pw, y: r.top + r.height / 2 }; });
+  E.setTime(40); const cv = document.querySelector(".ecgc-lead.is-focus canvas"), r = cv.getBoundingClientRect(), fi = [...document.querySelectorAll(".ecgc-lead canvas")].indexOf(cv);
+  return { peak: b.peak, x: E.traceX(fi, b.peak + 1), y: r.top + r.height / 2 }; });
 await page.mouse.click(tap.x, tap.y);
 const tapped = await page.evaluate(() => ({ t: window.ECGConduction.state.t, playing: window.ECGConduction.state.playing, link: document.querySelector("#ecgcLink line").getAttribute("opacity") }));
 check("tapping a bump sets the clock to it and shows the link", tapped.t === tap.peak && !tapped.playing && tapped.link === "1", { tap, tapped });
@@ -119,6 +119,11 @@ check("LBBB septum crossing is mostly slow; RBBB slow front is continuous; unaff
   Math.abs(anim.reg.rbbb.LVB.median - anim.reg.normal.LVB.median) < 1, { sep: anim.reg.lbbb.SEP, gap: anim.gap, rbbbRV: anim.reg.rbbb.RV, lvb: [anim.reg.rbbb.LVB, anim.reg.normal.LVB] });
 check("LBBB steps include the slow crawl through the LV wall, and V1 QS credits the septum first", anim.lbTitles.some((t) => /Slow crawl through the LV wall/.test(t)) &&
   anim.lbTitles.some((t) => /Slow crawl across the septum/.test(t)) && /septum, then/.test(anim.v1), { titles: anim.lbTitles, v1: anim.v1 });
+
+// Round 11: standard paper, 25 mm/s and 10 mm/mV (square 5.6 px boxes), rhythm strip with the explained beat last.
+const paper = await page.evaluate(() => { const E = window.ECGConduction, p = E.paper(); return { p, w0: E.traceX(0, 0), w200: E.traceX(0, 200), w800: E.traceX(0, 800), right: document.querySelectorAll(".ecgc-lead canvas")[0].getBoundingClientRect().right }; });
+check("paper is 25 mm/s and 10 mm/mV: 1 mm = 5.6 px both ways, 200 ms = 28 px, one beat fits on the strip",
+  Math.abs(paper.p.pxPerMs * 40 - 5.6) < 1e-9 && paper.p.pxPerMv === 56 && Math.abs(paper.w200 - paper.w0 - 28) < 1e-6 && paper.w800 <= paper.right - 4, paper);
 
 // Round 9: repolarisation (recovery) map.
 const rep = await page.evaluate(() => { const E = window.ECGConduction, o = {}, AX = { I: 0, II: 60, III: 120, aVF: 90, aVL: -30, aVR: -150 };

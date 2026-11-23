@@ -791,8 +791,8 @@
     wrap.querySelector(".ecgc-focus").addEventListener("click", function () { state.focus = i; leadsChanged(); });
     var cv = wrap.querySelector("canvas");
     cv.addEventListener("click", function (e) {
-      var r = cv.getBoundingClientRect(), left = 34, pw = r.width - left - 4;
-      var tc = Math.max(0, Math.min(CYCLE - 1, (e.clientX - r.left - left) / pw * CYCLE));
+      var r = cv.getBoundingClientRect();
+      var tc = Math.max(0, Math.min(CYCLE - 1, stripGeom(r.width).toMs(e.clientX - r.left)));
       if (state.focus !== i) { state.focus = i; leadsChanged(); }
       var bs = bumpsFor(state.cond, state.leads[i]), hit = null;
       bs.forEach(function (b) { if (tc >= b.start - 6 && tc <= b.end + 6 && (!hit || Math.abs(b.peak - tc) < Math.abs(hit.peak - tc))) hit = b; });
@@ -965,6 +965,14 @@
   }
 
   var FAST_C = "#005A9E", SLOW_C = "#C85A00";
+  // Standard ECG paper: 25 mm/s and 10 mm/mV, so at 56 px/mV one 1 mm box is 5.6 px each way (40 ms by 0.1 mV).
+  // The strip is a rhythm strip at 75 per minute: earlier beats to the left, the beat being explained drawn last.
+  var PX_MS = GAIN / 10 / 40, STRIP_LEFT = 50;
+  function stripGeom(w) {
+    var stripMs = (w - STRIP_LEFT - 4) / PX_MS, A = Math.max(0, Math.floor((stripMs - CYCLE - 60) / 200) * 200 + 40);
+    return { left: STRIP_LEFT, A: A, stripMs: stripMs, X: function (ms) { return STRIP_LEFT + (A + ms) * PX_MS; }, XS: function (sm) { return STRIP_LEFT + sm * PX_MS; },
+      toMs: function (x) { return (x - STRIP_LEFT) / PX_MS - A; } };
+  }
   function renderPanel(i, t) {
     var cv = panels[i].cv, dpr = window.devicePixelRatio || 1;
     var w = cv.clientWidth, h = cv.clientHeight;
@@ -974,48 +982,50 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     var L = state.leads[i], data = SAMPLES[state.cond][L], isFocus = i === state.focus;
-    var left = 34, pw = w - left - 4;
-    function X(ms) { return left + ms / CYCLE * pw; }
+    var G = stripGeom(w), left = G.left, X = G.X, XS = G.XS;
     // Fixed gain; the baseline is placed per lead so this beat's tallest R and deepest S both fit (centred if it is tight).
     var top = isFocus ? 25 : 3, dr = dataRange(state.cond, L), span = (dr[1] - dr[0]) * GAIN;
     if (isFocus && span > h - top - 3) top = 3; // a very tall beat may run up behind the bump tags rather than be clipped
     var avail = h - top - 3;
     var y0 = span <= avail ? top + dr[1] * GAIN + (avail - span) / 2 : top + avail / 2 + (dr[1] + dr[0]) / 2 * GAIN;
     function Y(mv) { return y0 - mv * GAIN; }
-    var rg = [(y0 - h) / GAIN, (y0 - top) / GAIN];
-    // Light P and T bands from the model's own P and T windows (letters on the trace carry the meaning).
+    var rg = [(y0 - h) / GAIN, y0 / GAIN];
     var segP = COND[state.cond].segs[0], segT = COND[state.cond].segs[4];
-    ctx.fillStyle = "rgba(0,90,158,.07)"; ctx.fillRect(X(segP[1]), 0, X(segP[2]) - X(segP[1]), h);
-    ctx.fillStyle = "rgba(78,89,104,.08)"; ctx.fillRect(X(segT[1]), 0, X(segT[2]) - X(segT[1]), h);
-    // Standard ECG paper in one grey family: 1 mm boxes (40 ms by 0.1 mV) faint, 5 mm boxes (200 ms by 0.5 mV) darker.
-    // Time is stretched so one beat fills the panel, so the boxes are wider than they are tall.
+    // Classic paper: pale background, salmon grid (one orange family), 1 mm minor lines fainter than 5 mm major lines.
+    ctx.fillStyle = "#FFF9F5"; ctx.fillRect(0, 0, w, h);
     ctx.lineWidth = 1;
-    var gx = [], gy = [];
-    for (var ms = 0; ms <= CYCLE; ms += 40) gx.push([Math.round(X(ms)) + .5, ms % 200 === 0]);
-    for (var mm = Math.ceil(rg[0] * 10); mm <= rg[1] * 10; mm++) gy.push([Math.round(Y(mm / 10)) + .5, mm % 5 === 0, mm === 0]);
+    var gx = [], gy = [], mmPx = GAIN / 10;
+    for (var n = Math.ceil(-left / mmPx); left + n * mmPx <= w; n++) gx.push([Math.round(left + n * mmPx) + .5, n % 5 === 0]);
+    for (var mm = Math.ceil(rg[0] * 10); mm <= rg[1] * 10; mm++) gy.push([Math.round(Y(mm / 10)) + .5, mm % 5 === 0]);
     [false, true].forEach(function (major) {
-      ctx.strokeStyle = major ? "#D6D2CB" : "#EFECE7";
+      ctx.strokeStyle = major ? "#EDB497" : "#F8DFD2";
       ctx.beginPath();
       gx.forEach(function (g) { if (g[1] === major) { ctx.moveTo(g[0], 0); ctx.lineTo(g[0], h); } });
-      gy.forEach(function (g) { if (g[1] === major && !g[2]) { ctx.moveTo(left, g[0]); ctx.lineTo(w, g[0]); } });
+      gy.forEach(function (g) { if (g[1] === major) { ctx.moveTo(0, g[0]); ctx.lineTo(w, g[0]); } });
       ctx.stroke();
     });
-    ctx.strokeStyle = "#B9B5AE"; ctx.beginPath(); ctx.moveTo(left, Math.round(Y(0)) + .5); ctx.lineTo(w, Math.round(Y(0)) + .5); ctx.stroke();
-    ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5;
-    // 1 mV calibration pulse at the trace gain, on the baseline (moved down only if the baseline is too high to fit it).
-    var cb = Math.min(h - 3, Math.max(Y(0), top + GAIN + 2)), ct = cb - GAIN;
-    ctx.beginPath(); ctx.moveTo(14, cb); ctx.lineTo(18, cb); ctx.lineTo(18, ct); ctx.lineTo(26, ct); ctx.lineTo(26, cb); ctx.lineTo(31, cb); ctx.stroke();
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5; ctx.lineJoin = "miter";
+    // Standard 1 mV calibration pulse: 10 mm tall, 200 ms (5 mm) wide, on the baseline (moved down only if needed to fit).
+    var cb = Math.min(h - 3, Math.max(Y(0), top + GAIN + 2)), ct = cb - GAIN, c0 = left - 6 - 40 * PX_MS * 5;
+    ctx.beginPath(); ctx.moveTo(c0 - 4, cb); ctx.lineTo(c0, cb); ctx.lineTo(c0, ct); ctx.lineTo(c0 + 200 * PX_MS, ct); ctx.lineTo(c0 + 200 * PX_MS, cb); ctx.lineTo(c0 + 200 * PX_MS + 4, cb); ctx.stroke();
     // "1 mV" reads up the left side of the pulse, centred on it, so it never touches the pulse top.
     ctx.fillStyle = "#111"; ctx.font = "11px 'Source Sans 3', sans-serif";
-    ctx.save(); ctx.translate(11, (cb + ct) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText("1 mV", 0, 0); ctx.restore();
+    ctx.save(); ctx.translate(c0 - 7, (cb + ct) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText("1 mV", 0, 0); ctx.restore();
     ctx.save(); ctx.beginPath(); ctx.rect(0, top - 2, w, h - top + 2); ctx.clip();
     var cut = Math.max(0, Math.min(CYCLE - 1, Math.floor(t)));
     ctx.lineJoin = "round";
-    ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 2.2;
+    // Earlier beats of the strip (already recorded), then this beat: black up to the cursor, faint grey after it.
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 1.8;
+    for (var b0 = G.A - CYCLE; b0 + CYCLE > -left / PX_MS; b0 -= CYCLE) {
+      ctx.beginPath();
+      for (var k0 = 0, on0 = false; k0 < CYCLE; k0++) { var xs = XS(b0 + k0); if (xs < left) continue; if (!on0) { ctx.moveTo(xs, Y(data[k0])); on0 = true; } else ctx.lineTo(xs, Y(data[k0])); }
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (var k = cut; k < CYCLE; k++) { if (k === cut) ctx.moveTo(X(k), Y(data[k])); else ctx.lineTo(X(k), Y(data[k])); }
     ctx.stroke();
-    ctx.strokeStyle = "#111"; ctx.lineWidth = 3.3;
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 1.8;
     ctx.beginPath();
     for (k = 0; k <= cut; k++) { if (k === 0) ctx.moveTo(X(k), Y(data[k])); else ctx.lineTo(X(k), Y(data[k])); }
     ctx.stroke();
@@ -1028,7 +1038,7 @@
       bs.forEach(function (b, bi) {
         if (b.start > cut) return;
         var col = b.slow ? SLOW_C : FAST_C, e = Math.min(b.end, cut);
-        ctx.strokeStyle = col; ctx.lineWidth = 4.4; ctx.setLineDash(b.slow ? [6, 3] : []);
+        ctx.strokeStyle = col; ctx.lineWidth = 2.6; ctx.setLineDash(b.slow ? [4, 2] : []);
         ctx.beginPath();
         for (var t2 = b.start; t2 <= e; t2++) { if (t2 === b.start) ctx.moveTo(X(t2), Y(data[t2])); else ctx.lineTo(X(t2), Y(data[t2])); }
         ctx.stroke(); ctx.setLineDash([]);
@@ -1299,6 +1309,8 @@
   playBtn.addEventListener("click", function () { setPlaying(!state.playing); });
   document.getElementById("ecgcReplay").addEventListener("click", function () { state.t = 0; setPlaying(true); render(); });
   document.getElementById("ecgcSpeed").addEventListener("change", function (e) { state.speed = parseFloat(e.target.value) || 0.25; });
+  // Pressing the scrubber pauses even when the press lands on the moving thumb (which sends no input event).
+  scrub.addEventListener("pointerdown", function () { setStepMode(false); setPlaying(false); render(); });
   scrub.addEventListener("input", function () { setStepMode(false); setPlaying(false); state.t = Math.max(0, Math.min(CYCLE - 1, +scrub.value)); render(); });
 
   function leadsChanged() {
@@ -1376,6 +1388,8 @@
     },
     recovery: function (c) { var M = MODEL[c]; return { first: M.rec.first, median: M.rec.median, last: M.rec.last, dipole: { x: M.recDipole.x, y: M.recDipole.y }, tS: M.tS, tE: M.tE }; },
     recoveryShown: function () { var lit = 0, front = 0; myoNodes.forEach(function (n) { if (+n.dot.getAttribute("opacity") > 0 || +n.chev.getAttribute("opacity") > 0) lit++; if (n.rec.getAttribute("opacity") === "1") front++; }); return { lit: lit, front: front, total: myoNodes.length }; },
+    traceX: function (i, ms) { var cv = panels[i].cv, r = cv.getBoundingClientRect(); return r.left + stripGeom(r.width).X(ms); },
+    paper: function () { return { pxPerMs: PX_MS, pxPerMv: GAIN, mmPx: GAIN / 10, calWidthMs: 200, calHeightMv: 1 }; },
     activationGap: function (c) { var a = MODEL[c].pts.map(function (p) { return p.ta; }).sort(function (x, y) { return x - y; }), g = 0; for (var i = 1; i < a.length; i++) g = Math.max(g, a[i] - a[i - 1]); return g; },
     model: function (c) { var M = MODEL[c]; return { qon: M.qon, qend: M.qend, fracSlow: M.fracSlow, points: M.pts.length, slowPoints: M.pts.filter(function (p) { return p.slow; }).length }; },
     qrsWidth: function () { var q = seg(state.cond, "QRS"); return q[2] - q[1]; }
