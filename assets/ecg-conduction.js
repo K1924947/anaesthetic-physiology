@@ -845,12 +845,40 @@
     sel.value = state.leads[i];
     sel.addEventListener("change", function () { state.leads[i] = sel.value; leadsChanged(); });
     var cv = wrap.querySelector("canvas");
-    cv.addEventListener("click", function (e) {
-      var r = cv.getBoundingClientRect();
-      // A tap on beat 1 or 2 jumps to that moment of that beat; a tap on a later (continuing) beat counts as beat 2.
-      var tm = Math.max(0, stripGeom(r.width).toMs(e.clientX - r.left)), lp = loopMs();
+    // Strip x to explained time: beats 1 and 2 map to themselves; a later (continuing) beat counts as beat 2.
+    function xToT(clientX) {
+      var r = cv.getBoundingClientRect(), tm = Math.max(0, stripGeom(r.width).toMs(clientX - r.left)), lp = loopMs();
       if (tm >= lp || tm >= BEATS * CYCLE) { tm = (BEATS - 1) * CYCLE + tm % CYCLE; if (tm >= lp) tm -= CYCLE; }
-      var off = beatOf(tm) * CYCLE, tc = tm - off;
+      return Math.max(0, Math.min(lp - 1, tm));
+    }
+    // Drag across the strip to scrub (pointer events: mouse, pen and touch); a press without movement stays a tap.
+    var drag = null, swallowClick = false;
+    cv.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button > 0) return;
+      drag = { id: e.pointerId, x0: e.clientX, on: false };
+      try { cv.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
+    });
+    cv.addEventListener("pointermove", function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (!drag.on && Math.abs(e.clientX - drag.x0) < 5) return;
+      if (!drag.on) {
+        drag.on = true; cv.classList.add("is-dragging");
+        setStepMode(false); setPlaying(false);
+        if (state.focus !== i) { state.focus = i; layoutLeads(); }
+      }
+      e.preventDefault();
+      state.t = xToT(e.clientX); lastSentence = ""; render();
+    });
+    function endDrag(e) {
+      if (!drag || (e && e.pointerId !== drag.id)) return;
+      if (drag.on) { swallowClick = true; cv.classList.remove("is-dragging"); }
+      drag = null;
+    }
+    cv.addEventListener("pointerup", endDrag);
+    cv.addEventListener("pointercancel", function (e) { swallowClick = false; endDrag(e); swallowClick = false; });
+    cv.addEventListener("click", function (e) {
+      if (swallowClick) { swallowClick = false; return; }
+      var tm = xToT(e.clientX), off = beatOf(tm) * CYCLE, tc = tm - off;
       if (state.focus !== i) { state.focus = i; leadsChanged(); }
       var bs = bumpsFor(state.cond, state.leads[i]), hit = null;
       bs.forEach(function (b) { if (tc >= b.start - 6 && tc <= b.end + 6 && (!hit || Math.abs(b.peak - tc) < Math.abs(hit.peak - tc))) hit = b; });
@@ -914,20 +942,17 @@
   var segNodes = [];
   function buildSegs() {
     segsBox.innerHTML = "";
-    var LOOP = loopMs(); segNodes = [];
-    for (var b = 0; b < BEATS; b++) COND[state.cond].segs.forEach(function (s) {
-      var a = s[1] + b * CYCLE, e = Math.min(LOOP, s[2] + b * CYCLE);
-      if (e <= a) return;
+    // One beat's segments; the bar maps to whichever beat (1 or 2) is being explained.
+    segNodes = COND[state.cond].segs.map(function (s) {
       var d = document.createElement("div");
-      d.className = "ecgc-seg" + (b && s[0] === "P" ? " ecgc-seg-beat" : "");
-      d.style.flex = String(e - a);
-      d.textContent = e - a >= 60 ? s[0] : "";
-      d.title = "Beat " + (b + 1) + ": " + s[0];
-      d.dataset.from = a; d.dataset.to = e;
+      d.className = "ecgc-seg";
+      d.style.flex = String(s[2] - s[1]);
+      d.textContent = s[0];
+      d.dataset.from = s[1]; d.dataset.to = s[2];
       segsBox.appendChild(d);
-      segNodes.push(d);
+      return d;
     });
-    scrub.max = LOOP - 1;
+    scrub.max = CYCLE - 1;
     var q = seg(state.cond, "QRS"), qrsEl = document.getElementById("ecgcQrs");
     qrsEl.textContent = "QRS " + (q[2] - q[1]) + " ms";
     qrsEl.setAttribute("data-qrs", q[2] - q[1]);
@@ -1513,7 +1538,6 @@
   function render() {
     fitGain();
     var LOOP = loopMs();
-    if (+scrub.max !== LOOP - 1) buildSegs();
     if (state.t >= LOOP) state.t = state.t % LOOP;
     var t = state.t, beat = beatOf(t), tl = t - beat * CYCLE;
     renderHeart(tl);
@@ -1522,10 +1546,10 @@
     renderLink(link, state.focus);
     document.getElementById("ecgcMs").textContent = Math.round(tl);
     document.getElementById("ecgcBeat").textContent = "Beat " + (beat + 1) + " of " + BEATS + ":";
-    scrub.value = Math.round(t);
+    scrub.value = Math.round(tl);
     scrub.setAttribute("aria-valuetext", "Beat " + (beat + 1) + " of " + BEATS + ", " + Math.round(tl) + " ms after the SA node fires");
-    thumb.style.left = (t / LOOP * 100) + "%";
-    for (var j = 0; j < segNodes.length; j++) segNodes[j].classList.toggle("is-now", t >= +segNodes[j].dataset.from && t < +segNodes[j].dataset.to);
+    thumb.style.left = (tl / CYCLE * 100) + "%";
+    for (var j = 0; j < segNodes.length; j++) segNodes[j].classList.toggle("is-now", tl >= +segNodes[j].dataset.from && tl < +segNodes[j].dataset.to);
     // Paused on a bump of the focus lead: explain that bump.
     renderNarration(tl);
   }
@@ -1574,6 +1598,16 @@
     requestAnimationFrame(tick);
   }
   playBtn.addEventListener("click", function () { setPlaying(!state.playing); });
+  // Space toggles Play/Pause wherever focus is (not in text fields); Alt+Down still opens a focused dropdown.
+  function isSpace(e) { return (e.key === " " || e.code === "Space") && !e.altKey && !e.ctrlKey && !e.metaKey; }
+  function typing(n) { return n && (n.isContentEditable || n.tagName === "TEXTAREA" || (n.tagName === "INPUT" && !/^(range|checkbox|radio|button|submit|reset|color|file|image)$/i.test(n.type))); }
+  document.addEventListener("keydown", function (e) {
+    if (!isSpace(e) || typing(e.target)) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!e.repeat) { setPlaying(!state.playing); if (state.playing) render(); }
+  }, true);
+  document.addEventListener("keyup", function (e) { if (isSpace(e) && !typing(e.target)) { e.preventDefault(); e.stopPropagation(); } }, true);
+  document.addEventListener("keypress", function (e) { if (isSpace(e) && !typing(e.target)) { e.preventDefault(); e.stopPropagation(); } }, true);
   document.getElementById("ecgcReplay").addEventListener("click", function () { state.t = 0; setPlaying(true); render(); });
   var nSel = document.getElementById("ecgcNLeads");
   function setLeadCount(n) { state.nLeads = Math.max(1, Math.min(3, n | 0)); leadsChanged(); }
@@ -1581,7 +1615,7 @@
   document.getElementById("ecgcSpeed").addEventListener("change", function (e) { state.speed = parseFloat(e.target.value) || 0.25; });
   // Pressing the scrubber pauses even when the press lands on the moving thumb (which sends no input event).
   scrub.addEventListener("pointerdown", function () { setStepMode(false); setPlaying(false); render(); });
-  scrub.addEventListener("input", function () { setStepMode(false); setPlaying(false); state.t = Math.max(0, Math.min(loopMs() - 1, +scrub.value)); render(); });
+  scrub.addEventListener("input", function () { setStepMode(false); setPlaying(false); var off = beatOf(state.t) * CYCLE; state.t = Math.max(0, Math.min(loopMs() - 1, off + +scrub.value)); render(); });
 
   function leadsChanged() {
     layoutLeads();

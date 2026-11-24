@@ -48,7 +48,7 @@ await page.selectOption('select[data-slot="0"]', "II");
 
 const box = await page.$eval("#ecgcScrub", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
 const loopMs = await page.evaluate(() => window.ECGConduction.loop().ms);
-await page.mouse.click(box.x + 8 + (box.w - 16) * (232 / (loopMs - 1)), box.y + box.h / 2); // range thumb is 16 px wide
+await page.mouse.click(box.x + 8 + (box.w - 16) * (232 / 799), box.y + box.h / 2); // one-beat bar (0 to 799 ms); range thumb is 16 px wide
 const ms = await page.$eval("#ecgcMs", (e) => +e.textContent);
 const playing = await page.evaluate(() => window.ECGConduction.state.playing);
 check("scrubbing sets the readout and pauses", Math.abs(ms - 232) < 12 && !playing, { ms, playing });
@@ -292,8 +292,8 @@ const two = await page.evaluate(async () => {
   return o; });
 await page.mouse.click(two.tap.x, two.tap.y);
 const tap2 = await page.evaluate(() => window.ECGConduction.state.t);
-check("two beats: loop holds two full beats (1600 ms with 2 or 3 leads; at least to the second T end with 1 lead), two QRS segments on the timeline",
-  two.loops[2].beats === 2 && two.loops[2].ms === 1600 && two.loops[3].ms === 1600 && two.loops[1].ms >= 800 + 600 && two.segs === 2, two.loops);
+check("two beats: loop holds two full beats (1600 ms with 2 or 3 leads; at least to the second T end with 1 lead), one beat's segments on the timeline",
+  two.loops[2].beats === 2 && two.loops[2].ms === 1600 && two.loops[3].ms === 1600 && two.loops[1].ms >= 800 + 600 && two.segs === 1, two.loops);
 check("two beats: both beats drawn as full black traces (QRS, P and T of beat 2 in black), no faint grey later beats",
   two.cols.qrs1.black > 0 && two.cols.qrs2.black > 0 && two.cols.p2.black > 0 && two.cols.t2.black > 0 && Object.values(two.cols).every((c) => c.grey === 0), two.cols);
 check("two beats: the heart and narration follow the second beat; the readout says Beat 2 of 2", two.follow.sameHeart && two.follow.sameText && two.follow.beat === "Beat 2 of 2:" && two.follow.ms < 800, two.follow);
@@ -341,6 +341,61 @@ await page.mouse.click(fill[3].tap3.x, fill[3].tap3.y);
 const tap3 = await page.evaluate(() => ({ t: window.ECGConduction.state.t, beat: document.getElementById("ecgcBeat").textContent }));
 check("tapping a bump on a continuing beat (beat 3) jumps to that bump in beat 2", tap3.t === 800 + fill[3].peak && tap3.beat === "Beat 2 of 2:", tap3);
 await page.evaluate(() => window.ECGConduction.setLeadCount(1));
+
+// Round 17: one-beat timeline bar, drag-to-scrub on the strips, Space toggles Play/Pause anywhere.
+const tl = await page.evaluate(() => { const E = window.ECGConduction, o = {}; E.setCondition("rbbb", true);
+  o.segs = [...document.querySelectorAll("#ecgcSegs .ecgc-seg")].map((d) => d.textContent);
+  const th = () => document.querySelector(".ecgc-scrub-thumb").style.left, now = () => (document.querySelector("#ecgcSegs .is-now") || {}).textContent;
+  E.setTime(232); o.b1 = [th(), now(), document.getElementById("ecgcScrub").value, document.getElementById("ecgcBeat").textContent];
+  E.setTime(1032); o.b2 = [th(), now(), document.getElementById("ecgcScrub").value, document.getElementById("ecgcBeat").textContent];
+  const sc = document.getElementById("ecgcScrub"); sc.value = "400"; sc.dispatchEvent(new Event("input")); o.inBeat2 = E.state.t; o.max = sc.max;
+  return o; });
+check("timeline bar shows one beat (P, PR, QRS, ST, T, Rest); it maps to the beat being explained and the marker moves within it",
+  tl.segs.join() === "P,PR,QRS,ST,T,Rest" && tl.b1[0] === tl.b2[0] && tl.b1[1] === "QRS" && tl.b2[1] === "QRS" && tl.b1[2] === "232" && tl.b2[2] === "232" &&
+  tl.b1[3] === "Beat 1 of 2:" && tl.b2[3] === "Beat 2 of 2:" && tl.inBeat2 === 1200 && tl.max === "799", tl);
+await page.evaluate(() => { const E = window.ECGConduction; E.setTime(100); document.getElementById("ecgcPlay").click(); });
+const dg0 = await page.evaluate(() => { const E = window.ECGConduction, cv = document.querySelector(".ecgc-lead canvas"), r = cv.getBoundingClientRect();
+  return { x0: E.traceX(0, 100), x1: E.traceX(0, 560), y: r.top + r.height * 0.8, cursor: getComputedStyle(cv).cursor, touch: getComputedStyle(cv).touchAction }; });
+await page.mouse.move(dg0.x0, dg0.y); await page.mouse.down();
+const seen = [];
+for (let k = 1; k <= 12; k++) { await page.mouse.move(dg0.x0 + (dg0.x1 - dg0.x0) * k / 12, dg0.y);
+  seen.push(await page.evaluate(() => [window.ECGConduction.state.t, window.ECGConduction.state.playing, document.getElementById("ecgcSentence").textContent, document.querySelector(".ecgc-lead canvas").classList.contains("is-dragging")])); }
+await page.mouse.up();
+const dg1 = await page.evaluate(() => window.ECGConduction.state.t);
+const mono = seen.every((v, k) => !k || v[0] > seen[k - 1][0]);
+check("drag across a strip scrubs smoothly: pauses, time follows the pointer, narration updates live, no bump snap on release; ew-resize cursor, touch pans vertically only",
+  mono && seen.every((v) => !v[1]) && Math.abs(seen[11][0] - 560) < 3 && new Set(seen.map((v) => v[2])).size >= 4 && seen[5][3] && dg1 === seen[11][0] && dg0.cursor === "ew-resize" && dg0.touch === "pan-y",
+  { mono, first: seen[0], last: seen[11], titles: new Set(seen.map((v) => v[2])).size, dg1, cursor: dg0.cursor, touch: dg0.touch });
+const touch = await page.evaluate(() => { const E = window.ECGConduction, cv = document.querySelector(".ecgc-lead canvas"), x0 = E.traceX(0, 900), x1 = E.traceX(0, 1100), y = cv.getBoundingClientRect().top + 60;
+  const ev = (t, x) => cv.dispatchEvent(new PointerEvent(t, { pointerId: 7, pointerType: "touch", isPrimary: true, clientX: x, clientY: y, bubbles: true, cancelable: true, button: 0 }));
+  ev("pointerdown", x0); for (let k = 1; k <= 6; k++) ev("pointermove", x0 + (x1 - x0) * k / 6); ev("pointerup", x1); cv.dispatchEvent(new MouseEvent("click", { clientX: x1, clientY: y, bubbles: true }));
+  return { t: E.state.t, beat: document.getElementById("ecgcBeat").textContent }; });
+check("touch drag (pointer events) scrubs into beat 2 and the following click does not snap to a bump", Math.abs(touch.t - 1100) < 3 && touch.beat === "Beat 2 of 2:", touch);
+// A press without movement still picks the bump.
+const tapAgain = await page.evaluate(() => { const E = window.ECGConduction, bs = E.bumps(E.state.cond, E.state.leads[0]); let big = bs[0]; bs.forEach((b) => { if (Math.abs(b.amp) > Math.abs(big.amp)) big = b; });
+  const cv = document.querySelector(".ecgc-lead canvas"); return { x: E.traceX(0, big.peak + 2), y: cv.getBoundingClientRect().top + 60, peak: big.peak }; });
+await page.mouse.click(tapAgain.x, tapAgain.y);
+check("a tap without movement still selects the bump", await page.evaluate(() => window.ECGConduction.state.t) === tapAgain.peak, tapAgain);
+
+const space = {};
+const st = () => page.evaluate(() => ({ playing: window.ECGConduction.state.playing, t: window.ECGConduction.state.t, cond: document.getElementById("ecgcCond").value, tab: document.querySelector("[role=tab][aria-selected=true]").dataset.tab, sy: scrollY, step: window.ECGConduction.state.step }));
+await page.evaluate(() => { const E = window.ECGConduction; E.setTime(500); });
+await page.focus("#ecgcCond"); const a0 = await st(); await page.keyboard.press("Space"); space.select = [a0, await st()];
+await page.keyboard.press("Space"); space.select2 = await st();
+await page.focus("#ecgcReplay"); await page.evaluate(() => window.ECGConduction.setTime(500)); await page.keyboard.press("Space"); space.replay = await st();
+await page.keyboard.press("Space");
+await page.focus("#ecgcTab-pit"); await page.keyboard.press("Space"); space.tab = await st(); await page.keyboard.press("Space");
+await page.focus("#ecgcStep"); await page.keyboard.press("Space"); space.stepBtn = await st(); await page.keyboard.press("Space");
+await page.focus("#ecgcPlay"); const pb = (await st()).playing; await page.keyboard.press("Space"); space.playBtn = [pb, (await st()).playing];
+if (space.playBtn[1]) await page.keyboard.press("Space");
+space.alt = await page.evaluate(() => { const sel = document.getElementById("ecgcCond"); sel.focus(); const ev = new KeyboardEvent("keydown", { key: "ArrowDown", code: "ArrowDown", altKey: true, bubbles: true, cancelable: true }); sel.dispatchEvent(ev);
+  const inp = document.createElement("input"); inp.type = "text"; document.body.appendChild(inp); inp.focus(); const ev2 = new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true }); const p0 = window.ECGConduction.state.playing; inp.dispatchEvent(ev2);
+  const r = { altPrevented: ev.defaultPrevented, textPrevented: ev2.defaultPrevented, textToggled: window.ECGConduction.state.playing !== p0 }; inp.remove(); return r; });
+check("Space toggles Play/Pause from the dropdown, a button, a tab and the Play button without triggering them or scrolling; Alt+Down and text fields untouched",
+  !space.select[0].playing && space.select[1].playing && space.select[1].cond === space.select[0].cond && !space.select2.playing && space.select[1].sy === 0 &&
+  space.replay.playing && space.replay.t >= 500 && space.tab.playing && space.tab.tab === "steps" && space.stepBtn.playing && !space.stepBtn.step &&
+  space.playBtn[0] === false && space.playBtn[1] === true && !space.alt.altPrevented && !space.alt.textPrevented && !space.alt.textToggled, space);
+await page.evaluate(() => { const E = window.ECGConduction; if (E.state.playing) document.getElementById("ecgcPlay").click(); E.setLeadCount(1); });
 
 if (SHOT) {
   await page.evaluate(() => window.ECGConduction.setTime(232));
