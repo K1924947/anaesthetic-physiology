@@ -21,6 +21,8 @@ const q0 = await page.$eval("#ecgcQrs", (e) => +e.dataset.qrs);
 await page.selectOption("#ecgcCond", "lbbb");
 const q1 = await page.$eval("#ecgcQrs", (e) => +e.dataset.qrs);
 check("condition switch widens QRS", q0 < 120 && q1 >= 120, { normal: q0, lbbb: q1 });
+// The LBBB preset shows V1 and V6; override back to one lead (II) for the layout checks below.
+await page.evaluate(() => { const E = window.ECGConduction; E.setLeadCount(1); E.setLead(0, "II"); });
 
 // One large lead panel: its dropdown picks any of the 12 leads and moves the electrode marker to the right wheel.
 const before = await page.$eval("#ecgcWheelMark-A", (g) => ({ lead: g.dataset.lead, t: g.getAttribute("transform"), wheel: g.ownerSVGElement.id }));
@@ -36,7 +38,7 @@ const layout = await page.evaluate(() => { const E = window.ECGConduction, vis =
   o.speeds = [...document.querySelectorAll("#ecgcSpeed option")].map((x) => x.value); o.counts = [...document.querySelectorAll("#ecgcNLeads option")].map((x) => x.value);
   const st = document.querySelector(".ecgc-stage").children; o.order = [...st].map((n) => n.className.baseVal === undefined ? n.className.split(" ")[0] : n.getAttribute("class"));
   return o; });
-check("lead count 1, 2 or 3 (default 1): gain 100 px/mV with one lead, scaled down only to fit more, identical panels, paper stays square; one shaped, lettered marker per shown lead; dropdown moves it between wheels; speeds 0.01 to 1x",
+check("lead count 1, 2 or 3 (user override of the preset): gain 100 px/mV with one lead, scaled down only to fit more, identical panels, paper stays square; one shaped, lettered marker per shown lead; dropdown moves it between wheels; speeds 0.01 to 1x",
   before.lead === "II" && before.wheel === "ecgcWheelF" && after.lead === "V1" && after.wheel === "ecgcWheelH" && layout.def.panels === 1 && layout.def.gain === 100 && layout.def.marks.length === 1 &&
   layout[2].panels === 2 && layout[3].panels === 3 && layout[2].marks.length === 2 && layout[3].marks.length === 3 && layout[2].gain < 100 && layout[3].gain <= layout[2].gain && layout[2].square && layout[3].square &&
   layout[2].noOverlap && layout[3].noOverlap && layout[2].equal && layout[3].equal && layout[3].gain >= 45 && layout[2].sh <= 800 && layout[3].sh <= 800 && layout.focusBtns === 0 && layout.options === 12 && layout.counts.join() === "1,2,3" &&
@@ -45,7 +47,8 @@ check("ECG panel(s) next to the heart, wheels on the far right", layout.order.in
 await page.selectOption('select[data-slot="0"]', "II");
 
 const box = await page.$eval("#ecgcScrub", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
-await page.mouse.click(box.x + box.w * 0.29, box.y + box.h / 2);
+const loopMs = await page.evaluate(() => window.ECGConduction.loop().ms);
+await page.mouse.click(box.x + 8 + (box.w - 16) * (232 / (loopMs - 1)), box.y + box.h / 2); // range thumb is 16 px wide
 const ms = await page.$eval("#ecgcMs", (e) => +e.textContent);
 const playing = await page.evaluate(() => window.ECGConduction.state.playing);
 check("scrubbing sets the readout and pauses", Math.abs(ms - 232) < 12 && !playing, { ms, playing });
@@ -259,6 +262,63 @@ check("quiz: tap to reveal sets aria-expanded and shows the answer", CONDS.every
 check("every tab fits the narration box for every condition (no overflow)", CONDS.every((c) => Object.values(tc[c].fit).every(Boolean)), Object.fromEntries(CONDS.map((c) => [c, tc[c].fit])));
 const fit2 = await page.evaluate(() => ({ sh: document.documentElement.scrollHeight, ih: innerHeight, sw: document.documentElement.scrollWidth }));
 check("still fits 1280x800 with the tab bar", fit2.sh <= fit2.ih && fit2.sw <= 1280, fit2);
+
+// Round 15: two consecutive beats (both full black traces, then loop) and per-condition lead presets.
+const two = await page.evaluate(async () => {
+  const E = window.ECGConduction, o = { loops: {} };
+  E.setCondition("rbbb", true);
+  for (const n of [1, 2, 3]) { E.setLeadCount(n); o.loops[n] = E.loop(); }
+  E.setLeadCount(2); E.setLead(0, "V1"); E.setFocus(0);
+  const lp = E.loop(), cv = document.querySelector(".ecgc-lead canvas"), r = cv.getBoundingClientRect(), ctx = cv.getContext("2d"), dpr = cv.width / r.width;
+  const bs = E.bumps("rbbb", "V1"); let big = bs[0]; bs.forEach((b) => { if (Math.abs(b.amp) > Math.abs(big.amp)) big = b; });
+  E.setTime(60); // in the first P wave: nothing coloured yet
+  const col = (ms) => { const x = Math.round((E.traceX(0, ms) - r.left) * dpr), d = ctx.getImageData(x, 0, 1, cv.height).data; let black = 0, grey = 0;
+    for (let k = 0; k < d.length; k += 4) { if (d[k] < 60 && d[k + 1] < 60 && d[k + 2] < 60) black++; if (Math.abs(d[k] - 163) < 6 && Math.abs(d[k + 1] - 168) < 6 && Math.abs(d[k + 2] - 174) < 6) grey++; } return { black, grey }; };
+  o.cols = { qrs1: col(big.peak), qrs2: col(800 + big.peak), t2: col(800 + 400), p2: col(800 + 50) };
+  // Heart and narration follow the second beat exactly as the first.
+  const snap = () => [document.getElementById("ecgcSvg").innerHTML.length, document.getElementById("ecgcSentence").textContent, document.getElementById("ecgcNWhere").textContent];
+  E.setTime(big.peak); const a = snap(), heartA = document.getElementById("ecgcSvg").innerHTML; E.setTime(800 + big.peak); const b2 = snap(), heartB = document.getElementById("ecgcSvg").innerHTML;
+  o.follow = { sameHeart: heartA === heartB, sameText: a[1] === b2[1] && a[2] === b2[2], beat: document.getElementById("ecgcBeat").textContent, ms: +document.getElementById("ecgcMs").textContent };
+  // Playback runs from beat 1 into beat 2, then loops back to beat 1.
+  const sp = document.getElementById("ecgcSpeed"); sp.value = "1"; sp.dispatchEvent(new Event("change"));
+  E.setTime(780); document.getElementById("ecgcPlay").click(); await new Promise((res) => setTimeout(res, 250)); o.into2 = E.state.t;
+  document.getElementById("ecgcPlay").click(); E.setTime(lp.ms - 30); document.getElementById("ecgcPlay").click(); await new Promise((res) => setTimeout(res, 250)); o.wrapped = E.state.t;
+  document.getElementById("ecgcPlay").click(); sp.value = "0.25"; sp.dispatchEvent(new Event("change"));
+  // Step-through covers both beats.
+  E.stepMode(true); const cs = E.curSteps(), one = E.steps("rbbb", "V1"); E.goStep("t"); o.steps = { n: cs.length, one: one.length, beat2: cs.filter((s) => s.beat === 2).length, lastT: cs[cs.length - 1].t };
+  const nb = document.getElementById("ecgcNext"); for (let k = 0; k < cs.length + 2; k++) nb.click(); o.steps.endT = E.state.t; o.steps.endBeat = document.getElementById("ecgcBeat").textContent; E.stepMode(false);
+  o.segs = [...document.querySelectorAll("#ecgcSegs .ecgc-seg")].filter((d) => d.textContent === "QRS").length;
+  o.tap = { peak: big.peak, x: E.traceX(0, 800 + big.peak + 1), y: r.top + r.height / 2 };
+  return o; });
+await page.mouse.click(two.tap.x, two.tap.y);
+const tap2 = await page.evaluate(() => window.ECGConduction.state.t);
+check("two beats: loop holds two full beats (1600 ms with 2 or 3 leads; at least to the second T end with 1 lead), two QRS segments on the timeline",
+  two.loops[2].beats === 2 && two.loops[2].ms === 1600 && two.loops[3].ms === 1600 && two.loops[1].ms >= 800 + 600 && two.segs === 2, two.loops);
+check("two beats: both beats drawn as full black traces (QRS, P and T of beat 2 in black), no faint grey later beats",
+  two.cols.qrs1.black > 0 && two.cols.qrs2.black > 0 && two.cols.p2.black > 0 && two.cols.t2.black > 0 && Object.values(two.cols).every((c) => c.grey === 0), two.cols);
+check("two beats: the heart and narration follow the second beat; the readout says Beat 2 of 2", two.follow.sameHeart && two.follow.sameText && two.follow.beat === "Beat 2 of 2:" && two.follow.ms < 800, two.follow);
+check("two beats: playback runs on into beat 2, then loops back to beat 1", two.into2 > 800 && two.into2 < 1200 && two.wrapped < 400, { into2: two.into2, wrapped: two.wrapped });
+check("two beats: step-through narrates both beats and ends in beat 2", two.steps.n === 2 * two.steps.one && two.steps.beat2 === two.steps.one && two.steps.endT === two.steps.lastT && two.steps.endT > 800 && two.steps.endBeat === "Beat 2 of 2:", two.steps);
+check("two beats: tapping a bump on the second beat jumps to that bump in beat 2", tap2 === 800 + two.tap.peak, { tap2, want: 800 + two.tap.peak });
+
+const PRESETS = { normal: [3, "II,V1,V6"], rbbb: [2, "V1,V6"], lbbb: [2, "V1,V6"], lafb: [3, "I,II,aVL"], bifasc: [3, "V1,II,aVL"] };
+const pres = {};
+for (const c of Object.keys(PRESETS)) { await page.selectOption("#ecgcCond", c);
+  pres[c] = await page.evaluate((c) => { const E = window.ECGConduction, pr = E.preset(c), n = E.state.nLeads;
+    const keyText = E.teach(c).key.map((k) => k[0]).join(" ");
+    return { n, leads: E.state.leads.slice(0, n).join(), sels: [...document.querySelectorAll(".ecgc-lead:not([hidden]) select")].map((s) => s.value).join(), nSel: document.getElementById("ecgcNLeads").value,
+      data: !!pr && pr.leads.join(), sug: document.getElementById("ecgcSuggest").textContent, why: pr && pr.why,
+      matches: !!pr && (() => { const stop = /^(i|ii|iii|avr|avl|avf|v[1-6]|in|and|no|the|of)$/, tok = (t) => t.toLowerCase().split(/[^a-z0-9']+/).filter((w) => w.length >= 2 && !stop.test(w)), kt = new Set(tok(keyText)); return tok(pr.why).some((w) => kt.has(w)); })(), sh: document.documentElement.scrollHeight }; }, c); }
+check("lead presets from the condition data: Normal 3 (II, V1, V6), RBBB and LBBB 2 (V1, V6), LAFB 3 (I, II, aVL), RBBB + LAFB 3 (V1, II, aVL); fits 1280x800",
+  Object.entries(PRESETS).every(([c, p]) => pres[c].n === p[0] && pres[c].leads === p[1] && pres[c].sels === p[1] && pres[c].nSel === String(p[0]) && pres[c].data === p[1] && pres[c].sh <= 800), pres);
+check("suggested leads line shows the leads and a short reason that matches the Key points",
+  Object.entries(PRESETS).every(([c, p]) => pres[c].sug.startsWith("Suggested leads: " + p[1].split(",").join(", ") + " (") && pres[c].matches), Object.fromEntries(Object.keys(PRESETS).map((c) => [c, [pres[c].sug, pres[c].matches]])));
+await page.selectOption("#ecgcCond", "rbbb");
+await page.selectOption("#ecgcNLeads", "1");
+await page.selectOption('select[data-slot="0"]', "aVR");
+const ov = await page.evaluate(() => { const E = window.ECGConduction; E.setTime(300); return { n: E.state.nLeads, L: E.state.leads[0], cond: E.state.cond, title: document.getElementById("ecgcNSeesLab").textContent }; });
+check("presets can be overridden afterwards with the leads menu and lead dropdowns", ov.n === 1 && ov.L === "aVR" && ov.cond === "rbbb" && ov.title === "aVR sees", ov);
+await page.selectOption("#ecgcCond", "normal");
 
 if (SHOT) {
   await page.evaluate(() => window.ECGConduction.setTime(232));

@@ -104,6 +104,8 @@
 .ecgc-quiz-a { display: block; }
 .ecgc-quiz-a[hidden] { display: none; }
 .ecgc-cond-pick select { max-width: 230px; }
+.ecgc-suggest { margin: 0 auto 0 0; flex: 1 1 0; min-width: 0; font: 12px/1.2 var(--font-sans); color: var(--muted); max-width: 470px; }
+.ecgc-seg.ecgc-seg-beat { border-left: 2px solid var(--text); }
 
 .ecgc-extras { display: flex; gap: 18px; font: 13px var(--font-sans); }
 .ecgc-extras summary { cursor: pointer; color: var(--muted); }

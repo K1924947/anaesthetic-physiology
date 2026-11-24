@@ -7,6 +7,7 @@
   "use strict";
 
   var CYCLE = 800; // one beat at 75 per minute
+  var BEATS = 2; // the strip and the animation run through two consecutive beats, then loop
   var NS = "http://www.w3.org/2000/svg";
   var LEADS = ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"];
   var reduced = false;
@@ -81,7 +82,7 @@
 
   var COND = {
     normal: {
-      name: "Normal sinus", fast: ["his", "rb", "mod", "purkR", "purkR2", "lb", "laf", "lafF", "lpf", "purkL", "purkLA"], slowAt: {},
+      name: "Normal sinus", preset: { leads: ["II", "V1", "V6"], why: "rhythm and PR in II; small r in V1 and septal q in V6" }, fast: ["his", "rb", "mod", "purkR", "purkR2", "lb", "laf", "lafF", "lpf", "purkL", "purkLA"], slowAt: {},
       qrs: [160, 245], st: [245, 350, 520], ev: [180, 215],
       text: [
         ["his", "qon", "The impulse runs down the His bundle into both bundle branches: the fast highway."],
@@ -93,7 +94,7 @@
       ]
     },
     rbbb: {
-      name: "RBBB", fast: ["his", "lb", "laf", "lafF", "lpf", "purkL", "purkLA"], blockAt: "rb", blocked: ["rb", "mod", "purkR", "purkR2"],
+      name: "RBBB", preset: { leads: ["V1", "V6"], why: "RSR' in V1, wide slurred S in V6" }, fast: ["his", "lb", "laf", "lafF", "lpf", "purkL", "purkLA"], blockAt: "rb", blocked: ["rb", "mod", "purkR", "purkR2"],
       slowAt: { RV: 0 }, leadIn: { RV: [184, .2] }, // the slow front leaves the septum as soon as it is depolarised
       qrs: [160, 290], st: [290, 370, 550], ev: [185, 232],
       text: [
@@ -106,7 +107,7 @@
       ]
     },
     lbbb: {
-      name: "LBBB", fast: ["his", "rb", "mod", "purkR", "purkR2"], blockAt: "lb", blocked: ["lb", "laf", "lafF", "lpf", "purkL", "purkLA"],
+      name: "LBBB", preset: { leads: ["V1", "V6"], why: "dominant S in V1; broad R, no septal q in V6" }, fast: ["his", "rb", "mod", "purkR", "purkR2"], blockAt: "lb", blocked: ["lb", "laf", "lafF", "lpf", "purkL", "purkLA"],
       slowAt: { SEP: 8, LVA: 0, LVW: 0, LVB: 0 }, // only the right-side edge of the septum, next to the right bundle, is fast
       qrs: [160, 300], st: [300, 380, 560], ev: [214, 246, 190],
       text: [
@@ -120,12 +121,12 @@
     }
   };
   COND.lafb = {
-    name: "LAFB", fast: ["his", "rb", "mod", "purkR", "purkR2", "lb", "lpf", "purkL"], blockAt: "laf", blocked: ["laf", "lafF", "purkLA"],
+    name: "LAFB", preset: { leads: ["I", "II", "aVL"], why: "left axis: qR in I and aVL, rS in II; R peak time in aVL" }, fast: ["his", "rb", "mod", "purkR", "purkR2", "lb", "lpf", "purkL"], blockAt: "laf", blocked: ["laf", "lafF", "purkLA"],
     slowAt: { LVW: 14, LVB: 14 }, // only muscle beyond the posterior Purkinje fibres' own reach is drawn slow
     qrs: [160, 265], st: [265, 360, 530], ev: [190, 228]
   };
   COND.bifasc = {
-    name: "Bifascicular block", fast: ["his", "lb", "lpf", "purkL"], blockAt: ["rb", "laf"], blocked: ["rb", "mod", "purkR", "purkR2", "laf", "lafF", "purkLA"],
+    name: "Bifascicular block", preset: { leads: ["V1", "II", "aVL"], why: "RSR' in V1 (RBBB); rS in II, qR in aVL (left axis)" }, fast: ["his", "lb", "lpf", "purkL"], blockAt: ["rb", "laf"], blocked: ["rb", "mod", "purkR", "purkR2", "laf", "lafF", "purkLA"],
     slowAt: { RV: 0, LVW: 14, LVB: 14 }, leadIn: { RV: [184, .2] },
     qrs: [160, 295], st: [295, 375, 555], ev: [190, 246]
   };
@@ -846,14 +847,14 @@
     var cv = wrap.querySelector("canvas");
     cv.addEventListener("click", function (e) {
       var r = cv.getBoundingClientRect();
-      // A tap on a later beat of the strip counts as the same moment of the explained beat.
-      var tm = stripGeom(r.width).toMs(e.clientX - r.left), tc = Math.max(0, Math.min(CYCLE - 1, tm >= CYCLE ? tm % CYCLE : tm));
+      // A tap on either beat jumps to that moment of that beat.
+      var tm = Math.max(0, Math.min(loopMs() - 1, stripGeom(r.width).toMs(e.clientX - r.left))), off = beatOf(tm) * CYCLE, tc = tm - off;
       if (state.focus !== i) { state.focus = i; leadsChanged(); }
       var bs = bumpsFor(state.cond, state.leads[i]), hit = null;
       bs.forEach(function (b) { if (tc >= b.start - 6 && tc <= b.end + 6 && (!hit || Math.abs(b.peak - tc) < Math.abs(hit.peak - tc))) hit = b; });
       setStepMode(false);
       setPlaying(false);
-      state.t = hit ? hit.peak : tc;
+      state.t = off + (hit ? hit.peak : tc);
       render();
     });
     return { wrap: wrap, sel: sel, cv: cv, note: wrap.querySelector(".ecgc-lead-note") };
@@ -911,14 +912,20 @@
   var segNodes = [];
   function buildSegs() {
     segsBox.innerHTML = "";
-    segNodes = COND[state.cond].segs.map(function (s) {
+    var LOOP = loopMs(); segNodes = [];
+    for (var b = 0; b < BEATS; b++) COND[state.cond].segs.forEach(function (s) {
+      var a = s[1] + b * CYCLE, e = Math.min(LOOP, s[2] + b * CYCLE);
+      if (e <= a) return;
       var d = document.createElement("div");
-      d.className = "ecgc-seg";
-      d.style.flex = String(s[2] - s[1]);
-      d.textContent = s[0];
+      d.className = "ecgc-seg" + (b && s[0] === "P" ? " ecgc-seg-beat" : "");
+      d.style.flex = String(e - a);
+      d.textContent = e - a >= 60 ? s[0] : "";
+      d.title = "Beat " + (b + 1) + ": " + s[0];
+      d.dataset.from = a; d.dataset.to = e;
       segsBox.appendChild(d);
-      return d;
+      segNodes.push(d);
     });
+    scrub.max = LOOP - 1;
     var q = seg(state.cond, "QRS"), qrsEl = document.getElementById("ecgcQrs");
     qrsEl.textContent = "QRS " + (q[2] - q[1]) + " ms";
     qrsEl.setAttribute("data-qrs", q[2] - q[1]);
@@ -1048,6 +1055,11 @@
     var g = hmin === Infinity ? GAIN_MAX : Math.min(GAIN_MAX, Math.floor((hmin - TAG_BAND - 6) / MAX_SPAN));
     if (g !== GAIN) setGain(g);
   }
+  function loopMs() {
+    var w = panels[0].cv.clientWidth || 461, G = stripGeom(w);
+    return Math.max(CYCLE + 600, Math.min(BEATS * CYCLE, Math.floor(G.stripMs - G.A)));
+  }
+  function beatOf(t) { return Math.min(BEATS - 1, Math.floor(t / CYCLE)); }
   function stripGeom(w) {
     var stripMs = (w - STRIP_LEFT - 4) / PX_MS, A = 80; // explained beat first, 2 mm after the pulse; later beats to its right
     return { left: STRIP_LEFT, A: A, stripMs: stripMs, X: function (ms) { return STRIP_LEFT + (A + ms) * PX_MS; }, XS: function (sm) { return STRIP_LEFT + sm * PX_MS; },
@@ -1062,7 +1074,9 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     var L = state.leads[i], data = SAMPLES[state.cond][L], isFocus = i === state.focus;
-    var G = stripGeom(w), left = G.left, X = G.X, XS = G.XS;
+    var G = stripGeom(w), left = G.left, XS = G.XS, LOOP = loopMs(), off = beatOf(t) * CYCLE;
+    t = t - off; // time within the beat being explained; X() places it on that beat of the strip
+    function X(ms) { return G.X(ms + off); }
     // Fixed gain; the baseline is placed per lead so this beat's tallest R and deepest S both fit (centred if it is tight).
     var top = isFocus ? TAG_BAND : 3, dr = dataRange(state.cond, L), span = (dr[1] - dr[0]) * GAIN;
     if (isFocus && span > h - top - 3) top = 3; // a very tall beat may run up behind the bump tags rather than be clipped
@@ -1096,23 +1110,10 @@
     // The pen sits between whole milliseconds (linear), so trace, dot and cursor move together at very slow speeds.
     var tp = Math.max(0, Math.min(CYCLE - 1, t)), yp = data[cut] + ((data[Math.min(CYCLE - 1, cut + 1)] - data[cut]) * (tp - cut));
     ctx.lineJoin = "round";
-    // This beat first: black up to the cursor, faint grey after it. Later beats of the strip are not recorded yet, so
-    // they are drawn faint grey too (the same beat repeating at 75 per minute).
-    ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 1.5;
-    for (var b0 = G.A + CYCLE; XS(b0) < w; b0 += CYCLE) {
-      ctx.beginPath();
-      for (var k0 = 0; k0 < CYCLE; k0++) { var xs = XS(b0 + k0); if (xs > w) break; if (!k0) ctx.moveTo(xs, Y(data[k0])); else ctx.lineTo(xs, Y(data[k0])); }
-      ctx.stroke();
-    }
-    ctx.strokeStyle = "#A3A8AE"; ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(X(tp), Y(yp));
-    for (var k = cut + 1; k < CYCLE; k++) ctx.lineTo(X(k), Y(data[k]));
-    ctx.stroke();
+    // Two consecutive beats, both drawn as full black traces (P-QRS-T, P-QRS-T); the cursor and dot mark the moment.
     ctx.strokeStyle = "#111"; ctx.lineWidth = 1.8;
     ctx.beginPath();
-    for (k = 0; k <= cut; k++) { if (k === 0) ctx.moveTo(X(k), Y(data[k])); else ctx.lineTo(X(k), Y(data[k])); }
-    ctx.lineTo(X(tp), Y(yp));
+    for (var k = 0; k < LOOP; k++) { var xk = G.X(k); if (xk > w + 2) break; var v = data[k % CYCLE]; if (k === 0) ctx.moveTo(xk, Y(v)); else ctx.lineTo(xk, Y(v)); }
     ctx.stroke();
     ctx.restore();
     var link = null;
@@ -1157,9 +1158,10 @@
       var pk = wv[1][1], big = 0, hi = 0;
       for (var u = wv[1][1]; u < wv[1][2]; u++) { if (Math.abs(data[u]) > Math.abs(big)) { big = data[u]; pk = u; } hi = Math.max(hi, data[u]); }
       if (Math.abs(big) < .015) return;
-      var ly = Math.max(top + 10, Y(hi) - 6), lx = X(pk);
-      ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillRect(lx - 5, ly - 10, 10, 12);
-      ctx.fillStyle = "#222"; ctx.fillText(wv[0], lx, ly);
+      var ly = Math.max(top + 10, Y(hi) - 6);
+      for (var bb = 0; bb < BEATS; bb++) { var lx = G.X(pk + bb * CYCLE); if (pk + bb * CYCLE >= LOOP || lx > w - 6) continue;
+        ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillRect(lx - 5, ly - 10, 10, 12);
+        ctx.fillStyle = "#222"; ctx.fillText(wv[0], lx, ly); }
     });
     ctx.textAlign = "start";
     ctx.fillStyle = "#111"; ctx.font = "700 13px 'Source Sans 3', sans-serif";
@@ -1495,7 +1497,7 @@
   function renderNarration(t) {
     var L = state.leads[state.focus], n = narration(state.cond, L, t), head = n.title;
     if (state.step) { var st = curSteps(); head = "Step " + (state.stepIdx + 1) + " of " + st.length + ": " + n.title; }
-    var key = head + "|" + n.sees + "|" + n.trace + "|" + L;
+    var key = head + "|" + n.sees + "|" + n.trace + "|" + L + "|" + beatOf(state.t);
     if (key === lastSentence) return;
     lastSentence = key;
     narrNodes.title.textContent = head;
@@ -1506,20 +1508,23 @@
   }
 
   function render() {
-    var t = state.t;
-    renderHeart(t);
-    var link = null;
     fitGain();
+    var LOOP = loopMs();
+    if (+scrub.max !== LOOP - 1) buildSegs();
+    if (state.t >= LOOP) state.t = state.t % LOOP;
+    var t = state.t, beat = beatOf(t), tl = t - beat * CYCLE;
+    renderHeart(tl);
+    var link = null;
     for (var i = 0; i < state.nLeads; i++) { var l = renderPanel(i, t); if (l) link = l; }
     renderLink(link, state.focus);
-    document.getElementById("ecgcMs").textContent = Math.round(t);
+    document.getElementById("ecgcMs").textContent = Math.round(tl);
+    document.getElementById("ecgcBeat").textContent = "Beat " + (beat + 1) + " of " + BEATS + ":";
     scrub.value = Math.round(t);
-    scrub.setAttribute("aria-valuetext", Math.round(t) + " ms after the SA node fires");
-    thumb.style.left = (t / CYCLE * 100) + "%";
-    var segs = COND[state.cond].segs;
-    for (var j = 0; j < segs.length; j++) segNodes[j].classList.toggle("is-now", t >= segs[j][1] && t < segs[j][2]);
+    scrub.setAttribute("aria-valuetext", "Beat " + (beat + 1) + " of " + BEATS + ", " + Math.round(tl) + " ms after the SA node fires");
+    thumb.style.left = (t / LOOP * 100) + "%";
+    for (var j = 0; j < segNodes.length; j++) segNodes[j].classList.toggle("is-now", t >= +segNodes[j].dataset.from && t < +segNodes[j].dataset.to);
     // Paused on a bump of the focus lead: explain that bump.
-    renderNarration(t);
+    renderNarration(tl);
   }
 
   /* ---------- Clock and controls ---------- */
@@ -1533,7 +1538,13 @@
     playBtn.setAttribute("aria-label", p ? "Pause" : "Play");
   }
   var STEPS = {};
-  function curSteps() { var L = state.leads[state.focus], k = state.cond + "|" + L; return STEPS[k] || (STEPS[k] = stepsFor(state.cond, L)); }
+  function curSteps() {
+    var L = state.leads[state.focus], k = state.cond + "|" + L + "|" + loopMs();
+    if (STEPS[k]) return STEPS[k];
+    var one = stepsFor(state.cond, L), LOOP = loopMs(), all = [];
+    for (var b = 0; b < BEATS; b++) one.forEach(function (s) { if (s.t + b * CYCLE < LOOP) all.push({ id: s.id, ids: s.ids, t: s.t + b * CYCLE, text: s.text, beat: b + 1 }); });
+    return (STEPS[k] = all);
+  }
   function goStep(i) {
     var st = curSteps();
     state.stepIdx = Math.max(0, Math.min(st.length - 1, i));
@@ -1556,7 +1567,7 @@
   function tick(now) {
     if (last === null) last = now;
     var dt = Math.min(100, now - last); last = now;
-    if (state.playing) { state.t = (state.t + dt * state.speed) % CYCLE; render(); }
+    if (state.playing) { state.t = (state.t + dt * state.speed) % loopMs(); render(); }
     requestAnimationFrame(tick);
   }
   playBtn.addEventListener("click", function () { setPlaying(!state.playing); });
@@ -1567,7 +1578,7 @@
   document.getElementById("ecgcSpeed").addEventListener("change", function (e) { state.speed = parseFloat(e.target.value) || 0.25; });
   // Pressing the scrubber pauses even when the press lands on the moving thumb (which sends no input event).
   scrub.addEventListener("pointerdown", function () { setStepMode(false); setPlaying(false); render(); });
-  scrub.addEventListener("input", function () { setStepMode(false); setPlaying(false); state.t = Math.max(0, Math.min(CYCLE - 1, +scrub.value)); render(); });
+  scrub.addEventListener("input", function () { setStepMode(false); setPlaying(false); state.t = Math.max(0, Math.min(loopMs() - 1, +scrub.value)); render(); });
 
   function leadsChanged() {
     layoutLeads();
@@ -1580,14 +1591,24 @@
     g.items.forEach(function (it) { if (!COND[it[0]]) return; var o = document.createElement("option"); o.value = it[0]; o.textContent = it[1]; og.appendChild(o); });
     condSel.appendChild(og);
   });
-  function setCondition(c) {
+  var suggestEl = document.getElementById("ecgcSuggest");
+  function applyPreset(c) {
+    var pr = COND[c].preset; if (!pr) return;
+    state.nLeads = pr.leads.length; nSel.value = String(state.nLeads);
+    pr.leads.forEach(function (L, i) { state.leads[i] = L; panels[i].sel.value = L; });
+    state.focus = 0;
+  }
+  function setCondition(c, usePreset) {
     if (!COND[c]) return;
     state.cond = c;
     condSel.value = c;
+    if (usePreset) applyPreset(c);
+    var pr = COND[c].preset;
+    suggestEl.textContent = pr ? "Suggested leads: " + pr.leads.join(", ") + " (" + pr.why + ")" : "";
     buildSegs(); renderBlock(); layoutMyo(); layoutLeads(); renderTeach(); lastSentence = "";
     if (state.step) goStep(0); else render();
   }
-  condSel.addEventListener("change", function () { setCondition(condSel.value); });
+  condSel.addEventListener("change", function () { setCondition(condSel.value, true); });
 
   // Teaching tabs (Steps, Key points, Clinical, Pitfalls, Quiz) under the narration.
   var tabs = Array.prototype.slice.call(document.querySelectorAll(".ecgc-tab"));
@@ -1644,14 +1665,17 @@
 
   if (reduced) state.t = MODEL.normal.ev.q1 + 15;
   setPlaying(state.playing);
-  setCondition("normal");
+  setCondition("normal", true);
   requestAnimationFrame(tick);
 
   // Small hook for automated checks.
   window.ECGConduction = {
     state: state,
-    setTime: function (t) { setStepMode(false); setPlaying(false); state.t = Math.max(0, Math.min(CYCLE - 1, t)); render(); },
+    setTime: function (t) { setStepMode(false); setPlaying(false); state.t = Math.max(0, Math.min(loopMs() - 1, t)); render(); },
+    loop: function () { return { beats: BEATS, ms: loopMs(), cycle: CYCLE }; },
+    curSteps: function () { return curSteps().map(function (s) { return { id: s.id, t: s.t, beat: s.beat }; }); },
     setCondition: setCondition,
+    preset: function (c) { return COND[c].preset; },
     setLead: function (i, L) { panels[i].sel.value = L; state.leads[i] = L; leadsChanged(); },
     setFocus: function (i) { state.focus = i; leadsChanged(); },
     vectorAt: vectorAt,
