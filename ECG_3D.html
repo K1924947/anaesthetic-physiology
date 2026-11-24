@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="assets/site.css?v=20261120a">
 <link rel="stylesheet" href="assets/layout.css?v=20261120a">
 <link rel="stylesheet" href="assets/ecg3d.css?v=20261120a">
-<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261121a">
+<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261124a">
 <script src="assets/theme.js?v=20261120a"></script>
 </head>
 <body>
@@ -183,6 +183,13 @@
             </div>
             <p class="side-note lead-closeup-gain" id="leadCloseupGain">10 mm/mV (full gain), 25 mm/s</p>
           </div>
+          <div class="card lead-closeup-card lead-closeup-card-2" id="leadCloseupCard2" hidden>
+            <h2 class="tool-section-title" id="leadCloseupHeading2">Selected lead: <span id="leadCloseupName2"></span></h2>
+            <div class="lead-closeup-frame" id="leadCloseupFrame2" tabindex="0" role="region" aria-labelledby="leadCloseupHeading2">
+              <canvas id="leadCloseup2" role="img" aria-label="Close-up of a second selected lead on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. About four beats; the cursor sweeps left to right, then the window advances."></canvas>
+            </div>
+            <p class="side-note lead-closeup-gain" id="leadCloseupGain2">10 mm/mV (full gain), 25 mm/s</p>
+          </div>
         </aside>
       </div>
 
@@ -215,6 +222,7 @@
             <h2 class="tool-section-title" id="ecgHeading">Standard 12-lead ECG</h2>
             <p class="ecg12-sync-note">All 12 leads recorded at the same moment.</p>
             <div class="lead-btns" id="leadBtns" role="group" aria-label="Select a lead"></div>
+            <p class="fs-lead-hint" id="fsLeadHint">Pick up to two leads. The traces stay in time with the heart and the vector.</p>
           </div>
           <p class="ecg12-caption" id="ecgCaption" aria-live="off"></p>
           <p class="side-note ecg12-hint" id="ecg12Note">Click a lead to see it close up on the right.</p>
@@ -281,6 +289,6 @@
   </footer>
 </div>
 
-<script type="module" src="assets/ecg3d.js?v=20261121a"></script>
+<script type="module" src="assets/ecg3d.js?v=20261124a"></script>
 </body>
 </html>

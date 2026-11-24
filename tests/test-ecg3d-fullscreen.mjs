@@ -29,6 +29,52 @@ const meta = await d3.evaluate(() => {
 if (meta.hasBtn && /noindex/i.test(meta.robots) && errors.length === 0) pass("ECG_3D.html loads noindex with a Full screen button", { meta, errors });
 else fail("ECG_3D.html loads noindex with a Full screen button", { meta, errors });
 
+await d3.waitForFunction(() => window.ecg3d && window.ecg3d.webgl && window.ecg3d.heartBox, null, { timeout: 20000 });
+await d3.evaluate(() => {
+  window.ecg3d.play(false);
+  window.ecg3d.setT(290);
+  window.ecg3d.view('frontal');
+});
+await d3.waitForTimeout(200);
+
+function midOk(box, extra) {
+  const midY = (box.top + box.bottom) / 2;
+  const midX = (box.left + box.right) / 2;
+  const inView = box.top > 0.01 && box.bottom < 0.99 && box.left > 0.01 && box.right < 0.99;
+  return { midX, midY, inView, centred: Math.abs(midX - 0.5) < 0.08 && Math.abs(midY - 0.5) < 0.08, ...extra, box };
+}
+
+const framed = await d3.evaluate(() => {
+  const box = window.ecg3d.heartBox();
+  const o = window.ecg3d.orbitState();
+  const c = window.ecg3d.heartCentre();
+  const d = Math.hypot(o.target.x - c.x, o.target.y - c.y, o.target.z - c.z);
+  return { box, o, c, targetAtCentre: d < 0.15 };
+});
+const framedMid = midOk(framed.box, { targetAtCentre: framed.targetAtCentre });
+if (framedMid.centred && framedMid.inView && framed.targetAtCentre) pass("normal view frames the heart in the middle of the viewer", framedMid);
+else fail("normal view frames the heart in the middle of the viewer", framedMid);
+
+const zoomed = await d3.evaluate(() => {
+  const o = window.ecg3d.orbitState();
+  window.ecg3d.orbit(o.az, o.el, o.r * 0.85);
+  const box = window.ecg3d.heartBox();
+  const after = window.ecg3d.orbitState();
+  const c = window.ecg3d.heartCentre();
+  const d = Math.hypot(after.target.x - c.x, after.target.y - c.y, after.target.z - c.z);
+  return { box, r0: o.r, r1: after.r, targetAtCentre: d < 0.15 };
+});
+const zoomedMid = midOk(zoomed.box, { r0: zoomed.r0, r1: zoomed.r1, targetAtCentre: zoomed.targetAtCentre });
+if (zoomedMid.centred && zoomedMid.inView && zoomed.r1 < zoomed.r0 && zoomed.targetAtCentre) pass("zooming in keeps the heart centred and fully visible", zoomedMid);
+else fail("zooming in keeps the heart centred and fully visible", zoomedMid);
+
+await d3.evaluate(() => window.ecg3d.view('frontal'));
+
+const arrow = await d3.evaluate(() => window.ecg3d.arrowDims());
+if (arrow && arrow.shaftRadius <= 0.1 && arrow.headRadius <= 0.24 && arrow.headHeight >= 0.6 && arrow.vecScale >= 3.5 && arrow.shaftRadius < arrow.headRadius) {
+  pass("vector arrow is slimmer and longer", arrow);
+} else fail("vector arrow is slimmer and longer", arrow);
+
 const fsBefore = await d3.evaluate(() => {
   const t0 = window.ecg3d.simTime();
   window.ecg3d.setSpeed(1);
@@ -50,26 +96,89 @@ const fsOn = await d3.evaluate(() => {
     const cs = getComputedStyle(el);
     return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0;
   };
+  const menu = document.querySelector(".stage-bar");
+  const closeup2 = document.getElementById("leadCloseupCard2");
+  const stageR = stage && stage.getBoundingClientRect();
+  const menuR = menu && menu.getBoundingClientRect();
+  const closeupR = closeup && closeup.getBoundingClientRect();
+  const explainR = explain && explain.getBoundingClientRect();
+  const leadsR = leads && leads.getBoundingClientRect();
+  const leadBtn = document.querySelector(".lead-btn");
+  const leadBtnH = leadBtn ? leadBtn.getBoundingClientRect().height : 0;
   return {
     on,
     stageOn: inView(stage),
     closeupOn: inView(closeup),
+    closeup2Hidden: !closeup2 || closeup2.hidden || !inView(closeup2),
     leadsOn: inView(leads),
     exitOn: exitBtn && !exitBtn.hidden && inView(exitBtn),
-    explainHidden: !explain || getComputedStyle(explain).display === "none" || explain.getBoundingClientRect().height === 0,
+    explainOn: inView(explain),
+    menuOn: inView(menu),
+    menuAboveHeart: !!(menuR && stageR && menuR.bottom <= stageR.top + 2),
+    explainBelowStrip: !!(closeupR && explainR && explainR.top >= closeupR.bottom - 2),
+    leadsBelowExplain: !!(explainR && leadsR && leadsR.top >= explainR.bottom - 8),
+    leadBtnH,
     simTime: window.ecg3d.simTime()
   };
 });
-if (fsOn.on && fsOn.stageOn && fsOn.closeupOn && fsOn.leadsOn && fsOn.exitOn && fsOn.explainHidden) {
-  pass("Full screen shows the model, one lead and a lead chooser", fsOn);
+if (fsOn.on && fsOn.stageOn && fsOn.closeupOn && fsOn.leadsOn && fsOn.exitOn && fsOn.explainOn && fsOn.menuOn && fsOn.menuAboveHeart && fsOn.explainBelowStrip && fsOn.leadBtnH >= 40) {
+  pass("Full screen shows the model, menu above the heart, a lead strip, explanation below and a larger lead chooser", fsOn);
 } else {
-  fail("Full screen shows the model, one lead and a lead chooser", fsOn);
+  fail("Full screen shows the model, menu above the heart, a lead strip, explanation below and a larger lead chooser", fsOn);
 }
 
-await d3.evaluate(() => window.ecg3d.select("V1"));
-const picked = await d3.evaluate(() => document.getElementById("leadCloseupName") && document.getElementById("leadCloseupName").textContent);
-if (picked === "V1") pass("fullscreen lead chooser changes the close-up lead", { picked });
-else fail("fullscreen lead chooser changes the close-up lead", { picked });
+await d3.evaluate(() => { window.ecg3d.select("II"); window.ecg3d.select("V1"); });
+const two = await d3.evaluate(() => {
+  const inView = (el) => {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0;
+  };
+  const card2 = document.getElementById("leadCloseupCard2");
+  const name1 = document.getElementById("leadCloseupName") && document.getElementById("leadCloseupName").textContent;
+  const name2 = document.getElementById("leadCloseupName2") && document.getElementById("leadCloseupName2").textContent;
+  const explain = document.getElementById("explainCard");
+  const closeup2 = card2 && card2.getBoundingClientRect();
+  const explainR = explain && explain.getBoundingClientRect();
+  const c1 = window.ecg3d.closeupCursorScreen && window.ecg3d.closeupCursorScreen();
+  const c2el = document.getElementById("leadCloseup2");
+  const c2 = c2el ? { tAbs: +c2el.dataset.tAbs, t0: +c2el.dataset.t0 } : null;
+  return {
+    leads: window.ecg3d.selectedLeads(),
+    name1, name2,
+    card2On: inView(card2),
+    explainBelowSecond: !!(closeup2 && explainR && explainR.top >= closeup2.bottom - 2),
+    tAbsMatch: !!(c1 && c2 && c1.tAbs === c2.tAbs)
+  };
+});
+if (two.leads && two.leads.length === 2 && two.leads[0] === "II" && two.leads[1] === "V1" && two.name1 === "II" && two.name2 === "V1" && two.card2On && two.explainBelowSecond && two.tAbsMatch) {
+  pass("fullscreen can show two synced lead strips with the explanation below", two);
+} else fail("fullscreen can show two synced lead strips with the explanation below", two);
+
+await d3.evaluate(() => window.ecg3d.select("V4"));
+const three = await d3.evaluate(() => window.ecg3d.selectedLeads());
+if (three && three.length === 2 && three[0] === "V1" && three[1] === "V4") pass("selecting a third lead replaces the oldest", { three });
+else fail("selecting a third lead replaces the oldest", { three });
+
+await d3.evaluate(() => window.ecg3d.select("V4"));
+const kept = await d3.evaluate(() => window.ecg3d.selectedLeads());
+if (kept && kept.length === 1 && kept[0] === "V1") pass("deselecting a second lead always leaves at least one selected", { kept });
+else fail("deselecting a second lead always leaves at least one selected", { kept });
+
+const fsZoom = await d3.evaluate(() => {
+  window.ecg3d.view("frontal");
+  const o = window.ecg3d.orbitState();
+  window.ecg3d.orbit(o.az, o.el, o.r * 0.85);
+  const box = window.ecg3d.heartBox();
+  const after = window.ecg3d.orbitState();
+  const c = window.ecg3d.heartCentre();
+  const d = Math.hypot(after.target.x - c.x, after.target.y - c.y, after.target.z - c.z);
+  return { box, r0: o.r, r1: after.r, targetAtCentre: d < 0.15 };
+});
+const fsZoomMid = midOk(fsZoom.box, { r0: fsZoom.r0, r1: fsZoom.r1, targetAtCentre: fsZoom.targetAtCentre });
+if (fsZoomMid.centred && fsZoomMid.inView && fsZoom.r1 < fsZoom.r0 && fsZoom.targetAtCentre) pass("full screen zoom also stays centred on the heart", fsZoomMid);
+else fail("full screen zoom also stays centred on the heart", fsZoomMid);
 
 await d3.waitForTimeout(200);
 const t1 = await d3.evaluate(() => window.ecg3d.now());

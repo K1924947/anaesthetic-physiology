@@ -439,7 +439,7 @@ function buildPhases() {
 function phaseAt(t) { return PHASES.find(p => t >= p.from && t < p.to) || PHASES[PHASES.length - 1]; }
 
 /* ======================= State ======================= */
-const state = { t: 250, playing: false, speed: 0.1, sel: 'II', view: 'frontal', beat: 0, simTime: 250 };
+const state = { t: 250, playing: false, speed: 0.1, sel: 'II', sels: ['II'], view: 'frontal', beat: 0, simTime: 250 };
 const scrub = $('scrub'), timeOut = $('timeOut'), playBtn = $('playBtn'), speedSel = $('speed');
 
 /* ======================= ECG paper (12-lead and selected-lead strip) ======================= */
@@ -850,9 +850,9 @@ function drawZoomOn(canvas, large) {
   bracket(b0 + I.qOn, b0 + I.tEnd, 3, `QT ${I.QT} ms`);
 }
 /* Single-lead close-up: fixed 25 mm/s and 10 mm/mV paper at the saved larger scale (square grid). Deep waves may clip. */
-function paintAnnotatedLead(canvas, cssW, cssH) {
+function paintAnnotatedLead(canvas, cssW, cssH, leadId) {
   if (!canvas) return;
-  const id = state.sel, tr = TRACE[id], I = INTERVALS;
+  const id = leadId || state.sel, tr = TRACE[id], I = INTERVALS;
   cssW = Math.max(120, Math.round(cssW || 0));
   cssH = Math.max(80, Math.round(cssH || 0));
   let vHi = 1, vLo = 0;
@@ -1011,34 +1011,55 @@ function paintAnnotatedLead(canvas, cssW, cssH) {
   }
 }
 
+function closeupLeadList() {
+  const list = (state.sels && state.sels.length) ? state.sels.slice() : [state.sel || 'II'];
+  return list.filter(id => LEAD[id]);
+}
+function paintCloseupCanvas(canvas, nameEl, gainEl, leadId) {
+  if (!canvas || !leadId) return;
+  if (nameEl) nameEl.textContent = leadId;
+  const frame = canvas.parentElement;
+  if (!frame) return;
+  frame.style.overflow = 'hidden';
+  const cssW = Math.max(160, Math.floor(frame.clientWidth - 2));
+  const cssH = Math.max(80, Math.floor((frame.clientHeight || 160) - 2));
+  paintAnnotatedLead(canvas, cssW, cssH, leadId);
+  if (gainEl) gainEl.textContent = '10 mm/mV (full gain), 25 mm/s';
+  canvas.setAttribute('aria-label', `Close-up of lead ${leadId} on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. About four beats; the cursor sweeps left to right, then the window advances.`);
+}
 function drawZoom() {
-  const id = state.sel || 'II';
-  const name = $('leadCloseupName'); if (name) name.textContent = id;
-  const canvas = $('leadCloseup');
-  const frame = canvas && canvas.parentElement;
-  if (canvas && frame) {
-    frame.style.overflow = 'hidden';
-    const cssW = Math.max(160, Math.floor(frame.clientWidth - 2));
-    const cssH = Math.max(80, Math.floor((frame.clientHeight || 160) - 2));
-    paintAnnotatedLead(canvas, cssW, cssH);
-    const gain = $('leadCloseupGain');
-    if (gain) gain.textContent = '10 mm/mV (full gain), 25 mm/s';
-    canvas.setAttribute('aria-label', `Close-up of lead ${id} on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. About four beats; the cursor sweeps left to right, then the window advances.`);
+  const leads = closeupLeadList();
+  const primary = state.sel || leads[0] || 'II';
+  paintCloseupCanvas($('leadCloseup'), $('leadCloseupName'), $('leadCloseupGain'), leads[0] || primary);
+  const card2 = $('leadCloseupCard2');
+  const second = leads[1];
+  if (card2) {
+    const show = !!(typeof isFullscreen === 'function' && isFullscreen() && second);
+    card2.hidden = !show;
+    if (show) paintCloseupCanvas($('leadCloseup2'), $('leadCloseupName2'), $('leadCloseupGain2'), second);
   }
-  const z = $('zoomLead'); if (z) z.textContent = id;
+  const z = $('zoomLead'); if (z) z.textContent = primary;
   if (zoomCanvas && zoomCanvas.offsetParent) drawZoomOn(zoomCanvas, false);
 }
-if (typeof ResizeObserver === 'function' && $('leadCloseup')) {
-  let lastCloseup = '';
+if (typeof ResizeObserver === 'function') {
+  const lastCloseup = {};
   const closeupRo = new ResizeObserver(entries => {
-    const r = entries[0].contentRect;
-    const key = Math.round(r.width) + 'x' + Math.round(r.height);
-    if (key === lastCloseup) return;
-    lastCloseup = key;
-    drawZoom();
+    let changed = false;
+    for (const entry of entries) {
+      const r = entry.contentRect;
+      const key = Math.round(r.width) + 'x' + Math.round(r.height);
+      const id = entry.target.id || 'frame';
+      if (lastCloseup[id] === key) continue;
+      lastCloseup[id] = key;
+      changed = true;
+    }
+    if (changed) drawZoom();
   });
-  const fr = $('leadCloseup').parentElement;
-  if (fr) closeupRo.observe(fr);
+  for (const id of ['leadCloseup', 'leadCloseup2']) {
+    const el = $(id);
+    const fr = el && el.parentElement;
+    if (fr) closeupRo.observe(fr);
+  }
 }
 function leadAtEvent(e) {
   const geo = ECG_DRAW; if (!geo || !geo.px) return null;
@@ -1690,8 +1711,11 @@ function applyLabelVisibility() {
 const TORSO_C = new THREE.Vector3(-0.45, 1.1, -0.3), TORSO_R = new THREE.Vector3(5.0, 6.3, 4.2);
 let torso, frontLabel, leadObjs = {}, arrow, trail, projBar, projOut, projLine, projLabel, vecLabel, regionMeshes = [], regionLabel, chestArc, sternumLine, aortaMesh, apexLabel, baseLabel, anteriorLabel;
 const arrowTip = new THREE.Vector3();
-const VEC_SCALE = 2.8;
-const VEC_MIN_LEN = 1.2;   // visible minimum while the vector is non-zero
+const VEC_SCALE = 4.0;
+const VEC_MIN_LEN = 1.7;   // visible minimum while the vector is non-zero
+const VEC_SHAFT_R = 0.08;
+const VEC_HEAD_R = 0.20;
+const VEC_HEAD_H = 0.72;
 const VEC_HIDE = 0.045;    // hide the arrow when the instantaneous magnitude is about zero
 const CHEST_IDS = ['V1', 'V2', 'V3', 'V4', 'V5', 'V6'];
 function chestPole(id) {
@@ -1939,13 +1963,13 @@ function buildScene() {
 
   arrow = new THREE.Group();
   const am = new THREE.MeshBasicMaterial({ color: COL.black, depthTest: false, depthWrite: false });
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.155, 1, 16), am); shaft.name = 'shaft';
-  const head = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.78, 20), am); head.name = 'head';
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(VEC_SHAFT_R, VEC_SHAFT_R, 1, 16), am); shaft.name = 'shaft';
+  const head = new THREE.Mesh(new THREE.ConeGeometry(VEC_HEAD_R, VEC_HEAD_H, 20), am); head.name = 'head';
   shaft.renderOrder = 52; head.renderOrder = 53; arrow.add(shaft, head); scene.add(arrow);
   const halo = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide, depthTest: false, depthWrite: false });
   for (const m of [shaft, head]) { const h = new THREE.Mesh(m.geometry, halo); h.scale.set(1.75, m === head ? 1.28 : 1, 1.75); h.renderOrder = 51; m.add(h); }
-  const dotS = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), am); dotS.name = 'vecOrigin'; dotS.renderOrder = 52; scene.add(dotS);
-  const dotHalo = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), halo); dotHalo.renderOrder = 51; dotS.add(dotHalo);
+  const dotS = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), am); dotS.name = 'vecOrigin'; dotS.renderOrder = 52; scene.add(dotS);
+  const dotHalo = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12), halo); dotHalo.renderOrder = 51; dotS.add(dotHalo);
   // Fixed label near the origin; it does not travel with the arrow tip.
   vecLabel = addLabel("Heart's electrical vector", 'vec', () => new THREE.Vector3(0, 0, 0));
   vecLabel.tag = 'vec';
@@ -2022,7 +2046,7 @@ function setLeadStyles() {
   const showLimbRods = view !== 'transverse';
   const showChestRods = view !== 'frontal' && view !== 'section';
   for (const L of LEADS) {
-    const o = leadObjs[L.id]; const sel = L.id === state.sel;
+    const o = leadObjs[L.id]; const sel = (state.sels || [state.sel]).includes(L.id);
     const inGroup = L.type === 'limb' ? showLimbRods : showChestRods;
     const showRod = sel || (ui.allLeads && inGroup);
     const inViewPills = L.type === 'limb' ? showLimbPills : showChestPills;
@@ -2092,7 +2116,7 @@ function updateScene() {
     const dir = _q.set(...D).normalize();
     arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     drawLen = Math.max(VEC_MIN_LEN, mag * VEC_SCALE);
-    const hl = 0.78;
+    const hl = VEC_HEAD_H;
     shaft.scale.set(1, Math.max(0.001, drawLen - hl), 1);
     shaft.position.set(0, (drawLen - hl) / 2, 0);
     head.scale.setScalar(1);
@@ -2195,7 +2219,7 @@ function goView(name, instant) {
   camAnim = { t0: performance.now(), from: { az: orbit.az, el: orbit.el, r: orbit.r }, to: { az: orbit.az + daz, el: v.el, r } };
 }
 /* Frame the heart from its actual drawn outline, tightly, so it stays a similar on-screen size in the shorter stage.
-   The camera is then shifted up a little so the caption overlay at the bottom does not cover the heart.
+   The look-at and zoom target is the centre of the heart, so the heart sits in the middle of the viewer and zoom moves towards that centre.
    The limb lead rods are then shortened, if needed, so their + ends and labels stay inside the frame. */
 let HEART_PTS = null, limbScale = 1;
 function heartPoints() {
@@ -2207,20 +2231,27 @@ function heartPoints() {
   }
   return HEART_PTS;
 }
+function heartCentre() {
+  const P = heartPoints();
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9;
+  for (const p of P) {
+    if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
+    if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y;
+    if (p.z < z0) z0 = p.z; if (p.z > z1) z1 = p.z;
+  }
+  return new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+}
 function setLimbScale(sc) {
   limbScale = sc;
   for (const L of LEADS) { if (L.type !== 'limb') continue; const o = leadObjs[L.id]; o.grp.scale.setScalar(sc); o.marker.scale.setScalar(1 / sc); }
   needsRender = true;
 }
 function fitView(v, name) {
-  const P = heartPoints().slice();
+  const heartP = heartPoints().slice();
+  const P = heartP.slice();
   if (name === 'transverse') {
-    // Frame the heart and V1-V6 only, so this view fills the viewport. R and L marks stay on screen as HTML overlays.
+    // Size the frame to the heart and V1-V6. R and L marks stay on screen as HTML overlays.
     for (const id of CHEST_IDS) P.push(chestPole(id).clone());
-  } else if (torso) {
-    const rp = torso.userData.rPos, lp = torso.userData.lPos;
-    if (rp) P.push(rp.clone()); if (lp) P.push(lp.clone());
-    P.push(new THREE.Vector3(0.3, 3.7, 0.4));
   }
   if (name === 'transverse') setLimbScale(1);
   const dir = new THREE.Vector3(Math.cos(v.el) * Math.sin(v.az), Math.sin(v.el), Math.cos(v.el) * Math.cos(v.az));
@@ -2229,17 +2260,15 @@ function fitView(v, name) {
   // Tighter frame: about 76% of canvas height (72% in the 3D view).
   const frac = name === 'transverse' ? 0.84 : name === 'oblique' ? 0.72 : 0.76;
   const fracW = name === 'transverse' ? 0.86 : 0.84;
-  // centre: middle of the outline in the screen plane (orthographic estimate, refined below)
-  const target = new THREE.Vector3(); let r = 12;
-  const ext = (tg, rr) => { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const q = new THREE.Vector3();
-    for (const p of P) { q.copy(p).sub(tg); const z = rr - q.dot(dir); const x = q.dot(right) / (z * tf * asp), y = q.dot(up) / (z * tf);
+  // Always look at, and zoom towards, the heart's centre, not the torso or a shifted overlay target.
+  const target = heartCentre(); let r = 12;
+  const ext = (tg, rr, pts) => { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const q = new THREE.Vector3();
+    for (const p of pts) { q.copy(p).sub(tg); const z = rr - q.dot(dir); const x = q.dot(right) / (z * tf * asp), y = q.dot(up) / (z * tf);
       if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     return { x0, x1, y0, y1 }; };
   for (let it = 0; it < 4; it++) {
-    const e = ext(target, r);
-    const z = r; // shift the target so the outline is centred on screen
-    target.addScaledVector(right, (e.x0 + e.x1) / 2 * z * tf * asp).addScaledVector(up, (e.y0 + e.y1) / 2 * z * tf);
-    const e2 = ext(target, r); const k = Math.max((e2.y1 - e2.y0) / 2 / frac, (e2.x1 - e2.x0) / 2 / fracW);
+    const e2 = ext(target, r, P);
+    const k = Math.max((e2.y1 - e2.y0) / 2 / frac, (e2.x1 - e2.x0) / 2 / fracW);
     r = r * k;
   }
   // limb rods: keep each + end (and its label just beyond) inside the frame, except in the chest-leads view
@@ -2252,12 +2281,6 @@ function fitView(v, name) {
       const need = Math.max(x / 0.86, y / 0.86); if (need > 1) sc = Math.min(sc, 1 / need);
     }
   }
-  // Keep the heart above the compact caption overlay.
-  const stageH = stage.clientHeight || 1;
-  const bottomPx = 38;
-  const padPx = (1 - frac) / 2 * stageH;
-  const shift = Math.max(0, Math.min((padPx - 6) / stageH, (bottomPx - padPx) / stageH));
-  if (shift > 0) target.addScaledVector(up, -shift * r * tf);
   setLimbScale(name === 'transverse' ? 1 : Math.max(0.55, sc));
   return { target, r };
 }
@@ -2878,15 +2901,40 @@ function setT(t, announce) {
   if (phase >= BEAT_MS) phase = BEAT_MS - 1e-6;
   setSimTime(beat * BEAT_MS + phase, announce);
 }
+function selectedSet() {
+  return (state.sels && state.sels.length) ? state.sels.slice() : [state.sel || 'II'];
+}
+function syncLeadButtons() {
+  const set = selectedSet();
+  document.querySelectorAll('.lead-btn').forEach(b => b.setAttribute('aria-pressed', String(set.includes(b.dataset.lead))));
+}
 function select(id, fromUser) {
-  state.sel = id;
+  if (!LEAD[id]) return;
   if (fromUser) closeupChosen = true;
-  document.querySelectorAll('.lead-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lead === id)));
-  setLeadStyles(); buildRegion(LEAD[id].region);
+  if (typeof isFullscreen === 'function' && isFullscreen()) {
+    const list = selectedSet();
+    const idx = list.indexOf(id);
+    if (idx >= 0) {
+      if (list.length > 1) list.splice(idx, 1);
+    } else {
+      list.push(id);
+      if (list.length > 2) list.shift();
+    }
+    state.sels = list;
+    state.sel = list.includes(id) ? id : list[list.length - 1];
+  } else {
+    state.sel = id;
+    state.sels = [id];
+  }
+  syncLeadButtons();
+  setLeadStyles(); buildRegion(LEAD[state.sel].region);
   updateScene(); drawECG(); drawMini(); updateText(false);
   syncCloseup();
   const shown = closeupChosen && !(ONE_SCREEN.matches && !closeupChosen);
-  $('live').textContent = shown ? `Lead ${id} selected. Close-up is on the right.` : `Lead ${id} selected.`;
+  const names = selectedSet().join(' and ');
+  $('live').textContent = shown
+    ? (selectedSet().length > 1 ? `Leads ${names} selected. Close-ups are on the right.` : `Lead ${state.sel} selected. Close-up is on the right.`)
+    : `Lead ${state.sel} selected.`;
 }
 let lastClock = performance.now();
 function syncClock(now) { lastClock = now == null ? performance.now() : now; }
@@ -3090,16 +3138,26 @@ function nativeFsEl() {
   return document.fullscreenElement || document.webkitFullscreenElement || null;
 }
 function isFullscreen() {
-  return nativeFsEl() === fsRoot || document.body.classList.contains('ecg3d-fs-fallback');
+  const root = document.getElementById('tool');
+  return nativeFsEl() === root || document.body.classList.contains('ecg3d-fs-fallback');
 }
 function syncFsUi() {
   const on = isFullscreen();
   document.body.classList.toggle('ecg3d-fs', on);
   if (fsBtn) fsBtn.setAttribute('aria-pressed', String(on));
   if (fsExitBtn) fsExitBtn.hidden = !on;
+  const box = $('leadBtns');
+  if (box) box.setAttribute('aria-label', on ? 'Select up to two leads' : 'Select a lead');
+  if (!on && state.sel) state.sels = [state.sel];
+  if (on && (!state.sels || !state.sels.length) && state.sel) state.sels = [state.sel];
+  syncLeadButtons();
   if (renderer && typeof resize === 'function') {
     try { resize(); } catch (e) {}
   }
+  if (renderer && typeof refit === 'function' && VIEWS[state.view]) {
+    try { refit(); } catch (e) {}
+  }
+  if (typeof drawZoom === 'function') drawZoom();
   if (typeof updateLabels === 'function' && renderer) updateLabels();
 }
 function enterFullscreen() {
@@ -3152,6 +3210,11 @@ document.addEventListener('keydown', ev => {
 /* Hooks for automated checks, screenshots and later pathology modes */
 window.ecg3d = {
   setT: t => { setPlaying(false); setT(t, true); }, select: id => select(id, true), view: v => goView(v, true), play: setPlaying, cut: setCut, step: goStep, setGuided, setAnatomyLabels, guided: () => !!ui.guided,
+  selectedLeads: () => selectedSet(),
+  arrowDims: () => ({ shaftRadius: VEC_SHAFT_R, headRadius: VEC_HEAD_R, headHeight: VEC_HEAD_H, vecScale: VEC_SCALE, minLen: VEC_MIN_LEN }),
+  heartCentre: () => { const c = heartCentre(); return { x: c.x, y: c.y, z: c.z }; },
+  orbitState: () => ({ az: orbit.az / DEG, el: orbit.el / DEG, r: orbit.r, target: { x: orbit.target.x, y: orbit.target.y, z: orbit.target.z } }),
+  refitView: () => { refit(); return window.ecg3d.orbitState(); },
   leadLabel: id => leadObjs[id] && leadObjs[id].lbl && leadObjs[id].lbl.el,
   leadAt: (x, y) => leadAtEvent({ clientX: x, clientY: y }),
   sheetCell: cellPoint,
