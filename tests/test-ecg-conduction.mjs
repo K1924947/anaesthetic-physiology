@@ -320,6 +320,28 @@ const ov = await page.evaluate(() => { const E = window.ECGConduction; E.setTime
 check("presets can be overridden afterwards with the leads menu and lead dropdowns", ov.n === 1 && ov.L === "aVR" && ov.cond === "rbbb" && ov.title === "aVR sees", ov);
 await page.selectOption("#ecgcCond", "normal");
 
+// Round 16: with 2 or 3 leads the strip is wider in ms, so further beats continue it to the right edge (no blank paper).
+const fill = await page.evaluate(() => {
+  const E = window.ECGConduction, o = {};
+  E.setCondition("normal");
+  for (const n of [1, 2, 3]) { E.setLeadCount(n); E.setLead(0, "II"); E.setFocus(0); E.setTime(60);
+    const cv = document.querySelector(".ecgc-lead canvas"), r = cv.getBoundingClientRect(), ctx = cv.getContext("2d"), dpr = cv.width / r.width, d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+    let last = -1, grey = 0;
+    for (let x = cv.width - 1; x >= 0 && last < 0; x--) for (let y = 0; y < cv.height; y++) { const k = (y * cv.width + x) * 4; if (d[k] < 60 && d[k + 1] < 60 && d[k + 2] < 60) { last = x; break; } }
+    for (let k = 0; k < d.length; k += 4) if (Math.abs(d[k] - 163) < 6 && Math.abs(d[k + 1] - 168) < 6 && Math.abs(d[k + 2] - 174) < 6) grey++;
+    const bs = E.bumps("normal", "II"); let big = bs[0]; bs.forEach((b) => { if (Math.abs(b.amp) > Math.abs(big.amp)) big = b; });
+    let qrs = 0; for (let b = 0; b < 10; b++) { const x = E.traceX(0, b * 800 + big.peak) - r.left; if (x < r.width - 2) qrs++; }
+    const p = E.paper(); o[n] = { gap: Math.round(r.width - last / dpr), w: Math.round(r.width), qrs, grey, gain: p.pxPerMv, loop: E.loop().ms, peak: big.peak,
+      tap3: n === 3 ? { x: E.traceX(0, 2 * 800 + big.peak + 1), y: r.top + r.height / 2 } : null }; }
+  return o; });
+check("strip filled edge to edge with continuing beats at every lead count (trailing gap under 6 px), more beats at lower gain, gains 100/80/48, all black (no faint grey beats; a few anti-aliased pixels allowed)",
+  [1, 2, 3].every((n) => fill[n].gap < 6 && fill[n].grey < 20) && fill[1].qrs >= 2 && fill[2].qrs >= 3 && fill[3].qrs >= 4 && fill[3].qrs > fill[2].qrs &&
+  fill[1].gain === 100 && fill[2].gain === 80 && fill[3].gain === 48 && fill[2].loop === 1600 && fill[3].loop === 1600, fill);
+await page.mouse.click(fill[3].tap3.x, fill[3].tap3.y);
+const tap3 = await page.evaluate(() => ({ t: window.ECGConduction.state.t, beat: document.getElementById("ecgcBeat").textContent }));
+check("tapping a bump on a continuing beat (beat 3) jumps to that bump in beat 2", tap3.t === 800 + fill[3].peak && tap3.beat === "Beat 2 of 2:", tap3);
+await page.evaluate(() => window.ECGConduction.setLeadCount(1));
+
 if (SHOT) {
   await page.evaluate(() => window.ECGConduction.setTime(232));
   await page.mouse.move(5, 5);

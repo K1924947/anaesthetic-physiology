@@ -847,8 +847,10 @@
     var cv = wrap.querySelector("canvas");
     cv.addEventListener("click", function (e) {
       var r = cv.getBoundingClientRect();
-      // A tap on either beat jumps to that moment of that beat.
-      var tm = Math.max(0, Math.min(loopMs() - 1, stripGeom(r.width).toMs(e.clientX - r.left))), off = beatOf(tm) * CYCLE, tc = tm - off;
+      // A tap on beat 1 or 2 jumps to that moment of that beat; a tap on a later (continuing) beat counts as beat 2.
+      var tm = Math.max(0, stripGeom(r.width).toMs(e.clientX - r.left)), lp = loopMs();
+      if (tm >= lp || tm >= BEATS * CYCLE) { tm = (BEATS - 1) * CYCLE + tm % CYCLE; if (tm >= lp) tm -= CYCLE; }
+      var off = beatOf(tm) * CYCLE, tc = tm - off;
       if (state.focus !== i) { state.focus = i; leadsChanged(); }
       var bs = bumpsFor(state.cond, state.leads[i]), hit = null;
       bs.forEach(function (b) { if (tc >= b.start - 6 && tc <= b.end + 6 && (!hit || Math.abs(b.peak - tc) < Math.abs(hit.peak - tc))) hit = b; });
@@ -1074,7 +1076,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     var L = state.leads[i], data = SAMPLES[state.cond][L], isFocus = i === state.focus;
-    var G = stripGeom(w), left = G.left, XS = G.XS, LOOP = loopMs(), off = beatOf(t) * CYCLE;
+    var G = stripGeom(w), left = G.left, XS = G.XS, off = beatOf(t) * CYCLE;
     t = t - off; // time within the beat being explained; X() places it on that beat of the strip
     function X(ms) { return G.X(ms + off); }
     // Fixed gain; the baseline is placed per lead so this beat's tallest R and deepest S both fit (centred if it is tight).
@@ -1110,10 +1112,11 @@
     // The pen sits between whole milliseconds (linear), so trace, dot and cursor move together at very slow speeds.
     var tp = Math.max(0, Math.min(CYCLE - 1, t)), yp = data[cut] + ((data[Math.min(CYCLE - 1, cut + 1)] - data[cut]) * (tp - cut));
     ctx.lineJoin = "round";
-    // Two consecutive beats, both drawn as full black traces (P-QRS-T, P-QRS-T); the cursor and dot mark the moment.
+    // Beats 1 and 2 are explained and animated; further beats at the same rhythm (75 per minute) continue the strip to the
+    // right edge, all as full black traces. The cursor and dot mark the moment.
     ctx.strokeStyle = "#111"; ctx.lineWidth = 1.8;
     ctx.beginPath();
-    for (var k = 0; k < LOOP; k++) { var xk = G.X(k); if (xk > w + 2) break; var v = data[k % CYCLE]; if (k === 0) ctx.moveTo(xk, Y(v)); else ctx.lineTo(xk, Y(v)); }
+    for (var k = 0; ; k++) { var xk = G.X(k); if (xk > w + 2) break; var v = data[k % CYCLE]; if (k === 0) ctx.moveTo(xk, Y(v)); else ctx.lineTo(xk, Y(v)); }
     ctx.stroke();
     ctx.restore();
     var link = null;
@@ -1159,7 +1162,7 @@
       for (var u = wv[1][1]; u < wv[1][2]; u++) { if (Math.abs(data[u]) > Math.abs(big)) { big = data[u]; pk = u; } hi = Math.max(hi, data[u]); }
       if (Math.abs(big) < .015) return;
       var ly = Math.max(top + 10, Y(hi) - 6);
-      for (var bb = 0; bb < BEATS; bb++) { var lx = G.X(pk + bb * CYCLE); if (pk + bb * CYCLE >= LOOP || lx > w - 6) continue;
+      for (var bb = 0; G.X(bb * CYCLE) < w; bb++) { var lx = G.X(pk + bb * CYCLE); if (lx > w - 6) continue;
         ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillRect(lx - 5, ly - 10, 10, 12);
         ctx.fillStyle = "#222"; ctx.fillText(wv[0], lx, ly); }
     });
