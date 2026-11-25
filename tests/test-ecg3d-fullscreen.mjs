@@ -254,10 +254,14 @@ if (fsZoomMid.centred && fsZoomMid.inView && fsZoom.r1 < fsZoom.r0 && fsZoom.tar
 else fail("full screen zoom also stays centred on the heart", fsZoomMid);
 
 await d3.waitForTimeout(200);
-const t1 = await d3.evaluate(() => window.ecg3d.now());
+const t1 = await d3.evaluate(() => {
+  const n = window.ecg3d.now();
+  const start = window.ecg3d.beatStart(n.beat);
+  return { ...n, beatStart: start };
+});
 const t0 = fsBefore.t0;
 const advanced = t1.simTime > t0;
-const inSync = Math.abs((t1.simTime) - (t1.beat * 800 + t1.t)) < 2;
+const inSync = Math.abs(t1.simTime - (t1.beatStart + t1.t)) < 2;
 if (advanced && inSync) pass("master simTime keeps running and stays in sync in full screen", { t0, t1 });
 else fail("master simTime keeps running and stays in sync in full screen", { t0, t1, advanced, inSync });
 

@@ -451,7 +451,10 @@ function buildPhases() {
   const avs = document.createElement('span'); avs.className = 'ps-seg ps-av';
   avs.style.left = (M.tAV / 8) + '%'; avs.style.width = ((M.tHis - M.tAV) / 8) + '%'; avs.textContent = 'AV'; avs.title = 'AV node delay'; strip.appendChild(avs);
 }
-function phaseAt(t) { return PHASES.find(p => t >= p.from && t < p.to) || PHASES[PHASES.length - 1]; }
+function phaseAt(t) {
+  const tUse = Math.max(0, Math.min(BEAT_MS, t));
+  return PHASES.find(p => tUse >= p.from && tUse < p.to) || PHASES[PHASES.length - 1];
+}
 
 /* ======================= State ======================= */
 const state = { t: 250, playing: false, speed: 0.1, sel: 'II', sels: ['II'], view: 'frontal', beat: 0, simTime: 250 };
@@ -467,7 +470,7 @@ const MINI_MS = 5000;
 const CLOSEUP_MS = 4 * BEAT_MS; // 3.2 s (4 beats) shared across every close-up strip
 const CLOSEUP_LEFT_MM = 2, CLOSEUP_RIGHT_MM = 1;
 const CLOSEUP_WMM = CLOSEUP_LEFT_MM + CLOSEUP_MS * MM_PER_MS + CLOSEUP_RIGHT_MM;
-const SWEEP_GAP_MM = 2.0; // blanking gap ahead of the monitor sweep cursor (80 ms at 25 mm/s)
+const SWEEP_GAP_MM = 2.0; // unused: printed laps draw only behind the cursor, with no erase gap
 const ZOOM_MS = 2 * BEAT_MS;
 const LAYOUT = [['I', 'aVR', 'V1', 'V4'], ['II', 'aVL', 'V2', 'V5'], ['III', 'aVF', 'V3', 'V6']];
 function wrapPeriod(t, period) {
@@ -503,20 +506,82 @@ function drawCal(g, x0mm, basemm, px, heightMm) { // 1 mV, 200 ms pulse; height 
   g.moveTo(x0mm * px, basemm * px); g.lineTo((x0mm + 1) * px, basemm * px); g.lineTo((x0mm + 1) * px, (basemm - h) * px);
   g.lineTo((x0mm + 6) * px, (basemm - h) * px); g.lineTo((x0mm + 6) * px, basemm * px); g.lineTo((x0mm + 7) * px, basemm * px); g.stroke();
 }
-function sampleLead(id, tMs) {
-  const tr = TRACE[id];
-  if (!tr || !tr.length) return 0;
-  const n = BEAT_MS;
-  let t = Math.round(tMs) % n;
-  if (t < 0) t += n;
-  return tr[t];
+function morphAt(id, tBeat) {
+  const T = TRACE[id];
+  if (!T || !T.length) return 0;
+  const tc = Math.max(0, Math.min(BEAT_MS, tBeat));
+  const i = Math.min(BEAT_MS - 1, Math.floor(tc));
+  const f = tc - i;
+  return T[i] + (T[i + 1] - T[i]) * f;
+}
+/* One shared recording for every view: 12 leads on one clock, seeded and deterministic. */
+const REC = {
+  seed: 439001,
+  rr0: BEAT_MS,
+  rsaAmp: 0.04,
+  rsaMs: 4000,
+  wanderMv: 0.03,
+  wanderMs: 11000,
+  jitter: 0.005,
+  starts: [0],
+  ready: false
+};
+function recRand(beatIndex) {
+  let a = (REC.seed + Math.imul(beatIndex, 1013904223)) | 0;
+  a = (a + 0x6D2B79F5) | 0;
+  let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function nextRR(t0, beatIndex) {
+  const rsa = REC.rsaAmp * Math.sin(2 * Math.PI * t0 / REC.rsaMs);
+  const jit = (recRand(beatIndex) - 0.5) * 2 * REC.jitter;
+  return Math.max(600, Math.min(1000, REC.rr0 * (1 + rsa + jit)));
+}
+function ensureBeatsUntil(tMs) {
+  const until = Math.max(0, tMs) + 4000;
+  while (REC.starts[REC.starts.length - 1] <= until) {
+    const i = REC.starts.length - 1;
+    REC.starts.push(REC.starts[i] + nextRR(REC.starts[i], i));
+  }
+}
+function beatIndexAt(tMs) {
+  const t = Math.max(0, tMs);
+  ensureBeatsUntil(t);
+  let lo = 0, hi = REC.starts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (REC.starts[mid] <= t) lo = mid; else hi = mid - 1;
+  }
+  return lo;
+}
+function wanderAt(id, tMs) {
+  const L = LEAD[id === 'II-rhythm' ? 'II' : id];
+  const scale = L && L.type === 'chest' ? 0.8 : 1;
+  const phase = (REC.seed % 360) * Math.PI / 180;
+  return REC.wanderMv * scale * Math.sin(2 * Math.PI * tMs / REC.wanderMs + phase);
+}
+function sampleRecording(id, tMs) {
+  const key = id === 'II-rhythm' ? 'II' : id;
+  if (tMs < 0) return wanderAt(key, tMs);
+  const i = beatIndexAt(tMs);
+  const tRel = tMs - REC.starts[i];
+  let v = 0;
+  if (tRel >= 0 && tRel <= BEAT_MS) v = morphAt(key, tRel);
+  return v + wanderAt(key, tMs);
+}
+function sampleLead(id, tMs) { return sampleRecording(id, tMs); }
+function initRecording() {
+  REC.starts = [0];
+  ensureBeatsUntil(PAGE_MS * 8);
+  REC.ready = true;
 }
 function drawSeg(g, id, t0, t1, xStartMm, basemm, px, bold, lw, mmPerMv) {
   if (t1 <= t0) return;
   const mm = mmPerMv == null ? MM_PER_MV : mmPerMv;
   g.strokeStyle = PAPER.trace; g.lineWidth = lw || (bold ? 2.3 : 1.3); g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath();
   const xAt = t => (xStartMm + (t - t0) * MM_PER_MS) * px;
-  const yAt = t => (basemm - traceAt(id, wrapPeriod(t, BEAT_MS)) * mm) * px;
+  const yAt = t => (basemm - sampleRecording(id, t) * mm) * px;
   g.moveTo(xAt(t0), yAt(t0));
   const firstInt = Math.floor(t0) + 1;
   for (let t = firstInt; t < t1; t += 1) {
@@ -525,31 +590,15 @@ function drawSeg(g, id, t0, t1, xStartMm, basemm, px, bold, lw, mmPerMv) {
   g.lineTo(xAt(t1), yAt(t1));
   g.stroke();
 }
-function drawSweepSeg(g, id, tWin0, winMs, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv, loopMs) {
+function drawSweepSeg(g, id, tWin0, winMs, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv) {
+  // Printed-style lap: blank paper, then the trace draws in behind the cursor. No erase gap, no leftover from the previous lap.
   const tInWin = Math.max(0, Math.min(winMs, tAbs - tWin0));
-  const period = loopMs == null ? winMs : loopMs;
-  const gapMs = Math.min(winMs, SWEEP_GAP_MM / MM_PER_MS);
-  if (tInWin > 0) {
-    drawSeg(g, id, tWin0, tWin0 + tInWin, xStartMm, basemm, px, bold, lw, mmPerMv);
-  }
-  if (tInWin + gapMs < winMs) {
-    const tPrev0 = tWin0 - period;
-    const xGapMm = xStartMm + (tInWin + gapMs) * MM_PER_MS;
-    drawSeg(g, id, tPrev0 + tInWin + gapMs, tPrev0 + winMs, xGapMm, basemm, px, bold, lw, mmPerMv);
-  }
+  if (tInWin > 0) drawSeg(g, id, tWin0, tWin0 + tInWin, xStartMm, basemm, px, bold, lw, mmPerMv);
 }
-function drawPageCol(g, id, tPage0, col, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv) {
-  const tCol0 = tPage0 + col * ECG.colMs;
-  const tCol1 = tCol0 + ECG.colMs;
-  if (tAbs >= tCol1) {
-    drawSeg(g, id, tCol0, tCol1, xStartMm, basemm, px, bold, lw, mmPerMv);
-  } else if (tAbs < tCol0) {
-    drawSeg(g, id, tCol0 - PAGE_MS, tCol1 - PAGE_MS, xStartMm, basemm, px, bold, lw, mmPerMv);
-  } else {
-    drawSweepSeg(g, id, tCol0, ECG.colMs, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv, PAGE_MS);
-  }
+function drawPageCol(g, id, tCol0, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv) {
+  drawSweepSeg(g, id, tCol0, ECG.colMs, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv);
 }
-function traceAt(id, t) { const T = TRACE[id]; const tc = Math.max(0, Math.min(BEAT_MS, t)), i = Math.min(BEAT_MS - 1, Math.floor(tc)), f = tc - i; return T[i] + (T[i + 1] - T[i]) * f; }
+function traceAt(id, t) { return sampleRecording(id, t); }
 function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px, mmPerMv, dotClamp) {
   const x = (xStartMm + (tAbs - tStart) * MM_PER_MS) * px;
   const y0 = topmm * px, y1 = (topmm + hmm) * px;
@@ -566,7 +615,7 @@ function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px, mmPerMv
   g.closePath();
   g.fill();
   g.strokeStyle = '#fff'; g.lineWidth = 1; g.stroke();
-  const v = traceAt(id, wrapPeriod(tAbs, BEAT_MS));
+  const v = sampleRecording(id, tAbs);
   let y = (basemm - v * mm) * px;
   // Follow the wave so a deep peak is not pinned to a flat clip edge.
   if (dotClamp && dotClamp.unclamped) {
@@ -588,11 +637,36 @@ function label(g, text, xmm, ymm, px, selected) {
   else g.fillStyle = '#111';
   g.fillText(text, xmm * px, ymm * px);
 }
-function ecgHmm(rowH, compact) { return ECG.top + 4 * rowH + (compact ? 5.5 : 7); }
+function sheetWavePad(rowH) {
+  let overUp = 0, overDown = 0;
+  for (const L of LEADS) {
+    const baseOff = cellBaseline(L.id, rowH);
+    const mm = sheetMmPerMv(L.id);
+    const e = leadExtrema(L.id);
+    overUp = Math.max(overUp, e.hi * mm - baseOff);
+    overDown = Math.max(overDown, Math.max(0, -e.lo) * mm - (rowH - baseOff));
+  }
+  const rhy = cellBaseline('II', rowH);
+  const eII = leadExtrema('II');
+  overDown = Math.max(overDown, Math.max(0, -eII.lo) * 10 - (rowH - rhy));
+  return { overUp: Math.max(0, overUp) + 0.6, overDown: Math.max(0, overDown) + 0.6 };
+}
+function ecgHmm(rowH, compact) { return ECG.top + 4 * rowH + (compact ? 5.5 : 7) + (ECG.botPad || 0); }
 let ECG_DRAW = null, LAST_CLIPS = [], LAST_CURSORS = [];
 function leadExtrema(id) {
-  const tr = TRACE[id]; let hi = 0, lo = 0;
+  const key = id === 'II-rhythm' ? 'II' : id;
+  const tr = TRACE[key]; let hi = 0, lo = 0;
   if (tr) for (let t = 0; t < BEAT_MS; t++) { if (tr[t] > hi) hi = tr[t]; if (tr[t] < lo) lo = tr[t]; }
+  const w = Math.abs(REC.wanderMv) * ((LEAD[key] && LEAD[key].type === 'chest') ? 0.8 : 1);
+  return { hi: hi + w, lo: lo - w };
+}
+function allLeadExtrema() {
+  let hi = 1, lo = 0;
+  for (const L of LEADS) {
+    const e = leadExtrema(L.id);
+    if (e.hi > hi) hi = e.hi;
+    if (e.lo < lo) lo = e.lo;
+  }
   return { hi, lo };
 }
 function cellBaseline(id, rowH) {
@@ -647,10 +721,16 @@ function ecgSheetSize() {
     while (rh > 12 && pxW * ecgHmm(rh, true) > availH + 0.5) rh -= 0.25;
     ECG.rowH = rh;
     ECG.base = Math.round(Math.max(7, Math.min(rh - 3.5, rh * 0.62)) * 10) / 10;
+    const padC = sheetWavePad(rh);
+    ECG.top = 2 + padC.overUp;
+    ECG.botPad = padC.overDown;
     hmm = ecgHmm(rh, true);
     px = Math.min(pxW, availH / hmm);
   } else {
     ECG.rowH = 30; ECG.base = 17;
+    const padN = sheetWavePad(30);
+    ECG.top = 2 + padN.overUp;
+    ECG.botPad = padN.overDown;
     hmm = ecgHmm(30, false);
     px = Math.max((frame.clientWidth || 280) - 2, 200) / wmm;
   }
@@ -668,17 +748,20 @@ function drawECG() {
     ecgCanvas.dataset.wmm = String(wmm);
     ecgCanvas.dataset.hmm = String(hmm);
     ecgCanvas.dataset.rowH = String(ECG.rowH);
+    ecgCanvas.dataset.top = String(ECG.top);
+    ecgCanvas.dataset.botPad = String(ECG.botPad || 0);
   }
   ECG_DRAW = { px, wmm, hmm, rowH: ECG.rowH, top: ECG.top, calW: ECG.calW, colMm: ECG.colMs * MM_PER_MS, cssW, cssH };
   const g = prepCanvas(ecgCanvas, cssW, cssH); drawPaper(g, wmm, hmm, px);
   const clips = [];
   LAST_CURSORS = [];
   const tAbs = pageTime();
-  // Standard 12-lead page: four consecutive 2.4 s columns on a fixed 9.6 s loop. One sweep cursor, shared x on the active column and the rhythm strip, overwrites in place.
+  // Standard 12-lead page: four simultaneous 2.4 s columns (same window, four in-step cursors) and a 9.6 s rhythm strip, all views of one recording. Printed laps: trace draws in behind the cursors, then the paper clears.
   const tPage0 = windowStart(tAbs, PAGE_MS);
   const tInPage = tAbs - tPage0;
-  const activeCol = Math.max(0, Math.min(3, Math.floor(tInPage / ECG.colMs)));
-  const tWin0 = tPage0 + activeCol * ECG.colMs;
+  const tCol0 = windowStart(tAbs, ECG.colMs);
+  const tInCol = tAbs - tCol0;
+  const tWin0 = tCol0;
   const pxPerMs = MM_PER_MS * px;
   if (ecgCanvas.dataset) {
     ecgCanvas.dataset.tAbs = String(Math.round(tAbs));
@@ -687,10 +770,12 @@ function drawECG() {
     ecgCanvas.dataset.colMs = String(ECG.colMs);
     ecgCanvas.dataset.pageMs = String(PAGE_MS);
     ecgCanvas.dataset.pxPerMs = String(pxPerMs);
-    ecgCanvas.dataset.activeCol = String(activeCol);
+    ecgCanvas.dataset.activeCol = 'all';
+    ecgCanvas.dataset.tCol0 = String(tCol0);
+    ecgCanvas.dataset.tInCol = String(tInCol);
   }
-  const sheetTopPx = ECG.top * px;
-  const sheetBotPx = (ECG.top + 4 * ECG.rowH) * px;
+  const sheetTopPx = 0;
+  const sheetBotPx = hmm * px;
   const waveClamp = { unclamped: true, top: sheetTopPx + 1, bot: sheetBotPx - 2 };
   const cells = [];
   for (let r = 0; r < 4; r++) {
@@ -699,7 +784,7 @@ function drawECG() {
       const limbOff = cellBaseline(LAYOUT[r][0], ECG.rowH);
       drawCal(g, 0.5, top + limbOff, px, 10);
       for (let c = 0; c < 4; c++) {
-        const id = LAYOUT[r][c], t0 = tPage0 + c * ECG.colMs, x0 = ECG.calW + c * ECG.colMs * MM_PER_MS, sel = id === state.sel;
+        const id = LAYOUT[r][c], t0 = tCol0, x0 = ECG.calW + c * ECG.colMs * MM_PER_MS, sel = id === state.sel;
         const mm = sheetMmPerMv(id);
         const baseOff = cellBaseline(id, ECG.rowH);
         const base = top + baseOff;
@@ -735,7 +820,7 @@ function drawECG() {
     if (cell.id === 'II-rhythm') {
       drawSweepSeg(g, 'II', tPage0, PAGE_MS, tAbs, cell.x0, cell.base, px, cell.sel, null, 10);
     } else {
-      drawPageCol(g, cell.id, tPage0, cell.c, tAbs, cell.x0, cell.base, px, cell.sel, null, cell.mm);
+      drawPageCol(g, cell.id, tCol0, tAbs, cell.x0, cell.base, px, cell.sel, null, cell.mm);
     }
     g.restore();
   }
@@ -747,15 +832,43 @@ function drawECG() {
     if (cell.id === 'II-rhythm') label(g, 'II  (rhythm strip)', cell.x0 + 1.5, cell.top + 5, px, cell.sel);
     else label(g, cell.id, cell.x0 + 1.5, cell.top + 5, px, cell.sel);
   }
-  // One sweep cursor: the three leads in the active column, plus the rhythm strip, all at the same x.
-  for (const cell of cells) {
-    if (cell.id === 'II-rhythm') {
-      cursorAt(g, 'II', tAbs, cell.x0, tPage0, cell.base, cell.top + 1, ECG.rowH - 2, px, 10, waveClamp);
-      LAST_CURSORS.push({ id: 'II-rhythm', tAbs, t0: tPage0, col: activeCol, row: 3, x: (cell.x0 + tInPage * MM_PER_MS) * px, pxPerMs });
-    } else if (cell.c === activeCol) {
-      cursorAt(g, cell.id, tAbs, cell.x0, cell.t0, cell.base, cell.top + 1, ECG.rowH - 2, px, cell.mm, waveClamp);
-      LAST_CURSORS.push({ id: cell.id, tAbs, t0: cell.t0, col: cell.c, row: cell.r, x: (cell.x0 + (tAbs - cell.t0) * MM_PER_MS) * px, pxPerMs });
+  // Four in-step column cursors (each spans the three leads in that column) plus the rhythm-strip cursor on the 9.6 s clock.
+  const sheetTopMm = ECG.top;
+  const colBotMm = ECG.top + 3 * ECG.rowH;
+  for (let c = 0; c < 4; c++) {
+    const colCells = cells.filter(cell => cell.id !== 'II-rhythm' && cell.c === c);
+    if (!colCells.length) continue;
+    const x0 = colCells[0].x0;
+    cursorAt(g, colCells[0].id, tAbs, x0, tCol0, colCells[0].base, sheetTopMm + 1, colBotMm - sheetTopMm - 2, px, colCells[0].mm, waveClamp);
+    for (const cell of colCells) {
+      const v = sampleRecording(cell.id, tAbs);
+      let y = (cell.base - v * cell.mm) * px;
+      if (waveClamp && waveClamp.unclamped) {
+        if (waveClamp.top != null) y = Math.max(waveClamp.top, y);
+        if (waveClamp.bot != null) y = Math.min(waveClamp.bot, y);
+      }
+      const x = (x0 + tInCol * MM_PER_MS) * px;
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 4.2, 0, Math.PI * 2); g.fill();
+      g.fillStyle = PAPER.cursor; g.beginPath(); g.arc(x, y, 2.8, 0, Math.PI * 2); g.fill();
     }
+    LAST_CURSORS.push({
+      id: 'col-' + c,
+      leads: colCells.map(cell => cell.id),
+      tAbs, t0: tCol0, col: c, row: 0,
+      x: (x0 + tInCol * MM_PER_MS) * px,
+      relX: tInCol * MM_PER_MS * px,
+      pxPerMs
+    });
+  }
+  const rhy = cells.find(cell => cell.id === 'II-rhythm');
+  if (rhy) {
+    cursorAt(g, 'II', tAbs, rhy.x0, tPage0, rhy.base, rhy.top + 1, ECG.rowH - 2, px, 10, waveClamp);
+    LAST_CURSORS.push({
+      id: 'II-rhythm', tAbs, t0: tPage0, col: -1, row: 3,
+      x: (rhy.x0 + tInPage * MM_PER_MS) * px,
+      relX: tInPage * MM_PER_MS * px,
+      pxPerMs
+    });
   }
   LAST_CLIPS = clips;
   g.font = `600 ${Math.max(10, compact ? 2.7 * px : 3.2 * px)}px "Source Sans 3", Arial, sans-serif`; g.fillStyle = '#111';
@@ -835,7 +948,7 @@ function drawZoomOn(canvas, large) {
   const tPk = peakAt(I.qOff + 40, I.tEnd, 'abs');
   let stMid = I.qOff + 40, stBest = 99;
   for (let t = I.qOff + 16; t < tPk - 12; t++) { const a = Math.abs(tr[t]); if (a < stBest) { stBest = a; stMid = t; } }
-  const b0 = Math.floor(tAbs / BEAT_MS) * BEAT_MS;
+  const b0 = REC.starts[beatIndexAt(tAbs)];
   const features = [
     { txt: 'QRS', t: b0 + qrsPk, row: 0, nudge: 'both' },
     { txt: 'P wave', t: b0 + pPk, row: 0, nudge: 'both' },
@@ -932,15 +1045,16 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   const id = leadId || state.sel, tr = TRACE[id], I = INTERVALS;
   cssW = Math.max(120, Math.round(cssW || 0));
   cssH = Math.max(80, Math.round(cssH || 0));
-  let vHi = 1, vLo = 0;
-  if (tr) for (let t = 0; t < BEAT_MS; t++) { if (tr[t] > vHi) vHi = tr[t]; if (tr[t] < vLo) vLo = tr[t]; }
+  const ext = allLeadExtrema();
+  const vHi = Math.max(1, ext.hi), vLo = Math.min(0, ext.lo);
   const upMm = vHi * MM_PER_MV, downMm = Math.max(0.25, -vLo) * MM_PER_MV;
   const tagF = 11, rowF = 11, nameFs = 12, marginMm = 0.8;
   const labelTopPx = nameFs + 6, boxH = tagF + 4, rowGap = 2;
   // Every close-up strip uses the same px-per-mm (from the shared width, never from per-lead wave height)
   // and the exact same 4-beat (3200 ms) monitor window so beats and cursors align vertically.
   const px = sharedPx || (cssW / CLOSEUP_WMM);
-  const wmm = cssW / px, hmm = cssH / px;
+  const wmm = cssW / px;
+  let hmm = cssH / px;
   const x0 = CLOSEUP_LEFT_MM;
   const tVis = CLOSEUP_MS;
   const tAbs = pageTime();
@@ -966,12 +1080,14 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
     }
   }
   const labelBandMm = labelBandPx / px, intervalBandMm = intervalBandPx / px;
+  const needHmm = waveNeedMm + labelBandMm + intervalBandMm;
+  if (hmm < needHmm - 0.01) {
+    hmm = needHmm;
+    cssH = Math.round(hmm * px);
+  }
   const traceTopMm = labelBandMm;
   const traceHmm = Math.max(waveNeedMm, hmm - labelBandMm - intervalBandMm);
-  let base = traceTopMm + marginMm + upMm;
-  if (base + downMm + marginMm + intervalBandMm > hmm) {
-    base = Math.max(marginMm + upMm, hmm - intervalBandMm - marginMm - downMm);
-  }
+  const base = traceTopMm + marginMm + upMm;
   const pxPerMs = MM_PER_MS * px;
   const cursorX = (x0 + (tAbs - tWin0) * MM_PER_MS) * px;
   canvas.dataset.lead = id;
@@ -985,6 +1101,11 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   canvas.dataset.x0Px = (x0 * px).toFixed(2);
   canvas.dataset.cssW = String(cssW);
   canvas.dataset.cssH = String(cssH);
+  canvas.dataset.baseMm = base.toFixed(3);
+  canvas.dataset.upMm = upMm.toFixed(3);
+  canvas.dataset.downMm = downMm.toFixed(3);
+  canvas.dataset.yMin = ((base - vHi * MM_PER_MV) * px).toFixed(2);
+  canvas.dataset.yMax = ((base - vLo * MM_PER_MV) * px).toFixed(2);
   const g = prepCanvas(canvas, cssW, cssH);
   drawPaper(g, wmm, hmm, px);
   // Do not clip the waveform; a deep S or tall R must keep its shape. Labels sit in leftover bands, or overlay if the strip is tight.
@@ -1022,8 +1143,8 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   const tPk = peakAt(I.qOff + 40, I.tEnd, 'abs');
   let stMid = I.qOff + 40, stBest = 99;
   for (let t = I.qOff + 16; t < tPk - 12; t++) { const a1 = Math.abs(sampleLead(id, t)); if (a1 < stBest) { stBest = a1; stMid = t; } }
-  // Label the beat that contains the cursor, even when the window has wrapped past 10 s.
-  const b0 = Math.floor(tAbs / BEAT_MS) * BEAT_MS;
+  // Label the beat that contains the cursor, using the shared recording's beat start.
+  const b0 = REC.starts[beatIndexAt(tAbs)];
   const features = [
     { txt: 'P wave', t: b0 + pPk },
     { txt: 'QRS', t: b0 + qrsPk },
@@ -1110,8 +1231,12 @@ function paintCloseupCanvas(canvas, nameEl, gainEl, leadId, sharedCssW, sharedPx
   const cssW = sharedCssW || Math.max(120, Math.floor(frame.clientWidth - 2));
   const cssH = Math.max(80, Math.floor((frame.clientHeight || 160) - 2));
   paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx);
+  if (canvas.dataset.cssH) {
+    const need = Math.max(cssH, parseFloat(canvas.dataset.cssH) || 0);
+    if (need > 0) frame.style.minHeight = Math.round(need) + 'px';
+  }
   if (gainEl) gainEl.textContent = '10 mm/mV (full gain), 25 mm/s';
-  canvas.setAttribute('aria-label', `Close-up of lead ${leadId} on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. Four beats; the cursor sweeps left to right, overwriting the trace in place.`);
+  canvas.setAttribute('aria-label', `Close-up of lead ${leadId} on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. The cursor sweeps left to right and the trace draws in behind it on blank paper.`);
 }
 function drawZoom() {
   const leads = closeupLeadList();
@@ -1244,7 +1369,7 @@ ecgCanvas.addEventListener('click', ecgClick);
   document.addEventListener('keydown', e => {
     if (dialog.hidden) return;
     if (e.key === 'Escape') {
-      if ($('labelsPanel') && !$('labelsPanel').hidden) return;
+      if ($('showPanel') && !$('showPanel').hidden) return;
       e.preventDefault(); setOpen(false); return;
     }
     if (e.key !== 'Tab') return;
@@ -1271,7 +1396,7 @@ function webglAvailable() {
 try { if (webglAvailable()) renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true }); } catch (e) { renderer = null; }
 if (!renderer || !renderer.getContext()) {
   $('fallback').hidden = false; canvas.hidden = true; renderer = null;
-  document.querySelectorAll('.view-btn, #resetView, #toggleCut, #toggleLeads, #labelsBtn, #toggleLoop').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('.view-btn, #resetView, #toggleCut, #toggleLeads, #showBtn, #toggleLoop').forEach(b => { b.disabled = true; });
   $('sceneHelp').textContent = '3D is unavailable here, but the timeline, phase buttons and the 12-lead ECG still work.';
   const hint = $('stageHint'); if (hint) hint.textContent = '3D is unavailable here.';
 }
@@ -1303,7 +1428,7 @@ const VIEWS = {
   oblique:    { az: 35 * DEG, el: 14 * DEG, r: 24, note: '3D view. Drag to rotate.' },
   transverse: { az: 0, el: 89.4 * DEG, r: 22, note: "Transverse view from above: front of the chest at the bottom, patient's left on your right." }
 };
-const ui = { cut: true, allLeads: true, loop: false, labelMode: 'none', guided: false, anatomyLabels: false, labelGroups: { chambers: false, conduction: false, leads: false, vectors: false, walls: false, orientation: false } };
+const ui = { cut: true, allLeads: true, loop: false, labelMode: 'none', guided: false, anatomyLabels: false, labelGroups: { chambers: false, conduction: false, leads: false, vectors: false, walls: false, orientation: false }, labelItems: {} };
 VIEWS.frontal.note = `Front view, turned ${Math.round(VIEWS.frontal.az / DEG)}\u00b0 towards the patient's left so the cut-away faces you. Limb leads (hexaxial); the patient's left is on your right.`;
 const HINT = 'Drag to rotate, scroll or pinch to zoom. Click a lead name to see it close up on the right.';
 function lookingFromText(az, el) {
@@ -1341,7 +1466,7 @@ function setViewCaption(name, v) {
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || panel.hidden) return;
     if ($('keyDialog') && !$('keyDialog').hidden) return;
-    if ($('labelsPanel') && !$('labelsPanel').hidden) return;
+    if ($('showPanel') && !$('showPanel').hidden) return;
     e.preventDefault(); setOpen(false); btn.focus();
   });
   document.addEventListener('pointerdown', e => {
@@ -1680,7 +1805,8 @@ function applyMuscleTimes() { // after rebuildModel(): copy activation and recov
   sectionTex.needsUpdate = true;
 }
 function setCut(on) {
-  ui.cut = on; $('toggleCut').setAttribute('aria-pressed', String(on));
+  ui.cut = on; if ($('toggleCut')) $('toggleCut').setAttribute('aria-pressed', String(on));
+  if (typeof syncShowUi === 'function') syncShowUi();
   if (!renderer) return;
   for (const s of shells) { s.mesh.material.clippingPlanes = on ? [CUT_PLANE] : []; s.mesh.material.needsUpdate = true; }
   shells[0].outline.material.clippingPlanes = on ? [CUT_PLANE] : []; shells[0].outline.material.needsUpdate = true;
@@ -1812,9 +1938,30 @@ function labelGroupOf(L) {
   return null;
 }
 function groupOn(name) { return ui.labelMode === 'custom' && !!ui.labelGroups[name]; }
+function itemOn(id) {
+  if (!id) return true;
+  if (!ui.labelItems || ui.labelItems[id] === undefined) return true;
+  return !!ui.labelItems[id];
+}
+function labelItemId(L) {
+  if (!L) return null;
+  if (L.leadId) return 'lead-' + L.leadId;
+  if (L.tag === 'laf' || L.tag === 'lpf') return 'fascicles';
+  if (L.tag) return L.tag;
+  if (L.cls === 'landmark') {
+    const t = (L.el && L.el.textContent) || '';
+    if (t === 'Apex') return 'apex';
+    if (t === 'Base') return 'base';
+    if (t === 'Anterior') return 'anterior';
+    if (t === 'Aorta') return 'aorta';
+  }
+  if (L.cls === 'region') return 'wall';
+  if (L.cls === 'vec') return 'vec';
+  return null;
+}
 function orientationOn() {
   // Guided mode uses the compass caption for "anterior"; landmark pills are only for the custom orientation group.
-  if (ui.labelMode === 'custom') return ui.labelGroups.orientation !== false;
+  if (ui.labelMode === 'custom') return groupOn('orientation');
   return false;
 }
 const GUIDED_TAGS = {
@@ -1830,7 +1977,7 @@ const GUIDED_TAGS = {
 };
 function guidedTags() { return GUIDED_TAGS[phaseAt(state.t).key] || []; }
 function applyLabelVisibility() {
-  const t = state.t;
+  const t = modelPhase();
   const custom = ui.labelMode === 'custom';
   const guided = ui.labelMode === 'guided';
   const showOrient = orientationOn();
@@ -1838,15 +1985,19 @@ function applyLabelVisibility() {
   for (const L of labels) {
     if (L === frontLabel || L.cls === 'lead' || L.cls === 'proj') continue; // those are set in setLeadStyles / updateScene
     if (L.cls === 'vec' || L.cls === 'proj') continue;
-    if (L.cls === 'landmark') { L.visible = showOrient && L !== anteriorLabel; continue; }
+    if (L.cls === 'landmark') {
+      const iid = labelItemId(L);
+      L.visible = showOrient && itemOn(iid);
+      continue;
+    }
     const g = labelGroupOf(L);
-    if (custom) L.visible = groupOn(g);
+    if (custom) L.visible = groupOn(g) && itemOn(labelItemId(L));
     else if (guided) L.visible = !!(L.tag && tags.includes(L.tag));
     else if (L.tag) L.visible = isActive(L.tag, t);
     const live = !guided && !!(L.tag && isActive(L.tag, t) && (L.cls === 'cond' || L.cls === 'node'));
     L.el.classList.toggle('active', live);
   }
-  const walls = groupOn('walls');
+  const walls = groupOn('walls') && itemOn('wall');
   if (regionLabel) regionLabel.visible = walls && regionMeshes.length > 0;
   for (const m of regionMeshes) m.visible = walls;
   if (trail) trail.visible = ui.loop;
@@ -2191,7 +2342,8 @@ function setLeadStyles() {
     const inViewPills = L.type === 'limb' ? showLimbPills : showChestPills;
     const noneOn = ui.labelMode === 'custom' && LABEL_GROUPS.every(g => !ui.labelGroups[g]);
     const hideExtraTags = ui.labelMode === 'custom' && !ui.labelGroups.leads && !noneOn;
-    const showPill = sel || (inViewPills && (ui.allLeads || !!ui.labelGroups.leads) && !hideExtraTags);
+    const leadItem = itemOn('lead-' + L.id);
+    const showPill = sel || (inViewPills && (ui.allLeads || groupOn('leads')) && !hideExtraTags && (!groupOn('leads') || leadItem));
     o.grp.visible = showRod || (L.type === 'chest');
     o.pos.visible = showRod;
     o.negR.visible = showRod && L.type === 'limb';
@@ -2255,7 +2407,7 @@ function placeProjBar(bar, dir, signedLen) {
 }
 function updateScene() {
   if (!renderer) return;
-  const t = state.t, M = MODEL, C = CONDUCTION; U.uT.value = t;
+  const t = modelPhase(), M = MODEL, C = CONDUCTION; U.uT.value = t;
   // nodes
   const saOn = t >= C.saTime && t < C.saTime + 14; saNode.material.color.set(saOn ? 0xffffff : (t >= C.saTime ? CDONE : CIDLE));
   const avHold = t >= M.tAV && t < M.tHis;
@@ -2294,7 +2446,12 @@ function updateScene() {
     head.scale.setScalar(1);
     head.position.set(0, drawLen - hl / 2, 0);
   }
-  if (vecLabel) vecLabel.visible = vecOn;
+  if (vecLabel) {
+    let showLbl = true;
+    if (ui.labelMode === 'guided') showLbl = guidedTags().includes('vec');
+    else if (ui.labelMode === 'custom') showLbl = groupOn('vectors') && itemOn('vec');
+    vecLabel.visible = vecOn && showLbl;
+  }
   arrowTip.set(D[0], D[1], D[2]).multiplyScalar(vecOn ? drawLen / (mag || 1) : 0);
   const pts = []; for (let i = 0; i <= Math.round(t); i += 2) { const d = dipole(i); pts.push(new THREE.Vector3(d[0], d[1], d[2]).multiplyScalar(VEC_SCALE)); }
   trail.geometry.dispose(); trail.geometry = new THREE.BufferGeometry().setFromPoints(pts.length > 1 ? pts : [new THREE.Vector3(), new THREE.Vector3()]); trail.computeLineDistances();
@@ -3024,6 +3181,10 @@ function updateSteps() {
   if ($('stepCount')) $('stepCount').textContent = onStep ? `Step ${k + 1} of ${STEPS.length}` : '';
   if ($('stepBack')) $('stepBack').disabled = k <= 0 && onStep;
   if ($('stepNext')) $('stepNext').disabled = k >= STEPS.length - 1 && onStep;
+  const fsName = $('fsStepName');
+  if (fsName) fsName.textContent = onStep && STEPS[k] ? (STEPS[k].title || '') : '';
+  if ($('fsStepBack')) $('fsStepBack').disabled = k <= 0 && onStep;
+  if ($('fsStepNext')) $('fsStepNext').disabled = k >= STEPS.length - 1 && onStep;
 }
 
 function updateText(announce) {
@@ -3033,22 +3194,28 @@ function updateText(announce) {
   describeLead();
   if (announce) $('live').textContent = `${Math.round(state.t)} milliseconds. ${ph.title}. ${ph.text}`;
 }
+function currentBeatDuration(i) {
+  const k = i == null ? beatIndexAt(state.simTime) : i;
+  ensureBeatsUntil(REC.starts[k] + 2000);
+  return REC.starts[k + 1] - REC.starts[k];
+}
 function applySimDerived() {
-  const T = state.simTime;
-  state.beat = Math.floor(T / BEAT_MS);
-  state.t = T - state.beat * BEAT_MS;
+  const T = Math.max(0, state.simTime);
+  const i = beatIndexAt(T);
+  state.beat = i;
+  state.t = T - REC.starts[i];
   if (state.t < 0) state.t = 0;
-  if (state.t >= BEAT_MS) {
-    state.beat += 1;
-    state.t = 0;
-    state.simTime = state.beat * BEAT_MS;
-  }
+}
+function modelPhase() {
+  return Math.max(0, Math.min(BEAT_MS - 1e-6, state.t));
 }
 function applyTime(announce) {
   applySimDerived();
   if (scrub) {
-    scrub.value = Math.round(state.t);
-    const ph = phaseAt(state.t);
+    const dur = currentBeatDuration();
+    scrub.max = String(Math.max(BEAT_MS, Math.round(dur)));
+    scrub.value = Math.round(Math.min(state.t, dur - 1e-6));
+    const ph = phaseAt(modelPhase());
     scrub.setAttribute('aria-valuetext', `${Math.round(state.t)} milliseconds, ${ph.title}`);
   }
   if (timeOut) timeOut.textContent = `${Math.round(state.t)} ms`;
@@ -3067,13 +3234,14 @@ function advanceSim(deltaMs, announce, quiet) {
   applyTime(announce);
 }
 function setT(t, announce) {
-  const beat = Math.max(0, Math.floor((Number.isFinite(state.simTime) ? state.simTime : 0) / BEAT_MS));
+  const beat = Math.max(0, beatIndexAt(Number.isFinite(state.simTime) ? state.simTime : 0));
+  const dur = currentBeatDuration(beat);
   let phase = Number(t);
   if (!Number.isFinite(phase)) phase = 0;
-  phase = Math.max(0, Math.min(BEAT_MS, phase));
-  // Keep the scrubber's 800 ms tick at the end of this beat, not the start of the next.
-  if (phase >= BEAT_MS) phase = BEAT_MS - 1e-6;
-  setSimTime(beat * BEAT_MS + phase, announce);
+  phase = Math.max(0, Math.min(dur, phase));
+  // Keep the last tick of this beat from jumping to the start of the next.
+  if (phase >= dur) phase = dur - 1e-6;
+  setSimTime(REC.starts[beat] + phase, announce);
 }
 function selectedSet() {
   return (state.sels && state.sels.length) ? state.sels.slice() : [state.sel || 'II'];
@@ -3124,7 +3292,7 @@ function setPlaying(on) {
 
 /* Recompute everything after a change to BASELINE / CONDUCTION (hook for later pathology modes) */
 function rebuildModel() {
-  MODEL = computeModel(); buildTraces(); buildPhases(); buildActiveRanges(); lastPhase = null;
+  MODEL = computeModel(); buildTraces(); initRecording(); buildPhases(); buildActiveRanges(); lastPhase = null;
   applyMuscleTimes(); applyConductionTimes(); setT(state.t);
 }
 
@@ -3136,15 +3304,70 @@ document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', 
 $('resetView').addEventListener('click', () => goView('frontal'));
 function refit() { if (renderer && VIEWS[state.view]) { const f = fitView(VIEWS[state.view], state.view); orbit.r = f.r; orbit.target.copy(f.target); placeCamera(); } }
 $('toggleCut').addEventListener('click', () => setCut(!ui.cut));
-function setToggle(id, key, on) { ui[key] = on; const el = id && $(id); if (el) el.setAttribute('aria-pressed', String(on)); setLeadStyles(); if (state.sel) buildRegion(LEAD[state.sel].region); updateScene(); }
+function setToggle(id, key, on) { ui[key] = on; const el = id && $(id); if (el) el.setAttribute('aria-pressed', String(on)); setLeadStyles(); if (state.sel) buildRegion(LEAD[state.sel].region); updateScene(); if (typeof syncShowUi === 'function') syncShowUi(); }
 $('toggleLeads').addEventListener('click', () => setToggle('toggleLeads', 'allLeads', !ui.allLeads));
 $('toggleLoop').addEventListener('click', () => setToggle('toggleLoop', 'loop', !ui.loop));
 
-/* Labels chooser: Guided (default, active structure only), All, None, or individual groups. Choice is kept for the session. */
+/* Show panel: Labels and Picture in one place. Choice is kept for the session. */
 const LABEL_STORE = 'ecg3d-revamp-labels';
 const LABEL_GROUPS = ['chambers', 'conduction', 'leads', 'vectors', 'walls', 'orientation'];
+const LABEL_CATALOG = {
+  chambers: [
+    { id: 'RA', label: 'Right atrium' }, { id: 'LA', label: 'Left atrium' },
+    { id: 'RV', label: 'Right ventricle' }, { id: 'LV', label: 'Left ventricle' },
+    { id: 'S', label: 'Septum' }, { id: 'svc', label: 'Superior vena cava' },
+    { id: 'cs', label: 'Coronary sinus opening' }, { id: 'ring', label: 'Fibrous AV ring' }
+  ],
+  conduction: [
+    { id: 'sa', label: 'SA node' }, { id: 'inter', label: 'Internodal routes' },
+    { id: 'bach', label: "Bachmann's bundle" }, { id: 'av', label: 'AV node' },
+    { id: 'his', label: 'Bundle of His' }, { id: 'lbb', label: 'Left bundle' },
+    { id: 'rbb', label: 'Right bundle' }, { id: 'fascicles', label: 'Fascicles' },
+    { id: 'mod', label: 'Moderator band' }, { id: 'purk', label: 'Purkinje fibres' }
+  ],
+  leads: LEADS.map(L => ({ id: 'lead-' + L.id, label: L.id })),
+  vectors: [{ id: 'vec', label: "Heart's electrical vector" }],
+  walls: [{ id: 'wall', label: "Selected lead's wall" }],
+  orientation: [
+    { id: 'apex', label: 'Apex' }, { id: 'base', label: 'Base' },
+    { id: 'anterior', label: 'Anterior' }, { id: 'aorta', label: 'Aorta' }
+  ]
+};
+const GROUP_TITLES = { chambers: 'Chambers', conduction: 'Conduction system', leads: 'Lead names', vectors: 'Vectors', walls: 'Wall regions', orientation: 'Orientation' };
+function allCatalogIds() {
+  const ids = [];
+  for (const g of LABEL_GROUPS) for (const it of LABEL_CATALOG[g]) ids.push(it.id);
+  return ids;
+}
+function ensureLabelItems(fill) {
+  if (!ui.labelItems) ui.labelItems = {};
+  for (const id of allCatalogIds()) if (ui.labelItems[id] === undefined) ui.labelItems[id] = !!fill;
+}
+function setAllItems(on) { ensureLabelItems(false); for (const id of allCatalogIds()) ui.labelItems[id] = !!on; }
+function groupItemState(name) {
+  const items = LABEL_CATALOG[name] || [];
+  let n = 0; for (const it of items) if (itemOn(it.id)) n++;
+  if (!items.length || n === 0) return 'off';
+  if (n === items.length) return 'on';
+  return 'mixed';
+}
+function setGroupItems(name, on) {
+  ensureLabelItems(false);
+  for (const it of LABEL_CATALOG[name] || []) ui.labelItems[it.id] = !!on;
+  ui.labelGroups[name] = !!on;
+}
+function labelsSectionState() {
+  const states = LABEL_GROUPS.map(groupItemState);
+  if (states.every(st => st === 'on')) return 'on';
+  if (states.every(st => st === 'off')) return 'off';
+  return 'mixed';
+}
+function pictureState() {
+  const n = [ui.cut, ui.allLeads, ui.loop].filter(Boolean).length;
+  return n === 3 ? 'on' : n === 0 ? 'off' : 'mixed';
+}
 function persistLabels() {
-  try { sessionStorage.setItem(LABEL_STORE, JSON.stringify({ mode: ui.labelMode, groups: ui.labelGroups })); } catch (e) { /* ignore */ }
+  try { sessionStorage.setItem(LABEL_STORE, JSON.stringify({ mode: ui.labelMode, groups: ui.labelGroups, items: ui.labelItems })); } catch (e) { /* ignore */ }
 }
 function anatomyOn() {
   return ui.labelMode === 'guided' || (ui.labelMode === 'custom' && LABEL_GROUPS.some(g => g !== 'leads' && ui.labelGroups[g]));
@@ -3152,73 +3375,173 @@ function anatomyOn() {
 function applyLabelsChange() {
   const t0 = performance.now();
   ui.anatomyLabels = anatomyOn() && ui.labelMode === 'custom';
-  syncLabelsUi(); persistLabels();
-  if (groupOn('walls') && state.sel) ensureRegion(LEAD[state.sel].region);
-  else {
-    for (const m of regionMeshes) m.visible = false;
-    if (regionLabel) regionLabel.visible = false;
-  }
-  applyLabelVisibility();
-  setLeadStyles();
-  requestLabelLayout(0);
+  syncShowUi(); persistLabels();
+  if (groupOn('walls') && itemOn('wall') && state.sel) ensureRegion(LEAD[state.sel].region);
+  else { for (const m of regionMeshes) m.visible = false; if (regionLabel) regionLabel.visible = false; }
+  applyLabelVisibility(); setLeadStyles(); requestLabelLayout(0);
   if (renderer) { updateLabels(); labelsDirty = false; }
   needsRender = true;
   lastLabelToggleMs = performance.now() - t0;
 }
 let lastLabelToggleMs = 0;
 function setLabelMode(mode, groups) {
+  ensureLabelItems(false);
   if (mode !== 'guided' && ui.guided) {
-    // Walkthrough Guided keeps step labels only; store the choice for when it is turned off.
-    if (groups) for (const g of LABEL_GROUPS) ui.labelGroups[g] = !!groups[g];
-    else if (mode === 'none') for (const g of LABEL_GROUPS) ui.labelGroups[g] = false;
-    else if (mode === 'all') { for (const g of LABEL_GROUPS) ui.labelGroups[g] = true; }
-    syncLabelsUi(); persistLabels();
+    if (groups) for (const g of LABEL_GROUPS) setGroupItems(g, !!groups[g]);
+    else if (mode === 'none') for (const g of LABEL_GROUPS) setGroupItems(g, false);
+    else if (mode === 'all') for (const g of LABEL_GROUPS) setGroupItems(g, true);
+    syncShowUi(); persistLabels();
     return;
   }
   ui.labelMode = mode;
-  if (groups) for (const g of LABEL_GROUPS) ui.labelGroups[g] = !!groups[g];
-  else if (mode === 'guided' || mode === 'none') for (const g of LABEL_GROUPS) ui.labelGroups[g] = false;
-  else if (mode === 'all') { ui.labelMode = 'custom'; for (const g of LABEL_GROUPS) ui.labelGroups[g] = true; }
+  if (groups) for (const g of LABEL_GROUPS) setGroupItems(g, !!groups[g]);
+  else if (mode === 'guided' || mode === 'none') for (const g of LABEL_GROUPS) setGroupItems(g, false);
+  else if (mode === 'all') { ui.labelMode = 'custom'; for (const g of LABEL_GROUPS) setGroupItems(g, true); }
   if (mode === 'none') ui.labelMode = 'custom';
   applyLabelsChange();
 }
 function setLabelGroup(name, on) {
-  ui.labelGroups[name] = !!on;
-  if (ui.guided) { syncLabelsUi(); persistLabels(); return; }
+  setGroupItems(name, on);
+  if (ui.guided) { syncShowUi(); persistLabels(); return; }
   ui.labelMode = 'custom';
   applyLabelsChange();
 }
-function syncLabelsUi() {
-  const guided = ui.labelMode === 'guided' || !!ui.guided;
-  const allOn = !guided && ui.labelMode === 'custom' && LABEL_GROUPS.every(g => ui.labelGroups[g]);
-  const noneOn = !guided && ui.labelMode === 'custom' && LABEL_GROUPS.every(g => !ui.labelGroups[g]);
-  const btn = $('labelsBtn');
-  if (btn) {
-    const customOn = !guided && ui.labelMode === 'custom' && LABEL_GROUPS.some(g => ui.labelGroups[g]);
-    btn.setAttribute('aria-pressed', String(customOn || guided));
-    btn.classList.toggle('is-custom', customOn);
-  }
-  const gBtn = $('labelsGuided'), aBtn = $('labelsAll'), nBtn = $('labelsNone');
-  if (gBtn) gBtn.setAttribute('aria-pressed', String(guided));
-  if (aBtn) aBtn.setAttribute('aria-pressed', String(allOn));
-  if (nBtn) nBtn.setAttribute('aria-pressed', String(noneOn));
+function setLabelItem(id, on) {
+  ensureLabelItems(false);
+  ui.labelItems[id] = !!on;
   for (const g of LABEL_GROUPS) {
-    const el = document.getElementById('lab-' + g);
-    if (el) { el.checked = !guided && !!ui.labelGroups[g]; el.disabled = !!ui.guided; }
+    if ((LABEL_CATALOG[g] || []).some(it => it.id === id)) ui.labelGroups[g] = groupItemState(g) !== 'off';
+  }
+  if (ui.guided) { syncShowUi(); persistLabels(); return; }
+  ui.labelMode = 'custom';
+  applyLabelsChange();
+}
+function setSwitchState(btn, state) {
+  if (!btn) return;
+  btn.setAttribute('aria-checked', state === 'on' ? 'true' : state === 'mixed' ? 'mixed' : 'false');
+  btn.dataset.state = state;
+}
+function labelsLocked() { return ui.labelMode === 'guided' || !!ui.guided; }
+function syncShowUi() {
+  const locked = labelsLocked();
+  const showBtn = $('showBtn');
+  if (showBtn) {
+    const active = locked || labelsSectionState() !== 'off' || pictureState() !== 'off';
+    showBtn.setAttribute('aria-pressed', String(active));
+    showBtn.classList.toggle('is-active', active);
+  }
+  const beat = $('showDuringBeat');
+  if (beat) { setSwitchState(beat, (ui.labelMode === 'guided' || ui.guided) ? 'on' : 'off'); beat.disabled = !!ui.guided; }
+  const labAll = $('showLabelsAll');
+  if (labAll) { setSwitchState(labAll, labelsSectionState()); labAll.disabled = locked; }
+  const note = $('showLabelsNote'); if (note) note.hidden = !locked;
+  for (const g of LABEL_GROUPS) {
+    const sw = $('show-g-' + g);
+    if (sw) { setSwitchState(sw, groupItemState(g)); sw.disabled = locked; }
+    for (const it of LABEL_CATALOG[g]) {
+      const b = $('show-i-' + it.id);
+      if (b) { setSwitchState(b, itemOn(it.id) ? 'on' : 'off'); b.disabled = locked; }
+    }
+  }
+  const pic = $('showPictureAll'); if (pic) setSwitchState(pic, pictureState());
+  if ($('toggleCut')) $('toggleCut').setAttribute('aria-pressed', String(!!ui.cut));
+  if ($('toggleLeads')) $('toggleLeads').setAttribute('aria-pressed', String(!!ui.allLeads));
+  if ($('toggleLoop')) $('toggleLoop').setAttribute('aria-pressed', String(!!ui.loop));
+  const gBtn = $('guidedBtn'); if (gBtn) gBtn.setAttribute('aria-pressed', String(!!ui.guided));
+}
+function syncLabelsUi() { syncShowUi(); }
+function makeSwitch(id, label, aria) {
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'show-switch'; btn.id = id;
+  btn.setAttribute('role', 'checkbox'); btn.setAttribute('aria-checked', 'false');
+  btn.setAttribute('aria-label', aria || label);
+  const tick = document.createElement('span'); tick.className = 'show-tick'; tick.setAttribute('aria-hidden', 'true');
+  const text = document.createElement('span'); text.textContent = label;
+  btn.appendChild(tick); btn.appendChild(text);
+  btn.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); btn.click(); } });
+  return btn;
+}
+function buildShowPanel() {
+  const body = $('showPanelBody');
+  if (!body || body.dataset.ready) return;
+  body.dataset.ready = '1';
+  ensureLabelItems(false);
+  const labSec = document.createElement('section');
+  labSec.className = 'show-section';
+  labSec.setAttribute('aria-labelledby', 'showLabelsTitle');
+  const labHead = document.createElement('div'); labHead.className = 'show-section-head';
+  const labTitle = document.createElement('h3'); labTitle.className = 'show-section-title'; labTitle.id = 'showLabelsTitle'; labTitle.textContent = 'Labels';
+  labHead.appendChild(makeSwitch('showLabelsAll', 'All labels', 'All label groups'));
+  labHead.appendChild(labTitle);
+  labSec.appendChild(labHead);
+  labSec.appendChild(makeSwitch('showDuringBeat', 'During the beat', 'During the beat: show a label when that structure is active'));
+  const note = document.createElement('p'); note.className = 'show-note'; note.id = 'showLabelsNote'; note.hidden = true;
+  note.textContent = 'Labels follow the beat while this is on, or while you walk through the beat.';
+  labSec.appendChild(note);
+  for (const g of LABEL_GROUPS) {
+    const wrap = document.createElement('div'); wrap.className = 'show-group';
+    const head = document.createElement('div'); head.className = 'show-group-head';
+    head.appendChild(makeSwitch('show-g-' + g, GROUP_TITLES[g], GROUP_TITLES[g] + ' labels'));
+    const exp = document.createElement('button');
+    exp.type = 'button'; exp.className = 'show-expand'; exp.id = 'show-x-' + g;
+    exp.setAttribute('aria-expanded', 'false'); exp.setAttribute('aria-controls', 'show-list-' + g);
+    exp.textContent = 'Show items';
+    head.appendChild(exp); wrap.appendChild(head);
+    const list = document.createElement('div'); list.className = 'show-items'; list.id = 'show-list-' + g; list.hidden = true;
+    for (const it of LABEL_CATALOG[g]) list.appendChild(makeSwitch('show-i-' + it.id, it.label, it.label));
+    wrap.appendChild(list);
+    exp.addEventListener('click', () => {
+      const open = list.hidden; list.hidden = !open;
+      exp.setAttribute('aria-expanded', String(open));
+      exp.textContent = open ? 'Hide items' : 'Show items';
+    });
+    labSec.appendChild(wrap);
+  }
+  body.appendChild(labSec);
+  $('showLabelsAll').addEventListener('click', () => {
+    if (labelsLocked()) return;
+    const on = labelsSectionState() !== 'on';
+    for (const g of LABEL_GROUPS) setGroupItems(g, on);
+    ui.labelMode = 'custom'; applyLabelsChange();
+  });
+  $('showDuringBeat').addEventListener('click', () => {
+    if (ui.guided) return;
+    if (ui.labelMode === 'guided') setLabelMode('none'); else setLabelMode('guided');
+  });
+  for (const g of LABEL_GROUPS) {
+    $('show-g-' + g).addEventListener('click', () => { if (!labelsLocked()) setLabelGroup(g, groupItemState(g) !== 'on'); });
+    for (const it of LABEL_CATALOG[g]) {
+      $('show-i-' + it.id).addEventListener('click', () => { if (!labelsLocked()) setLabelItem(it.id, !itemOn(it.id)); });
+    }
+  }
+  const picAll = $('showPictureAll');
+  if (picAll) picAll.addEventListener('click', () => {
+    const on = pictureState() !== 'on';
+    setCut(on); setToggle('toggleLeads', 'allLeads', on); setToggle('toggleLoop', 'loop', on); syncShowUi();
+  });
+  const picExp = $('show-x-picture'), picList = $('show-list-picture');
+  if (picExp && picList) picExp.addEventListener('click', () => {
+    const open = picList.hidden; picList.hidden = !open;
+    picExp.setAttribute('aria-expanded', String(open));
+    picExp.textContent = open ? 'Hide items' : 'Show items';
+  });
+  if (!renderer) {
+    document.querySelectorAll('#toggleCut, #toggleLeads, #toggleLoop, #resetView, .show-panel .view-btn').forEach(b => { b.disabled = true; });
   }
 }
-function openLabelsPanel() {
-  const panel = $('labelsPanel'), btn = $('labelsBtn'); if (!panel || !btn) return;
+function openShowPanel() {
+  const panel = $('showPanel'), btn = $('showBtn'); if (!panel || !btn) return;
   panel.hidden = false; btn.setAttribute('aria-expanded', 'true');
-  const first = $('labelsGuided') || panel.querySelector('button, input'); if (first) first.focus();
+  const first = $('showDuringBeat') || panel.querySelector('button'); if (first) first.focus();
 }
-function closeLabelsPanel() {
-  const panel = $('labelsPanel'), btn = $('labelsBtn'); if (!panel || panel.hidden) return;
+function closeShowPanel() {
+  const panel = $('showPanel'), btn = $('showBtn'); if (!panel || panel.hidden) return;
   panel.hidden = true; if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.focus(); }
 }
+function openLabelsPanel() { openShowPanel(); }
+function closeLabelsPanel() { closeShowPanel(); }
 function setAnatomyLabels(on) {
   ui.anatomyLabels = !!on;
-  const btn = $('labelsBtn'); if (btn) btn.setAttribute('aria-pressed', String(!!on));
   if (!ui.guided) {
     if (on) setLabelMode('custom', { chambers: true, conduction: true, leads: true, vectors: false, walls: false, orientation: false });
     else setLabelMode('none');
@@ -3232,51 +3555,36 @@ function setGuided(on) {
   if (on) setLabelMode('guided');
   else if (ui.anatomyLabels) setLabelMode('custom', { chambers: true, conduction: true, leads: true, vectors: false, walls: false, orientation: false });
   else setLabelMode('none');
-  if (on) {
-    const k = stepIndexAt(state.t);
-    if (k < 0) goStep(0);
-  }
+  if (on) { const k = stepIndexAt(state.t); if (k < 0) goStep(0); }
   requestLabelLayout(0);
   requestAnimationFrame(() => { resize(); refit(); });
 }
-function setMoreOpen(on) {
-  const panel = $('morePanel'), btn = $('moreBtn');
-  if (!panel || !btn) return;
-  panel.hidden = !on;
-  btn.setAttribute('aria-expanded', String(!!on));
-}
-if ($('labelsBtn')) $('labelsBtn').addEventListener('click', () => {
-  const panel = $('labelsPanel');
-  if (panel && !panel.hidden) closeLabelsPanel(); else openLabelsPanel();
+buildShowPanel();
+if ($('showBtn')) $('showBtn').addEventListener('click', () => {
+  const panel = $('showPanel');
+  if (panel && !panel.hidden) closeShowPanel(); else openShowPanel();
 });
 if ($('guidedBtn')) $('guidedBtn').addEventListener('click', () => setGuided(!ui.guided));
-if ($('moreBtn')) $('moreBtn').addEventListener('click', () => setMoreOpen($('morePanel').hidden));
-if ($('moreClose')) $('moreClose').addEventListener('click', () => setMoreOpen(false));
-document.addEventListener('pointerdown', e => {
-  const panel = $('morePanel'), btn = $('moreBtn');
-  if (!panel || panel.hidden) return;
-  if (!panel.contains(e.target) && e.target !== btn && !(btn && btn.contains(e.target))) setMoreOpen(false);
-});
-if ($('labelsPanelClose')) $('labelsPanelClose').addEventListener('click', closeLabelsPanel);
-if ($('labelsGuided')) $('labelsGuided').addEventListener('click', () => setLabelMode('guided'));
-if ($('labelsAll')) $('labelsAll').addEventListener('click', () => setLabelMode('all'));
-if ($('labelsNone')) $('labelsNone').addEventListener('click', () => setLabelMode('none'));
-document.querySelectorAll('#labelsPanel input[data-group]').forEach(el => el.addEventListener('change', () => setLabelGroup(el.dataset.group, el.checked)));
+if ($('showPanelClose')) $('showPanelClose').addEventListener('click', closeShowPanel);
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $('labelsPanel') && !$('labelsPanel').hidden) { e.preventDefault(); closeLabelsPanel(); }
+  if (e.key === 'Escape' && $('showPanel') && !$('showPanel').hidden) { e.preventDefault(); closeShowPanel(); }
 });
 document.addEventListener('pointerdown', e => {
-  const panel = $('labelsPanel'); if (!panel || panel.hidden) return;
-  if (!panel.contains(e.target) && e.target !== $('labelsBtn') && !$('labelsBtn').contains(e.target)) closeLabelsPanel();
+  const panel = $('showPanel'), btn = $('showBtn'); if (!panel || panel.hidden) return;
+  if (!panel.contains(e.target) && e.target !== btn && !(btn && btn.contains(e.target))) closeShowPanel();
 });
 try { sessionStorage.removeItem(LABEL_STORE); } catch (e) { /* ignore */ }
-syncLabelsUi();
-$('stepBack').addEventListener('click', () => { const k = stepIndexAt(state.t); goStep(phaseAt(state.t).step ? k - 1 : k); });
-$('stepNext').addEventListener('click', () => goStep(stepIndexAt(state.t) + 1));
+syncShowUi();
+function stepBack() { const k = stepIndexAt(state.t); goStep(phaseAt(state.t).step ? k - 1 : k); }
+function stepNext() { goStep(stepIndexAt(state.t) + 1); }
+if ($('stepBack')) $('stepBack').addEventListener('click', stepBack);
+if ($('stepNext')) $('stepNext').addEventListener('click', stepNext);
+if ($('fsStepBack')) $('fsStepBack').addEventListener('click', stepBack);
+if ($('fsStepNext')) $('fsStepNext').addEventListener('click', stepNext);
 ONE_SCREEN.addEventListener && ONE_SCREEN.addEventListener('change', () => { resize(); refit(); });
 let rzT = null; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { resize(); refit(); }, 60); });
 
-MODEL = computeModel(); buildTraces(); buildPhases(); buildActiveRanges();
+MODEL = computeModel(); buildTraces(); initRecording(); buildPhases(); buildActiveRanges();
 if (renderer) { buildScene(); applyMuscleTimes(); applyConductionTimes(); initInteraction(); }
 resize();
 goView('frontal', true);
@@ -3411,8 +3719,10 @@ window.ecg3d = {
   toggle: (key, on) => { if (key === 'labelAll') { setLabelMode(on ? 'all' : 'guided'); return; } setToggle({ allLeads: 'toggleLeads', loop: 'toggleLoop' }[key], key, on); },
   openZoom: () => {}, closeZoom: () => {}, zoomOpen: () => false,
   singleLead: () => false, setSingleLead: () => {},
-  setLabels: setLabelMode, setLabelGroup, labels: () => ({ mode: ui.labelMode, groups: { ...ui.labelGroups } }),
-  openLabels: openLabelsPanel, closeLabels: closeLabelsPanel,
+  setLabels: setLabelMode, setLabelGroup, setLabelItem,
+  labels: () => ({ mode: ui.labelMode, groups: { ...ui.labelGroups }, items: { ...(ui.labelItems || {}) } }),
+  openLabels: openShowPanel, closeLabels: closeShowPanel,
+  openShow: openShowPanel, closeShow: closeShowPanel,
   openKey: () => window.__ecgKeyDialog && window.__ecgKeyDialog.open(),
   closeKey: () => window.__ecgKeyDialog && window.__ecgKeyDialog.close(),
   keyOpen: () => !!(window.__ecgKeyDialog && window.__ecgKeyDialog.isOpen()),
@@ -3465,7 +3775,16 @@ window.ecg3d = {
   refresh: announce => { applyTime(announce); },
   syncClock, frameAt: now => frame(now),
   sheetCursors: () => LAST_CURSORS.slice(),
+  sampleAt: (id, t) => sampleRecording(id, t),
+  beatIndex: t => beatIndexAt(t),
+  beatStart: i => { ensureBeatsUntil((i + 2) * 1000); return REC.starts[i]; },
+  beatStartsUntil: t => { ensureBeatsUntil(t); return REC.starts.filter(st => st <= t).slice(); },
+  recording: () => ({ seed: REC.seed, rr0: REC.rr0, rsaAmp: REC.rsaAmp, rsaMs: REC.rsaMs, wanderMv: REC.wanderMv, wanderMs: REC.wanderMs, jitter: REC.jitter, starts: REC.starts.slice() }),
   closeupMeta: (idx = 0) => { const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); return c ? { ...c.dataset } : null; },
+  closeupWave: (idx = 0) => {
+    const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); if (!c) return null;
+    return { lead: c.dataset.lead, cssW: +c.dataset.cssW, cssH: +c.dataset.cssH, px: +c.dataset.px, baseMm: +c.dataset.baseMm, yMin: +c.dataset.yMin, yMax: +c.dataset.yMax, upMm: +c.dataset.upMm, downMm: +c.dataset.downMm };
+  },
   phase: () => { const p = phaseAt(state.t); return { key: p.key, from: p.from, to: p.to, step: p.step || null, title: p.title }; },
   leadDecor: () => ({
     allLeads: !!ui.allLeads,

@@ -56,29 +56,34 @@ function phaseDelta(a, b) {
 
 function checkSample(label, sample) {
   const errors = [];
-  const n = sample.now || {};
+  const n = sample.now;
   const sim = n.simTime;
   if (!Number.isFinite(sim)) errors.push(`${label}: missing simTime`);
   if (Number.isFinite(n.pageTime) && Math.abs(n.pageTime - sim) > 1e-6) {
     errors.push(`${label}: pageTime ${n.pageTime} != simTime ${sim}`);
   }
-  const heart = Number.isFinite(n.t) ? n.t : wrap(sim);
-  if (phaseDelta(heart, sim) > 1) {
-    errors.push(`${label}: heart phase ${heart} != wrap(simTime) ${wrap(sim)} (simTime ${sim})`);
-  }
-  const expectedBeat = Math.floor(sim / BEAT_MS);
-  if (Number.isFinite(n.beat) && n.beat !== expectedBeat && !(n.t >= BEAT_MS - 1e-3 && n.beat === expectedBeat - 1)) {
-    errors.push(`${label}: beat ${n.beat} != floor(simTime/BEAT_MS) ${expectedBeat}`);
+  const beatIdx = sample.beatIndex != null ? sample.beatIndex : n.beat;
+  const t0 = sample.beatStart;
+  if (!Number.isFinite(t0)) errors.push(`${label}: missing beat start`);
+  else {
+    const heart = Number.isFinite(n.t) ? n.t : (sim - t0);
+    if (Math.abs(heart - (sim - t0)) > 1) {
+      errors.push(`${label}: heart phase ${heart} != simTime-beatStart ${sim - t0} (simTime ${sim}, start ${t0})`);
+    }
+    if (Number.isFinite(n.beat) && n.beat !== beatIdx) {
+      errors.push(`${label}: beat ${n.beat} != recording index ${beatIdx}`);
+    }
   }
   const cursors = sample.cursors || [];
   const cols = cursors.filter(c => c.id !== 'II-rhythm');
   const rhythm = cursors.find(c => c.id === 'II-rhythm');
-  if (cols.length !== 3) errors.push(`${label}: expected 3 active-column cursors, got ${cols.length}`);
+  if (cols.length !== 4) errors.push(`${label}: expected 4 column cursors, got ${cols.length}`);
   if (!rhythm) errors.push(`${label}: missing rhythm-strip cursor`);
+  if (cols.length === 4 && cols[0].relX != null) {
+    const rel = cols.map(c => c.relX);
+    if (Math.max(...rel) - Math.min(...rel) > 0.5) errors.push(`${label}: column relX differs: ${rel.join(', ')}`);
+  }
   for (const c of cursors) {
-    if (phaseDelta(c.tAbs, sim) > 1) {
-      errors.push(`${label}: ${c.id} cursor phase ${wrap(c.tAbs)} (tAbs ${c.tAbs}) != heart ${wrap(sim)} (simTime ${sim})`);
-    }
     if (Math.abs(c.tAbs - sim) > 1) {
       errors.push(`${label}: ${c.id} tAbs ${c.tAbs} != simTime ${sim}`);
     }
@@ -92,12 +97,15 @@ function checkSample(label, sample) {
     if (off < -0.5 || off >= 9600.5) errors.push(`${label}: rhythm offset ${off} outside the 9.6 s page`);
   }
   const closeup = sample.closeup;
-  if (closeup && Number.isFinite(closeup.tAbs) && phaseDelta(closeup.tAbs, sim) > 1) {
-    errors.push(`${label}: close-up cursor phase ${wrap(closeup.tAbs)} (tAbs ${closeup.tAbs}) != heart ${wrap(sim)}`);
+  if (closeup && Number.isFinite(closeup.tAbs) && Math.abs(closeup.tAbs - sim) > 1) {
+    errors.push(`${label}: close-up cursor tAbs ${closeup.tAbs} != simTime ${sim}`);
   }
   return errors;
 }
 
+// Assert the heart phase and every ECG cursor stay on one master sim time
+// through long runs, speed changes, guided jumps, scrubbing, pause/resume
+// and a hidden-tab gap. Run from the worktree root: node tests/ecg3d-phase-sync.mjs
 const server = await startServer();
 const base = `http://127.0.0.1:${server.address().port}/ECG_3D.html`;
 const pw = await loadPlaywright();
@@ -127,7 +135,9 @@ async function sample(label) {
   const data = await page.evaluate(() => ({
     now: window.ecg3d.now(),
     cursors: window.ecg3d.sheetCursors(),
-    closeup: window.ecg3d.closeupCursorScreen && window.ecg3d.closeupCursorScreen()
+    closeup: window.ecg3d.closeupCursorScreen && window.ecg3d.closeupCursorScreen(),
+    beatIndex: window.ecg3d.beatIndex(window.ecg3d.simTime()),
+    beatStart: window.ecg3d.beatStart(window.ecg3d.beatIndex(window.ecg3d.simTime()))
   }));
   const e = checkSample(label, data);
   errors.push(...e);

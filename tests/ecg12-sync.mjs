@@ -1,4 +1,4 @@
-// Assert the 12-lead page has one sweep cursor (three leads in the active column, plus the rhythm strip) at one x and one time, at 1x and 0.25x.
+// Assert the 12-lead page has four simultaneous column cursors at equal relative x, plus a rhythm-strip cursor on the 9.6 s clock, at 1x and 0.25x.
 // Run from the worktree root: node tests/ecg12-sync.mjs
 import { createServer } from 'http';
 import { readFileSync, existsSync, statSync } from 'fs';
@@ -41,37 +41,48 @@ function startServer() {
 }
 
 function checkSample(label, cursors, pageTime) {
-  const cols = cursors.filter(c => c.id !== 'II-rhythm');
+  const cols = cursors.filter(c => c.id !== 'II-rhythm').sort((a, b) => a.col - b.col);
   const rhythm = cursors.find(c => c.id === 'II-rhythm');
   const errors = [];
-  if (cols.length !== 3) errors.push(`${label}: expected 3 active-column cursors, got ${cols.length}`);
+  if (cols.length !== 4) errors.push(`${label}: expected 4 column cursors, got ${cols.length}`);
   if (!rhythm) errors.push(`${label}: missing rhythm-strip cursor`);
   if (cursors.length !== cols.length + (rhythm ? 1 : 0)) {
     errors.push(`${label}: unexpected extra cursors: ${cursors.map(c => c.id).join(', ')}`);
   }
   if (!cols.length) return errors;
-  const tAbs = cols[0].tAbs, t0 = cols[0].t0, col = cols[0].col;
+  const tAbs = cols[0].tAbs, t0 = cols[0].t0;
   const offset = tAbs - t0;
+  const tCol0 = Math.floor(tAbs / 2400) * 2400;
   const tPage0 = Math.floor(tAbs / 9600) * 9600;
-  const activeCol = Math.floor((tAbs - tPage0) / 2400);
   if (tAbs !== pageTime) errors.push(`${label}: cursor tAbs ${tAbs} != pageTime ${pageTime}`);
-  if (col !== activeCol) errors.push(`${label}: cursors in column ${col}, expected active column ${activeCol}`);
+  if (Math.abs(t0 - tCol0) > 0.5) errors.push(`${label}: column t0 ${t0} != window start ${tCol0}`);
+  if (offset < 0 || offset >= 2400) errors.push(`${label}: column offset ${offset} outside 0..2400`);
   for (const c of cols) {
     if (c.tAbs !== tAbs) errors.push(`${label}: ${c.id} tAbs ${c.tAbs} != ${tAbs}`);
-    if (c.t0 !== t0) errors.push(`${label}: ${c.id} t0 ${c.t0} != ${t0}`);
-    if (c.col !== col) errors.push(`${label}: ${c.id} col ${c.col} != ${col}`);
+    if (Math.abs(c.t0 - t0) > 0.5) errors.push(`${label}: ${c.id} t0 ${c.t0} != ${t0}`);
     if (Math.abs((c.tAbs - c.t0) - offset) > 0.5) errors.push(`${label}: ${c.id} offset ${c.tAbs - c.t0} != ${offset}`);
   }
-  if (t0 !== tPage0 + activeCol * 2400) errors.push(`${label}: t0 ${t0} is not the start of column ${activeCol} on page ${tPage0}`);
-  if (offset < 0 || offset >= 2400) errors.push(`${label}: column offset ${offset} outside 0..2400`);
+  if (cols.map(c => c.col).join() !== '0,1,2,3') errors.push(`${label}: columns are ${cols.map(c => c.col).join(', ')}`);
+  const rel = cols.map(c => (c.relX != null ? c.relX : null));
+  if (rel.every(v => v != null) && Math.max(...rel) - Math.min(...rel) > 0.5) {
+    errors.push(`${label}: column relX differs: ${rel.join(', ')}`);
+  }
   const xs = cols.map(c => c.x);
-  if (Math.max(...xs) - Math.min(...xs) > 0.5) errors.push(`${label}: active-column cursor x differs: ${xs.join(', ')}`);
+  // Absolute x differs by column origin; relative x must match.
+  const pxPerMs = cols[0].pxPerMs || 1;
+  const relFromX = cols.map(c => c.x - (c.col * 2400 * 0.025 * (c.pxPerMs / (0.025))));
+  // Safer: compare (x - min x) steps or relX only. If relX missing, compare (tAbs-t0)*pxPerMs via x offsets.
+  const relCalc = cols.map(c => c.x - c.col * 60 * (c.pxPerMs / 0.025));
+  if (Math.max(...relCalc) - Math.min(...relCalc) > 0.75) {
+    errors.push(`${label}: column relative x differs: ${relCalc.join(', ')}`);
+  }
   if (rhythm && rhythm.tAbs !== tAbs) errors.push(`${label}: rhythm tAbs ${rhythm.tAbs} != column tAbs ${tAbs}`);
-  if (rhythm && Math.abs(rhythm.x - cols[0].x) > 0.5) errors.push(`${label}: rhythm x ${rhythm.x} != column x ${cols[0].x}`);
   if (rhythm && Math.abs(rhythm.t0 - tPage0) > 0.5) errors.push(`${label}: rhythm t0 ${rhythm.t0} != page window ${tPage0}`);
   return errors;
 }
 
+// Assert the 12-lead page has four simultaneous column cursors at equal relative x, plus a rhythm-strip cursor on the 9.6 s clock, at 1x and 0.25x.
+// Run from the worktree root: node tests/ecg12-sync.mjs
 const server = await startServer();
 const base = `http://127.0.0.1:${server.address().port}/ECG_3D.html`;
 const pw = await loadPlaywright();
@@ -130,4 +141,4 @@ if (errors.length) {
   console.error('\nFAILED:\n' + errors.join('\n'));
   process.exit(1);
 }
-console.log('\nThe three leads in the active column share one sweep cursor with the rhythm strip, at 1x and 0.25x.');
+console.log('\nFour simultaneous column cursors share one relative x, and the rhythm strip follows the 9.6 s clock, at 1x and 0.25x.');

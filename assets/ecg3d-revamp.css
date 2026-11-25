@@ -325,9 +325,6 @@ body.ecg3d-fs-fallback #tool {
 body.ecg3d-fs-fallback {
   overflow: hidden;
 }
-.page-ecg3d-revamp #tool:fullscreen .timeline,
-.page-ecg3d-revamp #tool:-webkit-full-screen .timeline,
-body.ecg3d-fs-fallback #tool .timeline,
 .page-ecg3d-revamp #tool:fullscreen .steps,
 .page-ecg3d-revamp #tool:-webkit-full-screen .steps,
 body.ecg3d-fs-fallback #tool .steps,
@@ -359,6 +356,78 @@ body.ecg3d-fs-fallback #tool .fs-btn {
 body.ecg3d-fs-fallback #tool .fs-exit-btn {
   display: inline-flex !important;
 }
+.page-ecg3d-revamp #tool:fullscreen .timeline,
+.page-ecg3d-revamp #tool:-webkit-full-screen .timeline,
+body.ecg3d-fs-fallback #tool .timeline {
+  display: flex !important;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 8px 8px;
+  border-top: 1px solid var(--border, #ccc);
+  background: #fff;
+}
+.page-ecg3d-revamp .timeline-fs-nav { display: none; }
+.page-ecg3d-revamp #tool:fullscreen .timeline-fs-nav,
+.page-ecg3d-revamp #tool:-webkit-full-screen .timeline-fs-nav,
+body.ecg3d-fs-fallback #tool .timeline-fs-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.page-ecg3d-revamp #tool:fullscreen .timeline-fs-nav .step-nav,
+.page-ecg3d-revamp #tool:-webkit-full-screen .timeline-fs-nav .step-nav,
+body.ecg3d-fs-fallback #tool .timeline-fs-nav .step-nav {
+  min-height: 32px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.page-ecg3d-revamp .timeline-step-name {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 7em;
+  max-width: 14em;
+  text-align: center;
+  line-height: 1.2;
+}
+.page-ecg3d-revamp .stage-bar .walk-btn {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 12.5em;
+  white-space: normal;
+  line-height: 1.15;
+  text-align: center;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+.page-ecg3d-revamp .show-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  min-width: 0;
+  z-index: 40;
+}
+.page-ecg3d-revamp .stage-bar .show-btn {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 32px;
+  padding: 2px 8px;
+  font-weight: 600;
+}
+.page-ecg3d-revamp .stage-bar .show-btn[aria-expanded="true"],
+.page-ecg3d-revamp .stage-bar .show-btn.is-active {
+  border-color: #111;
+  border-width: 2px;
+  font-weight: 700;
+  color: #111;
+  background: #fff;
+}
+
 .page-ecg3d-revamp #tool:fullscreen .stage-overlay-line,
 .page-ecg3d-revamp #tool:-webkit-full-screen .stage-overlay-line,
 body.ecg3d-fs-fallback #tool .stage-overlay-line,

@@ -13,8 +13,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261120a">
 <link rel="stylesheet" href="assets/layout.css?v=20261120a">
-<link rel="stylesheet" href="assets/ecg3d.css?v=20261125h">
-<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261125h">
+<link rel="stylesheet" href="assets/ecg3d.css?v=20261125i">
+<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261125i">
 <script src="assets/theme.js?v=20261120a"></script>
 </head>
 <body>
@@ -67,40 +67,30 @@
                 </div>
               </div>
               <div class="ctrl-group show-group">
-                <div class="labels-wrap">
-                  <button type="button" class="t-btn labels-btn" id="labelsBtn" aria-expanded="false" aria-controls="labelsPanel" aria-haspopup="dialog">Labels</button>
-                  <div class="labels-panel" id="labelsPanel" role="dialog" aria-labelledby="labelsPanelTitle" hidden>
-                    <p class="labels-panel-title" id="labelsPanelTitle">Labels</p>
-                    <p class="labels-panel-help">Guided shows a label when that structure is active in the beat. Or pick which groups stay on. The labels sit in columns beside the heart.</p>
-                    <div class="labels-quick" role="group" aria-label="Label presets">
-                      <button type="button" class="t-btn" id="labelsGuided" aria-pressed="false">Guided</button>
-                      <button type="button" class="t-btn" id="labelsAll">All</button>
-                      <button type="button" class="t-btn" id="labelsNone">None</button>
-                    </div>
-                    <div class="labels-groups" role="group" aria-label="Label groups">
-                      <label class="labels-opt"><input type="checkbox" id="lab-chambers" data-group="chambers"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Chambers</strong> RA, LA, RV, LV, septum, SVC, coronary sinus opening, fibrous AV ring</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-conduction" data-group="conduction"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Conduction system</strong> SA node, internodal routes, Bachmann's bundle, AV node, His, bundles, fascicles, moderator band, Purkinje</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-leads" data-group="leads"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Leads and axes</strong> lead name tags (Show all rods, in More, draws the rods)</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-vectors" data-group="vectors"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Vectors</strong> mean vector, lead projection value</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-walls" data-group="walls"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Wall regions</strong> inferior, anterior, lateral or septum, for the selected lead</span></label>
-                      <label class="labels-opt"><input type="checkbox" id="lab-orientation" data-group="orientation"> <span class="labels-tick" aria-hidden="true"></span><span class="labels-opt-text"><strong>Orientation</strong> apex, base, anterior (the corner gizmo and the R and L marks always stay on)</span></label>
-                    </div>
-                    <button type="button" class="t-btn labels-panel-close" id="labelsPanelClose">Close</button>
+                <div class="show-wrap">
+                  <button type="button" class="t-btn show-btn" id="showBtn" aria-expanded="false" aria-controls="showPanel" aria-haspopup="dialog">Show</button>
+                  <div class="show-panel" id="showPanel" role="dialog" aria-labelledby="showPanelTitle" hidden>
+                    <p class="show-panel-title" id="showPanelTitle">Show</p>
+                    <p class="show-panel-help">Turn a group on or off, or open it to pick individual items. The corner compass and the R and L marks always stay on.</p>
+                    <div id="showPanelBody"></div>
+                    <section class="show-section" aria-labelledby="showPictureTitle">
+                      <div class="show-section-head">
+                        <button type="button" class="show-switch" id="showPictureAll" role="checkbox" aria-checked="mixed" aria-label="All picture options"><span class="show-tick" aria-hidden="true"></span><span>All picture options</span></button>
+                        <h3 class="show-section-title" id="showPictureTitle">Picture</h3>
+                        <button type="button" class="show-expand" id="show-x-picture" aria-expanded="true" aria-controls="show-list-picture">Hide items</button>
+                      </div>
+                      <div class="show-actions" id="show-list-picture">
+                        <button type="button" class="t-btn toggle-btn" id="toggleCut" aria-pressed="true">Cut-away</button>
+                        <button type="button" class="t-btn toggle-btn" id="toggleLeads" aria-pressed="true">Lead rods</button>
+                        <button type="button" class="t-btn toggle-btn" id="toggleLoop" aria-pressed="false">Vector loop</button>
+                        <button type="button" class="t-btn view-btn more-view" data-view="section" aria-pressed="false">Cut face-on</button>
+                        <button type="button" class="t-btn" id="resetView">Reset view</button>
+                      </div>
+                    </section>
+                    <button type="button" class="t-btn show-panel-close" id="showPanelClose">Close</button>
                   </div>
                 </div>
-                <button type="button" class="t-btn toggle-btn" id="guidedBtn" aria-pressed="false">Guided</button>
-                <div class="more-wrap">
-                  <button type="button" class="t-btn more-btn" id="moreBtn" aria-expanded="false" aria-controls="morePanel" aria-haspopup="true">More</button>
-                  <div class="more-panel" id="morePanel" hidden>
-                    <p class="more-title">More options</p>
-                    <button type="button" class="t-btn toggle-btn" id="toggleCut" aria-pressed="true">Cut-away</button>
-                    <button type="button" class="t-btn toggle-btn" id="toggleLoop" aria-pressed="false">Vector loop</button>
-                    <button type="button" class="t-btn view-btn more-view" data-view="section" aria-pressed="false">Cut face-on</button>
-                    <button type="button" class="t-btn toggle-btn" id="toggleLeads" aria-pressed="true">Show all rods</button>
-                    <button type="button" class="t-btn" id="resetView">Reset view</button>
-                    <button type="button" class="t-btn more-close" id="moreClose">Close</button>
-                  </div>
-                </div>
+                <button type="button" class="t-btn toggle-btn walk-btn" id="guidedBtn" aria-pressed="false">Walk through the beat</button>
               </div>
             </div>
 
@@ -154,8 +144,13 @@
                   <option value="1">Real time</option>
                 </select>
               </label>
+              <div class="timeline-fs-nav" id="timelineFsNav" role="group" aria-label="Walk through the beat">
+                <button type="button" class="t-btn step-nav" id="fsStepBack"><span aria-hidden="true">&#8592;</span> Back</button>
+                <span class="timeline-step-name" id="fsStepName"></span>
+                <button type="button" class="t-btn step-nav" id="fsStepNext">Next <span aria-hidden="true">&#8594;</span></button>
+              </div>
             </div>
-            <div class="steps" id="stepRow" role="group" aria-label="Guided steps through one beat">
+            <div class="steps" id="stepRow" role="group" aria-label="Walk through the beat">
               <button type="button" class="t-btn step-nav" id="stepBack"><span aria-hidden="true">&#8592;</span> Back</button>
               <div class="step-chips" id="stepChips"></div>
               <button type="button" class="t-btn step-nav" id="stepNext">Next <span aria-hidden="true">&#8594;</span></button>
@@ -179,14 +174,14 @@
           <div class="card lead-closeup-card" id="leadCloseupCard">
             <h2 class="tool-section-title" id="leadCloseupHeading">Selected lead: <span id="leadCloseupName">II</span></h2>
             <div class="lead-closeup-frame" id="leadCloseupFrame" tabindex="0" role="region" aria-labelledby="leadCloseupHeading">
-              <canvas id="leadCloseup" role="img" aria-label="Close-up of the selected lead on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. Four beats; the cursor sweeps left to right, overwriting the trace in place. The QRS is fitted so it is not cut off."></canvas>
+              <canvas id="leadCloseup" role="img" aria-label="Close-up of the selected lead on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. The cursor sweeps left to right and the trace draws in behind it on blank paper. The QRS is fitted so it is not cut off."></canvas>
             </div>
             <p class="side-note lead-closeup-gain" id="leadCloseupGain">10 mm/mV (full gain), 25 mm/s</p>
           </div>
           <div class="card lead-closeup-card lead-closeup-card-2" id="leadCloseupCard2" hidden>
             <h2 class="tool-section-title" id="leadCloseupHeading2">Selected lead: <span id="leadCloseupName2"></span></h2>
             <div class="lead-closeup-frame" id="leadCloseupFrame2" tabindex="0" role="region" aria-labelledby="leadCloseupHeading2">
-              <canvas id="leadCloseup2" role="img" aria-label="Close-up of a second selected lead on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. Four beats; the cursor sweeps left to right, overwriting the trace in place."></canvas>
+              <canvas id="leadCloseup2" role="img" aria-label="Close-up of a second selected lead on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. The cursor sweeps left to right and the trace draws in behind it on blank paper."></canvas>
             </div>
             <p class="side-note lead-closeup-gain" id="leadCloseupGain2">10 mm/mV (full gain), 25 mm/s</p>
           </div>
@@ -212,7 +207,7 @@
             <li><span class="sw sw-sel" aria-hidden="true"></span><span><b>Selected lead</b> thick blue rod; the lead name is a black filled pill. Thin grey rods are the other lead axes; a dashed half is the negative end.</span></li>
             <li><span class="sw sw-nodes" aria-hidden="true"></span><span>Diamond: SA node. Cube with filling ring: AV node delay. White disc: coronary sinus opening. Hatched white band on the cut face: fibrous AV ring</span></li>
             <li><span class="sw sw-lead" aria-hidden="true"></span><span>Thin grey rod: other lead axes</span></li>
-            <li><span class="sw sw-mesh" aria-hidden="true"></span><span>Black wire mesh (More, when wall regions are on): wall the selected lead faces</span></li>
+            <li><span class="sw sw-mesh" aria-hidden="true"></span><span>Black wire mesh (Show, when wall regions are on): wall the selected lead faces</span></li>
             <li><span class="sw sw-trail" aria-hidden="true"></span><span>Dotted grey (Vector loop path): path of the arrow tip</span></li>
           </ul>
         </div>
@@ -222,7 +217,7 @@
         <div class="ecg12-side">
           <div class="ecg12-head">
             <h2 class="tool-section-title" id="ecgHeading">Standard 12-lead ECG</h2>
-            <p class="ecg12-sync-note">Four consecutive 2.4 s columns and a lead II rhythm strip, all on one clock.</p>
+            <p class="ecg12-sync-note">Four simultaneous 2.4 s columns and a lead II rhythm strip, all on one clock.</p>
             <div class="lead-btns" id="leadBtns" role="group" aria-label="Select a lead"></div>
             <p class="fs-lead-hint" id="fsLeadHint">Pick up to two leads. The traces stay in time with the heart and the vector.</p>
           </div>
@@ -230,11 +225,11 @@
           <p class="side-note ecg12-hint" id="ecg12Note">Click a lead to see it close up on the right.</p>
           <details class="ecg12-about">
             <summary>About this ECG</summary>
-            <p>All 12 leads are recorded from one clock and laid out as a standard 12-lead page. The four columns are consecutive 2.4 s windows (three beats each) on a fixed 9.6 s loop. A single sweep cursor moves left to right through the current column, lined up across those three leads and the lead II rhythm strip below, then wraps back to the start and overwrites the old trace in place. The close-up and the heart share that clock. 25 mm/s. Limb leads and the rhythm strip are at 10 mm/mV; chest leads V1 to V6 are at 5 mm/mV, as on many real ECG machines. A full-height 1 mV calibration pulse starts each row; a half-height 1 mV pulse and a 5 mm/mV label mark the chest-lead columns. The close-up of any lead is always at 10 mm/mV. One small square is 40 ms (0.1 mV at 10 mm/mV, 0.2 mV at 5 mm/mV). The model computes a normal adult tracing at 75 beats/min. Click a lead, or its name on the heart, to see it close up on the right.</p>
+            <p>All 12 leads are recorded from one clock and laid out as a standard 12-lead page. The four columns show the same 2.4 s window at the same moment, each with a cursor at the same position in the column, moving in step. The lead II rhythm strip below shows a fixed 9.6 s loop, with its cursor at the matching time on that longer strip. Each lap starts on blank paper; the trace draws in behind the cursors, then the paper clears and the next lap starts from blank. The close-up and the heart are views of the same recording. The tracing is normal sinus rhythm at about 75/min, with mild respiratory sinus arrhythmia, so successive laps are not identical. 25 mm/s. Limb leads and the rhythm strip are at 10 mm/mV; chest leads V1 to V6 are at 5 mm/mV, as on many real ECG machines. A full-height 1 mV calibration pulse starts each row; a half-height 1 mV pulse and a 5 mm/mV label mark the chest-lead columns. The close-up of any lead is always at 10 mm/mV. One small square is 40 ms (0.1 mV at 10 mm/mV, 0.2 mV at 5 mm/mV). The model computes a normal adult tracing at 75 beats/min. Click a lead, or its name on the heart, to see it close up on the right.</p>
           </details>
         </div>
         <div class="ecg12-frame" tabindex="0" role="region" aria-labelledby="ecgHeading">
-          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model. Four consecutive 2.4 second columns make a fixed 9.6 second page. A single sweep cursor, lined up across the three leads in the current column and the lead II rhythm strip, wraps back to the start and overwrites the old trace in place. Limb leads at 10 millimetres per millivolt, chest leads at 5 millimetres per millivolt. Click a lead to select it and see it close up on the right."></canvas>
+          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model. Four simultaneous 2.4 second columns and a lead II rhythm strip, all from one recording. A cursor in each column stays lined up at the same position, and the rhythm-strip cursor follows the same clock on the longer 9.6 second strip. Each lap starts on blank paper and the trace draws in behind the cursors. Limb leads at 10 millimetres per millivolt, chest leads at 5 millimetres per millivolt. Click a lead to select it and see it close up on the right."></canvas>
         </div>
       </div>
 
@@ -294,6 +289,6 @@
   </footer>
 </div>
 
-<script type="module" src="assets/ecg3d.js?v=20261125h"></script>
+<script type="module" src="assets/ecg3d.js?v=20261125i"></script>
 </body>
 </html>
