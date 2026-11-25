@@ -263,8 +263,8 @@ async function inspect12Lead(page) {
       const expectedX = (8 + col * 60 + beatIdx * 20 + rPk * 0.025) * px;
       const xStart = (8 + col * 60 + beatIdx * 20 + 5.0) * px;
       const xEnd = (8 + col * 60 + beatIdx * 20 + 7.2) * px;
-      const yTrace0 = (2 + row * rowH + 1.0) * px;
-      const y1 = (2 + (row + 1) * rowH - 1.0) * px;
+      const yTrace0 = (2 + Math.max(0, row - 0.35) * rowH) * px;
+      const y1 = (2 + Math.min(4, row + 1.35) * rowH) * px;
       let bestY = sign > 0 ? Infinity : -Infinity, score = 0;
       const pts = [];
       for (let cx = Math.floor(xStart); cx <= Math.ceil(xEnd); cx++) {
@@ -288,12 +288,12 @@ async function inspect12Lead(page) {
     return {
       px, pxPerMs, colMs, pageMs, tAbs, tWin0, tPage0,
       scrollLeft: frame.scrollLeft,
-      colsOffsetUniform: new Set(cols.map((k) => Math.round(k.tAbs - k.t0))).size === 1,
+      cursorCount: cursors.length,
+      activeColMeta: cols[0] ? cols[0].col : null,
+      geoCursorX: cols[0] ? +cols[0].x.toFixed(2) : null,
       rowCursors,
       rhyCursor,
       rhythmX: rhythm ? +rhythm.x.toFixed(2) : null,
-      colCursorXs: [0, 1, 2, 3].map((col) => +(cols.find((k) => k.col === col && k.row === 0).x).toFixed(2)),
-      // Check col 0 (I, II, III, II rhythm), col 2 (V1, V2, V3, II rhythm), col 3 (V4, V5, V6, II rhythm) on beat 1
       qrsCol0Beat1: [0, 1, 2, 3].map((r) => qrsPeak(r, 0, 2)),
       qrsCol2Beat1: [0, 1, 2, 3].map((r) => qrsPeak(r, 2, 2)),
       qrsCol3Beat1: [0, 1, 2, 3].map((r) => qrsPeak(r, 3, 2))
@@ -312,26 +312,33 @@ for (const t of [400, 2200, 2650, 9850]) {
 let ecg12AlignOk = true;
 const alignDetails = [];
 for (const s of samples12) {
-  // All 3 rows in each column must have identical pixel cursor X (spread <= 1 px)
-  for (let col = 0; col < 4; col++) {
-    const xs = [0, 1, 2].map((r) => s.rowCursors[r][col].x);
-    const geo = s.colCursorXs[col];
-    const spread = Math.max(...xs) - Math.min(...xs);
-    const geoErr = Math.max(...xs.map((x) => Math.abs(x - geo)));
-    if (spread > 1 || geoErr > 1.5) { ecg12AlignOk = false; alignDetails.push({ t: s.tAbs, col, xs, geo, spread, geoErr }); }
-  }
-  // Equal inter-column cursor spacing (every column cursor is at the exact same offset within its 2400 ms column)
-  const colW = s.colMs * 0.025 * s.px;
-  for (let col = 1; col < 4; col++) {
-    if (Math.abs((s.colCursorXs[col] - s.colCursorXs[0]) - col * colW) > 0.5) {
-      ecg12AlignOk = false; alignDetails.push({ t: s.tAbs, colCursorXs: s.colCursorXs, colW });
-    }
-  }
-  // Rhythm cursor aligns with active column's cursor
   const activeCol = Math.floor((s.tAbs % s.pageMs) / s.colMs);
-  const colX = s.colCursorXs[activeCol];
-  if (Math.abs(s.rhythmX - colX) > 0.5 || Math.abs(s.rhyCursor.x - colX) > 1.5) {
-    ecg12AlignOk = false; alignDetails.push({ t: s.tAbs, activeCol, rhythmX: s.rhythmX, rhyPixel: s.rhyCursor.x, colX });
+  if (s.cursorCount !== 4 || s.activeColMeta !== activeCol) {
+    ecg12AlignOk = false;
+    alignDetails.push({ t: s.tAbs, cursorCount: s.cursorCount, activeColMeta: s.activeColMeta, activeCol });
+  }
+  // Only the active column has a sweep cursor; the three rows share that x with the rhythm strip
+  const xs = [0, 1, 2].map((r) => s.rowCursors[r][activeCol].x);
+  const counts = [0, 1, 2].map((r) => s.rowCursors[r][activeCol].cnt);
+  const spread = Math.max(...xs) - Math.min(...xs);
+  const geoErr = Math.max(...xs.map((x) => Math.abs(x - s.geoCursorX)));
+  if (spread > 1 || geoErr > 1.5 || counts.some((c) => c < 8)) {
+    ecg12AlignOk = false;
+    alignDetails.push({ t: s.tAbs, activeCol, xs, geo: s.geoCursorX, spread, geoErr, counts });
+  }
+  if (Math.abs(s.rhythmX - s.geoCursorX) > 0.5 || Math.abs(s.rhyCursor.x - s.geoCursorX) > 1.5) {
+    ecg12AlignOk = false;
+    alignDetails.push({ t: s.tAbs, activeCol, rhythmX: s.rhythmX, rhyPixel: s.rhyCursor.x, colX: s.geoCursorX });
+  }
+  // Inactive columns must not leave a sweep cursor behind
+  for (let col = 0; col < 4; col++) {
+    if (col === activeCol) continue;
+    for (let r = 0; r < 3; r++) {
+      if (s.rowCursors[r][col].cnt >= 8) {
+        ecg12AlignOk = false;
+        alignDetails.push({ t: s.tAbs, extraCursor: s.rowCursors[r][col], row: r, col });
+      }
+    }
   }
   // Each lead rendered QRS peak/nadir matches the shared-clock expected X within 1.5 px across rows 0..3
   for (const [tag, arr] of [["col0b1", s.qrsCol0Beat1], ["col2b1", s.qrsCol2Beat1], ["col3b1", s.qrsCol3Beat1]]) {
@@ -341,14 +348,14 @@ for (const s of samples12) {
   }
 }
 if (ecg12AlignOk) {
-  pass("12-lead ECG: sweep cursors and QRS beats align vertically across all 12 leads and the rhythm strip", {
+  pass("12-lead ECG: one sweep cursor lines up across the active column and rhythm strip, and QRS beats stay aligned", {
     colMs: samples12[0].colMs, pageMs: samples12[0].pageMs, pxPerMs: samples12[0].pxPerMs,
     col0Beats: samples12[0].qrsCol0Beat1.map((a) => a.x),
     col2Beats: samples12[0].qrsCol2Beat1.map((a) => a.x),
     col3Beats: samples12[0].qrsCol3Beat1.map((a) => a.x)
   });
 } else {
-  fail("12-lead ECG: sweep cursors and QRS beats align vertically across all 12 leads and the rhythm strip", alignDetails);
+  fail("12-lead ECG: one sweep cursor lines up across the active column and rhythm strip, and QRS beats stay aligned", alignDetails);
 }
 
 // Assert NO horizontal scroll or waveform translation between frames (before and after 2.4s & 9.6s wraps)

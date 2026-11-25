@@ -1,4 +1,4 @@
-// Assert all 12-lead column cursors share one time and one x-offset, at 1x and 0.25x.
+// Assert the 12-lead page has one sweep cursor (three leads in the active column, plus the rhythm strip) at one x and one time, at 1x and 0.25x.
 // Run from the worktree root: node tests/ecg12-sync.mjs
 import { createServer } from 'http';
 import { readFileSync, existsSync, statSync } from 'fs';
@@ -44,29 +44,31 @@ function checkSample(label, cursors, pageTime) {
   const cols = cursors.filter(c => c.id !== 'II-rhythm');
   const rhythm = cursors.find(c => c.id === 'II-rhythm');
   const errors = [];
-  if (cols.length !== 12) errors.push(`${label}: expected 12 column cursors, got ${cols.length}`);
+  if (cols.length !== 3) errors.push(`${label}: expected 3 active-column cursors, got ${cols.length}`);
   if (!rhythm) errors.push(`${label}: missing rhythm-strip cursor`);
+  if (cursors.length !== cols.length + (rhythm ? 1 : 0)) {
+    errors.push(`${label}: unexpected extra cursors: ${cursors.map(c => c.id).join(', ')}`);
+  }
   if (!cols.length) return errors;
-  const tAbs = cols[0].tAbs, t0 = cols[0].t0;
+  const tAbs = cols[0].tAbs, t0 = cols[0].t0, col = cols[0].col;
   const offset = tAbs - t0;
+  const tPage0 = Math.floor(tAbs / 9600) * 9600;
+  const activeCol = Math.floor((tAbs - tPage0) / 2400);
   if (tAbs !== pageTime) errors.push(`${label}: cursor tAbs ${tAbs} != pageTime ${pageTime}`);
+  if (col !== activeCol) errors.push(`${label}: cursors in column ${col}, expected active column ${activeCol}`);
   for (const c of cols) {
     if (c.tAbs !== tAbs) errors.push(`${label}: ${c.id} tAbs ${c.tAbs} != ${tAbs}`);
     if (c.t0 !== t0) errors.push(`${label}: ${c.id} t0 ${c.t0} != ${t0}`);
+    if (c.col !== col) errors.push(`${label}: ${c.id} col ${c.col} != ${col}`);
     if (Math.abs((c.tAbs - c.t0) - offset) > 0.5) errors.push(`${label}: ${c.id} offset ${c.tAbs - c.t0} != ${offset}`);
   }
-  if (t0 !== Math.floor(tAbs / 2400) * 2400) errors.push(`${label}: t0 ${t0} is not the 2.4 s window for ${tAbs}`);
+  if (t0 !== tPage0 + activeCol * 2400) errors.push(`${label}: t0 ${t0} is not the start of column ${activeCol} on page ${tPage0}`);
   if (offset < 0 || offset >= 2400) errors.push(`${label}: column offset ${offset} outside 0..2400`);
-  // same x offset within each column (subtract the column origin)
-  const byCol = {};
-  for (const c of cols) {
-    const colW = 2400 * (c.pxPerMs || 0);
-    const localX = colW ? (c.x % (colW + 1)) : c.x;
-    (byCol[c.col] ||= []).push(c);
-  }
-  const local = cols.map(c => c.tAbs - c.t0);
-  if (new Set(local.map(v => Math.round(v))).size !== 1) errors.push(`${label}: column time offsets differ: ${[...new Set(local)].join(', ')}`);
+  const xs = cols.map(c => c.x);
+  if (Math.max(...xs) - Math.min(...xs) > 0.5) errors.push(`${label}: active-column cursor x differs: ${xs.join(', ')}`);
   if (rhythm && rhythm.tAbs !== tAbs) errors.push(`${label}: rhythm tAbs ${rhythm.tAbs} != column tAbs ${tAbs}`);
+  if (rhythm && Math.abs(rhythm.x - cols[0].x) > 0.5) errors.push(`${label}: rhythm x ${rhythm.x} != column x ${cols[0].x}`);
+  if (rhythm && Math.abs(rhythm.t0 - tPage0) > 0.5) errors.push(`${label}: rhythm t0 ${rhythm.t0} != page window ${tPage0}`);
   return errors;
 }
 
@@ -128,4 +130,4 @@ if (errors.length) {
   console.error('\nFAILED:\n' + errors.join('\n'));
   process.exit(1);
 }
-console.log('\nAll column cursors share one time value, and the rhythm-strip cursor matches, at 1x and 0.25x.');
+console.log('\nThe three leads in the active column share one sweep cursor with the rhythm strip, at 1x and 0.25x.');

@@ -73,7 +73,7 @@ function checkSample(label, sample) {
   const cursors = sample.cursors || [];
   const cols = cursors.filter(c => c.id !== 'II-rhythm');
   const rhythm = cursors.find(c => c.id === 'II-rhythm');
-  if (cols.length !== 12) errors.push(`${label}: expected 12 column cursors, got ${cols.length}`);
+  if (cols.length !== 3) errors.push(`${label}: expected 3 active-column cursors, got ${cols.length}`);
   if (!rhythm) errors.push(`${label}: missing rhythm-strip cursor`);
   for (const c of cursors) {
     if (phaseDelta(c.tAbs, sim) > 1) {

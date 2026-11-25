@@ -13,8 +13,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261120a">
 <link rel="stylesheet" href="assets/layout.css?v=20261120a">
-<link rel="stylesheet" href="assets/ecg3d.css?v=20261125g">
-<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261125g">
+<link rel="stylesheet" href="assets/ecg3d.css?v=20261125h">
+<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261125h">
 <script src="assets/theme.js?v=20261120a"></script>
 </head>
 <body>
@@ -230,11 +230,11 @@
           <p class="side-note ecg12-hint" id="ecg12Note">Click a lead to see it close up on the right.</p>
           <details class="ecg12-about">
             <summary>About this ECG</summary>
-            <p>All 12 leads are recorded at the same moment, as on a live 12-lead monitor. Each of the four columns shows a fixed 2.4 s window (three beats), time-aligned, with a sweep cursor at the same place in every column that wraps back to the start and overwrites the old trace in place. The lead II rhythm strip below shows 9.6 s (twelve beats), and its cursor is at the same absolute time. The close-up and the heart share that clock. 25 mm/s. Limb leads and the rhythm strip are at 10 mm/mV; chest leads V1 to V6 are at 5 mm/mV, as on many real ECG machines. A full-height 1 mV calibration pulse starts each row; a half-height 1 mV pulse and a 5 mm/mV label mark the chest-lead columns. The close-up of any lead is always at 10 mm/mV. One small square is 40 ms (0.1 mV at 10 mm/mV, 0.2 mV at 5 mm/mV). The model computes a normal adult tracing at 75 beats/min. Click a lead, or its name on the heart, to see it close up on the right.</p>
+            <p>All 12 leads are recorded from one clock and laid out as a standard 12-lead page. The four columns are consecutive 2.4 s windows (three beats each) on a fixed 9.6 s loop. A single sweep cursor moves left to right through the current column, lined up across those three leads and the lead II rhythm strip below, then wraps back to the start and overwrites the old trace in place. The close-up and the heart share that clock. 25 mm/s. Limb leads and the rhythm strip are at 10 mm/mV; chest leads V1 to V6 are at 5 mm/mV, as on many real ECG machines. A full-height 1 mV calibration pulse starts each row; a half-height 1 mV pulse and a 5 mm/mV label mark the chest-lead columns. The close-up of any lead is always at 10 mm/mV. One small square is 40 ms (0.1 mV at 10 mm/mV, 0.2 mV at 5 mm/mV). The model computes a normal adult tracing at 75 beats/min. Click a lead, or its name on the heart, to see it close up on the right.</p>
           </details>
         </div>
         <div class="ecg12-frame" tabindex="0" role="region" aria-labelledby="ecgHeading">
-          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model. All 12 leads show the same moment: four columns share one fixed 2.4 second window with a sweeping cursor at the same place in each column, and a 9.6 second lead II rhythm strip whose cursor is at the same time. Limb leads at 10 millimetres per millivolt, chest leads at 5 millimetres per millivolt. Click a lead to select it and see it close up on the right."></canvas>
+          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model. Four consecutive 2.4 second columns make a fixed 9.6 second page. A single sweep cursor, lined up across the three leads in the current column and the lead II rhythm strip, wraps back to the start and overwrites the old trace in place. Limb leads at 10 millimetres per millivolt, chest leads at 5 millimetres per millivolt. Click a lead to select it and see it close up on the right."></canvas>
         </div>
       </div>
 
@@ -294,6 +294,6 @@
   </footer>
 </div>
 
-<script type="module" src="assets/ecg3d.js?v=20261125g"></script>
+<script type="module" src="assets/ecg3d.js?v=20261125h"></script>
 </body>
 </html>

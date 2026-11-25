@@ -525,16 +525,28 @@ function drawSeg(g, id, t0, t1, xStartMm, basemm, px, bold, lw, mmPerMv) {
   g.lineTo(xAt(t1), yAt(t1));
   g.stroke();
 }
-function drawSweepSeg(g, id, tWin0, winMs, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv) {
+function drawSweepSeg(g, id, tWin0, winMs, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv, loopMs) {
   const tInWin = Math.max(0, Math.min(winMs, tAbs - tWin0));
+  const period = loopMs == null ? winMs : loopMs;
   const gapMs = Math.min(winMs, SWEEP_GAP_MM / MM_PER_MS);
   if (tInWin > 0) {
     drawSeg(g, id, tWin0, tWin0 + tInWin, xStartMm, basemm, px, bold, lw, mmPerMv);
   }
   if (tInWin + gapMs < winMs) {
-    const tPrev0 = tWin0 - winMs;
+    const tPrev0 = tWin0 - period;
     const xGapMm = xStartMm + (tInWin + gapMs) * MM_PER_MS;
     drawSeg(g, id, tPrev0 + tInWin + gapMs, tPrev0 + winMs, xGapMm, basemm, px, bold, lw, mmPerMv);
+  }
+}
+function drawPageCol(g, id, tPage0, col, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv) {
+  const tCol0 = tPage0 + col * ECG.colMs;
+  const tCol1 = tCol0 + ECG.colMs;
+  if (tAbs >= tCol1) {
+    drawSeg(g, id, tCol0, tCol1, xStartMm, basemm, px, bold, lw, mmPerMv);
+  } else if (tAbs < tCol0) {
+    drawSeg(g, id, tCol0 - PAGE_MS, tCol1 - PAGE_MS, xStartMm, basemm, px, bold, lw, mmPerMv);
+  } else {
+    drawSweepSeg(g, id, tCol0, ECG.colMs, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv, PAGE_MS);
   }
 }
 function traceAt(id, t) { const T = TRACE[id]; const tc = Math.max(0, Math.min(BEAT_MS, t)), i = Math.min(BEAT_MS - 1, Math.floor(tc)), f = tc - i; return T[i] + (T[i + 1] - T[i]) * f; }
@@ -556,9 +568,15 @@ function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px, mmPerMv
   g.strokeStyle = '#fff'; g.lineWidth = 1; g.stroke();
   const v = traceAt(id, wrapPeriod(tAbs, BEAT_MS));
   let y = (basemm - v * mm) * px;
-  const loY = dotClamp ? dotClamp.top : (y0 + ts);
-  const hiY = dotClamp ? dotClamp.bot : (y1 - 2);
-  y = Math.max(loY, Math.min(hiY, y));
+  // Follow the wave so a deep peak is not pinned to a flat clip edge.
+  if (dotClamp && dotClamp.unclamped) {
+    if (dotClamp.top != null) y = Math.max(dotClamp.top, y);
+    if (dotClamp.bot != null) y = Math.min(dotClamp.bot, y);
+  } else {
+    const loY = dotClamp ? dotClamp.top : (y0 + ts);
+    const hiY = dotClamp ? dotClamp.bot : (y1 - 2);
+    y = Math.max(loY, Math.min(hiY, y));
+  }
   g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 4.2, 0, Math.PI * 2); g.fill();
   g.fillStyle = PAPER.cursor; g.beginPath(); g.arc(x, y, 2.8, 0, Math.PI * 2); g.fill();
 }
@@ -640,7 +658,7 @@ function ecgSheetSize() {
 }
 function drawECG() {
   const frame = ecgCanvas.parentElement;
-  // One-screen layout: the sheet fills the height left under the 3D model. Each lead is clipped to its own row. On small screens the sheet may scroll sideways.
+  // One-screen layout: the sheet fills the height left under the 3D model. Traces may overlap neighbouring rows, as on a printed ECG, and are not clipped into square waves. On small screens the sheet may scroll sideways.
   const { compact, wmm, hmm, px, cssW, cssH } = ecgSheetSize();
   frame.style.width = '';
   frame.style.overflow = 'hidden';
@@ -656,9 +674,11 @@ function drawECG() {
   const clips = [];
   LAST_CURSORS = [];
   const tAbs = pageTime();
-  // All four columns share one fixed 2.4 s (3 beats) window and sweep together, overwriting the previous trace in place.
-  const tWin0 = windowStart(tAbs, ECG.colMs);
+  // Standard 12-lead page: four consecutive 2.4 s columns on a fixed 9.6 s loop. One sweep cursor, shared x on the active column and the rhythm strip, overwrites in place.
   const tPage0 = windowStart(tAbs, PAGE_MS);
+  const tInPage = tAbs - tPage0;
+  const activeCol = Math.max(0, Math.min(3, Math.floor(tInPage / ECG.colMs)));
+  const tWin0 = tPage0 + activeCol * ECG.colMs;
   const pxPerMs = MM_PER_MS * px;
   if (ecgCanvas.dataset) {
     ecgCanvas.dataset.tAbs = String(Math.round(tAbs));
@@ -667,19 +687,23 @@ function drawECG() {
     ecgCanvas.dataset.colMs = String(ECG.colMs);
     ecgCanvas.dataset.pageMs = String(PAGE_MS);
     ecgCanvas.dataset.pxPerMs = String(pxPerMs);
+    ecgCanvas.dataset.activeCol = String(activeCol);
   }
+  const sheetTopPx = ECG.top * px;
+  const sheetBotPx = (ECG.top + 4 * ECG.rowH) * px;
+  const waveClamp = { unclamped: true, top: sheetTopPx + 1, bot: sheetBotPx - 2 };
+  const cells = [];
   for (let r = 0; r < 4; r++) {
     const top = ECG.top + r * ECG.rowH;
     if (r < 3) {
       const limbOff = cellBaseline(LAYOUT[r][0], ECG.rowH);
       drawCal(g, 0.5, top + limbOff, px, 10);
       for (let c = 0; c < 4; c++) {
-        const id = LAYOUT[r][c], t0 = tWin0, x0 = ECG.calW + c * ECG.colMs * MM_PER_MS, sel = id === state.sel;
+        const id = LAYOUT[r][c], t0 = tPage0 + c * ECG.colMs, x0 = ECG.calW + c * ECG.colMs * MM_PER_MS, sel = id === state.sel;
         const mm = sheetMmPerMv(id);
         const baseOff = cellBaseline(id, ECG.rowH);
         const base = top + baseOff;
         const cell = { x: x0 * px, y: top * px, w: ECG.colMs * MM_PER_MS * px, h: ECG.rowH * px };
-        const xStart = x0;
         if (c >= 2 && r === 0) {
           // Half-height 1 mV pulse for the chest-lead columns; it does not shift the trace or the cursor.
           const calBase = top + Math.max(7, Math.min(11, ECG.rowH - 1.2));
@@ -689,15 +713,8 @@ function drawECG() {
           g.fillStyle = '#111';
           g.fillText('5 mm/mV', (x0 + 7.3) * px, (calBase - 5.4) * px);
         }
-        g.save();
-        g.beginPath(); g.rect(cell.x, cell.y, cell.w, cell.h); g.clip();
-        drawSweepSeg(g, id, tWin0, ECG.colMs, tAbs, xStart, base, px, sel, null, mm);
-        cursorAt(g, id, tAbs, xStart, t0, base, top + 1, ECG.rowH - 2, px, mm);
-        LAST_CURSORS.push({ id, tAbs, t0, col: c, row: r, x: (xStart + (tAbs - t0) * MM_PER_MS) * px, pxPerMs });
-        g.restore();
-        if (c) { g.strokeStyle = '#111'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x0 * px, (base - 3) * px); g.lineTo(x0 * px, (base + 3) * px); g.stroke(); }
-        label(g, id, x0 + 1.5, top + 5, px, sel);
         if (sel) { g.strokeStyle = '#111'; g.lineWidth = 3; g.strokeRect(x0 * px + 1, (top + 0.5) * px, ECG.colMs * MM_PER_MS * px - 2, (ECG.rowH - 1) * px); }
+        cells.push({ r, c, id, t0, x0, sel, mm, baseOff, base, top, cell });
         clips.push(clipReport(id, ECG.rowH, baseOff));
       }
     } else {
@@ -705,22 +722,47 @@ function drawECG() {
       const base = top + baseOff;
       drawCal(g, 0.5, base, px, 10);
       const sel = state.sel === 'II', x0 = ECG.calW;
-      g.save();
-      g.beginPath(); g.rect(x0 * px, top * px, PAGE_MS * MM_PER_MS * px, ECG.rowH * px); g.clip();
-      drawSweepSeg(g, 'II', tPage0, PAGE_MS, tAbs, x0, base, px, sel, null, 10);
-      cursorAt(g, 'II', tAbs, x0, tPage0, base, top + 1, ECG.rowH - 2, px, 10);
-      LAST_CURSORS.push({ id: 'II-rhythm', tAbs, t0: tPage0, col: 0, row: 3, x: (x0 + (tAbs - tPage0) * MM_PER_MS) * px, pxPerMs });
-      g.restore();
-      label(g, 'II  (rhythm strip)', x0 + 1.5, top + 5, px, sel);
+      cells.push({ r, c: 0, id: 'II-rhythm', t0: tPage0, x0, sel, mm: 10, baseOff, base, top, cell: { x: x0 * px, y: top * px, w: PAGE_MS * MM_PER_MS * px, h: ECG.rowH * px } });
       clips.push(clipReport('II-rhythm', ECG.rowH, baseOff));
+    }
+  }
+  // Draw traces after the highlight box so deep waves can overlap neighbouring rows and the box border, never flattening into a square.
+  for (const cell of cells) {
+    g.save();
+    g.beginPath();
+    g.rect(cell.cell.x, sheetTopPx, cell.cell.w, sheetBotPx - sheetTopPx);
+    g.clip();
+    if (cell.id === 'II-rhythm') {
+      drawSweepSeg(g, 'II', tPage0, PAGE_MS, tAbs, cell.x0, cell.base, px, cell.sel, null, 10);
+    } else {
+      drawPageCol(g, cell.id, tPage0, cell.c, tAbs, cell.x0, cell.base, px, cell.sel, null, cell.mm);
+    }
+    g.restore();
+  }
+  for (const cell of cells) {
+    if (cell.id !== 'II-rhythm' && cell.c) {
+      g.strokeStyle = '#111'; g.lineWidth = 1.4; g.beginPath();
+      g.moveTo(cell.x0 * px, (cell.base - 3) * px); g.lineTo(cell.x0 * px, (cell.base + 3) * px); g.stroke();
+    }
+    if (cell.id === 'II-rhythm') label(g, 'II  (rhythm strip)', cell.x0 + 1.5, cell.top + 5, px, cell.sel);
+    else label(g, cell.id, cell.x0 + 1.5, cell.top + 5, px, cell.sel);
+  }
+  // One sweep cursor: the three leads in the active column, plus the rhythm strip, all at the same x.
+  for (const cell of cells) {
+    if (cell.id === 'II-rhythm') {
+      cursorAt(g, 'II', tAbs, cell.x0, tPage0, cell.base, cell.top + 1, ECG.rowH - 2, px, 10, waveClamp);
+      LAST_CURSORS.push({ id: 'II-rhythm', tAbs, t0: tPage0, col: activeCol, row: 3, x: (cell.x0 + tInPage * MM_PER_MS) * px, pxPerMs });
+    } else if (cell.c === activeCol) {
+      cursorAt(g, cell.id, tAbs, cell.x0, cell.t0, cell.base, cell.top + 1, ECG.rowH - 2, px, cell.mm, waveClamp);
+      LAST_CURSORS.push({ id: cell.id, tAbs, t0: cell.t0, col: cell.c, row: cell.r, x: (cell.x0 + (tAbs - cell.t0) * MM_PER_MS) * px, pxPerMs });
     }
   }
   LAST_CLIPS = clips;
   g.font = `600 ${Math.max(10, compact ? 2.7 * px : 3.2 * px)}px "Source Sans 3", Arial, sans-serif`; g.fillStyle = '#111';
   const yb = (ECG.top + 4 * ECG.rowH + (compact ? 3.8 : 5)) * px;
   const footer = cssW < 520
-    ? 'All 12 leads recorded at the same moment.  25 mm/s    Limb 10 mm/mV, chest 5 mm/mV'
-    : 'All 12 leads recorded at the same moment.    25 mm/s    Limb leads 10 mm/mV, chest leads 5 mm/mV    Rate 75/min';
+    ? 'All 12 leads recorded from one clock.  25 mm/s    Limb 10 mm/mV, chest 5 mm/mV'
+    : 'All 12 leads recorded from one clock.    25 mm/s    Limb leads 10 mm/mV, chest leads 5 mm/mV    Rate 75/min';
   g.fillText(footer, ECG.calW * px, yb);
 }
 function drawMini() {
@@ -905,26 +947,30 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   const tWin0 = windowStart(tAbs, tVis);
   const tWin1 = tWin0 + tVis;
   const nBeats = tVis / BEAT_MS;
+  const spanMm = upMm + downMm;
   const slim = hmm < 27.5;
   const minLabelPx = nameFs + 6, minIntervalPx = rowF + 10;
   const nLabelRows = slim ? 0 : 2;
-  let labelBandPx = slim ? minLabelPx : (labelTopPx + nLabelRows * (boxH + rowGap) + 1);
-  let intervalBandPx = slim ? 4 : minIntervalPx;
-  const maxBandsPx = Math.max(minLabelPx + 4, cssH - 8 * px);
-  if (labelBandPx + intervalBandPx > maxBandsPx) {
-    labelBandPx = Math.max(minLabelPx, Math.floor(maxBandsPx * 0.68));
-    intervalBandPx = Math.max(slim ? 4 : minIntervalPx, maxBandsPx - labelBandPx);
+  // Give the waveform the millimetres it needs at 10 mm/mV first; shrink label and interval bands rather than flatten peaks.
+  const waveNeedMm = spanMm + marginMm * 2;
+  const preferLabelPx = slim ? minLabelPx : (labelTopPx + nLabelRows * (boxH + rowGap) + 1);
+  const preferIntervalPx = slim ? 4 : minIntervalPx;
+  let labelBandPx = preferLabelPx, intervalBandPx = preferIntervalPx;
+  if (waveNeedMm * px + labelBandPx + intervalBandPx > cssH) {
+    const leftover = Math.max(0, cssH - waveNeedMm * px);
+    if (leftover <= 0) { labelBandPx = 0; intervalBandPx = 0; }
+    else {
+      const labelShare = preferLabelPx / Math.max(1, preferLabelPx + preferIntervalPx);
+      labelBandPx = Math.floor(leftover * labelShare);
+      intervalBandPx = Math.max(0, Math.floor(leftover - labelBandPx));
+    }
   }
   const labelBandMm = labelBandPx / px, intervalBandMm = intervalBandPx / px;
-  const traceTopMm = labelBandMm + 0.2;
-  const traceHmm = Math.max(6, hmm - traceTopMm - intervalBandMm);
-  const spanMm = upMm + downMm;
-  let base;
-  if (spanMm + marginMm * 2 <= traceHmm) {
-    const slack = traceHmm - spanMm - marginMm * 2;
-    base = traceTopMm + marginMm + upMm + slack * 0.4;
-  } else {
-    base = traceTopMm + traceHmm * (upMm / Math.max(0.01, spanMm));
+  const traceTopMm = labelBandMm;
+  const traceHmm = Math.max(waveNeedMm, hmm - labelBandMm - intervalBandMm);
+  let base = traceTopMm + marginMm + upMm;
+  if (base + downMm + marginMm + intervalBandMm > hmm) {
+    base = Math.max(marginMm + upMm, hmm - intervalBandMm - marginMm - downMm);
   }
   const pxPerMs = MM_PER_MS * px;
   const cursorX = (x0 + (tAbs - tWin0) * MM_PER_MS) * px;
@@ -941,15 +987,12 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   canvas.dataset.cssH = String(cssH);
   const g = prepCanvas(canvas, cssW, cssH);
   drawPaper(g, wmm, hmm, px);
-  g.save();
-  g.beginPath();
-  g.rect(0, traceTopMm * px, cssW, traceHmm * px);
-  g.clip();
+  // Do not clip the waveform; a deep S or tall R must keep its shape. Labels sit in leftover bands, or overlay if the strip is tight.
   drawSweepSeg(g, id, tWin0, tVis, tAbs, x0, base, px, true, Math.max(2.2, Math.min(3.2, 0.16 * px)));
-  g.restore();
   cursorAt(g, id, tAbs, x0, tWin0, base, 0.4, hmm - 0.8, px, MM_PER_MV, {
-    top: traceTopMm * px + 2,
-    bot: (traceTopMm + traceHmm) * px - 2
+    unclamped: true,
+    top: 2,
+    bot: cssH - 2
   });
   g.font = `800 ${nameFs}px "Source Sans 3", Arial, sans-serif`;
   const nameW = g.measureText(id).width;
@@ -1064,7 +1107,6 @@ function paintCloseupCanvas(canvas, nameEl, gainEl, leadId, sharedCssW, sharedPx
   if (nameEl) nameEl.textContent = leadId;
   const frame = canvas.parentElement;
   if (!frame) return;
-  frame.style.overflow = 'hidden';
   const cssW = sharedCssW || Math.max(120, Math.floor(frame.clientWidth - 2));
   const cssH = Math.max(80, Math.floor((frame.clientHeight || 160) - 2));
   paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx);
@@ -2958,8 +3000,8 @@ function describeLead() {
   }
   if ($('ecgCaption')) {
     const tAbs = pageTime();
-    const tWin0 = Math.floor(tAbs / ECG.colMs) * ECG.colMs;
-    $('ecgCaption').textContent = `Lead ${L.id} selected. All 12 leads recorded at the same moment: ${(tAbs / 1000).toFixed(1)} s, in the ${(tWin0 / 1000).toFixed(1)}–${((tWin0 + ECG.colMs) / 1000).toFixed(1)} s window.`;
+    const tPage0 = windowStart(tAbs, PAGE_MS);
+    $('ecgCaption').textContent = `Lead ${L.id} selected. All 12 leads share one clock at ${(tAbs / 1000).toFixed(1)} s, on the ${(tPage0 / 1000).toFixed(1)} to ${((tPage0 + PAGE_MS) / 1000).toFixed(1)} s page.`;
   }
   if ($('miniLabel')) $('miniLabel').textContent = `Lead ${L.id}, 5 s at 25 mm/s`;
 }
