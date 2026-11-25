@@ -2156,7 +2156,7 @@ function makeProjBar() {
   outline.scale.set(1.45, 1, 1.45);
   bar.material.depthTest = false; bar.material.depthWrite = false;
   outline.material.depthTest = false; outline.material.depthWrite = false;
-  // Above the vector arrow (52/53), so a chest-lead shadow is not hidden under the shaft in a front view.
+  // Above the vector arrow (52/53), so a chest-lead shadow is not hidden under the shaft.
   bar.renderOrder = 60; outline.renderOrder = 59; bar.add(outline);
   const head = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 14), new THREE.MeshBasicMaterial({ color: COL.black, depthTest: false, depthWrite: false }));
   head.name = 'projHead'; head.renderOrder = 61; bar.add(head);
@@ -2165,67 +2165,19 @@ function makeProjBar() {
   if (!projBar) { projBar = bar; projOut = outline; }
   return bar;
 }
-const SHADOW_MIN_LEN = 0.4; // short bar still readable when the geometric projection is tiny
-function leadRodLen(id, sign) {
-  const L = LEAD[id];
-  if (!L) return 3;
-  if (L.type === 'limb') return 3.7 * limbScale;
-  if (sign < 0) return 3.0;
-  const p = BASELINE.chestElectrodes[id];
-  return p ? Math.hypot(...p) * VIS_SCALE * 0.85 : 3;
-}
-function heartClearance(dir) {
-  const P = heartPoints();
-  let r = 1.6;
-  for (const p of P) {
-    const d = p.x * dir.x + p.y * dir.y + p.z * dir.z;
-    if (d > r) r = d;
-  }
-  return r + 0.15;
-}
 function placeProjBar(bar, dir, signedLen) {
-  const id = dir._lead || null;
-  const sign = Math.sign(signedLen) || 1;
-  const geoLen = Math.abs(signedLen);
-  const plen = Math.max(geoLen, SHADOW_MIN_LEN);
+  const plen = Math.abs(signedLen);
   bar.visible = true;
-  bar.userData.lead = id;
+  bar.userData.lead = dir._lead || null;
   bar.userData.signed = signedLen;
-  bar.userData.geoLen = geoLen;
   bar.material.uniforms.uLen.value = plen;
-  // A little thicker than the vector shaft, so the striped bar still reads when the
-  // lead axis sits close to the arrow (common for V3 and V4 in a front view).
-  const rad = 1.7;
-  bar.scale.set(rad, plen, rad);
-  // Keep long shadows anchored at the origin (they already stick out of the heart).
-  // Short ones, especially on chest leads, would sit inside the heart and vanish
-  // in a front view, so slide them out to the visible electrode on that lead.
-  // The cone still follows the sign of the projection (towards the electrode if
-  // the trace is up, back towards the origin if it is down).
-  const axisPos = dir.clone();
-  const rOut = heartClearance(axisPos);
-  if (plen < rOut + 0.1) {
-    const poleLen = leadRodLen(id, 1);
-    const start = Math.max(0, poleLen - plen);
-    bar.position.copy(axisPos.multiplyScalar(start + plen * 0.5));
-  } else {
-    bar.position.copy(dir.clone().multiplyScalar(signedLen * 0.5));
-  }
-  const camDir = new THREE.Vector3();
-  camera.getWorldDirection(camDir);
-  // If the lead axis points almost at the camera, a cylinder along it looks like a disc.
-  // Face the short bar to the camera so it still reads as a striped bar at the electrode.
-  if (plen < rOut + 0.1 && Math.abs(dir.dot(camDir)) > 0.62) {
-    const side = new THREE.Vector3().crossVectors(camDir, new THREE.Vector3(0, 1, 0));
-    if (side.lengthSq() < 1e-6) side.crossVectors(camDir, new THREE.Vector3(1, 0, 0));
-    side.normalize();
-    const up = new THREE.Vector3().crossVectors(side, camDir).normalize();
-    bar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up.multiplyScalar(sign));
-  } else {
-    bar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().multiplyScalar(sign));
-  }
+  bar.scale.set(1, plen, 1);
+  // From the heart centre along the lead rod, towards the electrode if the projection
+  // is positive and away from it if negative. Same slim width as the limb-lead bars.
+  bar.position.copy(dir.clone().multiplyScalar(signedLen * 0.5));
+  bar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().multiplyScalar(Math.sign(signedLen) || 1));
   const ph = bar.getObjectByName('projHead');
-  if (ph) { ph.position.set(0, 0.5, 0); ph.scale.set(1 / rad, 1 / Math.max(0.001, plen), 1 / rad); }
+  if (ph) { ph.position.set(0, 0.5, 0); ph.scale.set(1, 1 / Math.max(0.001, plen), 1); }
 }
 function updateScene() {
   if (!renderer) return;

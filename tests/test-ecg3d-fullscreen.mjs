@@ -201,7 +201,7 @@ const projChest = await d3.evaluate(() => {
   return {
     leads: window.ecg3d.selectedLeads(),
     list,
-    both: list.length === 2 && list.every((p) => p.id && p.visible && p.shouldShow && p.along > 1.2),
+    both: list.length === 2 && list.every((p) => p.id && p.visible && p.shouldShow && Math.abs(p.along - p.length / 2) < 0.05),
     ids: list.map((p) => p.id)
   };
 });
