@@ -125,24 +125,27 @@ const recOk = rec.match && rec.seed === 439001 && rec.rsaMs === 4000
 if (recOk) pass("One shared recording: same timestamp, same samples, all views and the heart on one clock", { rateMin: rec.rateMin, rateMax: rec.rateMax, beat: rec.beat, rr0: rec.rr[0] });
 else fail("One shared recording: same timestamp, same samples, all views and the heart on one clock", rec);
 
-// Close-up: every lead's min/max y stays inside the strip; layout fixed across leads
+// Close-up: wave ink stays inside the visible frame (not just the maybe-taller canvas), for all 12 leads
 const clip = await page.evaluate(() => {
   const leads = ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"];
   const rows = [];
-  let base0 = null, cssH0 = null, yMin0 = null, yMax0 = null;
+  let base0 = null, cssH0 = null;
   for (const id of leads) {
     window.ecg3d.select(id);
     window.ecg3d.refresh();
     const w = window.ecg3d.closeupWave();
     const pad = 1.5;
-    const inside = w && w.yMin >= -pad && w.yMax <= w.cssH + pad;
-    if (base0 == null) { base0 = w.baseMm; cssH0 = w.cssH; yMin0 = w.yMin; yMax0 = w.yMax; }
+    const visH = w.visH || w.cssH;
+    const inside = w && w.yMin >= -pad && w.yMax <= visH + pad
+      && Math.abs((w.cssH || 0) - (w.canvasH || w.cssH)) < 1.5
+      && Math.abs((w.visH || w.cssH) - (w.canvasH || w.cssH)) < 1.5;
+    if (base0 == null) { base0 = w.baseMm; cssH0 = w.cssH; }
     rows.push({ id, ...w, inside, sameLayout: Math.abs(w.baseMm - base0) < 0.05 && Math.abs(w.cssH - cssH0) < 1 });
   }
   return rows;
 });
-if (clip.every((r) => r.inside && r.sameLayout)) pass("Close-up: every lead's waveform stays inside a fixed-height strip", { yMin: clip[0].yMin, yMax: clip[0].yMax, cssH: clip[0].cssH });
-else fail("Close-up: every lead's waveform stays inside a fixed-height strip", clip);
+if (clip.every((r) => r.inside && r.sameLayout)) pass("Close-up: every lead's waveform stays inside the visible strip", { yMin: clip[0].yMin, yMax: clip[0].yMax, cssH: clip[0].cssH, visH: clip[0].visH });
+else fail("Close-up: every lead's waveform stays inside the visible strip", clip);
 
 // Printed lap: at an early time in the window, no dark trace well ahead of the cursor
 const printed = await page.evaluate(() => {

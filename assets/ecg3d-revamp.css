@@ -390,10 +390,19 @@ body.ecg3d-fs-fallback #tool .timeline-fs-nav .step-nav {
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 700;
-  min-width: 7em;
-  max-width: 14em;
+  box-sizing: border-box;
+  width: 16rem;
+  min-width: 16rem;
+  max-width: 16rem;
+  flex: 0 0 16rem;
+  height: 2.6em;
+  overflow: hidden;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.25;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .page-ecg3d-revamp .stage-bar .walk-btn {
   flex: 0 1 auto;

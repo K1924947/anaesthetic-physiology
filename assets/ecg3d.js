@@ -167,7 +167,9 @@ const BASELINE = {
   conduction: CONDUCTION,
   repolarisation: { apd0: 300, slope: 1.4, atrialApd: 170, anteriorShift: 5, apicalShift: 0 },
   smoothing: { p: 16, qrs: 11, t: 22 },
-  calibration: { qrsIIpeak: 1.2, pIIpeak: 0.16, tIIpeak: 0.3, chestMaxR: 1.3 },
+  // Uniform 0.75 scale of the previous targets keeps axis and morphology, and brings
+  // Sokolow-Lyon (SV1 + max(RV5, RV6)) into a clearly normal 20 to 25 mm range.
+  calibration: { qrsIIpeak: 0.9, pIIpeak: 0.12, tIIpeak: 0.225, chestMaxR: 0.975 },
   // Chest electrodes (body coordinates, heart centre = origin, about 4 cm per unit). They see the
   // heart from close up, so V1 to V6 are computed from every element's local dipole at the
   // electrode (near field), not from the single mean vector. Positions are schematic.
@@ -496,9 +498,11 @@ function drawPaper(g, wmm, hmm, px) {
     g.stroke();
   }
 }
+// Chest columns stay at half gain unless a later check shows a full 10 mm/mV sheet fits without row overlap.
+const SHEET_CHEST_MM = 5;
 function sheetMmPerMv(id) {
   const key = id === 'II-rhythm' ? 'II' : id;
-  return (LEAD[key] && LEAD[key].type === 'chest') ? 5 : MM_PER_MV;
+  return (LEAD[key] && LEAD[key].type === 'chest') ? SHEET_CHEST_MM : MM_PER_MV;
 }
 function drawCal(g, x0mm, basemm, px, heightMm) { // 1 mV, 200 ms pulse; height 10 mm at 10 mm/mV, 5 mm at half gain
   const h = heightMm == null ? 10 : heightMm;
@@ -652,7 +656,7 @@ function sheetWavePad(rowH) {
   return { overUp: Math.max(0, overUp) + 0.6, overDown: Math.max(0, overDown) + 0.6 };
 }
 function ecgHmm(rowH, compact) { return ECG.top + 4 * rowH + (compact ? 5.5 : 7) + (ECG.botPad || 0); }
-let ECG_DRAW = null, LAST_CLIPS = [], LAST_CURSORS = [];
+let ECG_DRAW = null, LAST_CLIPS = [], LAST_CURSORS = [], LAST_SHEET_TEXTS = [];
 function leadExtrema(id) {
   const key = id === 'II-rhythm' ? 'II' : id;
   const tr = TRACE[key]; let hi = 0, lo = 0;
@@ -789,14 +793,10 @@ function drawECG() {
         const baseOff = cellBaseline(id, ECG.rowH);
         const base = top + baseOff;
         const cell = { x: x0 * px, y: top * px, w: ECG.colMs * MM_PER_MS * px, h: ECG.rowH * px };
-        if (c >= 2 && r === 0) {
-          // Half-height 1 mV pulse for the chest-lead columns; it does not shift the trace or the cursor.
+        if (SHEET_CHEST_MM < MM_PER_MV && c >= 2 && r === 0) {
+          // Half-height 1 mV pulse for the chest-lead columns only; gain is named in the caption, not on the trace.
           const calBase = top + Math.max(7, Math.min(11, ECG.rowH - 1.2));
           drawCal(g, x0 + 0.3, calBase, px, 5);
-          const gainFs = Math.max(9, 2.6 * px);
-          g.font = `700 ${gainFs}px "Source Sans 3", Arial, sans-serif`;
-          g.fillStyle = '#111';
-          g.fillText('5 mm/mV', (x0 + 7.3) * px, (calBase - 5.4) * px);
         }
         if (sel) { g.strokeStyle = '#111'; g.lineWidth = 3; g.strokeRect(x0 * px + 1, (top + 0.5) * px, ECG.colMs * MM_PER_MS * px - 2, (ECG.rowH - 1) * px); }
         cells.push({ r, c, id, t0, x0, sel, mm, baseOff, base, top, cell });
@@ -874,9 +874,11 @@ function drawECG() {
   g.font = `600 ${Math.max(10, compact ? 2.7 * px : 3.2 * px)}px "Source Sans 3", Arial, sans-serif`; g.fillStyle = '#111';
   const yb = (ECG.top + 4 * ECG.rowH + (compact ? 3.8 : 5)) * px;
   const footer = cssW < 520
-    ? 'All 12 leads recorded from one clock.  25 mm/s    Limb 10 mm/mV, chest 5 mm/mV'
-    : 'All 12 leads recorded from one clock.    25 mm/s    Limb leads 10 mm/mV, chest leads 5 mm/mV    Rate 75/min';
+    ? ('All 12 leads recorded from one clock.  25 mm/s    ' + (SHEET_CHEST_MM < MM_PER_MV ? 'Limb 10 mm/mV, chest 5 mm/mV' : '10 mm/mV'))
+    : ('All 12 leads recorded from one clock.    25 mm/s    ' + (SHEET_CHEST_MM < MM_PER_MV ? 'Limb leads 10 mm/mV, chest leads 5 mm/mV    ' : 'All leads 10 mm/mV    ') + 'Rate 75/min');
   g.fillText(footer, ECG.calW * px, yb);
+  LAST_SHEET_TEXTS = [{ text: footer, role: 'footer' }];
+  syncSheetHits();
 }
 function drawMini() {
   const frame = miniCanvas.parentElement; const wmm = ECG.calW + 125 + 1, hmm = 26; const cssW = frame.clientWidth - 2; if (cssW < 50) return;
@@ -1080,11 +1082,8 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
     }
   }
   const labelBandMm = labelBandPx / px, intervalBandMm = intervalBandPx / px;
-  const needHmm = waveNeedMm + labelBandMm + intervalBandMm;
-  if (hmm < needHmm - 0.01) {
-    hmm = needHmm;
-    cssH = Math.round(hmm * px);
-  }
+  // Paint only to the visible frame height. Growing the canvas here used to hide clipping
+  // behind a taller bitmap that overflow:hidden then cropped.
   const traceTopMm = labelBandMm;
   const traceHmm = Math.max(waveNeedMm, hmm - labelBandMm - intervalBandMm);
   const base = traceTopMm + marginMm + upMm;
@@ -1223,18 +1222,31 @@ function closeupLeadList() {
   const list = (state.sels && state.sels.length) ? state.sels.slice() : [state.sel || 'II'];
   return list.filter(id => LEAD[id]);
 }
+function visibleCssBox(el) {
+  const r = el.getBoundingClientRect();
+  let x0 = r.left, y0 = r.top, x1 = r.right, y1 = r.bottom;
+  let p = el.parentElement;
+  while (p && p !== document.documentElement) {
+    const st = getComputedStyle(p);
+    if (/(hidden|auto|scroll|clip)/.test(st.overflowY) || /(hidden|auto|scroll|clip)/.test(st.overflowX)) {
+      const pr = p.getBoundingClientRect();
+      x0 = Math.max(x0, pr.left); y0 = Math.max(y0, pr.top);
+      x1 = Math.min(x1, pr.right); y1 = Math.min(y1, pr.bottom);
+    }
+    p = p.parentElement;
+  }
+  return { width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0), left: x0, top: y0 };
+}
 function paintCloseupCanvas(canvas, nameEl, gainEl, leadId, sharedCssW, sharedPx) {
   if (!canvas || !leadId) return;
   if (nameEl) nameEl.textContent = leadId;
   const frame = canvas.parentElement;
   if (!frame) return;
   const cssW = sharedCssW || Math.max(120, Math.floor(frame.clientWidth - 2));
-  const cssH = Math.max(80, Math.floor((frame.clientHeight || 160) - 2));
+  // Size the bitmap to the visible frame, not to a wished-for height the parent then clips.
+  const vis = visibleCssBox(frame);
+  const cssH = Math.max(40, Math.floor((vis.height || frame.clientHeight || 160) - 2));
   paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx);
-  if (canvas.dataset.cssH) {
-    const need = Math.max(cssH, parseFloat(canvas.dataset.cssH) || 0);
-    if (need > 0) frame.style.minHeight = Math.round(need) + 'px';
-  }
   if (gainEl) gainEl.textContent = '10 mm/mV (full gain), 25 mm/s';
   canvas.setAttribute('aria-label', `Close-up of lead ${leadId} on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. The cursor sweeps left to right and the trace draws in behind it on blank paper.`);
 }
@@ -1303,6 +1315,43 @@ function cellPoint(row, col, u, v) {
 const ECG12_HINT = 'Click a lead to see it close up on the right.';
 function ecgClick(e) { const id = leadAtEvent(e); if (id) select(id, true); }
 ecgCanvas.addEventListener('click', ecgClick);
+function syncSheetHits() {
+  const layer = $('ecg12Hits'), geo = ECG_DRAW;
+  if (!layer || !geo || !ecgCanvas) return;
+  const frame = layer.parentElement;
+  const cr = ecgCanvas.getBoundingClientRect(), fr = frame.getBoundingClientRect();
+  const sx = cr.width / geo.cssW, sy = cr.height / geo.cssH;
+  layer.style.left = (cr.left - fr.left + frame.scrollLeft) + 'px';
+  layer.style.top = (cr.top - fr.top + frame.scrollTop) + 'px';
+  layer.style.width = cr.width + 'px';
+  layer.style.height = cr.height + 'px';
+  const cells = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) cells.push({ r, c, id: LAYOUT[r][c] });
+  cells.push({ r: 3, c: 0, id: 'II' });
+  if (!layer.childElementCount) {
+    for (const cell of cells) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ecg12-hit';
+      b.dataset.lead = cell.id;
+      b.setAttribute('aria-label', 'Focus lead ' + cell.id);
+      b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); select(cell.id, true); });
+      layer.appendChild(b);
+    }
+  }
+  const set = selectedSet();
+  layer.querySelectorAll('.ecg12-hit').forEach((b, i) => {
+    const cell = cells[i]; if (!cell) return;
+    const xmm0 = geo.calW + (cell.r === 3 ? 0 : cell.c * geo.colMm);
+    const ymm0 = geo.top + cell.r * geo.rowH;
+    const wmm = cell.r === 3 ? (geo.wmm - geo.calW) : geo.colMm;
+    b.style.left = (xmm0 * geo.px * sx) + 'px';
+    b.style.top = (ymm0 * geo.px * sy) + 'px';
+    b.style.width = (wmm * geo.px * sx) + 'px';
+    b.style.height = (geo.rowH * geo.px * sy) + 'px';
+    b.setAttribute('aria-pressed', String(set.includes(cell.id)));
+  });
+}
 (function leadButtons() {
   const box = $('leadBtns');
   for (const L of LEADS) {
@@ -1386,7 +1435,13 @@ ecgCanvas.addEventListener('click', ecgClick);
 // The heart is drawn enlarged (VIS_SCALE) so the conduction system is readable; lead lines and chest
 // electrodes are drawn to the same enlarged scale. The electrical model itself is unchanged.
 const VIS_SCALE = 1.7;
-const HEART_VIS = new THREE.Matrix4().makeScale(VIS_SCALE, VIS_SCALE, VIS_SCALE).multiply(HEART_M);
+// Visual-only shift: slightly down and to the patient's left, so the apex sits under V4
+// (5th intercostal space, midclavicular line) and V1/V2 sit over the RV and septum.
+// HEART_M, toBody, the dipole and the traces do not use this offset.
+const VIS_SHIFT = new THREE.Vector3(0.42, -0.52, 0.06);
+const HEART_VIS = new THREE.Matrix4().makeTranslation(VIS_SHIFT.x, VIS_SHIFT.y, VIS_SHIFT.z)
+  .multiply(new THREE.Matrix4().makeScale(VIS_SCALE, VIS_SCALE, VIS_SCALE))
+  .multiply(HEART_M);
 let renderer = null, scene, camera, needsRender = true;
 const stage = $('stage'), canvas = $('scene'), labelLayer = $('labels');
 function webglAvailable() {
@@ -2231,9 +2286,10 @@ function buildScene() {
   for (const L of LEADS) {
     const grp = new THREE.Group(); grp.userData.lead = L.id;
     const matPos = new THREE.MeshLambertMaterial({ color: COL.leadGrey }), matNeg = matPos.clone();
+    const visO = [VIS_SHIFT.x, VIS_SHIFT.y, VIS_SHIFT.z];
     const pole = L.type === 'limb' ? L.dir.map(v => v * 3.7) : BASELINE.chestElectrodes[L.id].map(v => v * VIS_SCALE * 0.85);
-    const neg = L.dir.map(v => v * (L.type === 'limb' ? -3.7 : -3.0));
-    const pos = rod([0, 0, 0], pole, 0.035, matPos), negR = dashedRod([0, 0, 0], neg, 0.025, matNeg, 9);
+    const neg = L.dir.map((v, i) => visO[i] + v * (L.type === 'limb' ? -3.7 : -3.0));
+    const pos = rod(visO, pole, 0.035, matPos), negR = dashedRod(visO, neg, 0.025, matNeg, 9);
     const marker = L.type === 'limb' ? new THREE.Mesh(new THREE.SphereGeometry(0.17, 18, 12), matPos) : new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), matPos);
     marker.position.set(...pole);
     const pick = rod([0, 0, 0], pole, 0.22, new THREE.MeshBasicMaterial({ visible: false }));
@@ -2258,10 +2314,10 @@ function buildScene() {
   shaft.renderOrder = 52; head.renderOrder = 53; arrow.add(shaft, head); scene.add(arrow);
   const halo = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide, depthTest: false, depthWrite: false });
   for (const m of [shaft, head]) { const h = new THREE.Mesh(m.geometry, halo); h.scale.set(1.75, m === head ? 1.28 : 1, 1.75); h.renderOrder = 51; m.add(h); }
-  const dotS = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), am); dotS.name = 'vecOrigin'; dotS.renderOrder = 52; scene.add(dotS);
+  const dotS = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), am); dotS.name = 'vecOrigin'; dotS.renderOrder = 52; dotS.position.copy(VIS_SHIFT); scene.add(dotS);
   const dotHalo = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12), halo); dotHalo.renderOrder = 51; dotS.add(dotHalo);
   // Fixed label near the origin; it does not travel with the arrow tip.
-  vecLabel = addLabel("Heart's electrical vector", 'vec', () => new THREE.Vector3(0, 0, 0));
+  vecLabel = addLabel("Heart's electrical vector", 'vec', () => VIS_SHIFT.clone());
   vecLabel.tag = 'vec';
   trail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: COL.grey, dashSize: 0.06, gapSize: 0.05, depthTest: false }));
   trail.renderOrder = 29; scene.add(trail);
@@ -2400,7 +2456,7 @@ function placeProjBar(bar, dir, signedLen) {
   bar.scale.set(1, plen, 1);
   // From the heart centre along the lead rod, towards the electrode if the projection
   // is positive and away from it if negative. Same slim width as the limb-lead bars.
-  bar.position.copy(dir.clone().multiplyScalar(signedLen * 0.5));
+  bar.position.copy(VIS_SHIFT).add(dir.clone().multiplyScalar(signedLen * 0.5));
   bar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().multiplyScalar(Math.sign(signedLen) || 1));
   const ph = bar.getObjectByName('projHead');
   if (ph) { ph.position.set(0, 0.5, 0); ph.scale.set(1, 1 / Math.max(0.001, plen), 1); }
@@ -2438,6 +2494,7 @@ function updateScene() {
   let drawLen = 0;
   if (vecOn) {
     const dir = _q.set(...D).normalize();
+    arrow.position.copy(VIS_SHIFT);
     arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     drawLen = Math.max(VEC_MIN_LEN, mag * VEC_SCALE);
     const hl = VEC_HEAD_H;
@@ -2453,7 +2510,7 @@ function updateScene() {
     vecLabel.visible = vecOn && showLbl;
   }
   arrowTip.set(D[0], D[1], D[2]).multiplyScalar(vecOn ? drawLen / (mag || 1) : 0);
-  const pts = []; for (let i = 0; i <= Math.round(t); i += 2) { const d = dipole(i); pts.push(new THREE.Vector3(d[0], d[1], d[2]).multiplyScalar(VEC_SCALE)); }
+  const pts = []; for (let i = 0; i <= Math.round(t); i += 2) { const d = dipole(i); pts.push(VIS_SHIFT.clone().add(new THREE.Vector3(d[0], d[1], d[2]).multiplyScalar(VEC_SCALE))); }
   trail.geometry.dispose(); trail.geometry = new THREE.BufferGeometry().setFromPoints(pts.length > 1 ? pts : [new THREE.Vector3(), new THREE.Vector3()]); trail.computeLineDistances();
   // The vector's shadow on every selected lead, along that lead's rod (ties to each trace's height).
   // Same black-and-white striped bar for each; no extra labels, so the lead name pills stay readable.
@@ -3701,13 +3758,36 @@ window.ecg3d = {
       const bar = projBars.find(b => b.visible && b.userData.lead === id);
       const u = L ? new THREE.Vector3(...L.dir) : null;
       const signed = u ? arrowTip.dot(u) : 0;
-      const along = bar ? bar.position.length() : 0;
+      const along = bar ? bar.position.clone().sub(VIS_SHIFT).length() : 0;
       return { id, visible: !!bar, length: Math.abs(signed), signed, along, shouldShow: !!bar };
     });
   },
 
   arrowDims: () => ({ shaftRadius: VEC_SHAFT_R, headRadius: VEC_HEAD_R, headHeight: VEC_HEAD_H, vecScale: VEC_SCALE, minLen: VEC_MIN_LEN }),
   heartCentre: () => { const c = heartCentre(); return { x: c.x, y: c.y, z: c.z }; },
+  visualShift: () => ({ x: VIS_SHIFT.x, y: VIS_SHIFT.y, z: VIS_SHIFT.z }),
+  apexWorld: () => {
+    const pts = (typeof heartPoints === 'function' && heartPoints()) || [];
+    let best = null, minY = Infinity;
+    for (const q of pts) { if (q.y < minY) { minY = q.y; best = q; } }
+    const a = best || new THREE.Vector3(0.32, -2.02, 0.05).applyMatrix4(HEART_VIS);
+    return { x: a.x, y: a.y, z: a.z };
+  },
+  electrodeWorld: id => {
+    const o = leadObjs[id]; if (!o) return null;
+    const sc = LEADS.find(L => L.id === id).type === 'limb' ? limbScale : 1;
+    return { x: o.pole[0] * sc, y: o.pole[1] * sc, z: o.pole[2] * sc };
+  },
+  sheetChestMmPerMv: () => SHEET_CHEST_MM,
+  sheetDrawnTexts: () => LAST_SHEET_TEXTS.slice(),
+  dipoleAt: t => dipole(t).slice(),
+  bodyPoint: p => toBody(p),
+  visualPoint: p => { const v = new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(HEART_VIS); return [v.x, v.y, v.z]; },
+  visScale: () => VIS_SCALE,
+  sheetHits: () => [...document.querySelectorAll('.ecg12-hit')].map(b => ({
+    id: b.dataset.lead, label: b.getAttribute('aria-label'), pressed: b.getAttribute('aria-pressed'),
+    tabIndex: b.tabIndex, tag: b.tagName, type: b.type
+  })),
   orbitState: () => ({ az: orbit.az / DEG, el: orbit.el / DEG, r: orbit.r, target: { x: orbit.target.x, y: orbit.target.y, z: orbit.target.z } }),
   refitView: () => { refit(); return window.ecg3d.orbitState(); },
   leadLabel: id => leadObjs[id] && leadObjs[id].lbl && leadObjs[id].lbl.el,
@@ -3783,7 +3863,18 @@ window.ecg3d = {
   closeupMeta: (idx = 0) => { const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); return c ? { ...c.dataset } : null; },
   closeupWave: (idx = 0) => {
     const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); if (!c) return null;
-    return { lead: c.dataset.lead, cssW: +c.dataset.cssW, cssH: +c.dataset.cssH, px: +c.dataset.px, baseMm: +c.dataset.baseMm, yMin: +c.dataset.yMin, yMax: +c.dataset.yMax, upMm: +c.dataset.upMm, downMm: +c.dataset.downMm };
+    const frame = c.parentElement;
+    const vis = frame ? visibleCssBox(c) : { width: +c.dataset.cssW, height: +c.dataset.cssH, left: 0, top: 0 };
+    const cr = c.getBoundingClientRect();
+    return {
+      lead: c.dataset.lead, cssW: +c.dataset.cssW, cssH: +c.dataset.cssH,
+      px: +c.dataset.px, baseMm: +c.dataset.baseMm, yMin: +c.dataset.yMin, yMax: +c.dataset.yMax,
+      upMm: +c.dataset.upMm, downMm: +c.dataset.downMm,
+      visH: vis.height, visW: vis.width,
+      canvasH: cr.height, canvasW: cr.width,
+      visTopInCanvas: vis.top - cr.top,
+      visBotInCanvas: vis.top - cr.top + vis.height
+    };
   },
   phase: () => { const p = phaseAt(state.t); return { key: p.key, from: p.from, to: p.to, step: p.step || null, title: p.title }; },
   leadDecor: () => ({
@@ -3819,7 +3910,7 @@ window.ecg3d = {
   leadPillRays: () => {
     if (!camera || !stage) return [];
     const sr = stage.getBoundingClientRect();
-    const origin = new THREE.Vector3(0, 0, 0).project(camera);
+    const origin = VIS_SHIFT.clone().project(camera);
     const ox = sr.left + (origin.x + 1) / 2 * sr.width;
     const oy = sr.top + (1 - origin.y) / 2 * sr.height;
     return LEADS.map(L => {

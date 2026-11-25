@@ -13,8 +13,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261120a">
 <link rel="stylesheet" href="assets/layout.css?v=20261120a">
-<link rel="stylesheet" href="assets/ecg3d.css?v=20261125i">
-<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261125i">
+<link rel="stylesheet" href="assets/ecg3d.css?v=20261125j">
+<link rel="stylesheet" href="assets/ecg3d-revamp.css?v=20261125j">
 <script src="assets/theme.js?v=20261120a"></script>
 </head>
 <body>
@@ -115,7 +115,7 @@
                 <button type="button" class="t-btn fs-exit-btn" id="fsExitBtn" hidden>Exit</button>
                 <div class="stage-info" id="stageInfo" hidden>
                   <p id="stageInfoText"></p>
-                  <p id="stageHint">Drag to rotate, scroll or pinch to zoom. Click a lead to see it close up on the right.</p>
+                  <p id="stageHint">Drag to rotate, scroll or pinch to zoom. Click a lead, or press Enter or Space when it is focused, to see it close up on the right.</p>
                 </div>
               </div>
               <div class="fallback" id="fallback" hidden>
@@ -225,11 +225,12 @@
           <p class="side-note ecg12-hint" id="ecg12Note">Click a lead to see it close up on the right.</p>
           <details class="ecg12-about">
             <summary>About this ECG</summary>
-            <p>All 12 leads are recorded from one clock and laid out as a standard 12-lead page. The four columns show the same 2.4 s window at the same moment, each with a cursor at the same position in the column, moving in step. The lead II rhythm strip below shows a fixed 9.6 s loop, with its cursor at the matching time on that longer strip. Each lap starts on blank paper; the trace draws in behind the cursors, then the paper clears and the next lap starts from blank. The close-up and the heart are views of the same recording. The tracing is normal sinus rhythm at about 75/min, with mild respiratory sinus arrhythmia, so successive laps are not identical. 25 mm/s. Limb leads and the rhythm strip are at 10 mm/mV; chest leads V1 to V6 are at 5 mm/mV, as on many real ECG machines. A full-height 1 mV calibration pulse starts each row; a half-height 1 mV pulse and a 5 mm/mV label mark the chest-lead columns. The close-up of any lead is always at 10 mm/mV. One small square is 40 ms (0.1 mV at 10 mm/mV, 0.2 mV at 5 mm/mV). The model computes a normal adult tracing at 75 beats/min. Click a lead, or its name on the heart, to see it close up on the right.</p>
+            <p>All 12 leads are recorded from one clock and laid out as a standard 12-lead page. The four columns show the same 2.4 s window at the same moment, each with a cursor at the same position in the column, moving in step. The lead II rhythm strip below shows a fixed 9.6 s loop, with its cursor at the matching time on that longer strip. Each lap starts on blank paper; the trace draws in behind the cursors, then the paper clears and the next lap starts from blank. The close-up and the heart are views of the same recording. The tracing is normal sinus rhythm at about 75/min, with mild respiratory sinus arrhythmia, so successive laps are not identical. 25 mm/s. Limb leads and the rhythm strip are at 10 mm/mV; chest leads V1 to V6 are at 5 mm/mV, as on many real ECG machines. A full-height 1 mV calibration pulse starts each row; a half-height 1 mV pulse marks the chest-lead columns, with the 5 mm/mV chest gain named in the caption rather than on the traces. The close-up of any lead is always at 10 mm/mV. One small square is 40 ms (0.1 mV at 10 mm/mV, 0.2 mV at 5 mm/mV). The model computes a normal adult tracing at 75 beats/min. Click a lead, or its name on the heart, to see it close up on the right.</p>
           </details>
         </div>
-        <div class="ecg12-frame" tabindex="0" role="region" aria-labelledby="ecgHeading">
-          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model. Four simultaneous 2.4 second columns and a lead II rhythm strip, all from one recording. A cursor in each column stays lined up at the same position, and the rhythm-strip cursor follows the same clock on the longer 9.6 second strip. Each lap starts on blank paper and the trace draws in behind the cursors. Limb leads at 10 millimetres per millivolt, chest leads at 5 millimetres per millivolt. Click a lead to select it and see it close up on the right."></canvas>
+        <div class="ecg12-frame" role="region" aria-labelledby="ecgHeading">
+          <canvas id="ecg12" role="img" aria-label="Standard 12-lead ECG computed by the model. Four simultaneous 2.4 second columns and a lead II rhythm strip, all from one recording. A cursor in each column stays lined up at the same position, and the rhythm-strip cursor follows the same clock on the longer 9.6 second strip. Each lap starts on blank paper and the trace draws in behind the cursors. Limb leads at 10 millimetres per millivolt, chest leads at 5 millimetres per millivolt. Click a lead, or press Enter or Space on a focused lead cell, to select it and see it close up on the right."></canvas>
+          <div id="ecg12Hits" class="ecg12-hits"></div>
         </div>
       </div>
 
@@ -289,6 +290,6 @@
   </footer>
 </div>
 
-<script type="module" src="assets/ecg3d.js?v=20261125i"></script>
+<script type="module" src="assets/ecg3d.js?v=20261125j"></script>
 </body>
 </html>
