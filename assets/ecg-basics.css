@@ -2,16 +2,10 @@
    Builds on site.css, layout.css, pv-core.css and pv-tool.css. */
 
 :root {
-  --ecg-paper: #FFFDFC;
-  --ecg-minor: #F3CDD0;
-  --ecg-major: #DE9AA1;
+  --ecg-paper: #FFF9F5;
+  --ecg-minor: #F8DFD2;
+  --ecg-major: #EDB497;
   --ecg-ink: #111111;
-}
-html[data-theme="colour-blind"] {
-  --ecg-paper: #FFFFFF;
-  --ecg-minor: #DEDEDE;
-  --ecg-major: #A8A8A8;
-  --ecg-ink: #000000;
 }
 
 .proto-banner {

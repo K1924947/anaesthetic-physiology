@@ -13,7 +13,7 @@
 }
 html[data-theme="colour-blind"] {
   --ecg3d-rest: #C4C4C4;
-  --ecg3d-front: #B34700;
+  --ecg3d-front: #D95F02;
   --ecg3d-dep: #B01070;
   --ecg3d-dot: #F3C6DE;
   --ecg3d-cond-idle: #8FB4D4;

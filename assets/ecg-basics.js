@@ -337,9 +337,9 @@
     return defs;
   }
   function paper(g, x, y, w, h, u) {
-    var minor = cssVar("--ecg-minor") || "#F3CDD0";
-    var major = cssVar("--ecg-major") || "#DE9AA1";
-    var bg = cssVar("--ecg-paper") || "#FFFDFC";
+    var minor = cssVar("--ecg-minor") || "#F8DFD2";
+    var major = cssVar("--ecg-major") || "#EDB497";
+    var bg = cssVar("--ecg-paper") || "#FFF9F5";
     el("rect", { x: x, y: y, width: w, height: h, fill: bg }, g);
     var d1 = "", d2 = "", i, n, xx, yy;
     for (i = 0, n = Math.round(w / u); i <= n; i++) {

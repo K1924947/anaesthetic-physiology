@@ -17,12 +17,12 @@ const PAPER = { minor: '#F7D9D3', major: '#E9A49B', trace: '#111111', cursor: '#
 // orange = slow cell-to-cell front, grey = resting or recovering, black = the vector arrow), as on the 2D ECG Conduction page.
 const THEMES = {
   default: {
-    rest: 0xDCDAD6, front: 0xC85A00, dep: 0xC9D9E8, dot: 0x005A9E,
+    rest: 0xDCDAD6, front: 0xE0701E, dep: 0xC9D9E8, dot: 0x005A9E,
     condIdle: 0x7B8189, condDone: 0x4F84A8, pulse: 0x005A9E, node: 0x184A63,
     cursor: 0x184A63, black: 0x111111, grey: 0x595959, leadGrey: 0x8a8a8a
   },
   'colour-blind': {
-    rest: 0xDCDAD6, front: 0xB34700, dep: 0xC6D8EA, dot: 0x005A9E,
+    rest: 0xDCDAD6, front: 0xD95F02, dep: 0xC6D8EA, dot: 0x005A9E,
     condIdle: 0x6B7075, condDone: 0x5B8FC4, pulse: 0x005A9E, node: 0x005A9E,
     cursor: 0x005A9E, black: 0x111111, grey: 0x595959, leadGrey: 0x8a8a8a
   }
@@ -1301,7 +1301,7 @@ function dashedRod(from, to, radius, mat, n) {
    Patterns are in screen space and antialiased; vertex times are smoothed so the band is one clean line. */
 const U = {
   uT: { value: 0 }, uPx: { value: 1 }, uFront: { value: 16 }, uRepol: { value: 45 },
-  cRest: { value: new THREE.Color(0xDCDAD6) }, cFront: { value: new THREE.Color(0xC85A00) },
+  cRest: { value: new THREE.Color(0xDCDAD6) }, cFront: { value: new THREE.Color(0xE0701E) },
   cDep: { value: new THREE.Color(0xC9D9E8) }, cDot: { value: new THREE.Color(0x005A9E) },
   cCav: { value: new THREE.Color(0xFFFFFF) }, cEdge: { value: new THREE.Color(0x6B7075) }
 };
@@ -1327,7 +1327,7 @@ vec3 stateCol(float act, float rec, float w) {
     float s = mod(fc.x - fc.y, 12.0);                           // '\\\\' dashes, the other way from the front's hatching
     float t = mod(fc.x + fc.y, 18.0);
     float dash = smoothstep(0.0, 0.9, s) * (1.0 - smoothstep(2.0, 2.9, s)) * step(5.0, t);
-    return mix(cRest, vec3(0.22, 0.24, 0.27), dash);
+    return mix(cRest, vec3(0.039, 0.047, 0.058), dash);
   }
   return cRest;
 }`;
@@ -1351,7 +1351,10 @@ void main() {
   float sh = 0.84 + 0.16 * max(dot(n, normalize(vec3(0.35, 0.55, 1.0))), 0.0); // gentle shading: flat, like the 2D page
   if (!gl_FrontFacing) sh *= 0.8;
   float w = max(fwidth(vAct), 1e-3);
-  gl_FragColor = vec4(stateCol(vAct, vRec, w) * sh, 1.0);
+  float isFront = (uT >= vAct && uT < vAct + uFront) ? 1.0 : 0.0;
+  float effSh = mix(sh, 1.0, isFront); // slow cell-to-cell front stays unlit so orange matches the colour key
+  gl_FragColor = vec4(stateCol(vAct, vRec, w) * effSh, 1.0);
+  #include <colorspace_fragment>
 }`;
 const SECTION_VS = `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const SECTION_FS = `
@@ -1382,6 +1385,7 @@ void main() {
   col = mix(col, cEdge, ringLine * step(0.5, m.r));
   float line = 1.0 - smoothstep(0.6, 1.6, min(abs(m.r - 0.5) / fr, abs(m.g - 0.5) / fg));
   gl_FragColor = vec4(mix(col, cEdge, line), 1.0);
+  #include <colorspace_fragment>
 }`;
 /* Conduction tubes (the fast route). Idle: slim slate grey. The impulse: a fat blue streak with a white head that
    points the way it travels. Once conducted: blue. Routes timed with the atrial muscle around them (the internodal
@@ -1398,14 +1402,18 @@ void main() {
 const TUBE_FS = `
 varying float vT; varying float vW; uniform float uT; uniform float uOut; uniform vec3 cIdle; uniform vec3 cDone; uniform vec3 cPulse;
 void main() {
-  if (uOut > 0.0) { gl_FragColor = vec4(0.07, 0.07, 0.07, 1.0); return; }
-  vec3 c = cIdle;
-  if (uT >= vT && uT < vT + vW) c = (uT - vT) < 0.22 * vW ? vec3(1.0) : cPulse; // white head, then the coloured streak
-  else if (uT >= vT + vW) c = cDone;
-  gl_FragColor = vec4(c, 1.0);
+  if (uOut > 0.0) {
+    gl_FragColor = vec4(0.0056, 0.0056, 0.0056, 1.0);
+  } else {
+    vec3 c = cIdle;
+    if (uT >= vT && uT < vT + vW) c = (uT - vT) < 0.22 * vW ? vec3(1.0) : cPulse; // white head, then the coloured streak
+    else if (uT >= vT + vW) c = cDone;
+    gl_FragColor = vec4(c, 1.0);
+  }
+  #include <colorspace_fragment>
 }`;
 const CIDLE = new THREE.Color(0x7B8189), CDONE = new THREE.Color(0x4F84A8), CPULSE = new THREE.Color(0x005A9E);
-const SIDLE = new THREE.Color(0xA3A8AE), SDONE = new THREE.Color(0xEDB497), SPULSE = new THREE.Color(0xC85A00); // slow (cell-to-cell) routes
+const SIDLE = new THREE.Color(0xA3A8AE), SDONE = new THREE.Color(0xEDB497), SPULSE = new THREE.Color(0xE0701E); // slow (cell-to-cell) routes
 function tubeMats(radius, slow) {
   const mk = (out) => new THREE.ShaderMaterial({
     uniforms: { uT: U.uT, uOut: { value: out }, uBulge: { value: radius * 0.8 }, cIdle: { value: slow ? SIDLE : CIDLE }, cDone: { value: slow ? SDONE : CDONE }, cPulse: { value: slow ? SPULSE : CPULSE } },
@@ -1435,6 +1443,7 @@ function applyColourTheme() {
   // the tube materials share CIDLE, CDONE, CPULSE and SPULSE, so they follow the theme without a loop
   if (avRing && avRing.material && avRing.material.color) avRing.material.color.setHex(T.node);
   if (typeof setLeadStyles === 'function' && renderer) setLeadStyles();
+  if (typeof updateScene === 'function' && MODEL && renderer) updateScene();
   if (typeof TRACE === 'object' && TRACE && Object.keys(TRACE).length) { drawECG(); drawMini(); drawZoom(); }
   needsRender = true;
 }
