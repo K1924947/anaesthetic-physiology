@@ -13,16 +13,17 @@ const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:
 const DEG = Math.PI / 180;
 const COL = { blue: 0x184A63, paleBlue: 0x9DB8C8, orange: 0xB34700, black: 0x111111, grey: 0x595959, leadGrey: 0x8a8a8a };
 const PAPER = { minor: '#F7D9D3', major: '#E9A49B', trace: '#111111', cursor: '#184A63', shade: 'rgba(24, 74, 99, 0.10)' };
-// Default 3D palette, and the site's colour-blind tokens (one colour per family: blue, orange, magenta, black, grey).
+// Default 3D palette, and the site's colour-blind tokens (one colour per family: blue = fast route and still depolarised,
+// orange = slow cell-to-cell front, grey = resting or recovering, black = the vector arrow), as on the 2D ECG Conduction page.
 const THEMES = {
   default: {
-    rest: 0xC4C4C4, front: 0xE0701E, dep: 0xB0287A, dot: 0xF4D2E6,
-    condIdle: 0xA9C3D2, condDone: 0x4F84A8, node: 0x184A63,
+    rest: 0xDCDAD6, front: 0xC85A00, dep: 0xC9D9E8, dot: 0x005A9E,
+    condIdle: 0x7B8189, condDone: 0x4F84A8, pulse: 0x005A9E, node: 0x184A63,
     cursor: 0x184A63, black: 0x111111, grey: 0x595959, leadGrey: 0x8a8a8a
   },
   'colour-blind': {
-    rest: 0xC4C4C4, front: 0xB34700, dep: 0xB01070, dot: 0xF3C6DE,
-    condIdle: 0x8FB4D4, condDone: 0x005A9E, node: 0x005A9E,
+    rest: 0xDCDAD6, front: 0xB34700, dep: 0xC6D8EA, dot: 0x005A9E,
+    condIdle: 0x6B7075, condDone: 0x5B8FC4, pulse: 0x005A9E, node: 0x005A9E,
     cursor: 0x005A9E, black: 0x111111, grey: 0x595959, leadGrey: 0x8a8a8a
   }
 };
@@ -85,6 +86,20 @@ const CONDUCTION = {
   // Bachmann's bundle: a fast band from the RA, near the SA node, across the top of the interatrial groove to the LA
   vBachmann: 0.036,
   bachmann: { id: 'bach', label: "Bachmann's bundle", r: 0.03, pts: [[-0.36, 0.5, 0.3], [-0.12, 0.47, 0.32], [0.1, 0.44, 0.2], [0.35, 0.38, -0.05]] },
+  // Internodal routes (anterior, middle and posterior; Guyton & Hall) from the SA node, through the right atrial wall and the
+  // interatrial septum, to the AV node. Klabunde: only "some functional evidence" for them, and the atria conduct mainly
+  // cell to cell. So they are drawn for anatomy, but timed by the atrial muscle around them (no extra speed): they do
+  // not change the P wave or the PR interval.
+  internodal: [
+    { id: 'inA', label: 'Anterior internodal route', pts: [[-0.40, 0.60, 0.05], [-0.36, 0.50, 0.30], [-0.20, 0.34, 0.24], [-0.13, 0.18, 0.08], [-0.10, 0.06, -0.02]] },
+    { id: 'inM', label: 'Middle internodal route', pts: [[-0.40, 0.60, 0.05], [-0.27, 0.46, -0.04], [-0.15, 0.26, -0.07], [-0.10, 0.06, -0.02]] },
+    { id: 'inP', label: 'Posterior internodal route', pts: [[-0.40, 0.60, 0.05], [-0.58, 0.36, -0.02], [-0.46, 0.14, -0.12], [-0.24, 0.07, -0.09], [-0.10, 0.06, -0.02]] }
+  ],
+  // Landmarks (drawn only, not electrical). The AV node lies in Koch's triangle, near the opening
+  // of the coronary sinus (Kurian et al. 2010). The fibrous AV ring at the valve plane (y = 0) insulates atria from
+  // ventricles, so the only way through is the AV node and His bundle (Guyton & Hall); the element model already
+  // never connects atrial and ventricular elements.
+  csOstium: [-0.22, 0.03, -0.15],
   // His-Purkinje tree (heart-local units). The His bundle divides at the top of the muscular septum. The right and left
   // bundles then run close together down each side of the septum (about a septal wall's thickness apart) until about
   // two-thirds of the way to the apex. Only then does the right bundle reach the apex and the moderator band, and the
@@ -398,25 +413,25 @@ function buildPhases() {
       text: 'All muscle is at rest, so there is no arrow and every lead is flat.' },
     { key: 'P', step: 'SA node and atria', at: Math.round((C.saTime + M.atrialEnd) / 2), from: C.saTime, to: M.atrialEnd + 8,
       title: 'P wave: the atria depolarise',
-      text: 'The SA node, where the superior vena cava joins the right atrium, fires and the wave spreads through both atria; a fast band (Bachmann\'s bundle) carries it across to the left atrium. The arrow points down and to the left, so P is upright in II.' },
+      text: 'The SA node, where the superior vena cava joins the right atrium, fires. The wave spreads slowly through both atria, cell to cell (orange hatching), past the internodal routes to the AV node, and a faster band (Bachmann\'s bundle, blue) carries it across to the left atrium. The arrow points down and to the left, so P is upright in II.' },
     { key: 'avd', step: 'AV node delay', at: Math.round((M.atrialEnd + 8 + M.tHis) / 2), from: M.atrialEnd + 8, to: M.tHis,
       title: 'PR segment: AV node delay',
-      text: `The AV node, low in the interatrial septum, holds the impulse for about ${r(M.tHis - M.tAV)} ms. The line is flat while the atria finish contracting.` },
+      text: `The AV node, low in the interatrial septum near the opening of the coronary sinus, holds the impulse for about ${r(M.tHis - M.tAV)} ms (the filling ring). The line is flat while the atria finish contracting.` },
     { key: 'his', step: 'His and bundles', at: Math.round(hisMid), from: M.tHis, to: qrsOn,
       title: 'PR segment: His bundle and bundle branches',
-      text: 'The white pulse runs down the His bundle on the septal crest and into the bundle branches. These fibres are too small to show on the ECG, so the line is still flat.' },
+      text: 'The fast route: a blue streak with a white head runs along the His bundle, the only way through the fibrous AV ring, then down the bundle branches on each side of the septum. These fibres are too small to show on the ECG, so the line is still flat.' },
     { key: 'sep', step: 'Septum', at: Math.round(qrsOn + 8), from: qrsOn, to: qrsOn + 16,
       title: 'Start of QRS: the septum',
       text: 'The septum depolarises first, from left to right, so the small early arrow points right. Left-sided leads such as I and V6 show a small q wave.' },
     { key: 'main', step: 'Ventricles (QRS)', at: Math.round(qrsOn + 40), from: qrsOn + 16, to: qrsOff,
       title: 'QRS: the ventricles depolarise',
-      text: 'The wave spreads from the inner wall outwards. The big arrow points down and left, towards II, and its shadow on the lead (striped bar) is long, so II shows a tall R wave.' },
+      text: 'Purkinje fibres (blue) carry the impulse fast over the inner walls; the muscle then depolarises slowly, cell to cell, from the inner wall outwards (orange hatching). The big arrow points down and left, towards II, and its shadow on the lead (striped bar) is long, so II shows a tall R wave.' },
     { key: 'ST', step: 'ST segment', at: Math.round((qrsOff + tOn) / 2), from: qrsOff, to: tOn,
       title: 'ST segment',
-      text: 'All ventricular muscle is depolarised (dotted magenta), so there is no arrow and the line is flat.' },
+      text: 'All ventricular muscle is depolarised (blue dots), so there is no arrow and the line is flat.' },
     { key: 'T', step: 'T wave', at: Math.round((M.recMin + M.recMax) / 2 - 10), from: tOn, to: tOff,
       title: 'T wave: the ventricles repolarise',
-      text: 'The hatched band shows muscle recovering, outside first. Recovery moving away from a lead gives an upright T, so T is upright in II.' },
+      text: 'The grey dashes show muscle recovering, outside first. Recovery moving away from a lead gives an upright T, so T is upright in II.' },
     { key: 'TP', from: tOff, to: BEAT_MS + 1, title: 'Diastole',
       text: 'The heart is at rest until the SA node fires again.' }
   ];
@@ -1276,15 +1291,19 @@ function dashedRod(from, to, radius, mat, n) {
 }
 
 /* ---------- Shaders: muscle state by activation (act) and recovery (rec) times ----------
-   Each state has its own colour family plus a pattern (Ed is red-green colour blind):
-   resting: flat grey; depolarisation front: orange band with dark edges;
-   depolarised: magenta with a few large soft dots; repolarising: wide magenta and grey stripes.
+   The same flat look as the 2D ECG Conduction page. One colour family per meaning, each with its own pattern
+   (Ed is red-green colour blind, so colour is never the only cue):
+   resting: flat pale grey;
+   depolarisation front in muscle (slow, cell to cell): bold orange hatching (as the 2D page's orange hatch);
+   depolarised: pale blue wash with small blue dots ("still depolarised");
+   repolarising: thin dark grey dashes on grey.
+   The fast route (His bundle, bundle branches, Purkinje fibres) is drawn on the tubes, not the muscle (see TUBE_FS).
    Patterns are in screen space and antialiased; vertex times are smoothed so the band is one clean line. */
 const U = {
   uT: { value: 0 }, uPx: { value: 1 }, uFront: { value: 16 }, uRepol: { value: 45 },
-  cRest: { value: new THREE.Color(0xC4C4C4) }, cFront: { value: new THREE.Color(0xE0701E) },
-  cDep: { value: new THREE.Color(0xB0287A) }, cDot: { value: new THREE.Color(0xF4D2E6) },
-  cCav: { value: new THREE.Color(0xF6F1E8) }, cEdge: { value: new THREE.Color(0x1A1A1A) }
+  cRest: { value: new THREE.Color(0xDCDAD6) }, cFront: { value: new THREE.Color(0xC85A00) },
+  cDep: { value: new THREE.Color(0xC9D9E8) }, cDot: { value: new THREE.Color(0x005A9E) },
+  cCav: { value: new THREE.Color(0xFFFFFF) }, cEdge: { value: new THREE.Color(0x6B7075) }
 };
 const STATE_GLSL = `
 uniform float uT; uniform float uPx; uniform float uFront; uniform float uRepol;
@@ -1292,18 +1311,23 @@ uniform vec3 cRest; uniform vec3 cFront; uniform vec3 cDep; uniform vec3 cDot;
 // w = how much act changes per screen pixel (fwidth, computed by the caller in uniform control flow)
 vec3 stateCol(float act, float rec, float w) {
   vec2 fc = gl_FragCoord.xy / uPx;
-  if (uT < act) return cRest;                                   // resting: flat grey
-  if (uT < act + uFront) {                                      // front: one orange band with soft-edged dark borders (about 2 px)
-    float e = min(uT - act, act + uFront - uT) / w;
-    return mix(vec3(0.09), cFront, smoothstep(1.0, 2.4, e));
+  if (uT < act) return cRest;                                   // resting: flat pale grey
+  if (uT < act + uFront) {                                      // slow front: bold orange hatching on a light orange wash
+    float h = mod(fc.x + fc.y, 9.0);                            // '////' lines, 9 px apart (the 2D page's orange hatch)
+    float line = smoothstep(0.0, 0.9, h) * (1.0 - smoothstep(2.6, 3.5, h));
+    vec3 base = mix(cRest, cFront, 0.30);
+    float e = min(uT - act, act + uFront - uT) / w;             // thin orange edge lines (about 1.5 px)
+    return mix(cFront, mix(base, cFront, line), smoothstep(0.6, 1.6, e));
   }
-  if (uT < rec) {                                               // depolarised: magenta with a few large soft dots
-    vec2 g = mod(fc + vec2(0.0, 13.0) * step(13.0, mod(fc.x, 52.0)), 26.0) - 13.0;
-    return mix(cDep, cDot, 0.45 * (1.0 - smoothstep(4.0, 5.6, length(g))));
+  if (uT < rec) {                                               // still depolarised: pale blue wash with small blue dots
+    vec2 c = mod(fc + vec2(0.0, 5.0) * step(10.0, mod(fc.x, 20.0)), 10.0) - 5.0;
+    return mix(cDep, cDot, 1.0 - smoothstep(1.4, 2.2, length(c)));
   }
-  if (uT < rec + uRepol) {                                      // repolarising: wide diagonal magenta and grey stripes
-    float s = mod(fc.x - fc.y, 30.0);
-    return mix(cRest, cDep, smoothstep(0.0, 1.4, s) * (1.0 - smoothstep(14.0, 15.4, s)));
+  if (uT < rec + uRepol) {                                      // repolarising: thin dark grey dashes
+    float s = mod(fc.x - fc.y, 12.0);                           // '\\\\' dashes, the other way from the front's hatching
+    float t = mod(fc.x + fc.y, 18.0);
+    float dash = smoothstep(0.0, 0.9, s) * (1.0 - smoothstep(2.0, 2.9, s)) * step(5.0, t);
+    return mix(cRest, vec3(0.22, 0.24, 0.27), dash);
   }
   return cRest;
 }`;
@@ -1324,14 +1348,15 @@ ${STATE_GLSL}
 void main() {
   #include <clipping_planes_fragment>
   vec3 n = normalize(cross(dFdx(vView), dFdy(vView)));
-  float sh = 0.70 + 0.30 * max(dot(n, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
-  if (!gl_FrontFacing) sh *= 0.62;
+  float sh = 0.84 + 0.16 * max(dot(n, normalize(vec3(0.35, 0.55, 1.0))), 0.0); // gentle shading: flat, like the 2D page
+  if (!gl_FrontFacing) sh *= 0.8;
   float w = max(fwidth(vAct), 1e-3);
   gl_FragColor = vec4(stateCol(vAct, vRec, w) * sh, 1.0);
 }`;
 const SECTION_VS = `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const SECTION_FS = `
 varying vec2 vUv; uniform sampler2D uMask; uniform sampler2D uTimes; uniform vec2 uTSize; uniform vec3 cCav; uniform vec3 cEdge;
+uniform float uRingV; uniform float uRingHalf;
 ${STATE_GLSL}
 vec2 times(vec2 uv) { // manual bilinear blend of activation / recovery on the voxel grid (values are dilated outside the muscle)
   vec2 p = uv * uTSize - 0.5; vec2 f = fract(p); vec2 b = (floor(p) + 0.5) / uTSize;
@@ -1344,12 +1369,23 @@ void main() {
   vec2 ar = times(vUv);
   float w = max(fwidth(ar.x), 1e-3);
   float fr = max(fwidth(m.r), 1e-4), fg = max(fwidth(m.g), 1e-4);
+  float fv = max(fwidth(vUv.y), 1e-6);
   if (m.r < 0.5 - fr) discard;
   vec3 col = mix(cCav, stateCol(ar.x, ar.y, w), smoothstep(0.5 - fg, 0.5 + fg, m.g));
+  // fibrous AV ring: a white insulating band with grey hatching at the valve plane (no muscle conducts across it)
+  float dv = abs(vUv.y - uRingV) - uRingHalf;
+  float ring = 1.0 - smoothstep(-fv, fv, dv);
+  float hatch = step(mod(gl_FragCoord.x / uPx + gl_FragCoord.y / uPx, 6.0), 1.6);
+  vec3 ringCol = mix(vec3(1.0), cEdge, hatch * 0.8);
+  float ringLine = 1.0 - smoothstep(0.5, 1.4, abs(dv) / fv);
+  col = mix(col, ringCol, ring * step(0.5, m.r));
+  col = mix(col, cEdge, ringLine * step(0.5, m.r));
   float line = 1.0 - smoothstep(0.6, 1.6, min(abs(m.r - 0.5) / fr, abs(m.g - 0.5) / fg));
   gl_FragColor = vec4(mix(col, cEdge, line), 1.0);
 }`;
-// conduction tubes: idle steel blue, bright white pulse (with a bulge), then dark blue once conducted
+/* Conduction tubes (the fast route). Idle: slim slate grey. The impulse: a fat blue streak with a white head that
+   points the way it travels. Once conducted: blue. Routes timed with the atrial muscle around them (the internodal
+   routes) use the slow, orange family instead, so fast and slow never share a colour. */
 const TUBE_VS = `
 attribute float aT; attribute float aW; uniform float uT; uniform float uOut; uniform float uBulge;
 varying float vT; varying float vW;
@@ -1360,25 +1396,28 @@ void main() {
   gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
 }`;
 const TUBE_FS = `
-varying float vT; varying float vW; uniform float uT; uniform float uOut; uniform vec3 cIdle; uniform vec3 cDone;
+varying float vT; varying float vW; uniform float uT; uniform float uOut; uniform vec3 cIdle; uniform vec3 cDone; uniform vec3 cPulse;
 void main() {
   if (uOut > 0.0) { gl_FragColor = vec4(0.07, 0.07, 0.07, 1.0); return; }
-  vec3 c = uT < vT ? cIdle : (uT < vT + vW ? vec3(1.0) : cDone);
+  vec3 c = cIdle;
+  if (uT >= vT && uT < vT + vW) c = (uT - vT) < 0.22 * vW ? vec3(1.0) : cPulse; // white head, then the coloured streak
+  else if (uT >= vT + vW) c = cDone;
   gl_FragColor = vec4(c, 1.0);
 }`;
-const CIDLE = new THREE.Color(0xA9C3D2), CDONE = new THREE.Color(0x4F84A8); // conducted: mid steel blue (lighter than before so the tubes do not read as a black tangle)
-function tubeMats(radius) {
+const CIDLE = new THREE.Color(0x7B8189), CDONE = new THREE.Color(0x4F84A8), CPULSE = new THREE.Color(0x005A9E);
+const SIDLE = new THREE.Color(0xA3A8AE), SDONE = new THREE.Color(0xEDB497), SPULSE = new THREE.Color(0xC85A00); // slow (cell-to-cell) routes
+function tubeMats(radius, slow) {
   const mk = (out) => new THREE.ShaderMaterial({
-    uniforms: { uT: U.uT, uOut: { value: out }, uBulge: { value: radius * 0.8 }, cIdle: { value: CIDLE }, cDone: { value: CDONE } },
+    uniforms: { uT: U.uT, uOut: { value: out }, uBulge: { value: radius * 0.8 }, cIdle: { value: slow ? SIDLE : CIDLE }, cDone: { value: slow ? SDONE : CDONE }, cPulse: { value: slow ? SPULSE : CPULSE } },
     vertexShader: TUBE_VS, fragmentShader: TUBE_FS, depthTest: false, depthWrite: false, side: out > 0 ? THREE.BackSide : THREE.FrontSide
   });
-  return [mk(0), mk(Math.max(0.012, radius * 0.35))];
+  return [mk(0), mk(Math.max(0.010, radius * 0.3))];
 }
 /* Apply the site colour-blind (or default) palette to the 3D materials, colour key and ECG cursor, live. */
 function applyColourTheme() {
   const T = THEMES[isColourBlindTheme() ? 'colour-blind' : 'default'];
   U.cRest.value.setHex(T.rest); U.cFront.value.setHex(T.front); U.cDep.value.setHex(T.dep); U.cDot.value.setHex(T.dot);
-  CIDLE.setHex(T.condIdle); CDONE.setHex(T.condDone);
+  CIDLE.setHex(T.condIdle); CDONE.setHex(T.condDone); CPULSE.setHex(T.pulse); SPULSE.setHex(T.front);
   COL.blue = T.node; COL.paleBlue = T.condIdle; COL.orange = T.front; COL.leadGrey = T.leadGrey; COL.grey = T.grey;
   PAPER.cursor = hex6(T.cursor);
   const r = (T.cursor >> 16) & 255, g = (T.cursor >> 8) & 255, b = T.cursor & 255;
@@ -1390,16 +1429,10 @@ function applyColourTheme() {
   root.style.setProperty('--ecg3d-dot', hex6(T.dot));
   root.style.setProperty('--ecg3d-cond-idle', hex6(T.condIdle));
   root.style.setProperty('--ecg3d-cond-done', hex6(T.condDone));
+  root.style.setProperty('--ecg3d-pulse', hex6(T.pulse));
   root.style.setProperty('--ecg3d-node', hex6(T.node));
   root.style.setProperty('--ecg3d-cursor', hex6(T.cursor));
-  if (typeof condParts !== 'undefined') {
-    for (const c of condParts) {
-      if (c.mesh && c.mesh.material && c.mesh.material.uniforms) {
-        c.mesh.material.uniforms.cIdle.value.setHex(T.condIdle);
-        c.mesh.material.uniforms.cDone.value.setHex(T.condDone);
-      }
-    }
-  }
+  // the tube materials share CIDLE, CDONE, CPULSE and SPULSE, so they follow the theme without a loop
   if (avRing && avRing.material && avRing.material.color) avRing.material.color.setHex(T.node);
   if (typeof setLeadStyles === 'function' && renderer) setLeadStyles();
   if (typeof TRACE === 'object' && TRACE && Object.keys(TRACE).length) { drawECG(); drawMini(); drawZoom(); }
@@ -1451,7 +1484,7 @@ function buildHeart() {
     { name: 'RA', region: 'RA', geo: shellGeometry('RA', p => { p[1] = Math.max(p[1], ATRIA_Y0); toSeptum(p, -1); }, 48, 32), off: 1 },
     { name: 'LA', region: 'LA', geo: shellGeometry('LA', p => { p[1] = Math.max(p[1], ATRIA_Y0); toSeptum(p, 1); }, 48, 32) }
   ];
-  const outlineMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.BackSide, clippingPlanes: ui.cut ? [CUT_PLANE] : [] });
+  const outlineMat = new THREE.MeshBasicMaterial({ color: 0x4E5968, side: THREE.BackSide, clippingPlanes: ui.cut ? [CUT_PLANE] : [] });
   for (const d of defs) {
     const n = d.geo.attributes.position.count;
     d.geo.setAttribute('aAct', new THREE.BufferAttribute(new Float32Array(n), 1));
@@ -1460,7 +1493,7 @@ function buildHeart() {
     for (let i = 0; i < n; i++) near[i] = nearestIn([v.getX(i), v.getY(i), v.getZ(i)], REGION_ELEMS[d.region]);
     const mesh = new THREE.Mesh(d.geo, muscleMaterial());
     if (d.off) { mesh.material.polygonOffset = true; mesh.material.polygonOffsetFactor = d.off; mesh.material.polygonOffsetUnits = d.off * 2; }
-    const outline = new THREE.Mesh(outlineGeometry(d.geo, 0.022), outlineMat);
+    const outline = new THREE.Mesh(outlineGeometry(d.geo, 0.016), outlineMat); // slim slate outline, like the 2D page
     heart.add(mesh, outline);
     shells.push({ ...d, mesh, outline, near });
   }
@@ -1486,7 +1519,7 @@ function buildHeart() {
       for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const a = i + di, b = j + dj; if (a >= 0 && b >= 0 && a < NX && b < NY && prev[b * NX + a] >= 0) { cellEl[j * NX + i] = prev[b * NX + a]; break; } } } }
   sectionTex.userData = { cellEl };
   const smat = new THREE.ShaderMaterial({
-    uniforms: { ...U, uMask: { value: maskTex }, uTimes: { value: sectionTex }, uTSize: { value: new THREE.Vector2(NX, NY) } }, vertexShader: SECTION_VS, fragmentShader: SECTION_FS, side: THREE.DoubleSide,
+    uniforms: { ...U, uMask: { value: maskTex }, uTimes: { value: sectionTex }, uTSize: { value: new THREE.Vector2(NX, NY) }, uRingV: { value: (ATRIA_Y0 - y0) / Hh }, uRingHalf: { value: 0.022 / Hh } }, vertexShader: SECTION_VS, fragmentShader: SECTION_FS, side: THREE.DoubleSide,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 // the cut face always wins over the clipped walls behind it
   });
   smat.extensions = { derivatives: true };
@@ -1516,10 +1549,11 @@ function buildHeart() {
   // superior vena cava (drawn only, not electrical): the SA node sits where it joins the right atrium
   const svcPts = [[-0.40, 0.45, 0.05], [-0.40, 0.95, 0.02], [-0.40, 1.25, 0.0]];
   const svcGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(svcPts.map(p => new THREE.Vector3(...p))), 12, 0.17, 20, false);
-  const svc = new THREE.Mesh(svcGeo, new THREE.MeshLambertMaterial({ color: 0xD6D6D6 }));
-  const svcOut = new THREE.Mesh(outlineGeometry(svcGeo, 0.022), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.BackSide }));
+  const svc = new THREE.Mesh(svcGeo, new THREE.MeshLambertMaterial({ color: 0xE6E4E0 }));
+  const svcOut = new THREE.Mesh(outlineGeometry(svcGeo, 0.016), new THREE.MeshBasicMaterial({ color: 0x4E5968, side: THREE.BackSide }));
   heart.add(svc, svcOut); svcMesh = svc;
   addLabel('Superior vena cava', 'heart', toWorld(-0.40, 0.95, 0.02)).tag = 'svc';
+  addLabel('Fibrous AV ring', 'heart', toWorld(0.62, ATRIA_Y0, SECTION_Z)).tag = 'ring';
 }
 function nearestInGrid(p, region) { // nearest element of a region, searching the voxel grid near p
   const i0 = Math.round((p[0] - GX0) / H), j0 = Math.round((p[1] - GY0) / H), k0 = Math.round((p[2] - GZ0) / H);
@@ -1571,7 +1605,7 @@ function setCut(on) {
 }
 
 /* ---------- Conduction system: tubes, nodes, Purkinje fibres, travelling pulses ---------- */
-let condParts = [], purkParts = [], beads = [], saNode, avNode, avRing, avRingBack, avLabel, saLabel;
+let condParts = [], purkParts = [], beads = [], csMark = null, saNode, avNode, avRing, avRingBack, avLabel, saLabel;
 function polyAt(pts, s) {
   for (let i = 1; i < pts.length; i++) {
     const a = pts[i - 1], b = pts[i]; const L = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
@@ -1588,9 +1622,14 @@ function tubeFor(pts, radius, n) {
   g.setAttribute('aW', new THREE.BufferAttribute(new Float32Array(cnt), 1));
   return { g, n, len: curve.getLength() };
 }
-function setTubeTimes(tube, t0, v, wMs) { // TubeGeometry rings are spaced by arc length
+function setTubeTimes(tube, t0, t1, wMs) { // the drawn tube spans exactly the model segment's start and end times
   const A = tube.g.attributes.aT, Wt = tube.g.attributes.aW; const ring = 11;
-  for (let i = 0; i <= tube.n; i++) for (let k = 0; k < ring; k++) { const idx = i * ring + k; A.array[idx] = FIN(t0 + (i / tube.n) * tube.len / v); Wt.array[idx] = wMs; }
+  for (let i = 0; i <= tube.n; i++) for (let k = 0; k < ring; k++) { const idx = i * ring + k; A.array[idx] = FIN(t0 + (i / tube.n) * (t1 - t0)); Wt.array[idx] = wMs; }
+  A.needsUpdate = true; Wt.needsUpdate = true;
+}
+function setTubeTimesAt(tube, times, wMs) { // one time per ring (routes timed by the muscle around them)
+  const A = tube.g.attributes.aT, Wt = tube.g.attributes.aW; const ring = 11;
+  for (let i = 0; i <= tube.n; i++) for (let k = 0; k < ring; k++) { const idx = i * ring + k; A.array[idx] = FIN(times[i]); Wt.array[idx] = wMs; }
   A.needsUpdate = true; Wt.needsUpdate = true;
 }
 function nodeMesh(geo, scale) {
@@ -1603,7 +1642,7 @@ function nodeMesh(geo, scale) {
 function buildConduction() {
   const C = CONDUCTION;
   for (const s of [...(C.bachmann ? [C.bachmann] : []), ...C.segments]) {
-    const r = s.fibre ? 0.01 : s.r;
+    const r = s.fibre ? 0.009 : s.r * 0.75; // slim lines, like the 2D page (the model's own radius is unchanged)
     const tube = tubeFor(s.pts, r, s.fibre ? 24 : 48); const [mat, outMat] = tubeMats(r);
     const mesh = new THREE.Mesh(tube.g, mat), out = new THREE.Mesh(tube.g, outMat);
     mesh.renderOrder = s.fibre ? 18 : 20; out.renderOrder = s.fibre ? 17 : 19; heart.add(out, mesh);
@@ -1613,6 +1652,22 @@ function buildConduction() {
     let lbl = null; if (!s.nolabel) { lbl = addLabel(s.label, 'cond', () => new THREE.Vector3(...mid).applyMatrix4(HEART_VIS)); lbl.tag = s.id; }
     const bead = nodeMesh(new THREE.SphereGeometry(Math.max(0.05, s.r * 1.7), 16, 12), 1.3); bead.material.color.set(0xffffff); heart.add(bead);
     condParts.push({ s, tube, mesh, out, lbl }); beads.push({ s, bead });
+  }
+  // Internodal routes: thin, in the slow (orange) family, because the model times them with the atrial muscle around them
+  for (const s of (C.internodal || [])) {
+    const r = 0.014, tube = tubeFor(s.pts, r, 48); const [mat, outMat] = tubeMats(r, true);
+    const mesh = new THREE.Mesh(tube.g, mat), out = new THREE.Mesh(tube.g, outMat);
+    mesh.renderOrder = 18; out.renderOrder = 17; heart.add(out, mesh);
+    let lbl = null;
+    if (s.id === 'inM') { const mid = polyAt(s.pts, polyLen(s.pts) * 0.45); lbl = addLabel('Internodal routes', 'cond', () => new THREE.Vector3(...mid).applyMatrix4(HEART_VIS)); lbl.tag = 'inter'; }
+    condParts.push({ s, tube, mesh, out, lbl, internodal: true });
+  }
+  // Coronary sinus opening (landmark only): a small white disc with a dashed-looking slate rim, always facing the viewer
+  if (C.csOstium) {
+    csMark = new THREE.Mesh(new THREE.CircleGeometry(0.07, 28), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false }));
+    const rim = new THREE.Mesh(new THREE.RingGeometry(0.07, 0.092, 28, 1), new THREE.MeshBasicMaterial({ color: 0x4E5968, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
+    csMark.renderOrder = 21; rim.renderOrder = 21; csMark.add(rim); scene.add(csMark);
+    addLabel('Coronary sinus (opening)', 'heart', () => new THREE.Vector3(...C.csOstium).applyMatrix4(HEART_VIS)).tag = 'cs';
   }
   saNode = nodeMesh(new THREE.OctahedronGeometry(0.11), 1.3); saNode.position.set(...C.sa); heart.add(saNode);
   avNode = nodeMesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), 1.3); avNode.position.set(...C.av); heart.add(avNode);
@@ -1631,10 +1686,20 @@ function buildConduction() {
   condParts.push({ lbl: pl });
   buildPurkinje();
 }
+// Internodal route times: the activation time of the atrial muscle under each ring (never earlier than the ring before)
+function internodalTimes(s, n) {
+  const len = polyLen(s.pts), out = []; let prev = -Infinity;
+  for (let i = 0; i <= n; i++) { const e = nearestElem(polyAt(s.pts, len * i / n), 0); const t = Math.max(prev, MODEL.act[e]); out.push(t); prev = t; }
+  return out;
+}
 function buildPurkinje() {} // the Purkinje fibres are drawn segments of CONDUCTION (fibre: true), timed like the bundles
 function applyConductionTimes() {
   if (!renderer) return;
-  for (const c of condParts) { if (!c.s) continue; const sg = MODEL.seg[c.s.id]; setTubeTimes(c.tube, sg.start, sg.v, 0.18 / sg.v); }
+  for (const c of condParts) {
+    if (!c.s) continue;
+    if (c.internodal) { const t = internodalTimes(c.s, c.tube.n); setTubeTimesAt(c.tube, t, 14); continue; }
+    const sg = MODEL.seg[c.s.id]; setTubeTimes(c.tube, sg.start, sg.end, 0.18 / sg.v);
+  }
   buildPurkinje();
 }
 /* Which structures are active at time t (for 'labels only for the active structure') */
@@ -1650,6 +1715,7 @@ function buildActiveRanges() {
   R.av = [[M.tAV, M.tHis]];
   let p0 = Infinity, p1 = -Infinity; for (const s of CONDUCTION.segments) { const sg = M.seg[s.id]; R[s.id] = [[sg.start, sg.end + 4]]; if (s.fibre) { p0 = Math.min(p0, sg.start); p1 = Math.max(p1, sg.end); } }
   if (M.seg.bach) R.bach = [[M.seg.bach.start, M.seg.bach.end + 4]];
+  R.inter = [[CONDUCTION.saTime, M.tAV + 4]]; R.cs = R.av; R.ring = [[M.tAV, M.tHis + 4]];
   R.purk = [[p0, p1 + 6]];
   ACTIVE_RANGES = R;
 }
@@ -1670,9 +1736,9 @@ function orientationOn() {
 }
 const GUIDED_TAGS = {
   rest: [],
-  P: ['sa', 'bach'],
-  avd: ['av'],
-  his: ['his', 'rbb', 'lbb'],
+  P: ['sa', 'inter', 'bach'],
+  avd: ['av', 'cs'],
+  his: ['his', 'ring', 'rbb', 'lbb'],
   sep: ['S'],
   main: ['vec'],
   ST: [],
@@ -2101,8 +2167,9 @@ function updateScene() {
   // travelling pulses
   for (const b of beads) {
     const sg = M.seg[b.s.id]; const on = t >= sg.start && t <= sg.end;
-    b.bead.visible = on; if (on) b.bead.position.set(...polyAt(b.s.pts, (t - sg.start) * sg.v));
+    b.bead.visible = on; if (on) b.bead.position.set(...polyAt(b.s.pts, polyLen(b.s.pts) * Math.min(1, (t - sg.start) / Math.max(1e-6, sg.end - sg.start))));
   }
+  if (csMark) { csMark.position.copy(new THREE.Vector3(...C.csOstium).applyMatrix4(HEART_VIS)); csMark.quaternion.copy(camera.quaternion); }
   applyLabelVisibility();
   // Heart's electrical vector: always drawn on top, in every view.
   const D = dipole(t); const mag = Math.hypot(...D);
@@ -3254,6 +3321,20 @@ window.ecg3d = {
     orbit.az = naz; orbit.el = nel; if (r) orbit.r = r; placeCamera(); markCustom();
     if (renderer) updateLabels();
   },
+  conduction: () => {
+    const M = MODEL, ventr = []; for (let e = 0; e < NE; e++) if (ELEM.domain[e] && isFinite(M.act[e])) ventr.push(M.act[e]);
+    ventr.sort((a, b) => a - b);
+    // endocardium (next to a cavity) versus epicardium (next to the outside), ventricles only
+    let en = 0, ec = 0, pn = 0, pc = 0;
+    for (let e = 0; e < NE; e++) { if (!ELEM.domain[e] || !isFinite(M.act[e])) continue; const [i, j, k] = ELEM.cell[e]; let outside = false;
+      for (const [di, dj, dk] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]) { const a = i + di, b = j + dj, c = k + dk; if (a < 0 || b < 0 || c < 0 || a >= NX || b >= NY || c >= NZ || !cellRegion[gridIdx(a, b, c)]) outside = true; }
+      if (IS_ENDO_LV[e] || IS_ENDO_RV[e]) { en += M.act[e]; ec++; } else if (outside) { pn += M.act[e]; pc++; } }
+    const tubes = {}; for (const c of condParts) { if (!c.s || !c.tube) continue; const A = c.tube.g.attributes.aT.array; tubes[c.s.id] = { t0: A[0], t1: A[A.length - 1], internodal: !!c.internodal }; }
+    return { saTime: CONDUCTION.saTime, tAV: M.tAV, tHis: M.tHis, atrialEnd: M.atrialEnd, vMin: M.vMin, vMax: M.vMax, ventMedian: ventr[ventr.length >> 1],
+      endoMean: en / ec, epiMean: pn / pc, seg: M.seg, tubes, internodal: (CONDUCTION.internodal || []).map(s => s.id),
+      segments: CONDUCTION.segments.map(s => ({ id: s.id, parent: s.parent, fibre: !!s.fibre, label: s.label || null })) };
+  },
+  beadAt: (id, t) => { const b = beads.find(x => x.s.id === id); if (!b) return null; setPlaying(false); setT(t, false); updateScene(); return { visible: b.bead.visible, pos: b.bead.position.toArray(), end: CONDUCTION.segments.concat(CONDUCTION.bachmann ? [CONDUCTION.bachmann] : []).find(s => s.id === id).pts.slice(-1)[0] }; },
   trace: id => Array.from(TRACE[id]), timings: () => ({ tAV: MODEL.tAV, tHis: MODEL.tHis, seg: MODEL.seg, vMin: MODEL.vMin, vMax: MODEL.vMax, recMin: MODEL.recMin, recMax: MODEL.recMax }),
   now: () => ({ t: state.t, beat: state.beat, speed: state.speed, playing: state.playing, pageTime: pageTime(), simTime: state.simTime }),
   isFullscreen, enterFullscreen, exitFullscreen,

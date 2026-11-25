@@ -220,11 +220,14 @@ button.lbl.lead:focus-visible {
 .sw-lead::after { content: ""; position: absolute; right: -3px; top: -6px; width: 9px; height: 9px; border-radius: 50%; background: #8a8a8a; }
 .sw-sel { height: 0; border-top: 7px solid #111; }
 .sw-proj { height: 8px; border: 1.5px solid #111; background: repeating-linear-gradient(90deg, #111 0 4px, #fff 4px 8px); }
-.sw-rest { background: var(--ecg3d-rest); border: 1.5px solid #1a1a1a; border-radius: 3px; }
-.sw-front { background: var(--ecg3d-front); border: 3px solid #111; border-radius: 3px; }
+.sw-rest { background: var(--ecg3d-rest); border: 1.5px solid #6B7075; border-radius: 3px; }
+/* slow route: orange hatching on a light orange wash (same as the 3D muscle and the 2D page's orange hatch) */
+.sw-front { border: 1.5px solid var(--ecg3d-front); border-radius: 3px; background-color: color-mix(in srgb, var(--ecg3d-front) 30%, var(--ecg3d-rest)); background-image: repeating-linear-gradient(-45deg, var(--ecg3d-front) 0 2.5px, transparent 2.5px 6.5px); }
 .sw-depol { border: 1.5px solid #1a1a1a; border-radius: 3px; background-color: var(--ecg3d-dep); background-image: radial-gradient(circle, var(--ecg3d-dot) 1.6px, transparent 1.8px); background-size: 6px 6px; }
-.sw-repol { border: 1.5px solid #1a1a1a; border-radius: 3px; background: repeating-linear-gradient(45deg, var(--ecg3d-dep) 0 4px, var(--ecg3d-rest) 4px 9px); }
-.sw-cond { height: 7px; background: linear-gradient(90deg, var(--ecg3d-cond-done) 0 50%, var(--ecg3d-cond-idle) 50%); border: 2px solid #111; border-radius: 4px; }
+.sw-repol { border: 1.5px solid #6B7075; border-radius: 3px; background-color: var(--ecg3d-rest); background-image: repeating-linear-gradient(45deg, #383D44 0 1.8px, transparent 1.8px 7px); }
+/* fast route: conducted (blue), the travelling streak (dark blue, white head), then not yet reached (grey) */
+.sw-cond { height: 7px; background: linear-gradient(90deg, var(--ecg3d-cond-done) 0 30%, var(--ecg3d-pulse, #005A9E) 30% 62%, #fff 62% 76%, var(--ecg3d-cond-idle) 76%); border: 2px solid #111; border-radius: 4px; }
+.sw-slowcond { height: 4px; background: linear-gradient(90deg, #EDB497 0 40%, var(--ecg3d-front) 40% 75%, #A3A8AE 75%); border: 1.5px solid #111; border-radius: 3px; }
 .sw-pulse { height: 7px; background: linear-gradient(90deg, var(--ecg3d-cond-done) 0 40%, #fff 40% 70%, var(--ecg3d-cond-idle) 70%); border: 2px solid #111; border-radius: 4px; }
 .sw-nodes { width: 26px; height: 12px; background: linear-gradient(45deg, transparent 30%, var(--ecg3d-node) 30% 70%, transparent 70%); border: 1.5px solid #111; }
 .sw-mesh { border: 1.5px dashed #111; border-radius: 3px; background-image: linear-gradient(45deg, transparent 45%, #111 45%, #111 55%, transparent 55%), linear-gradient(-45deg, transparent 45%, #111 45%, #111 55%, transparent 55%); background-size: 6px 6px; }
@@ -428,8 +431,8 @@ button.lbl.lead:focus-visible {
 .labels .leaders line { stroke: #333; stroke-width: 1.2; }
 .labels .leaders circle { fill: #333; }
 /* swatches matching the calmer 3D patterns */
-.sw-depol { background-color: var(--ecg3d-dep); background-image: radial-gradient(circle, var(--ecg3d-dot) 3px, transparent 3.6px); background-size: 12px 12px; background-position: 0 -1px; }
-.sw-repol { background: repeating-linear-gradient(45deg, var(--ecg3d-dep) 0 6px, var(--ecg3d-rest) 6px 12px); }
+.sw-depol { background-color: var(--ecg3d-dep); background-image: radial-gradient(circle, var(--ecg3d-dot) 2px, transparent 2.6px); background-size: 9px 9px; background-position: 0 -1px; }
+.sw-repol { background-color: var(--ecg3d-rest); background-image: repeating-linear-gradient(45deg, #383D44 0 2px, transparent 2px 8px); }
 
 /* ---------- Colour key (opens as a dialog; not always on screen) ---------- */
 .key-dialog[hidden] { display: none !important; }
@@ -474,7 +477,7 @@ button.lbl.lead:focus-visible {
 .key-card .key li > .sw-sel { border-top-width: 8px; }
 .key-card .key b { font-weight: 700; color: #111; margin-right: 4px; }
 .key-card .sw-mini { display: inline-block; width: 22px; height: 9px; vertical-align: middle; margin: 0 3px 0 2px; }
-.key-card .sw-front { border-width: 3px; }
+.key-card .sw-front { border-width: 1.5px; }
 .key-card .sw-depol { background-size: 13px 13px; background-image: radial-gradient(circle, var(--ecg3d-dot) 3.2px, transparent 3.8px); }
 .key-card .sw-cond { height: 12px; border-radius: 6px; }
 .key-card .key-more { margin-top: 6px; }
