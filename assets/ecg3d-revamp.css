@@ -201,15 +201,21 @@
   .page-ecg3d-revamp .ecg12-caption,
   .page-ecg3d-revamp .ecg12-hint { display: none; }
 
-  /* Right column: fixed NOW box, close-up takes the rest, no scroll */
+  /* Right column: fixed 260px NOW box (fits the longest of the 7 steps at 1280x800). Close-up takes the rest and must not move as steps change. Overflow scrolls inside the box, never grows it. */
   .page-ecg3d-revamp .tool-side { overflow: hidden; }
   .page-ecg3d-revamp .tool-side .explain-card {
-    flex: 0 0 200px;
-    height: 200px;
-    min-height: 200px;
-    max-height: 200px;
+    flex: 0 0 260px;
+    height: 260px;
+    min-height: 260px;
+    max-height: 260px;
     overflow: hidden;
     padding: 10px 14px;
+  }
+  .page-ecg3d-revamp .tool-side .explain-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   .page-ecg3d-revamp .tool-side .lead-closeup-card {
     flex: 1 1 auto;
@@ -231,14 +237,6 @@
   .page-ecg3d-revamp #leadCloseup { display: block; max-width: 100%; }
 }
 
-@media (min-width: 960px) and (min-height: 600px) and (min-width: 1400px) {
-  .page-ecg3d-revamp .tool-side .explain-card {
-    flex: 0 0 200px;
-    height: 200px;
-    min-height: 200px;
-    max-height: 200px;
-  }
-}
 
 @media (max-width: 700px) {
   .page-ecg3d-revamp .crumb { display: none; }
