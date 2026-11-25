@@ -175,19 +175,26 @@ const fsOn = await d3.evaluate(() => {
     leadsOn: inView(leads),
     exitOn: exitBtn && !exitBtn.hidden && inView(exitBtn),
     headerCoveredOrHidden: !header || getComputedStyle(header).display === "none" || header.getBoundingClientRect().bottom <= 0 || (document.body.classList.contains("ecg3d-fs-fallback") && (stage && stage.getBoundingClientRect().top >= 0)),
-    explainHidden: !explain || getComputedStyle(explain).display === "none" || explain.getBoundingClientRect().height === 0,
+    explainOn: inView(explain),
     sel: window.ecg3d.now && window.ecg3d.now().simTime,
     simTime: window.ecg3d.simTime()
   };
 });
-const fsEntered = fsOn.on && fsOn.stageOn && fsOn.closeupOn && fsOn.leadsOn && fsOn.exitOn && fsOn.explainHidden;
-if (fsEntered) pass("3D full screen shows the model, one lead and a lead chooser", fsOn);
-else fail("3D full screen shows the model, one lead and a lead chooser", fsOn);
+const fsEntered = fsOn.on && fsOn.stageOn && fsOn.closeupOn && fsOn.leadsOn && fsOn.exitOn && fsOn.explainOn;
+if (fsEntered) pass("3D full screen shows the model, a lead strip, the explanation and a lead chooser", fsOn);
+else fail("3D full screen shows the model, a lead strip, the explanation and a lead chooser", fsOn);
 
 await d3.evaluate(() => window.ecg3d.select("V1"));
-const picked = await d3.evaluate(() => document.getElementById("leadCloseupName") && document.getElementById("leadCloseupName").textContent);
-if (picked === "V1") pass("fullscreen lead chooser changes the close-up lead", { picked });
-else fail("fullscreen lead chooser changes the close-up lead", { picked });
+const picked = await d3.evaluate(() => {
+  const name1 = document.getElementById("leadCloseupName") && document.getElementById("leadCloseupName").textContent;
+  const name2 = document.getElementById("leadCloseupName2") && document.getElementById("leadCloseupName2").textContent;
+  const card2 = document.getElementById("leadCloseupCard2");
+  const card2On = !!(card2 && !card2.hidden && card2.getBoundingClientRect().height > 0);
+  return { leads: window.ecg3d.selectedLeads(), name1, name2, card2On };
+});
+const hasV1 = (picked.leads || []).includes("V1") && (picked.name1 === "V1" || picked.name2 === "V1");
+if (hasV1) pass("fullscreen lead chooser adds or shows the chosen lead in the close-up", picked);
+else fail("fullscreen lead chooser adds or shows the chosen lead in the close-up", picked);
 
 await d3.waitForTimeout(200);
 const t1 = await d3.evaluate(() => window.ecg3d.simTime());

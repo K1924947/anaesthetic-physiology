@@ -418,7 +418,7 @@ body.ecg3d-fs-fallback #tool .tool-side {
   gap: 8px;
   min-height: 0;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
 }
 .page-ecg3d-revamp #tool:fullscreen .lead-closeup-card,
 .page-ecg3d-revamp #tool:-webkit-full-screen .lead-closeup-card,
@@ -427,8 +427,9 @@ body.ecg3d-fs-fallback #tool .lead-closeup-card {
   flex-direction: column;
   order: 1;
   flex: 1 1 0;
-  min-height: 140px;
+  min-height: 0;
   height: auto;
+  overflow: hidden;
 }
 .page-ecg3d-revamp #tool:fullscreen .lead-closeup-card-2,
 .page-ecg3d-revamp #tool:-webkit-full-screen .lead-closeup-card-2,
@@ -440,18 +441,27 @@ body.ecg3d-fs-fallback #tool .lead-closeup-card-2 {
 body.ecg3d-fs-fallback #tool .lead-closeup-card-2[hidden] {
   display: none !important;
 }
+/* Fixed 260px NOW box in full screen (fits the longest of the 7 steps at 1280x800 with this padding). The two close-up strips share the leftover height and must not move as steps change. Overflow scrolls inside the box. */
 .page-ecg3d-revamp #tool:fullscreen .explain-card,
 .page-ecg3d-revamp #tool:-webkit-full-screen .explain-card,
 body.ecg3d-fs-fallback #tool .explain-card {
   display: flex !important;
   flex-direction: column;
   order: 3;
-  flex: 0 1 auto;
-  height: auto !important;
-  min-height: 120px;
-  max-height: none;
-  overflow: auto;
+  flex: 0 0 260px;
+  height: 260px !important;
+  min-height: 260px;
+  max-height: 260px;
+  overflow: hidden;
   padding: 10px 12px;
+}
+.page-ecg3d-revamp #tool:fullscreen .explain-scroll,
+.page-ecg3d-revamp #tool:-webkit-full-screen .explain-scroll,
+body.ecg3d-fs-fallback #tool .explain-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .page-ecg3d-revamp #tool:fullscreen .ecg12-card,
 .page-ecg3d-revamp #tool:-webkit-full-screen .ecg12-card,

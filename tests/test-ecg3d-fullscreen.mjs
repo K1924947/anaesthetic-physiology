@@ -189,6 +189,56 @@ const kept = await d3.evaluate(() => window.ecg3d.selectedLeads());
 if (kept && kept.length === 1 && kept[0] === "V1") pass("deselecting a second lead always leaves at least one selected", { kept });
 else fail("deselecting a second lead always leaves at least one selected", { kept });
 
+await d3.evaluate(() => {
+  window.ecg3d.play(false);
+  window.ecg3d.select("V3");
+  window.ecg3d.select("V4");
+  window.ecg3d.setT(242);
+});
+await d3.waitForTimeout(150);
+const projChest = await d3.evaluate(() => {
+  const list = window.ecg3d.projections();
+  return {
+    leads: window.ecg3d.selectedLeads(),
+    list,
+    both: list.length === 2 && list.every((p) => p.id && p.visible && p.shouldShow && p.along > 1.2),
+    ids: list.map((p) => p.id)
+  };
+});
+if (projChest.both && projChest.ids[0] === "V3" && projChest.ids[1] === "V4") {
+  pass("vector shadow is visible on chest leads V3 and V4 mid-QRS", projChest);
+} else {
+  fail("vector shadow is visible on chest leads V3 and V4 mid-QRS", projChest);
+}
+
+const fsRects = await d3.evaluate(() => {
+  window.ecg3d.play(false);
+  const c1 = document.getElementById("leadCloseupCard");
+  const c2 = document.getElementById("leadCloseupCard2");
+  const explain = document.getElementById("explainCard");
+  const key = (el) => {
+    const r = el.getBoundingClientRect();
+    return { x: +r.x.toFixed(2), y: +r.y.toFixed(2), w: +r.width.toFixed(2), h: +r.height.toFixed(2) };
+  };
+  const steps = [];
+  for (let i = 0; i < 7; i++) {
+    window.ecg3d.step(i);
+    steps.push({ i, title: (document.getElementById("phaseTitle") || {}).textContent || "", c1: key(c1), c2: key(c2), explain: key(explain) });
+  }
+  const same = (a, b) => a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+  return {
+    steps,
+    explainH: steps[0] && steps[0].explain.h,
+    stripsStable: steps.every((s) => same(s.c1, steps[0].c1) && same(s.c2, steps[0].c2)),
+    explainStable: steps.every((s) => same(s.explain, steps[0].explain))
+  };
+});
+if (fsRects.stripsStable && fsRects.explainStable && fsRects.steps.length === 7 && fsRects.explainH >= 256 && fsRects.explainH <= 264) {
+  pass("fullscreen strip and explanation rects are identical across all 7 steps", { explainH: fsRects.explainH, c1: fsRects.steps[0].c1, c2: fsRects.steps[0].c2 });
+} else {
+  fail("fullscreen strip and explanation rects are identical across all 7 steps", fsRects);
+}
+
 const fsZoom = await d3.evaluate(() => {
   window.ecg3d.view("frontal");
   const o = window.ecg3d.orbitState();
