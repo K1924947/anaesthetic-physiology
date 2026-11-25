@@ -156,6 +156,29 @@ if (two.leads && two.leads.length === 2 && two.leads[0] === "II" && two.leads[1]
   pass("fullscreen can show two synced lead strips with the explanation below", two);
 } else fail("fullscreen can show two synced lead strips with the explanation below", two);
 
+await d3.evaluate(() => { window.ecg3d.play(false); window.ecg3d.setT(242); });
+await d3.waitForTimeout(150);
+const projTwo = await d3.evaluate(() => {
+  const list = window.ecg3d.projections();
+  return {
+    leads: window.ecg3d.selectedLeads(),
+    list,
+    both: list.length === 2 && list.every((p) => p.id && p.visible && p.shouldShow),
+    ids: list.map((p) => p.id)
+  };
+});
+if (projTwo.both && projTwo.ids[0] === "II" && projTwo.ids[1] === "V1") pass("vector shadow appears on every selected lead", projTwo);
+else fail("vector shadow appears on every selected lead", projTwo);
+
+await d3.evaluate(() => window.ecg3d.select("V1"));
+await d3.waitForTimeout(80);
+const projOne = await d3.evaluate(() => window.ecg3d.projections());
+const visOne = projOne.filter((p) => p.visible);
+if (projOne.length === 1 && projOne[0].id === "II" && visOne.length === 1) pass("deselecting a second lead leaves its shadow only on the remaining lead", { projOne });
+else fail("deselecting a second lead leaves its shadow only on the remaining lead", { projOne, visOne });
+
+await d3.evaluate(() => { window.ecg3d.select("V1"); window.ecg3d.play(true); window.ecg3d.setSpeed(1); });
+
 await d3.evaluate(() => window.ecg3d.select("V4"));
 const three = await d3.evaluate(() => window.ecg3d.selectedLeads());
 if (three && three.length === 2 && three[0] === "V1" && three[1] === "V4") pass("selecting a third lead replaces the oldest", { three });

@@ -1775,7 +1775,7 @@ function applyLabelVisibility() {
 
 /* ---------- Torso, leads, vector, projection ---------- */
 const TORSO_C = new THREE.Vector3(-0.45, 1.1, -0.3), TORSO_R = new THREE.Vector3(5.0, 6.3, 4.2);
-let torso, frontLabel, leadObjs = {}, arrow, trail, projBar, projOut, projLine, projLabel, vecLabel, regionMeshes = [], regionLabel, chestArc, sternumLine, aortaMesh, apexLabel, baseLabel, anteriorLabel;
+let torso, frontLabel, leadObjs = {}, arrow, trail, projBars = [], projBar, projOut, projLine, projLabel, vecLabel, regionMeshes = [], regionLabel, chestArc, sternumLine, aortaMesh, apexLabel, baseLabel, anteriorLabel;
 const arrowTip = new THREE.Vector3();
 const VEC_SCALE = 4.0;
 const VEC_MIN_LEN = 1.7;   // visible minimum while the vector is non-zero
@@ -2010,18 +2010,8 @@ function buildScene() {
     leadObjs[L.id] = { grp, matPos, matNeg, pos, negR, marker, pick, lbl, pole };
   }
   buildOrientationCues();
-  // the arrow's shadow on the selected lead: thick black-and-white striped bar with a black outline
-  const pg = new THREE.CylinderGeometry(0.07, 0.07, 1, 14);
-  projBar = new THREE.Mesh(pg, new THREE.ShaderMaterial({ uniforms: { uLen: { value: 1 } }, // depth-tested: hidden where it passes inside the heart
-    vertexShader: 'varying float vY; void main() { vY = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'varying float vY; uniform float uLen; void main() { float s = fract(vY * uLen / 0.3); gl_FragColor = vec4(vec3(s < 0.5 ? 0.07 : 1.0), 1.0); }' }));
-  projOut = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide }));
-  projOut.scale.set(1.45, 1, 1.45); projBar.add(projOut);
-  projBar.material.depthTest = false; projBar.material.depthWrite = false;
-  projOut.material.depthTest = false; projOut.material.depthWrite = false;
-  projBar.renderOrder = 45; projOut.renderOrder = 44; scene.add(projBar);
-  const projHead = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 14), new THREE.MeshBasicMaterial({ color: COL.black, depthTest: false, depthWrite: false }));
-  projHead.name = 'projHead'; projHead.renderOrder = 46; projBar.add(projHead);
+  // the arrow's shadow on each selected lead: thick black-and-white striped bar with a black outline
+  makeProjBar();
   projLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
     new THREE.LineDashedMaterial({ color: COL.black, dashSize: 0.12, gapSize: 0.08, depthTest: false }));
   projLine.renderOrder = 31; scene.add(projLine);
@@ -2148,6 +2138,35 @@ function setLeadStyles() {
   needsRender = true;
 }
 const _q = new THREE.Vector3();
+function makeProjBar() {
+  const pg = new THREE.CylinderGeometry(0.07, 0.07, 1, 14);
+  const bar = new THREE.Mesh(pg, new THREE.ShaderMaterial({ uniforms: { uLen: { value: 1 } },
+    vertexShader: 'varying float vY; void main() { vY = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'varying float vY; uniform float uLen; void main() { float s = fract(vY * uLen / 0.3); gl_FragColor = vec4(vec3(s < 0.5 ? 0.07 : 1.0), 1.0); }' }));
+  const outline = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide }));
+  outline.scale.set(1.45, 1, 1.45);
+  bar.material.depthTest = false; bar.material.depthWrite = false;
+  outline.material.depthTest = false; outline.material.depthWrite = false;
+  bar.renderOrder = 45; outline.renderOrder = 44; bar.add(outline);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 14), new THREE.MeshBasicMaterial({ color: COL.black, depthTest: false, depthWrite: false }));
+  head.name = 'projHead'; head.renderOrder = 46; bar.add(head);
+  bar.visible = false; scene.add(bar);
+  projBars.push(bar);
+  if (!projBar) { projBar = bar; projOut = outline; }
+  return bar;
+}
+function placeProjBar(bar, dir, signedLen) {
+  const plen = Math.abs(signedLen);
+  bar.visible = true;
+  bar.userData.lead = dir._lead || null;
+  bar.userData.signed = signedLen;
+  bar.material.uniforms.uLen.value = plen;
+  bar.scale.set(1, plen, 1);
+  bar.position.copy(dir.clone().multiplyScalar(signedLen * 0.5));
+  bar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().multiplyScalar(Math.sign(signedLen) || 1));
+  const ph = bar.getObjectByName('projHead');
+  if (ph) { ph.position.set(0, 0.5, 0); ph.scale.set(1, 1 / Math.max(0.001, plen), 1); }
+}
 function updateScene() {
   if (!renderer) return;
   const t = state.t, M = MODEL, C = CONDUCTION; U.uT.value = t;
@@ -2193,21 +2212,24 @@ function updateScene() {
   arrowTip.set(D[0], D[1], D[2]).multiplyScalar(vecOn ? drawLen / (mag || 1) : 0);
   const pts = []; for (let i = 0; i <= Math.round(t); i += 2) { const d = dipole(i); pts.push(new THREE.Vector3(d[0], d[1], d[2]).multiplyScalar(VEC_SCALE)); }
   trail.geometry.dispose(); trail.geometry = new THREE.BufferGeometry().setFromPoints(pts.length > 1 ? pts : [new THREE.Vector3(), new THREE.Vector3()]); trail.computeLineDistances();
-  // Dashed projection of the vector onto the selected lead, along that lead's rod (ties to trace height).
-  const L = LEAD[state.sel]; const u = new THREE.Vector3(...L.dir); const p = vecOn ? arrowTip.dot(u) : 0; const foot = u.clone().multiplyScalar(p);
-  const showProj = vecOn && Math.abs(p) > 0.08;
-  projBar.visible = showProj;
-  if (showProj) {
-    const plen = Math.abs(p);
-    projBar.material.uniforms.uLen.value = plen;
-    projBar.scale.set(1, plen, 1);
-    projBar.position.copy(foot).multiplyScalar(0.5);
-    projBar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), u.clone().multiplyScalar(Math.sign(p) || 1));
-    const ph = projBar.getObjectByName('projHead');
-    if (ph) { ph.position.set(0, 0.5, 0); ph.scale.set(1, 1 / Math.max(0.001, plen), 1); }
+  // The vector's shadow on every selected lead, along that lead's rod (ties to each trace's height).
+  // Same black-and-white striped bar for each; no extra labels, so the lead name pills stay readable.
+  const shown = [];
+  if (vecOn) {
+    for (const id of selectedSet()) {
+      const L = LEAD[id]; if (!L) continue;
+      const u = new THREE.Vector3(...L.dir);
+      const p = arrowTip.dot(u);
+      if (Math.abs(p) <= 0.08) continue;
+      u._lead = id;
+      shown.push([u, p]);
+    }
   }
-  projLabel.visible = false;
-  projLine.visible = false;
+  while (projBars.length < shown.length) makeProjBar();
+  shown.forEach(([u, p], i) => placeProjBar(projBars[i], u, p));
+  for (let i = shown.length; i < projBars.length; i++) { projBars[i].visible = false; projBars[i].userData.lead = null; }
+  if (projLabel) projLabel.visible = false;
+  if (projLine) projLine.visible = false;
   maybeRelayoutForPhase();
   needsRender = true;
 }
@@ -3225,6 +3247,7 @@ function syncFsUi() {
     try { refit(); } catch (e) {}
   }
   if (typeof drawZoom === 'function') drawZoom();
+  if (typeof updateScene === 'function' && renderer) updateScene();
   if (typeof updateLabels === 'function' && renderer) updateLabels();
 }
 function enterFullscreen() {
@@ -3278,6 +3301,17 @@ document.addEventListener('keydown', ev => {
 window.ecg3d = {
   setT: t => { setPlaying(false); setT(t, true); }, select: id => select(id, true), view: v => goView(v, true), play: setPlaying, cut: setCut, step: goStep, setGuided, setAnatomyLabels, guided: () => !!ui.guided,
   selectedLeads: () => selectedSet(),
+  projections: () => {
+    if (!renderer) return [];
+    return selectedSet().map(id => {
+      const L = LEAD[id];
+      const bar = projBars.find(b => b.visible && b.userData.lead === id);
+      const u = L ? new THREE.Vector3(...L.dir) : null;
+      const signed = u ? arrowTip.dot(u) : 0;
+      return { id, visible: !!bar, length: Math.abs(signed), signed, threshold: 0.08, shouldShow: Math.abs(signed) > 0.08 };
+    });
+  },
+
   arrowDims: () => ({ shaftRadius: VEC_SHAFT_R, headRadius: VEC_HEAD_R, headHeight: VEC_HEAD_H, vecScale: VEC_SCALE, minLen: VEC_MIN_LEN }),
   heartCentre: () => { const c = heartCentre(); return { x: c.x, y: c.y, z: c.z }; },
   orbitState: () => ({ az: orbit.az / DEG, el: orbit.el / DEG, r: orbit.r, target: { x: orbit.target.x, y: orbit.target.y, z: orbit.target.z } }),
