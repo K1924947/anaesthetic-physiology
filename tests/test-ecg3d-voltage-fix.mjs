@@ -175,10 +175,82 @@ const sp = await page.evaluate(() => window.ecg3d.selectedLeads());
 if (ent.includes("V2") && sp.includes("V2")) pass("12-lead cells: Enter and Space focus the lead", { ent, sp });
 else fail("12-lead cells: Enter and Space focus the lead", { ent, sp });
 
-// 5. Full screen: pick-up-to-two, scrubber width constant across steps
+// 5. Full screen: pick-up-to-two, unclipped close-ups at both sizes, scrubber width constant
 await page.evaluate(async () => { await window.ecg3d.enterFullscreen(); });
 await page.waitForTimeout(300);
-await closeupAll("full screen (canvas matches the visible frame)", false);
+
+async function setFsLeads(ids) {
+  await page.evaluate((ids) => {
+    let guard = 0;
+    while (guard++ < 24) {
+      const cur = window.ecg3d.selectedLeads();
+      const extra = cur.filter((id) => !ids.includes(id));
+      const missing = ids.filter((id) => !cur.includes(id));
+      if (!extra.length && !missing.length) break;
+      // In FS, the last remaining lead cannot be toggled off, so add a wanted lead first.
+      if (missing.length && cur.length < 2) { window.ecg3d.select(missing[0]); continue; }
+      if (extra.length && cur.length > 1) { window.ecg3d.select(extra[0]); continue; }
+      if (missing.length) { window.ecg3d.select(missing[0]); continue; }
+      break;
+    }
+    window.ecg3d.refresh();
+  }, ids);
+}
+
+function waveOk(w, pad) {
+  if (!w || w.visH < 8) return { ok: false, reason: "missing" };
+  const visTop = w.visTopInCanvas || 0;
+  const visBot = (w.visBotInCanvas != null) ? w.visBotInCanvas : w.visH;
+  const canvasMatchesVis = Math.abs(w.cssH - w.canvasH) < 1.5 && Math.abs(w.visH - w.canvasH) < 1.5;
+  const inside = w.yMin >= visTop - pad && w.yMax <= visBot + pad;
+  return { ok: canvasMatchesVis && inside, canvasMatchesVis, inside, yMin: w.yMin, yMax: w.yMax, visH: w.visH, cssH: w.cssH, canvasH: w.canvasH, lead: w.lead };
+}
+
+async function fsCloseupCheck(tag, nLeads, tAbs) {
+  await page.evaluate((t) => { window.ecg3d.setPageTime(t); window.ecg3d.refresh(); }, tAbs);
+  const pad = 1.5;
+  const rows = [];
+  let h0 = null;
+  for (const id of LEADS) {
+    const partner = id === "V2" ? "II" : "V2";
+    const ids = nLeads === 2 ? (id === "V2" ? ["V2", "II"] : [id, partner]) : [id];
+    await setFsLeads(ids);
+    const shot = await page.evaluate((nLeads) => {
+      const w1 = window.ecg3d.closeupWave(0);
+      const w2 = nLeads === 2 ? window.ecg3d.closeupWave(1) : null;
+      const explainH = document.querySelector(".explain-card").getBoundingClientRect().height;
+      const c1 = document.getElementById("leadCloseup").getBoundingClientRect();
+      const c2el = document.getElementById("leadCloseup2");
+      const c2 = c2el && !c2el.closest("[hidden]") ? c2el.getBoundingClientRect() : null;
+      return { w1, w2, explainH, sels: window.ecg3d.selectedLeads(), c1: { x: c1.x, y: c1.y, w: c1.width, h: c1.height }, c2: c2 ? { x: c2.x, y: c2.y, w: c2.width, h: c2.height } : null };
+    }, nLeads);
+    const a = waveOk(shot.w1, pad);
+    const b = nLeads === 2 ? waveOk(shot.w2, pad) : { ok: true };
+    if (h0 == null) h0 = { c1: shot.c1, c2: shot.c2, explainH: shot.explainH };
+    const sameLayout = Math.abs(shot.c1.h - h0.c1.h) < 1 && Math.abs(shot.c1.w - h0.c1.w) < 1
+      && Math.abs(shot.explainH - 260) < 1
+      && (nLeads !== 2 || (shot.c2 && Math.abs(shot.c2.h - h0.c2.h) < 1 && Math.abs(shot.c2.w - h0.c2.w) < 1));
+    rows.push({ id, sels: shot.sels, a, b, explainH: shot.explainH, sameLayout, c1h: shot.c1.h, c2h: shot.c2 && shot.c2.h });
+  }
+  const ok = rows.every((r) => r.a.ok && r.b.ok && r.sameLayout && Math.abs(r.explainH - 260) < 1);
+  if (ok) pass("Full screen close-up: all 12 leads unclipped (" + tag + ")", { n: rows.length, nLeads, visH: rows[0].a.visH, c1h: rows[0].c1h, c2h: rows[0].c2h, v2: rows.find((r) => r.id === "V2") });
+  else fail("Full screen close-up: all 12 leads unclipped (" + tag + ")", rows);
+}
+
+for (const [w, h] of [[1280, 800], [1400, 900]]) {
+  await page.setViewportSize({ width: w, height: h });
+  await page.waitForTimeout(250);
+  await page.evaluate(() => { window.dispatchEvent(new Event("resize")); window.ecg3d.refresh(); });
+  await fsCloseupCheck(w + "x" + h + " 1-lead, first beat", 1, 280);
+  await fsCloseupCheck(w + "x" + h + " 1-lead, later beat with wander", 1, 280 + 800 * 5);
+  await fsCloseupCheck(w + "x" + h + " 2-lead, first beat", 2, 280);
+  await fsCloseupCheck(w + "x" + h + " 2-lead, later beat with wander", 2, 280 + 800 * 5);
+}
+
+await page.setViewportSize({ width: 1280, height: 800 });
+await page.waitForTimeout(200);
+await page.evaluate(() => { window.dispatchEvent(new Event("resize")); window.ecg3d.refresh(); });
+await setFsLeads(["II"]);
 
 const fsPick = await page.evaluate(() => {
   window.ecg3d.select("II");
