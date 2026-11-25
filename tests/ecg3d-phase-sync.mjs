@@ -84,12 +84,12 @@ function checkSample(label, sample) {
     }
   }
   if (rhythm && Number.isFinite(rhythm.t0)) {
-    const tPage0 = Math.floor(sim / 10000) * 10000;
+    const tPage0 = Math.floor(sim / 9600) * 9600;
     if (Math.abs(rhythm.t0 - tPage0) > 1) {
       errors.push(`${label}: rhythm t0 ${rhythm.t0} != page window ${tPage0}`);
     }
     const off = rhythm.tAbs - rhythm.t0;
-    if (off < -0.5 || off >= 10000.5) errors.push(`${label}: rhythm offset ${off} outside the 10 s page`);
+    if (off < -0.5 || off >= 9600.5) errors.push(`${label}: rhythm offset ${off} outside the 9.6 s page`);
   }
   const closeup = sample.closeup;
   if (closeup && Number.isFinite(closeup.tAbs) && phaseDelta(closeup.tAbs, sim) > 1) {

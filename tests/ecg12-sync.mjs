@@ -55,12 +55,12 @@ function checkSample(label, cursors, pageTime) {
     if (c.t0 !== t0) errors.push(`${label}: ${c.id} t0 ${c.t0} != ${t0}`);
     if (Math.abs((c.tAbs - c.t0) - offset) > 0.5) errors.push(`${label}: ${c.id} offset ${c.tAbs - c.t0} != ${offset}`);
   }
-  if (t0 !== Math.floor(tAbs / 2500) * 2500) errors.push(`${label}: t0 ${t0} is not the 2.5 s window for ${tAbs}`);
-  if (offset < 0 || offset >= 2500) errors.push(`${label}: column offset ${offset} outside 0–2500`);
+  if (t0 !== Math.floor(tAbs / 2400) * 2400) errors.push(`${label}: t0 ${t0} is not the 2.4 s window for ${tAbs}`);
+  if (offset < 0 || offset >= 2400) errors.push(`${label}: column offset ${offset} outside 0..2400`);
   // same x offset within each column (subtract the column origin)
   const byCol = {};
   for (const c of cols) {
-    const colW = 2500 * (c.pxPerMs || 0);
+    const colW = 2400 * (c.pxPerMs || 0);
     const localX = colW ? (c.x % (colW + 1)) : c.x;
     (byCol[c.col] ||= []).push(c);
   }

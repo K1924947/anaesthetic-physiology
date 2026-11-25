@@ -461,12 +461,14 @@ const scrub = $('scrub'), timeOut = $('timeOut'), playBtn = $('playBtn'), speedS
 // 25 mm/s and 10 mm/mV: 1 small square = 1 mm = 40 ms = 0.1 mV.
 const MM_PER_MS = 25 / 1000, MM_PER_MV = 10;
 const ONE_SCREEN = window.matchMedia('(min-width: 960px) and (min-height: 600px)');
-const ECG = { calW: 8, colMs: 2500, rowH: 30, base: 17, top: 2 };
-const PAGE_MS = 10000; // 10 s rhythm strip; the 12-lead columns share one 2.5 s window and advance together
+const ECG = { calW: 8, colMs: 2400, rowH: 30, base: 17, top: 2 };
+const PAGE_MS = 9600; // 9.6 s rhythm strip (12 beats = 4 x 2.4 s columns); exact beat multiples so traces never jump
 const MINI_MS = 5000;
+const CLOSEUP_MS = 4 * BEAT_MS; // 3.2 s (4 beats) shared across every close-up strip
+const CLOSEUP_LEFT_MM = 2, CLOSEUP_RIGHT_MM = 1;
+const CLOSEUP_WMM = CLOSEUP_LEFT_MM + CLOSEUP_MS * MM_PER_MS + CLOSEUP_RIGHT_MM;
+const SWEEP_GAP_MM = 2.0; // blanking gap ahead of the monitor sweep cursor (80 ms at 25 mm/s)
 const ZOOM_MS = 2 * BEAT_MS;
-// PAGE_MS (10000) is not a multiple of BEAT_MS (800): 10000 % 800 = 400.
-// Every view therefore samples and places cursors from one master simTime, not from (T % PAGE_MS).
 const LAYOUT = [['I', 'aVR', 'V1', 'V4'], ['II', 'aVL', 'V2', 'V5'], ['III', 'aVF', 'V3', 'V6']];
 function wrapPeriod(t, period) {
   let x = t % period;
@@ -510,19 +512,33 @@ function sampleLead(id, tMs) {
   return tr[t];
 }
 function drawSeg(g, id, t0, t1, xStartMm, basemm, px, bold, lw, mmPerMv) {
+  if (t1 <= t0) return;
   const mm = mmPerMv == null ? MM_PER_MV : mmPerMv;
   g.strokeStyle = PAPER.trace; g.lineWidth = lw || (bold ? 2.3 : 1.3); g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath();
-  const tStart = t0, tEnd = t1;
-  let started = false;
-  for (let t = tStart; t <= tEnd; t += 1) {
-    const v = sampleLead(id, t);
-    const x = (xStartMm + (t - tStart) * MM_PER_MS) * px, y = (basemm - v * mm) * px;
-    if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
+  const xAt = t => (xStartMm + (t - t0) * MM_PER_MS) * px;
+  const yAt = t => (basemm - traceAt(id, wrapPeriod(t, BEAT_MS)) * mm) * px;
+  g.moveTo(xAt(t0), yAt(t0));
+  const firstInt = Math.floor(t0) + 1;
+  for (let t = firstInt; t < t1; t += 1) {
+    g.lineTo(xAt(t), yAt(t));
   }
-  if (started) g.stroke();
+  g.lineTo(xAt(t1), yAt(t1));
+  g.stroke();
+}
+function drawSweepSeg(g, id, tWin0, winMs, tAbs, xStartMm, basemm, px, bold, lw, mmPerMv) {
+  const tInWin = Math.max(0, Math.min(winMs, tAbs - tWin0));
+  const gapMs = Math.min(winMs, SWEEP_GAP_MM / MM_PER_MS);
+  if (tInWin > 0) {
+    drawSeg(g, id, tWin0, tWin0 + tInWin, xStartMm, basemm, px, bold, lw, mmPerMv);
+  }
+  if (tInWin + gapMs < winMs) {
+    const tPrev0 = tWin0 - winMs;
+    const xGapMm = xStartMm + (tInWin + gapMs) * MM_PER_MS;
+    drawSeg(g, id, tPrev0 + tInWin + gapMs, tPrev0 + winMs, xGapMm, basemm, px, bold, lw, mmPerMv);
+  }
 }
 function traceAt(id, t) { const T = TRACE[id]; const tc = Math.max(0, Math.min(BEAT_MS, t)), i = Math.min(BEAT_MS - 1, Math.floor(tc)), f = tc - i; return T[i] + (T[i + 1] - T[i]) * f; }
-function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px, mmPerMv) {
+function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px, mmPerMv, dotClamp) {
   const x = (xStartMm + (tAbs - tStart) * MM_PER_MS) * px;
   const y0 = topmm * px, y1 = (topmm + hmm) * px;
   const mm = mmPerMv == null ? MM_PER_MV : mmPerMv;
@@ -540,7 +556,9 @@ function cursorAt(g, id, tAbs, xStartMm, tStart, basemm, topmm, hmm, px, mmPerMv
   g.strokeStyle = '#fff'; g.lineWidth = 1; g.stroke();
   const v = traceAt(id, wrapPeriod(tAbs, BEAT_MS));
   let y = (basemm - v * mm) * px;
-  y = Math.max(y0 + ts, Math.min(y1 - 2, y));
+  const loY = dotClamp ? dotClamp.top : (y0 + ts);
+  const hiY = dotClamp ? dotClamp.bot : (y1 - 2);
+  y = Math.max(loY, Math.min(hiY, y));
   g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 4.2, 0, Math.PI * 2); g.fill();
   g.fillStyle = PAPER.cursor; g.beginPath(); g.arc(x, y, 2.8, 0, Math.PI * 2); g.fill();
 }
@@ -595,7 +613,7 @@ function clipReport(id, rowH, baseOff) {
 function ecgSheetSize() {
   const frame = ecgCanvas.parentElement;
   const compact = ONE_SCREEN.matches;
-  const wmm = ECG.calW + 250 + 2;
+  const wmm = ECG.calW + PAGE_MS * MM_PER_MS + 2;
   let px, hmm;
   if (compact) {
     const card = frame.closest('.ecg12-card') || frame.parentElement;
@@ -638,13 +656,16 @@ function drawECG() {
   const clips = [];
   LAST_CURSORS = [];
   const tAbs = pageTime();
-  // All four columns share the same 2.5 s window and the same cursor offset (live 12-lead monitor).
-  const tWin0 = Math.floor(tAbs / ECG.colMs) * ECG.colMs;
-  const tWin1 = tWin0 + ECG.colMs;
+  // All four columns share one fixed 2.4 s (3 beats) window and sweep together, overwriting the previous trace in place.
+  const tWin0 = windowStart(tAbs, ECG.colMs);
+  const tPage0 = windowStart(tAbs, PAGE_MS);
   const pxPerMs = MM_PER_MS * px;
   if (ecgCanvas.dataset) {
     ecgCanvas.dataset.tAbs = String(Math.round(tAbs));
     ecgCanvas.dataset.tWin0 = String(tWin0);
+    ecgCanvas.dataset.tPage0 = String(tPage0);
+    ecgCanvas.dataset.colMs = String(ECG.colMs);
+    ecgCanvas.dataset.pageMs = String(PAGE_MS);
     ecgCanvas.dataset.pxPerMs = String(pxPerMs);
   }
   for (let r = 0; r < 4; r++) {
@@ -670,9 +691,9 @@ function drawECG() {
         }
         g.save();
         g.beginPath(); g.rect(cell.x, cell.y, cell.w, cell.h); g.clip();
+        drawSweepSeg(g, id, tWin0, ECG.colMs, tAbs, xStart, base, px, sel, null, mm);
         cursorAt(g, id, tAbs, xStart, t0, base, top + 1, ECG.rowH - 2, px, mm);
         LAST_CURSORS.push({ id, tAbs, t0, col: c, row: r, x: (xStart + (tAbs - t0) * MM_PER_MS) * px, pxPerMs });
-        drawSeg(g, id, tWin0, tWin1, xStart, base, px, sel, null, mm);
         g.restore();
         if (c) { g.strokeStyle = '#111'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x0 * px, (base - 3) * px); g.lineTo(x0 * px, (base + 3) * px); g.stroke(); }
         label(g, id, x0 + 1.5, top + 5, px, sel);
@@ -685,11 +706,10 @@ function drawECG() {
       drawCal(g, 0.5, base, px, 10);
       const sel = state.sel === 'II', x0 = ECG.calW;
       g.save();
-      g.beginPath(); g.rect(x0 * px, top * px, (wmm - x0) * px, ECG.rowH * px); g.clip();
-      const tPage0 = windowStart(tAbs, PAGE_MS);
+      g.beginPath(); g.rect(x0 * px, top * px, PAGE_MS * MM_PER_MS * px, ECG.rowH * px); g.clip();
+      drawSweepSeg(g, 'II', tPage0, PAGE_MS, tAbs, x0, base, px, sel, null, 10);
       cursorAt(g, 'II', tAbs, x0, tPage0, base, top + 1, ECG.rowH - 2, px, 10);
       LAST_CURSORS.push({ id: 'II-rhythm', tAbs, t0: tPage0, col: 0, row: 3, x: (x0 + (tAbs - tPage0) * MM_PER_MS) * px, pxPerMs });
-      drawSeg(g, 'II', tPage0, tPage0 + PAGE_MS, x0, base, px, sel, null, 10);
       g.restore();
       label(g, 'II  (rhythm strip)', x0 + 1.5, top + 5, px, sel);
       clips.push(clipReport('II-rhythm', ECG.rowH, baseOff));
@@ -864,8 +884,8 @@ function drawZoomOn(canvas, large) {
   bracket(b0 + I.qOn, b0 + I.qOff, 2, `QRS ${I.QRS} ms`);
   bracket(b0 + I.qOn, b0 + I.tEnd, 3, `QT ${I.QT} ms`);
 }
-/* Single-lead close-up: fixed 25 mm/s and 10 mm/mV paper at the saved larger scale (square grid). Deep waves may clip. */
-function paintAnnotatedLead(canvas, cssW, cssH, leadId) {
+/* Single-lead close-up: shared 4-beat (3.2 s) window at 25 mm/s and 10 mm/mV (square boxes), regardless of lead or amplitude. */
+function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   if (!canvas) return;
   const id = leadId || state.sel, tr = TRACE[id], I = INTERVALS;
   cssW = Math.max(120, Math.round(cssW || 0));
@@ -873,55 +893,64 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId) {
   let vHi = 1, vLo = 0;
   if (tr) for (let t = 0; t < BEAT_MS; t++) { if (tr[t] > vHi) vHi = tr[t]; if (tr[t] < vLo) vLo = tr[t]; }
   const upMm = vHi * MM_PER_MV, downMm = Math.max(0.25, -vLo) * MM_PER_MV;
-  const LEFT_MM = 2, tagF = 11, rowF = 11, nameFs = 12, marginMm = 1.0;
+  const tagF = 11, rowF = 11, nameFs = 12, marginMm = 0.8;
   const labelTopPx = nameFs + 6, boxH = tagF + 4, rowGap = 2;
-  // Fixed-page monitor: about 4 beats, cursor sweeps left to right, then the window advances. The trace never scrolls.
-  const targetMs = 4 * BEAT_MS;
-  const minLabelPx = nameFs + 8, minIntervalPx = rowF + 12;
-  const neededMm = (minLabelPx / 5) + marginMm + upMm + downMm + marginMm + (minIntervalPx / 5);
-  let px = cssW / (LEFT_MM + targetMs * MM_PER_MS + 1);
-  if (neededMm * px > cssH) px = cssH / neededMm;
-  px = Math.max(3.4, Math.min(7, px));
+  // Every close-up strip uses the same px-per-mm (from the shared width, never from per-lead wave height)
+  // and the exact same 4-beat (3200 ms) monitor window so beats and cursors align vertically.
+  const px = sharedPx || (cssW / CLOSEUP_WMM);
   const wmm = cssW / px, hmm = cssH / px;
-  const x0 = LEFT_MM;
-  const tVis = Math.max(BEAT_MS, Math.floor((wmm - x0 - 1) / MM_PER_MS));
+  const x0 = CLOSEUP_LEFT_MM;
+  const tVis = CLOSEUP_MS;
   const tAbs = pageTime();
-  const tWin0 = Math.floor(tAbs / tVis) * tVis;
+  const tWin0 = windowStart(tAbs, tVis);
   const tWin1 = tWin0 + tVis;
   const nBeats = tVis / BEAT_MS;
-  const slim = hmm < 28;
+  const slim = hmm < 27.5;
+  const minLabelPx = nameFs + 6, minIntervalPx = rowF + 10;
   const nLabelRows = slim ? 0 : 2;
   let labelBandPx = slim ? minLabelPx : (labelTopPx + nLabelRows * (boxH + rowGap) + 1);
   let intervalBandPx = slim ? 4 : minIntervalPx;
-  const needTraceMm = upMm + downMm + marginMm * 2;
-  const bandsMm = (labelBandPx + intervalBandPx) / px;
-  if (bandsMm + needTraceMm > hmm) {
-    const roomPx = Math.max(0, (hmm - needTraceMm) * px);
-    if (slim) { labelBandPx = Math.min(labelBandPx, Math.max(nameFs + 4, roomPx * 0.7)); intervalBandPx = Math.max(0, roomPx - labelBandPx); }
-    else {
-      const share = labelBandPx + intervalBandPx;
-      labelBandPx = Math.max(nameFs + 6, Math.floor(roomPx * (labelBandPx / share)));
-      intervalBandPx = Math.max(rowF + 6, Math.floor(roomPx - labelBandPx));
-    }
+  const maxBandsPx = Math.max(minLabelPx + 4, cssH - 8 * px);
+  if (labelBandPx + intervalBandPx > maxBandsPx) {
+    labelBandPx = Math.max(minLabelPx, Math.floor(maxBandsPx * 0.68));
+    intervalBandPx = Math.max(slim ? 4 : minIntervalPx, maxBandsPx - labelBandPx);
   }
   const labelBandMm = labelBandPx / px, intervalBandMm = intervalBandPx / px;
   const traceTopMm = labelBandMm + 0.2;
-  const traceHmm = Math.max(needTraceMm, hmm - labelBandMm - intervalBandMm - 0.2);
-  const upKeep = upMm + marginMm;
-  const base = traceTopMm + upKeep;
+  const traceHmm = Math.max(6, hmm - traceTopMm - intervalBandMm);
+  const spanMm = upMm + downMm;
+  let base;
+  if (spanMm + marginMm * 2 <= traceHmm) {
+    const slack = traceHmm - spanMm - marginMm * 2;
+    base = traceTopMm + marginMm + upMm + slack * 0.4;
+  } else {
+    base = traceTopMm + traceHmm * (upMm / Math.max(0.01, spanMm));
+  }
+  const pxPerMs = MM_PER_MS * px;
   const cursorX = (x0 + (tAbs - tWin0) * MM_PER_MS) * px;
+  canvas.dataset.lead = id;
   canvas.dataset.beats = nBeats.toFixed(2);
-  canvas.dataset.px = px.toFixed(2);
+  canvas.dataset.px = px.toFixed(4);
+  canvas.dataset.pxPerMs = pxPerMs.toFixed(6);
   canvas.dataset.t0 = String(Math.round(tWin0));
   canvas.dataset.t1 = String(Math.round(tWin1));
   canvas.dataset.tAbs = String(Math.round(tAbs));
-  canvas.dataset.cursorX = String(Math.round(cursorX));
+  canvas.dataset.cursorX = cursorX.toFixed(2);
+  canvas.dataset.x0Px = (x0 * px).toFixed(2);
   canvas.dataset.cssW = String(cssW);
   canvas.dataset.cssH = String(cssH);
   const g = prepCanvas(canvas, cssW, cssH);
   drawPaper(g, wmm, hmm, px);
-  drawSeg(g, id, tWin0, tWin1, x0, base, px, true, Math.max(2.4, Math.min(3.4, 0.16 * px)));
-  cursorAt(g, id, tAbs, x0, tWin0, base, 0.4, hmm - 0.8, px);
+  g.save();
+  g.beginPath();
+  g.rect(0, traceTopMm * px, cssW, traceHmm * px);
+  g.clip();
+  drawSweepSeg(g, id, tWin0, tVis, tAbs, x0, base, px, true, Math.max(2.2, Math.min(3.2, 0.16 * px)));
+  g.restore();
+  cursorAt(g, id, tAbs, x0, tWin0, base, 0.4, hmm - 0.8, px, MM_PER_MV, {
+    top: traceTopMm * px + 2,
+    bot: (traceTopMm + traceHmm) * px - 2
+  });
   g.font = `800 ${nameFs}px "Source Sans 3", Arial, sans-serif`;
   const nameW = g.measureText(id).width;
   g.fillStyle = '#111'; g.fillRect(3, 3, nameW + 8, nameFs + 5);
@@ -1030,29 +1059,32 @@ function closeupLeadList() {
   const list = (state.sels && state.sels.length) ? state.sels.slice() : [state.sel || 'II'];
   return list.filter(id => LEAD[id]);
 }
-function paintCloseupCanvas(canvas, nameEl, gainEl, leadId) {
+function paintCloseupCanvas(canvas, nameEl, gainEl, leadId, sharedCssW, sharedPx) {
   if (!canvas || !leadId) return;
   if (nameEl) nameEl.textContent = leadId;
   const frame = canvas.parentElement;
   if (!frame) return;
   frame.style.overflow = 'hidden';
-  const cssW = Math.max(160, Math.floor(frame.clientWidth - 2));
+  const cssW = sharedCssW || Math.max(120, Math.floor(frame.clientWidth - 2));
   const cssH = Math.max(80, Math.floor((frame.clientHeight || 160) - 2));
-  paintAnnotatedLead(canvas, cssW, cssH, leadId);
+  paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx);
   if (gainEl) gainEl.textContent = '10 mm/mV (full gain), 25 mm/s';
-  canvas.setAttribute('aria-label', `Close-up of lead ${leadId} on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. About four beats; the cursor sweeps left to right, then the window advances.`);
+  canvas.setAttribute('aria-label', `Close-up of lead ${leadId} on standard ECG paper at full gain, 25 millimetres per second and 10 millimetres per millivolt. Four beats; the cursor sweeps left to right, overwriting the trace in place.`);
 }
 function drawZoom() {
   const leads = closeupLeadList();
   const primary = state.sel || leads[0] || 'II';
-  paintCloseupCanvas($('leadCloseup'), $('leadCloseupName'), $('leadCloseupGain'), leads[0] || primary);
-  const card2 = $('leadCloseupCard2');
+  const c1 = $('leadCloseup'), fr1 = c1 && c1.parentElement;
+  const card2 = $('leadCloseupCard2'), c2 = $('leadCloseup2'), fr2 = c2 && c2.parentElement;
   const second = leads[1];
-  if (card2) {
-    const show = !!(typeof isFullscreen === 'function' && isFullscreen() && second);
-    card2.hidden = !show;
-    if (show) paintCloseupCanvas($('leadCloseup2'), $('leadCloseupName2'), $('leadCloseupGain2'), second);
-  }
+  const show2 = !!(card2 && typeof isFullscreen === 'function' && isFullscreen() && second);
+  if (card2) card2.hidden = !show2;
+  const w1 = fr1 ? Math.max(120, Math.floor(fr1.clientWidth - 2)) : 320;
+  const w2 = (show2 && fr2) ? Math.max(120, Math.floor(fr2.clientWidth - 2)) : w1;
+  const sharedCssW = show2 ? Math.min(w1, w2) : w1;
+  const sharedPx = sharedCssW / CLOSEUP_WMM;
+  paintCloseupCanvas(c1, $('leadCloseupName'), $('leadCloseupGain'), leads[0] || primary, sharedCssW, sharedPx);
+  if (show2) paintCloseupCanvas(c2, $('leadCloseupName2'), $('leadCloseupGain2'), second, sharedCssW, sharedPx);
   const z = $('zoomLead'); if (z) z.textContent = primary;
   if (zoomCanvas && zoomCanvas.offsetParent) drawZoomOn(zoomCanvas, false);
 }
@@ -3391,7 +3423,7 @@ window.ecg3d = {
   refresh: announce => { applyTime(announce); },
   syncClock, frameAt: now => frame(now),
   sheetCursors: () => LAST_CURSORS.slice(),
-  closeupMeta: () => { const c = $('leadCloseup'); return c ? { ...c.dataset } : null; },
+  closeupMeta: (idx = 0) => { const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); return c ? { ...c.dataset } : null; },
   phase: () => { const p = phaseAt(state.t); return { key: p.key, from: p.from, to: p.to, step: p.step || null, title: p.title }; },
   leadDecor: () => ({
     allLeads: !!ui.allLeads,
@@ -3411,8 +3443,8 @@ window.ecg3d = {
     const scale = r.width / (ECG_DRAW.cssW || r.width);
     return LAST_CURSORS.map(c => ({ ...c, screenX: r.left + c.x * scale, screenY: r.top }));
   },
-  closeupCursorScreen: () => {
-    const c = $('leadCloseup'); if (!c) return null;
+  closeupCursorScreen: (idx = 0) => {
+    const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); if (!c) return null;
     const r = c.getBoundingClientRect();
     const cssW = parseFloat(c.dataset.cssW || r.width);
     const x = parseFloat(c.dataset.cursorX || '0');
