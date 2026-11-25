@@ -11,8 +11,8 @@
   flex: 0 0 auto;
 }
 .page-ecg3d-revamp .stage-bar .ctrl-group,
-.page-ecg3d-revamp .show-group,
-.page-ecg3d-revamp .view-group {
+.page-ecg3d-revamp .stage-bar .show-group,
+.page-ecg3d-revamp .stage-bar .view-group {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;

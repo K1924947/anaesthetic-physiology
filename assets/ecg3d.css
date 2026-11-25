@@ -870,8 +870,32 @@ button.lbl.lead:focus-visible {
 .show-switch[aria-checked="mixed"] .show-tick {
   background: #111 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' d='M2.5 6h7'/%3E%3C/svg%3E") center / 12px 12px no-repeat;
 }
-.show-group { margin: 4px 0 0; }
-.show-group-head { display: flex; align-items: center; gap: 4px; }
+.show-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.show-section > .show-switch {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+.show-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  margin: 4px 0 0;
+  flex: none;
+}
+.show-group-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  flex: 0 0 auto;
+}
 .show-group-head .show-switch { flex: 1 1 auto; font-weight: 700; }
 .show-expand {
   flex: 0 0 auto;
@@ -884,9 +908,13 @@ button.lbl.lead:focus-visible {
 .show-items {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 0;
+  width: auto;
   margin: 2px 0 6px 12px;
   padding: 0;
+  flex: 0 0 auto;
+  box-sizing: border-box;
 }
 .show-items[hidden] { display: none !important; }
 .show-item { width: 100%; }
