@@ -26,7 +26,7 @@ if (!listMatch) {
   if (missing.length) fail("every LIST_ORDER id has a scenario object", missing);
   else pass("every LIST_ORDER id has a scenario object", { n: playable.length });
 
-  const card = index.match(/href="Resus_Scenarios\.html"[\s\S]*?<p class="jcard-meta">([^<]*)<\/p>/);
+  const card = index.match(/href="Resus_Scenarios"[\s\S]*?<p class="jcard-meta">([^<]*)<\/p>/);
   if (!card) {
     fail("home page has a Resus Scenarios card with a jcard-meta count");
   } else {

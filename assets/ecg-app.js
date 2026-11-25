@@ -14,7 +14,7 @@ function shouldRedirectLegacyScenarioLink() {
 }
 function redirectLegacyScenarioLink() {
   if (shouldRedirectLegacyScenarioLink()) {
-    location.replace("Resus_Scenarios.html" + (location.search || "") + (location.hash || ""));
+    location.replace("Resus_Scenarios" + (location.search || "") + (location.hash || ""));
   }
 }
 redirectLegacyScenarioLink();
@@ -7954,7 +7954,7 @@ function syncScnBanner() {
 }
 function enterScenarioMode() {
   if (!$("scnWrap")) {
-    location.href = "Resus_Scenarios.html" + (location.search || "") + (location.hash || "");
+    location.href = "Resus_Scenarios" + (location.search || "") + (location.hash || "");
     return;
   }
   if (mode === "test") { Q = null; current = null; if ($("testBannerScore")) $("testBannerScore").hidden = true; }

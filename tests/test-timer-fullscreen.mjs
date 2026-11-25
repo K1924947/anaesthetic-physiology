@@ -131,12 +131,12 @@ const cardiac = await hub.evaluate(() => {
 });
 const hubOk = !cardiac.cards.some((c) => /Resus_Scenarios/.test(c.href) || /Resus Scenarios/.test(c.title))
   && !cardiac.orderLinks.some((h) => /Resus_Scenarios/.test(h))
-  && cardiac.cards.some((c) => c.href === "ECG_Basics.html")
-  && cardiac.orderLinks.some((h) => h === "ECG_Basics.html");
+  && cardiac.cards.some((c) => c.href === "ECG_Basics")
+  && cardiac.orderLinks.some((h) => h === "ECG_Basics");
 if (hubOk) pass("Resus Scenarios is not in the cardiac hub list or cards, and ECG Basics is", cardiac);
 else fail("Resus Scenarios is not in the cardiac hub list or cards, and ECG Basics is", cardiac);
 await hub.goto(BASE + "/index.html", { waitUntil: "domcontentloaded", timeout: 30000 });
-const home = await hub.evaluate(() => !!document.querySelector('a.jcard[href="Resus_Scenarios.html"]'));
+const home = await hub.evaluate(() => !!document.querySelector('a.jcard[href="Resus_Scenarios"]'));
 if (home) pass("homepage Resus Scenarios card is kept");
 else fail("homepage Resus Scenarios card is kept");
 await hub.close();

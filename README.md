@@ -2,7 +2,7 @@
 
 Interactive physiology teaching tools built by Dr Ed Kim. No installation required: open any page in a browser.
 
-**Site:** [The Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
+**Site:** [The Physio Lab](https://thephysiolab.co.uk/)
 
 ---
 
@@ -78,15 +78,15 @@ These tools keep their usual addresses but the old pages are offline while they 
 
 ## Live Site
 
-[The Physio Lab](https://k1924947.github.io/anaesthetic-physiology)
+[The Physio Lab](https://thephysiolab.co.uk/)
 
 No login or download needed. Open the live tools directly in any browser:
 
-- [PV Loop](https://k1924947.github.io/anaesthetic-physiology/PV_Loop.html)
-- [ECG Basics](https://k1924947.github.io/anaesthetic-physiology/ECG_Basics.html)
-- [ECG Rhythms](https://k1924947.github.io/anaesthetic-physiology/ECG_Rhythm_Quiz.html)
-- [Cardiac Action Potential](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Action_Potential.html)
-- [Cardiac Murmurs](https://k1924947.github.io/anaesthetic-physiology/Cardiac_Murmurs.html)
+- [PV Loop](https://thephysiolab.co.uk/PV_Loop)
+- [ECG Basics](https://thephysiolab.co.uk/ECG_Basics)
+- [ECG Rhythms](https://thephysiolab.co.uk/ECG_Rhythm_Quiz)
+- [Cardiac Action Potential](https://thephysiolab.co.uk/Cardiac_Action_Potential)
+- [Cardiac Murmurs](https://thephysiolab.co.uk/Cardiac_Murmurs)
 
 Three further cardiac tools are under construction and are not available yet.
 

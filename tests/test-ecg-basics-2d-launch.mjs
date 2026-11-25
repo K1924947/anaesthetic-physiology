@@ -57,10 +57,10 @@ if (twoD.seeCount >= 1 && twoD.allComingSoon && twoD.liveLinks.length === 0) {
 const hub = await page.evaluate(async (base) => {}, BASE);
 await page.goto(BASE + "/index.html", { waitUntil: "domcontentloaded", timeout: 30000 });
 const home = await page.evaluate(() => {
-  const cardiac = document.querySelector('a.jcard[href="cardiac.html"]');
+  const cardiac = document.querySelector('a.jcard[href="cardiac"]');
   const meta = cardiac && cardiac.querySelector(".jcard-meta");
   const desc = cardiac && cardiac.querySelector(".jcard-desc");
-  const direct = !!document.querySelector('a.jcard[href="ECG_Basics.html"]');
+  const direct = !!document.querySelector('a.jcard[href="ECG_Basics"]');
   const leaked = Array.from(document.querySelectorAll("a")).some((a) => /ECG_3D\.html$/i.test((a.getAttribute("href") || "").split("?")[0]));
   return {
     hasCardiac: !!cardiac,
@@ -75,12 +75,12 @@ else fail("homepage Cardiac card counts five live tools and does not link to ECG
 
 await page.goto(BASE + "/cardiac.html", { waitUntil: "domcontentloaded", timeout: 30000 });
 const cardiac = await page.evaluate(() => {
-  const card = document.querySelector('a.jcard[href="ECG_Basics.html"]');
+  const card = document.querySelector('a.jcard[href="ECG_Basics"]');
   const order = Array.from(document.querySelectorAll(".order-list a")).map((a) => ({ href: a.getAttribute("href"), text: a.textContent.trim() }));
   const leaked = Array.from(document.querySelectorAll("a")).some((a) => /ECG_3D\.html$/i.test((a.getAttribute("href") || "").split("?")[0]));
   return {
     cardTitle: card && (card.querySelector(".jcard-title") || {}).textContent,
-    inOrder: order.some((o) => o.href === "ECG_Basics.html"),
+    inOrder: order.some((o) => o.href === "ECG_Basics"),
     order,
     leaked,
     intro: (document.querySelector(".hub-intro") || {}).textContent || ""

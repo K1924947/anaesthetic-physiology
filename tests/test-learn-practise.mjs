@@ -40,9 +40,9 @@ const home = await page.evaluate(() => {
     practiseTitle: practise && practise.textContent.trim(),
     learnHrefs: hrefs(learnSec),
     practiseHrefs: hrefs(practiseSec),
-    resusInLearn: !!(learnSec && learnSec.querySelector('a[href="Resus_Scenarios.html"]')),
-    cardiacInLearn: !!(learnSec && learnSec.querySelector('a[href="cardiac.html"]')),
-    resusInPractise: !!(practiseSec && practiseSec.querySelector('a[href="Resus_Scenarios.html"]')),
+    resusInLearn: !!(learnSec && learnSec.querySelector('a[href="Resus_Scenarios"]')),
+    cardiacInLearn: !!(learnSec && learnSec.querySelector('a[href="cardiac"]')),
+    resusInPractise: !!(practiseSec && practiseSec.querySelector('a[href="Resus_Scenarios"]')),
     atoe: practiseSec ? (practiseSec.textContent || "") : "",
     leaked3d: !!document.querySelector('a[href*="ECG_3D.html"]')
   };

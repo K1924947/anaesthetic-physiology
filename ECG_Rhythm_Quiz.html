@@ -25,7 +25,7 @@
   var go = hl === "#scn" || hl === "#scenarios" || hl.indexOf("#scenario") === 0;
   if (/[?&](mode=scenario|scenarios=1|scenario=1)(?=&|$)/i.test(s)) go = true;
   if (/^#(s[1-6]|h([1-9]|10))(\b|$)/i.test(h)) go = true;
-  if (go) location.replace("Resus_Scenarios.html" + s + h);
+  if (go) location.replace("Resus_Scenarios" + s + h);
 })();
 </script>
 
@@ -653,12 +653,12 @@ body.scn-popup-open { overflow: hidden; }
 <div class="page page-wide page-tool">
   <header class="site-header tool-view-header">
     <div class="site-header-top">
-      <a class="site-mark" href="index.html">
+      <a class="site-mark" href="./">
         <img class="site-logo" src="assets/logo.svg?v=20261118f" width="20" height="20" alt="">
         <span class="site-mark-name">The Physio Lab</span>
       </a>
       <div class="header-actions">
-        <a class="header-link" href="index.html#about">About</a>
+        <a class="header-link" href="./#about">About</a>
         <button type="button" id="colour-blind-toggle" class="cb-toggle" aria-pressed="false">
           <span class="cb-switch" aria-hidden="true"></span>
           <span class="cb-toggle-text">Colour-blind mode</span>
@@ -666,9 +666,9 @@ body.scn-popup-open { overflow: hidden; }
       </div>
     </div>
     <nav class="crumb" aria-label="Breadcrumb">
-      <a href="index.html">Home</a>
+      <a href="./">Home</a>
       <span class="crumb-sep" aria-hidden="true">/</span>
-      <a href="cardiac.html">Cardiac</a>
+      <a href="cardiac">Cardiac</a>
       <span class="crumb-sep" aria-hidden="true">/</span>
       <span aria-current="page">ECG Rhythms</span>
     </nav>
@@ -708,7 +708,7 @@ body.scn-popup-open { overflow: hidden; }
         </button>
       </div>
 
-      <a class="test-banner scn-banner scn-banner-link" href="Resus_Scenarios.html">
+      <a class="test-banner scn-banner scn-banner-link" href="Resus_Scenarios">
         <span class="test-banner-icon scn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M2 13 H7 L9 7 L12 19 L15 4 L17 13 H22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
         <div class="test-banner-copy">
           <h2 class="test-banner-title">Resus Scenarios</h2>
