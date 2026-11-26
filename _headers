@@ -1,0 +1,4 @@
+# Cloudflare Pages only. GitHub Pages ignores this file, so it will not
+# affect the live site even if it is later merged to main.
+/*
+  X-Robots-Tag: noindex, nofollow

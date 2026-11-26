@@ -1,0 +1,4 @@
+# Staging only. Do not merge this file to main: it would tell search
+# engines not to index the live site at thephysiolab.co.uk.
+User-agent: *
+Disallow: /
