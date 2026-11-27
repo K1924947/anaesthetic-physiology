@@ -19,6 +19,8 @@
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118f">
 <script src="assets/theme.js?v=20261118f"></script>
 <script src="assets/pwa.js?v=20261127" defer></script>
+<link rel="stylesheet" href="assets/app-shell.css?v=20261127m">
+<script src="assets/app-shell.js?v=20261127m" defer></script>
 
 
 <style>
@@ -1021,6 +1023,96 @@ body.scn-popup-open { overflow: hidden; }
 
 .correct-ans { margin: 8px 0 0; padding: 8px 10px; border: 1.5px solid var(--text); border-radius: 8px; background: var(--surface-2); font-size: 15px; }
 .correct-ans-src { display: inline; font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+
+/* ===== Phone app layout (720 px or less): see assets/app-shell.css and app-shell.js ===== */
+@media (max-width: 720px) {
+  /* Chooser: the source box stays open but cannot fill the screen */
+  .scn-source-box[open] > .scn-source-body { max-height: 24vh; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+
+  /* Running case: monitor first, notes after the case, header trimmed */
+  body.scn-case-running .tool-view-header .subtitle,
+  body.scn-case-running .tool-view-header .scn-source-disclaimer { display: none; }
+  body.scn-case-running .tool-view-header h1 { font-size: 24px; margin: 4px 0 6px; }
+  body.scn-case-running #scnWrap { display: flex; flex-direction: column; }
+  body.scn-case-running #scnWrap > * { min-width: 0; }
+  body.scn-case-running #scnWrap > .scn-note,
+  body.scn-case-running #scnWrap > .scn-review-note { order: 5; }
+  body.scn-case-running .scn-source-box .scn-source-toggle-hint { display: none; }
+  body.scn-case-running .scn-source-box { padding: 4px 12px; margin-bottom: 8px; }
+  body.scn-case-running .scn-source-box h2 { margin: 0; font-size: 17px; }
+  body.scn-case-running .scn-source-box > summary { align-items: center; }
+  body.scn-case-running .scn-card-main > .strip-head { order: 0; }
+  body.scn-case-running .scn-card-main > .scn-clock-row { order: 1; margin: 0; }
+  body.scn-case-running .scn-card-main > .defib-mon { order: 2; }
+  body.scn-case-running .scn-card-main > #scnMonMeta { order: 3; }
+  body.scn-case-running .scn-card-main > .stem { order: 4; }
+  body.scn-case-running .scn-card-main > .scn-clinical { order: 5; }
+  body.scn-case-running .scn-card-main > .scn-pending { order: 6; }
+  body.scn-case-running .page { padding-left: 10px; padding-right: 10px; }
+  body.scn-case-running .graph-card.scn-card-main { padding: 12px 10px; }
+  body.scn-case-running .scn-card-main .strip-title { font-size: 19px; line-height: 1.25; }
+  body.scn-case-running .scn-card-main .strip-tools { gap: 6px; }
+  body.scn-case-running .scn-card-main .strip-tools > button { min-height: 44px; padding: 4px 10px; font-size: 13px; }
+  body.scn-case-running .page { padding-bottom: calc(var(--pl-dock-h, 170px) + var(--pl-tab-h, 60px) + var(--pl-safe-b, 0px) + 24px); }
+
+  /* Docked actions: primary row and group tabs sit above the tab bar */
+  body.scn-case-running .scn-actions-card.pl-dock {
+    position: fixed; left: 0; right: 0; bottom: calc(var(--pl-tab-h, 60px) + var(--pl-safe-b, 0px)); z-index: 61;
+    display: flex; flex-direction: column; margin: 0; padding: 8px 10px; box-sizing: border-box;
+    max-height: calc(100vh - var(--pl-tab-h, 60px) - 24px); max-height: calc(100dvh - var(--pl-tab-h, 60px) - 24px);
+    border: 0; border-top: 1px solid var(--border); border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 24px rgba(26, 35, 48, 0.14);
+  }
+  body.scn-case-running .pl-dock .scn-actions-head { display: none; }
+  body.scn-case-running .pl-dock #scnActions { display: flex; flex-direction: column; order: 1; min-height: 0; }
+  body.scn-case-running .pl-dock .act-primary {
+    order: 2; position: static; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0;
+  }
+  body.scn-case-running .pl-dock .act-primary .act-btn { min-height: 52px; padding: 4px; font-size: 14px; line-height: 1.2; }
+  body.scn-case-running .pl-dock .act-group { display: none; }
+  body.scn-case-running .pl-dock .pl-act-tabs { display: grid; order: 3; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 6px 0 0; }
+  .pl-act-tab {
+    min-height: 44px; min-width: 0; padding: 2px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface-2); color: var(--text); font-family: var(--font-sans); font-size: 12.5px; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+  }
+  .pl-chip-short { display: none; }
+  @media (max-width: 360px) { .pl-chip-long { display: none; } .pl-chip-short { display: inline; } }
+  .pl-act-tab.is-on { border: 2px solid var(--text); background: var(--surface); font-weight: 800; }
+  .pl-act-tab:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+
+  /* Open sheet: the chosen group above the primary row */
+  body.scn-case-running .pl-dock.pl-sheet-open .scn-actions-head { display: flex; align-items: center; gap: 8px; order: 0; margin: 0 0 8px; }
+  body.scn-case-running .pl-dock.pl-sheet-open .scn-actions-head .explain-kicker { display: none; }
+  body.scn-case-running .pl-dock.pl-sheet-open .scn-actions-head { flex-wrap: nowrap; }
+  body.scn-case-running .pl-dock.pl-sheet-open .scn-actions-heading { flex: 1 1 auto; min-width: 0; }
+  body.scn-case-running .pl-dock.pl-sheet-open .scn-actions-head .explain-title { font-size: 18px; line-height: 1.2; margin: 0; }
+  body.scn-case-running .pl-dock.pl-sheet-open .scn-reg { flex: none; padding-left: 10px; padding-right: 10px; }
+  body.scn-case-running .pl-dock.pl-sheet-open .act-group.pl-on {
+    display: block; order: 1; max-height: min(52vh, 440px); max-height: min(52dvh, 440px); overflow-y: auto; overscroll-behavior: contain; margin: 0 0 10px;
+  }
+  body.scn-case-running .pl-dock.pl-sheet-open .act-group.pl-on .scen-group-label { display: none; }
+  body.scn-case-running .pl-dock.pl-sheet-open .act-group .act-btn { min-height: 52px; font-size: 14px; }
+  body.scn-case-running .pl-dock.pl-sheet-open { animation: pl-sheet-up 0.18s ease-out; }
+  body.scn-case-running .pl-dock .pl-sheet-close {
+    display: inline-flex; align-items: center; gap: 4px; flex: none; min-height: 44px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text);
+    font-family: var(--font-sans); font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  body.scn-case-running .pl-dock .pl-sheet-close:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  body.scn-case-running .pl-dock .pl-sheet-close span[aria-hidden] { font-size: 20px; line-height: 1; }
+  body.scn-case-running .pl-dock .scn-reg { min-height: 44px; }
+  body.scn-case-running .pl-sheet-backdrop:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 60; background: rgba(17, 17, 17, 0.38); }
+
+  /* Event log and debrief: wrap, never scroll sideways */
+  .scn-log-scroll { overflow-x: hidden; }
+  .scn-log li > * { min-width: 0; overflow-wrap: anywhere; }
+  #scnDebrief { overflow-wrap: anywhere; }
+  #scnDebrief table { display: block; max-width: 100%; overflow-x: auto; }
+}
+@keyframes pl-sheet-up { from { transform: translateY(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  body.scn-case-running .pl-dock.pl-sheet-open { animation: none; }
+}
 </style>
 </head>
 <body>
