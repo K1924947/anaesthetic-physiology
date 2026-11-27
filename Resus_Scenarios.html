@@ -246,9 +246,7 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
 }
-@media (min-width: 800px) {
-  .defib-mon-body { grid-template-columns: minmax(0, 1.35fr) minmax(196px, 0.72fr); }
-}
+.defib-mon-body { grid-template-columns: minmax(0, 1fr); }
 .defib-mon-waves { min-width: 0; }
 .defib-wave { position: relative; border-top: 1px solid var(--mon-rule); min-width: 0; }
 .defib-wave-ecg { border-top: 0; }
@@ -263,31 +261,65 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 .defib-lane-tag { font-family: var(--font-sans); font-size: 2.6px; font-weight: 700; fill: currentColor; }
 .mon-svg-lane.lane-spo2 { color: var(--mon-spo2); }
 .mon-svg-lane.lane-etco2 { color: var(--mon-etco2); }
+/* Numbers sit under the traces so digits can stay large at every width. */
+#scnVitals.defib-mon-nums,
 .defib-mon-nums {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0;
   border-top: 1px solid var(--mon-rule);
   min-width: 0;
+  margin: 0;
 }
-@media (min-width: 800px) {
-  .defib-mon-nums { border-top: 0; border-left: 1px solid var(--mon-rule); grid-template-columns: 1fr; }
+.defib-num { padding: 6px 8px 8px; border-right: 1px solid var(--mon-rule); min-width: 0; overflow: hidden; }
+.defib-num:last-child { border-right: 0; }
+.defib-num-lab { font-family: var(--font-sans); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.2; }
+.defib-num-read { display: flex; align-items: baseline; gap: 4px; min-width: 0; margin-top: 2px; }
+#scnVitals.defib-mon-nums .defib-num-val,
+.defib-num-val {
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 3.8vw, 42px);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  white-space: nowrap;
 }
-.defib-num { padding: 7px 10px; border-bottom: 1px solid var(--mon-rule); border-right: 1px solid var(--mon-rule); min-width: 0; }
-@media (min-width: 800px) { .defib-num { border-right: 0; } }
-.defib-num-lab { font-family: var(--font-sans); font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
-.defib-num-val { font-family: var(--font-sans); font-size: 22px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.defib-num-note { display: block; font-size: 11px; font-weight: 600; margin-top: 2px; line-height: 1.3; }
+.defib-num-unit { font-size: 12px; font-weight: 700; line-height: 1.1; white-space: nowrap; flex-shrink: 0; }
 .defib-num-ecg { color: var(--mon-ecg); }
 .defib-num-spo2 { color: var(--mon-spo2); }
 .defib-num-etco2 { color: var(--mon-etco2); }
 .defib-num-nibp { color: var(--mon-nibp); }
 .defib-num-rr { color: var(--mon-rr); }
+.defib-mon-caption {
+  margin: 0;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--mon-rule);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #D4D4D4;
+}
 .scn-clinical { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .scn-clinical .stat-val { font-size: 15px; overflow-wrap: anywhere; }
 .scn-clinical .stat-label { font-size: 13px; }
-@media (max-width: 700px) {
-  .defib-num-val { font-size: 20px; }
+@media (max-width: 699px) {
+  #scnVitals.defib-mon-nums,
+  .defib-mon-nums { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .defib-num { border-bottom: 1px solid var(--mon-rule); }
+  .defib-num:nth-child(3n) { border-right: 0; }
+  .defib-num:nth-last-child(-n+2) { border-bottom: 0; }
+  #scnVitals.defib-mon-nums .defib-num-val,
+  .defib-num-val { font-size: clamp(24px, 7.4vw, 34px); }
+}
+@media (max-width: 420px) {
+  #scnVitals.defib-mon-nums,
+  .defib-mon-nums { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .defib-num:nth-child(3n) { border-right: 1px solid var(--mon-rule); }
+  .defib-num:nth-child(2n) { border-right: 0; }
+  .defib-num:nth-last-child(-n+2) { border-bottom: 0; }
+  .defib-num:nth-child(n+5) { border-bottom: 0; }
 }
 
 
@@ -302,16 +334,40 @@ svg.calipers-on { touch-action: none; cursor: crosshair; }
 @media (min-width: 900px) { .scn-panels { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); } }
 .scn-panels .explain-panel, .scn-debrief { min-height: 0; max-height: none; }
 .scn-right { display: grid; gap: 12px; min-width: 0; }
+.act-primary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0 0 10px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+}
+.act-primary .act-btn {
+  min-height: 52px;
+  padding: 8px 10px;
+  text-align: center;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .act-group { margin: 0 0 10px; padding-left: 10px; border-left: 4px solid var(--text); }
 .act-group:nth-child(2) { border-left-style: double; border-left-width: 5px; }
 .act-group:nth-child(3) { border-left-style: dashed; }
 .act-group:nth-child(4) { border-left-style: dotted; }
+.act-group:nth-child(5) { border-left-width: 6px; }
 .act-group .scen-group-label { margin: 0 0 6px; border-left: 0; padding-left: 0; }
 .act-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.act-btn { min-height: 44px; padding: 6px 8px; font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.25; text-align: left; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); cursor: pointer; min-width: 0; overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }
+.act-btn { min-height: 48px; padding: 8px 10px; font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.25; text-align: left; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); cursor: pointer; min-width: 0; overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }
 .act-btn:hover:not(:disabled) { border-color: var(--text); }
-.act-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.act-btn:disabled { opacity: 1; cursor: not-allowed; background: var(--surface-2, #f3f3f3); color: var(--text); border-style: dashed; }
 .act-ff { grid-column: 1 / -1; border-style: dashed; }
+@media (max-width: 560px) {
+  .act-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .verdict-glyph { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 2px solid currentColor; border-radius: 50%; font-size: 13px; font-weight: 700; margin-right: 6px; vertical-align: -4px; }
 .scn-hints {
   appearance: none;
@@ -1103,7 +1159,6 @@ body.scn-popup-open { overflow: hidden; }
             <div class="defib-mon" id="scnDefib">
               <div class="defib-mon-bar">
                 <span class="defib-mon-name">Patient monitor</span>
-                <span class="defib-mon-review">Illustrative values, for senior colleague review. Traces appear only once the corresponding pads, leads, probe, cuff or capnography are attached.</span>
               </div>
               <div class="defib-mon-body">
                 <div class="defib-mon-waves">
@@ -1111,8 +1166,9 @@ body.scn-popup-open { overflow: hidden; }
                   <div class="defib-wave defib-wave-spo2" id="scnPleth"></div>
                   <div class="defib-wave defib-wave-etco2" id="scnCapnoWave"></div>
                 </div>
-                <div class="live-readout scn-vitals defib-mon-nums" id="scnVitals" aria-label="Monitor values: heart rate, NIBP, SpO2, respiratory rate and ETCO2"></div>
+                <div class="defib-mon-nums" id="scnVitals" aria-label="Monitor values: heart rate, NIBP, SpO2, respiratory rate and ETCO2"></div>
               </div>
+              <p class="defib-mon-caption" id="scnMonCaption"></p>
             </div>
             <p class="strip-meta" id="scnMonMeta">ECG lead II on the monitor, sweeping in real time, 1 s per large block of 5, once pads or a 3-lead ECG are attached. The rhythm is not named until you assess it. Colours are labelled: white or light grey ECG, blue SpO2, orange ETCO2, magenta NIBP, grey respiratory rate.</p>
             <div class="scn-clinical" id="scnClinical" aria-label="Clinical findings"></div>
@@ -1211,6 +1267,6 @@ body.scn-popup-open { overflow: hidden; }
     <p class="footer-disc">Spotted an error in a case, or a step that felt unfair? Use Give feedback and name the case number. Teaching simulation based on Resus Council UK 2025 adult ALS algorithms and the BNF. Not clinical guidance; follow local protocols and current guidelines.</p>
   </footer>
 </div>
-<script src="assets/ecg-app.js?v=20261127p2"></script>
+<script src="assets/ecg-app.js?v=20261127p3"></script>
 </body>
 </html>

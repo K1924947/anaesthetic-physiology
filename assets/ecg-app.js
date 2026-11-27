@@ -4400,7 +4400,8 @@ Object.assign(TXT, {
   a_sga: T("Supraglottic airway inserted with minimal interruption to compressions, and waveform capnography attached. Now give continuous compressions with ventilation at about 10 breaths a minute. If a leak makes ventilation inadequate, go back to pausing for ventilation at 30:2.", "ALS: SGA, then continuous compressions and 10 breaths a minute", "advAirway", { outcome: "Supraglottic airway in place; continuous compressions with about 10 breaths a minute.", nextStep: "Watch the waveform ETCO2: it reflects CPR quality and may rise sharply with ROSC." }),
   a_ett: T("Tracheal tube placed by a skilled person with a high success rate, pausing compressions for less than 5 s. A sustained ETCO2 trace on waveform capnography confirms tracheal placement and excludes oesophageal intubation. Now give continuous compressions with ventilation at about 10 breaths a minute.", "ALS: tracheal intubation by a skilled person, pause under 5 s, confirm with waveform capnography", "advAirway", { outcome: "Tracheal tube placed; a sustained ETCO2 trace confirms tracheal placement.", nextStep: "Continuous compressions with about 10 breaths a minute. A flat trace would mean oesophageal placement until proven otherwise." }),
   a_advNoBasic: T("Start with basic airway techniques and bag-mask ventilation, then progress stepwise to an SGA or tracheal tube when a skilled person is ready. Oxygenation and ventilation come before an advanced airway.", "ALS: airway, start basic and progress stepwise", "airwaySteps", { outcome: "Advanced airway placed.", whyWrong: "Start with basic airway techniques and bag-mask ventilation, then progress stepwise." }),
-  a_advHandsOff: T("Place an advanced airway while compressions continue, with a pause of less than 5 s, not during a rhythm check or a long hands-off period.", "ALS: tracheal intubation, pause under 5 s", "advAirway", { outcome: "Advanced airway placed.", whyWrong: "Place it while CPR continues, pausing compressions for less than 5 s." }),
+  a_adjunctOpenFirst: T("Start with basic manoeuvres: head tilt and chin lift, or jaw thrust, then an oropharyngeal or nasopharyngeal airway if needed.", "ALS: airway, start basic and progress stepwise", "airwaySteps", { outcome: "Airway adjunct inserted.", whyWrong: "Open the airway with head tilt and chin lift, or jaw thrust, before inserting an adjunct." }),
+  a_advHandsOff: T("Place an advanced airway while compressions continue, with a pause of less than 5 s, not during a rhythm check or a long hands-off period. An unnecessary prolonged compression pause counts as an interruption.", "ALS: tracheal intubation, pause under 5 s", "advAirway", { outcome: "Advanced airway placed.", whyWrong: "Place it while CPR continues, pausing compressions for less than 5 s. An unnecessary prolonged pause counts as an interruption." }),
   a_advAlready: T("An advanced airway is already in place and the capnography trace confirms it. Keep giving continuous compressions with about 10 breaths a minute.", "ALS: continuous compressions with an advanced airway", "advAirway", { outcome: "Advanced airway already in place." }),
   a_airwayDone: T("That airway step is already done. Progress stepwise according to the skills in the team.", "ALS: airway, start basic and progress stepwise", "airwaySteps", { outcome: "Airway step already done." }),
   p_airway: T("Airway adjuncts, bag-mask ventilation and advanced airways in this simulation are for cardiac arrest. This patient has a pulse; assess the airway as part of ABCDE and give oxygen if it is needed.", "Peri-arrest: ABCDE assessment", "causes", { outcome: "Airway step noted, not scored." }),
@@ -4425,7 +4426,7 @@ Object.assign(TXT, {
 });
 Object.assign(VER, {
   a_airwayOpen: ["V", ["gAirStep"]], a_adjunct: ["V", ["gAirStep"]], a_bvm: ["V", ["gAirStep", "gBagMask", "gBreath1s", "aStart"]],
-  a_bvmOpenFirst: ["V", ["gBagMask"]], a_sga: ["V", ["gAdv10", "aAirway"]], a_ett: ["V", ["gTubeSkill", "gTube5s", "gEtco2Tube", "gAdv10"]],
+  a_bvmOpenFirst: ["V", ["gBagMask"]], a_adjunctOpenFirst: ["V", ["gAirStep"]], a_sga: ["V", ["gAdv10", "aAirway"]], a_ett: ["V", ["gTubeSkill", "gTube5s", "gEtco2Tube", "gAdv10"]],
   a_advNoBasic: ["V", ["gAirStep"]], a_advHandsOff: ["V", ["gTube5s", "aMinInt"]], a_advAlready: ["V", ["gAdv10", "aAirway"]], a_airwayDone: ["V", ["gAirStep"]],
   p_airway: ["S", [], "Simulation simplification: airway actions are modelled for cardiac arrest only."],
   h17_flat: ["V", ["gEtco2Tube"]], h17_resite: ["V", ["gEtco2Tube", "gTubeSkill"]], h17_signs: ["V", ["gCapnoRosc", "gResume"]], h17_roscEarly: ["V", ["gCapnoRosc", "aRosc"]], h17_ffCheck: ["V", ["gCapnoRosc", "aShock"]],
@@ -4434,7 +4435,7 @@ Object.assign(VER, {
   h1_insulin: ["V", ["gInsulin", "gHyperkArrest"], "Accepting insulin-glucose in place of sodium bicarbonate in arrest is a teaching choice; for senior colleague review."]
 });
 /* New or changed clinical content in phase 1, shown in-page as for senior colleague review. */
-var REVIEW_KEYS = { a_airwayOpen: 1, a_adjunct: 1, a_bvm: 1, a_bvmOpenFirst: 1, a_sga: 1, a_ett: 1, a_advNoBasic: 1, a_advHandsOff: 1, a_advAlready: 1, a_airwayDone: 1, p_airway: 1, h17_flat: 1, h17_resite: 1, h17_signs: 1, h17_roscEarly: 1, h17_ffCheck: 1, h14_signs: 1, h14_roscEarly: 1, h14_ffCheck: 1, h1_calcium: 1, h1_bicarb: 1, h1_insulin: 1, a_insulin: 1, p_insulin: 1, a_spo2Probe: 1, a_nibpCuff: 1, a_pads: 1, a_leads: 1 };
+var REVIEW_KEYS = { a_airwayOpen: 1, a_adjunct: 1, a_adjunctOpenFirst: 1, a_bvm: 1, a_bvmOpenFirst: 1, a_sga: 1, a_ett: 1, a_advNoBasic: 1, a_advHandsOff: 1, a_advAlready: 1, a_airwayDone: 1, p_airway: 1, h17_flat: 1, h17_resite: 1, h17_signs: 1, h17_roscEarly: 1, h17_ffCheck: 1, h14_signs: 1, h14_roscEarly: 1, h14_ffCheck: 1, h1_calcium: 1, h1_bicarb: 1, h1_insulin: 1, a_insulin: 1, p_insulin: 1, a_spo2Probe: 1, a_nibpCuff: 1, a_pads: 1, a_leads: 1 };
 function reviewTag(k) { return REVIEW_KEYS[k] ? " <span class='vtag tag-review'>For senior colleague review</span>" : ""; }
 function hasReviewKey(o) { return !!(o && o.keys && o.keys.some(function (k) { return REVIEW_KEYS[k]; })); }
 
@@ -4449,7 +4450,12 @@ function airwayOutcome(a, st) {
   var w = st.airway;
   if (st.pulse) return O("info", "p_airway");
   if (a === "airwayOpen") { if (w.open || w.adv) return O("info", w.adv ? "a_advAlready" : "a_airwayDone"); w.open = true; return O("ok", "a_airwayOpen"); }
-  if (a === "adjunct") { if (w.adjunct || w.adv) return O("info", w.adv ? "a_advAlready" : "a_airwayDone"); w.adjunct = true; w.open = true; return O("ok", "a_adjunct"); }
+  if (a === "adjunct") {
+    if (w.adjunct || w.adv) return O("info", w.adv ? "a_advAlready" : "a_airwayDone");
+    var airwayOpen = w.open;
+    w.adjunct = true; w.open = true;
+    return airwayOpen ? O("ok", "a_adjunct") : O("part", ["a_adjunctOpenFirst", "a_adjunct"]);
+  }
   if (a === "bvm") {
     if (w.adv && !w.oesoph) return O("info", "a_advAlready");
     if (w.bvm) return O("info", "a_airwayDone");
@@ -4663,8 +4669,11 @@ function syncSweepLanes(st) {
     st.capnoLane.setSampler(hasCapno(st) ? function (t) { return capnoSample(st, t); } : null, "No capnography", win);
   }
 }
-function defibNum(fam, extraClass, label, val, note, aria) {
-  return "<div class='defib-num defib-num-" + fam + (extraClass ? " " + extraClass : "") + "' aria-label='" + esc(aria || (label + " " + val + (note ? ". " + note : ""))) + "'><div class='defib-num-lab'>" + esc(label) + "</div><div class='stat-val defib-num-val'>" + esc(val) + "</div>" + (note ? "<div class='stat-note defib-num-note'>" + esc(note) + "</div>" : "") + "</div>";
+function defibNum(fam, extraClass, label, val, unit, aria) {
+  return "<div class='defib-num defib-num-" + fam + (extraClass ? " " + extraClass : "") + "' aria-label='" + esc(aria || (label + " " + val + (unit ? " " + unit : ""))) + "'><div class='defib-num-lab'>" + esc(label) + "</div><div class='defib-num-read'><span class='stat-val defib-num-val'>" + esc(val) + "</span>" + (unit ? "<span class='defib-num-unit'>" + esc(unit) + "</span>" : "") + "</div></div>";
+}
+function monCaptionPush(parts, text) {
+  if (text && parts.indexOf(text) < 0) parts.push(text);
 }
 function renderClinicalFindings(st) {
   var host = $("scnClinical");
@@ -4824,85 +4833,110 @@ function renderMonitor() {
     $("scnVitals").innerHTML = html;
     return;
   }
-  var hrVal, hrNote, hrAria;
+  var cap = [];
+  var hrVal, hrUnit = "", hrAria;
   if (!hasEcgSource(SIM)) {
-    hrVal = "---"; hrNote = "No pads"; hrAria = "Heart rate not shown, no pads or leads";
+    hrVal = "---"; hrUnit = "No pads"; hrAria = "Heart rate not shown, no pads or leads";
+    monCaptionPush(cap, "No ECG source");
   } else if (!pulse) {
     var gen = (SIM.rhythm && SIM.rhythm.gen) || "";
+    if (hasPads(SIM)) monCaptionPush(cap, "ECG from the pads");
+    else monCaptionPush(cap, "ECG from the 3-lead");
     if (gen === "vf" || gen === "torsades") {
-      hrVal = "---"; hrNote = "No consistent QRS rate"; hrAria = "Heart rate not shown, no consistent QRS rate";
+      hrVal = "---"; hrAria = "Heart rate not shown, no consistent QRS rate";
+      monCaptionPush(cap, "No consistent QRS rate");
     } else if (gen === "asystole") {
-      hrVal = "---"; hrNote = "No QRS detected"; hrAria = "Heart rate not shown, no QRS detected";
+      hrVal = "---"; hrAria = "Heart rate not shown, no QRS detected";
+      monCaptionPush(cap, "No QRS detected");
     } else {
       var rate = (SIM.sig && SIM.sig.measure && SIM.sig.measure.rate) || m.hrBase || 0;
-      hrVal = rate ? Math.round(rate) + " /min" : "---";
-      hrNote = "QRS rate; no pulse";
-      hrAria = "QRS rate " + hrVal + ", no pulse";
+      hrVal = rate ? String(Math.round(rate)) : "---";
+      hrUnit = rate ? "/min" : "";
+      hrAria = "QRS rate " + (rate ? hrVal + " /min" : "not shown") + ", no pulse";
+      monCaptionPush(cap, "QRS rate, no pulse");
     }
   } else {
-    hrVal = m.hr ? Math.round(m.hr) + " /min" : "---";
-    hrNote = "From the ECG";
-    hrAria = "Heart rate " + hrVal;
+    hrVal = m.hr ? String(Math.round(m.hr)) : "---";
+    hrUnit = m.hr ? "/min" : "";
+    hrAria = "Heart rate " + (m.hr ? hrVal + " /min" : "not shown");
+    if (hasPads(SIM)) monCaptionPush(cap, "ECG from the pads");
+    else monCaptionPush(cap, "ECG from the 3-lead");
   }
-  var spo2Val, spo2Note, spo2Aria;
+  var spo2Val, spo2Unit = "", spo2Aria;
   if (!hasSpo2(SIM)) {
-    spo2Val = "---"; spo2Note = "Probe off"; spo2Aria = "SpO2 not shown, probe off";
+    spo2Val = "---"; spo2Unit = "Probe off"; spo2Aria = "SpO2 not shown, probe off";
+    monCaptionPush(cap, "SpO2 probe off");
   } else if (!pulse) {
-    spo2Val = "---"; spo2Note = "Poor trace: no pulsatile signal"; spo2Aria = "SpO2 unreadable, no pulsatile signal";
+    spo2Val = "---"; spo2Unit = "Poor"; spo2Aria = "SpO2 unreadable, no pulsatile signal";
+    monCaptionPush(cap, "SpO2 poor trace, no pulsatile signal");
   } else if (m.spo2 != null) {
-    spo2Val = Math.round(m.spo2) + " %"; spo2Note = "Pulse oximeter"; spo2Aria = "SpO2 " + spo2Val;
+    spo2Val = String(Math.round(m.spo2)); spo2Unit = "%"; spo2Aria = "SpO2 " + spo2Val + " %";
   } else {
-    spo2Val = "---"; spo2Note = "No reading"; spo2Aria = "SpO2 no reading";
+    spo2Val = "---"; spo2Aria = "SpO2 no reading";
   }
-  var rrVal, rrNote, rrAria;
+  var rrVal, rrUnit = "", rrAria;
   var w = SIM.airway || {};
   if (!hasEcgSource(SIM) && !hasCapno(SIM)) {
-    rrVal = "---"; rrNote = "No resp tracing"; rrAria = "Respiratory rate not shown, no resp tracing";
+    rrVal = "---"; rrUnit = "Off"; rrAria = "Respiratory rate not shown, no resp tracing";
   } else if (!pulse && hasCapno(SIM) && !w.oesoph) {
-    if (w.adv) { rrVal = "10 /min"; rrNote = "Ventilated rate, illustrative"; }
-    else { rrVal = "30:2"; rrNote = "Bag-mask ventilation, illustrative"; }
-    rrAria = "Respiratory rate " + rrVal + ", " + rrNote;
+    if (w.adv) { rrVal = "10"; rrUnit = "/min"; monCaptionPush(cap, "Ventilated rate about 10 breaths/min, illustrative"); }
+    else { rrVal = "30:2"; monCaptionPush(cap, "Bag-mask ventilation, 30:2, illustrative"); }
+    rrAria = "Respiratory rate " + (w.adv ? "10 /min, ventilated rate, illustrative" : "30:2, bag-mask ventilation, illustrative");
   } else if (!pulse) {
-    rrVal = "---"; rrNote = "Not breathing"; rrAria = "Respiratory rate not shown, not breathing";
+    rrVal = "---"; rrUnit = "Off"; rrAria = "Respiratory rate not shown, not breathing";
+    monCaptionPush(cap, "Not breathing");
   } else {
-    rrVal = m.rr != null ? Math.round(m.rr) + " /min" : "---";
-    rrNote = "Respiratory rate";
-    rrAria = "Respiratory rate " + rrVal;
+    rrVal = m.rr != null ? String(Math.round(m.rr)) : "---";
+    rrUnit = m.rr != null ? "/min" : "";
+    rrAria = "Respiratory rate " + (m.rr != null ? rrVal + " /min" : "not shown");
   }
-  var nibp, nibpNote = "", nibpAria = "", mean = "";
+  var nibp, nibpUnit = "", nibpAria = "", mean = "";
   if (!hasNibpCuff(SIM)) {
-    nibp = "---"; nibpNote = "Cuff off"; nibpAria = "NIBP not shown, cuff off";
+    nibp = "---"; nibpUnit = "Cuff off"; nibpAria = "NIBP not shown, cuff off";
+    monCaptionPush(cap, "NIBP cuff off");
   } else if (typeof isAskPending === "function" && isAskPending("nibp")) {
-    nibp = "Cycling…"; nibpNote = "Pending NIBP cycle"; nibpAria = "NIBP cycling";
+    nibp = "---"; nibpUnit = "Cycling"; nibpAria = "NIBP cycling";
+    monCaptionPush(cap, "NIBP cycling");
   } else if (!m.lastNIBP) {
-    nibp = "---"; nibpNote = "Cuff on, not yet cycled"; nibpAria = "NIBP cuff on, not yet cycled";
+    nibp = "---"; nibpAria = "NIBP cuff on, not yet cycled";
+    monCaptionPush(cap, "NIBP cuff on, not yet cycled");
   } else if (!pulse || m.lastNIBP.unrecordable) {
-    nibp = "Unrecordable";
-    nibpNote = "Last cycled " + mmss(m.lastNIBP.t) + " · " + nibpAgeText(SIM, m.lastNIBP);
+    nibp = "---"; nibpUnit = "Unrec.";
     nibpAria = "NIBP unrecordable, last cycled " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP);
+    monCaptionPush(cap, "NIBP unrecordable, last cycled " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP));
   } else {
     mean = Math.round(m.lastNIBP.dia + (m.lastNIBP.sys - m.lastNIBP.dia) / 3);
-    nibp = m.lastNIBP.sys + "/" + m.lastNIBP.dia + " (" + mean + ") mmHg";
-    nibpNote = "Last measured " + mmss(m.lastNIBP.t) + " (NIBP) · " + nibpAgeText(SIM, m.lastNIBP);
+    nibp = m.lastNIBP.sys + "/" + m.lastNIBP.dia;
+    nibpUnit = "(" + mean + ") mmHg";
     nibpAria = "NIBP " + m.lastNIBP.sys + " over " + m.lastNIBP.dia + ", mean " + mean + ", last measured " + mmss(m.lastNIBP.t);
+    monCaptionPush(cap, "NIBP last measured " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP));
   }
   var es = etco2State(SIM);
   var airway = w.adv ? (w.adv === "ett" ? (w.oesoph ? "Tracheal tube (just placed)" : "Tracheal tube: continuous compressions, about 10 breaths/min") : "SGA: continuous compressions, about 10 breaths/min") : (w.bvm ? "Bag-mask, 30:2" : "No airway adjunct yet");
-  var etVal, etNote, etAria;
-  if (!es.on) { etVal = "---"; etNote = "No capnography"; etAria = "ETCO2 not shown, no capnography"; }
-  else if (es.kind === "flat") { etVal = "Flat trace"; etNote = "No exhaled CO2 detected"; etAria = "ETCO2 flat trace, no exhaled CO2 detected. Airway: " + airway; }
-  else {
-    etVal = es.val.toFixed(1) + " kPa";
-    etNote = es.kind === "rosc" ? "Sharp rise" : es.kind === "cpr" ? "Low during CPR" : "Falling: compressions paused";
-    etAria = "ETCO2 " + etVal + ", " + etNote + ". Airway: " + airway;
+  var etVal, etUnit = "", etAria;
+  if (!es.on) {
+    etVal = "---"; etUnit = "Off"; etAria = "ETCO2 not shown, no capnography";
+    monCaptionPush(cap, "No capnography");
+  } else if (es.kind === "flat") {
+    etVal = "0.0"; etUnit = "kPa";
+    etAria = "ETCO2 flat trace, no exhaled CO2 detected. Airway: " + airway;
+    monCaptionPush(cap, "ETCO2 flat trace, no exhaled CO2. A flat trace means a misplaced tube until proven otherwise");
+  } else {
+    etVal = es.val.toFixed(1); etUnit = "kPa";
+    var etFlag = es.kind === "rosc" ? "Sharp rise" : es.kind === "cpr" ? "Low during CPR" : "Falling, compressions paused";
+    etAria = "ETCO2 " + etVal + " kPa, " + etFlag + ". Airway: " + airway;
+    monCaptionPush(cap, "ETCO2 " + etFlag.toLowerCase());
+    if (w.adv && !w.oesoph) monCaptionPush(cap, "Continuous compressions, about 10 breaths/min");
   }
-  etNote = etNote + ". Illustrative values, for senior colleague review";
+  monCaptionPush(cap, "Illustrative values, for senior colleague review");
   $("scnVitals").innerHTML =
-    defibNum("ecg", "", "HR", hrVal, hrNote, hrAria) +
-    defibNum("nibp", "", "NIBP", nibp, nibpNote, nibpAria) +
-    defibNum("spo2", "", "SpO2", spo2Val, spo2Note, spo2Aria) +
-    defibNum("rr", "", "RR", rrVal, rrNote, rrAria) +
-    defibNum("etco2", "stat-etco2", "ETCO2", etVal, etNote, etAria + ". Illustrative values");
+    defibNum("ecg", "", "HR", hrVal, hrUnit, hrAria) +
+    defibNum("nibp", "", "NIBP", nibp, nibpUnit, nibpAria) +
+    defibNum("spo2", "", "SpO2", spo2Val, spo2Unit, spo2Aria) +
+    defibNum("rr", "", "RR", rrVal, rrUnit, rrAria) +
+    defibNum("etco2", "stat-etco2", "ETCO2", etVal, etUnit, etAria + ". Illustrative values");
+  var capEl = $("scnMonCaption");
+  if (capEl) capEl.textContent = cap.join(". ") + ".";
   if (typeof renderClinicalFindings === "function") renderClinicalFindings(SIM);
   if (typeof syncSweepLanes === "function") syncSweepLanes(SIM);
 }
@@ -5388,36 +5422,38 @@ function missedStepLine(d) {
   return "Missed: " + name;
 }
 /* ===== Scenarios: actions, scripted branches, monitor and debrief ===== */
+var ACT_GROUPS = ["Monitoring", "Airway and breathing", "Circulation and defib", "Drugs", "Checks"];
+var PRIMARY_ACTS = ["cpr", "charge", "shock", "assess"];
 var ACTIONS = [
-  { id: "assess", label: "Check rhythm and pulse", g: "Assess and call" },
-  { id: "expert", label: "Seek expert help", g: "Assess and call" },
-  { id: "causes", label: "Identify reversible causes", g: "Assess and call" },
-  { id: "ask", label: "Ask for / check", g: "Assess and call" },
-  { id: "observe", label: "Observe and reassess later", g: "Assess and call" },
+  { id: "assess", label: "Check rhythm and pulse", g: "Checks" },
+  { id: "expert", label: "Seek expert help", g: "Checks" },
+  { id: "causes", label: "Identify reversible causes", g: "Checks" },
+  { id: "ask", label: "Ask for / check", g: "Checks" },
+  { id: "observe", label: "Observe and reassess later", g: "Checks" },
   { id: "pads", label: "Apply defibrillator pads", g: "Monitoring" },
   { id: "leads", label: "Apply 3-lead ECG", g: "Monitoring" },
   { id: "spo2Probe", label: "Apply SpO2 probe", g: "Monitoring" },
   { id: "nibpCuff", label: "Apply NIBP cuff", g: "Monitoring" },
   { id: "nibp", label: "Cycle NIBP now", g: "Monitoring" },
-  { id: "cpr", label: "Start CPR 30:2", g: "CPR and electrical" },
-  { id: "ff", label: "CPR for 2 minutes", g: "CPR and electrical" },
-  { id: "charge", label: "Charge defibrillator (continue CPR if in progress)", g: "CPR and electrical" },
-  { id: "clear", label: "Stop compressions, all clear", g: "CPR and electrical" },
-  { id: "shock", label: "Shock (unsynchronised)", g: "CPR and electrical" },
-  { id: "sync", label: "Synchronised DC cardioversion", g: "CPR and electrical" },
-  { id: "pace", label: "Transcutaneous pacing", g: "CPR and electrical" },
-  { id: "vagal", label: "Vagal manoeuvres", g: "CPR and electrical" },
-  { id: "decompress", label: "Chest decompression (needle or thoracostomy)", g: "CPR and electrical" },
-  { id: "padsAP", label: "Change pads to the antero-posterior position", g: "CPR and electrical" },
-  { id: "oxygen", label: "100% oxygen and check the airway", g: "CPR and electrical" },
-  { id: "pericardiocentesis", label: "Pericardiocentesis", g: "CPR and electrical" },
-  { id: "resternotomy", label: "Return to theatre / emergency re-sternotomy", g: "CPR and electrical" },
+  { id: "cpr", label: "Start CPR 30:2", g: "Circulation and defib" },
+  { id: "ff", label: "CPR for 2 minutes", g: "Circulation and defib" },
+  { id: "charge", label: "Charge defibrillator (continue CPR if in progress)", g: "Circulation and defib" },
+  { id: "clear", label: "Stop compressions, all clear", g: "Circulation and defib" },
+  { id: "shock", label: "Shock (unsynchronised)", g: "Circulation and defib" },
+  { id: "sync", label: "Synchronised DC cardioversion", g: "Circulation and defib" },
+  { id: "pace", label: "Transcutaneous pacing", g: "Circulation and defib" },
+  { id: "vagal", label: "Vagal manoeuvres", g: "Circulation and defib" },
+  { id: "decompress", label: "Chest decompression (needle or thoracostomy)", g: "Circulation and defib" },
+  { id: "padsAP", label: "Change pads to the antero-posterior position", g: "Circulation and defib" },
+  { id: "oxygen", label: "100% oxygen and check the airway", g: "Airway and breathing" },
+  { id: "pericardiocentesis", label: "Pericardiocentesis", g: "Circulation and defib" },
+  { id: "resternotomy", label: "Return to theatre / emergency re-sternotomy", g: "Circulation and defib" },
   { id: "airwayOpen", label: "Open the airway (head tilt, chin lift or jaw thrust)", g: "Airway and breathing" },
   { id: "adjunct", label: "Oropharyngeal or nasopharyngeal airway", g: "Airway and breathing" },
   { id: "bvm", label: "Bag-mask ventilation with oxygen, 30:2", g: "Airway and breathing" },
   { id: "sga", label: "Supraglottic airway (skilled person)", g: "Airway and breathing" },
   { id: "ett", label: "Tracheal tube (skilled person, pause under 5 s)", g: "Airway and breathing" },
-  { id: "drugs", label: "Drugs and fluids", g: "Drugs and fluids" }
+  { id: "drugs", label: "Drugs and fluids", g: "Drugs" }
 ];
 var ACT_EXTRA = [
   { id: "adr", label: "Adrenaline 1 mg IV" },
@@ -7772,21 +7808,50 @@ function scrollToScenario() {
 function debriefFold(id, title, body) {
   return "<details class='scn-debrief-fold'><summary><span class='scn-debrief-chevron' aria-hidden='true'></span><h3 class='viva-group' id='" + id + "'>" + esc(title) + "</h3></summary><div class='scn-debrief-fold-body'>" + body + "</div></details>";
 }
+function actionButtonState(a) {
+  var lab = a.label, disabled = !!(SIM && SIM.done);
+  var pads = typeof hasPads === "function" ? hasPads(SIM) : !!(SIM && SIM.attached && SIM.attached.pads);
+  if (a.id === "cpr") lab = (SIM && (SIM.cpr || SIM.cycleOpen)) ? "Continue CPR" : "Start CPR";
+  else if (a.id === "assess") lab = "Rhythm check";
+  else if (a.id === "charge") lab = "Charge";
+  else if (a.id === "shock") lab = "Shock";
+  if (!disabled && !pads && { charge: 1, shock: 1, clear: 1, sync: 1, pace: 1, padsAP: 1 }[a.id]) {
+    disabled = true;
+    if (a.id === "charge") lab = "Charge (pads needed)";
+    else if (a.id === "shock") lab = "Shock (pads needed)";
+    else if (a.id === "clear") lab = "All clear (pads needed)";
+    else if (a.id === "sync") lab = "Sync cardioversion (pads needed)";
+    else if (a.id === "pace") lab = "Pacing (pads needed)";
+    else if (a.id === "padsAP") lab = "AP pads (pads needed)";
+  }
+  return { lab: lab, disabled: disabled };
+}
+function actionButtonHtml(a, extraClass) {
+  var st = actionButtonState(a);
+  var aria = " aria-label='" + esc(st.lab) + "'";
+  if (a.id === "ff") aria = " aria-label='CPR for 2 minutes'";
+  else if (a.id === "causes") aria = " aria-label='" + esc(st.lab) + "' aria-haspopup='dialog' aria-controls='scnCauseList' aria-expanded='" + (typeof isScnMenuOpen === "function" && isScnMenuOpen("scnCauseList") ? "true" : "false") + "'";
+  else if (a.id === "ask") aria = " aria-label='" + esc(st.lab) + "' aria-haspopup='dialog' aria-controls='scnAskList' aria-expanded='" + (typeof isScnMenuOpen === "function" && isScnMenuOpen("scnAskList") ? "true" : "false") + "'";
+  else if (a.id === "drugs") aria = " aria-label='" + esc(st.lab) + "' aria-haspopup='dialog' aria-controls='scnDrugList' aria-expanded='" + (typeof isScnMenuOpen === "function" && isScnMenuOpen("scnDrugList") ? "true" : "false") + "'";
+  var cls = "act-btn" + (a.id === "ff" ? " act-ff" : "") + (extraClass ? " " + extraClass : "");
+  return "<button type='button' class='" + cls + "' data-a='" + a.id + "'" + aria + (st.disabled ? " disabled" : "") + ">" + esc(st.lab) + "</button>";
+}
 function renderActions() {
-  var host = $("scnActions"), groups = [];
-  ACTIONS.forEach(function (a) { if (groups.indexOf(a.g) < 0) groups.push(a.g); });
-  host.innerHTML = groups.map(function (g, gi) {
+  var host = $("scnActions"), groups = ACT_GROUPS ? ACT_GROUPS.slice() : [];
+  if (!groups.length) ACTIONS.forEach(function (a) { if (groups.indexOf(a.g) < 0) groups.push(a.g); });
+  var primary = (PRIMARY_ACTS || []).map(function (id) {
+    return ACTIONS.filter(function (a) { return a.id === id; })[0];
+  }).filter(Boolean);
+  var skipId = {};
+  primary.forEach(function (a) { skipId[a.id] = 1; });
+  var html = "<div class='act-primary' role='group' aria-label='Common actions'>" + primary.map(function (a) { return actionButtonHtml(a); }).join("") + "</div>";
+  html += groups.map(function (g, gi) {
+    var acts = ACTIONS.filter(function (a) { return a.g === g && !skipId[a.id]; });
+    if (!acts.length) return "";
     return "<div class='act-group'><h3 class='scen-group-label' id='act-g" + gi + "'>" + esc(g) + "</h3><div class='act-row' role='group' aria-labelledby='act-g" + gi + "'>" +
-      ACTIONS.filter(function (a) { return a.g === g; }).map(function (a) {
-        var lab = a.label;
-        var aria = "";
-        if (a.id === "ff") aria = " aria-label='CPR for 2 minutes'";
-        else if (a.id === "causes") aria = " aria-haspopup='dialog' aria-controls='scnCauseList' aria-expanded='" + (typeof isScnMenuOpen === "function" && isScnMenuOpen("scnCauseList") ? "true" : "false") + "'";
-        else if (a.id === "ask") aria = " aria-haspopup='dialog' aria-controls='scnAskList' aria-expanded='" + (typeof isScnMenuOpen === "function" && isScnMenuOpen("scnAskList") ? "true" : "false") + "'";
-        else if (a.id === "drugs") aria = " aria-haspopup='dialog' aria-controls='scnDrugList' aria-expanded='" + (typeof isScnMenuOpen === "function" && isScnMenuOpen("scnDrugList") ? "true" : "false") + "'";
-        return "<button type='button' class='act-btn" + (a.id === "ff" ? " act-ff" : "") + "' data-a='" + a.id + "'" + aria + (SIM.done ? " disabled" : "") + ">" + esc(lab) + "</button>";
-      }).join("") + "</div></div>";
+      acts.map(function (a) { return actionButtonHtml(a); }).join("") + "</div></div>";
   }).join("");
+  host.innerHTML = html;
   host.querySelectorAll(".act-btn").forEach(function (b) { b.addEventListener("click", function () { doAction(b.dataset.a); }); });
   var skipHost = $("scnSkipHost");
   if (skipHost) {
@@ -8007,7 +8072,7 @@ function doActionFinish(a, o, timeCost, rawAct) {
     return;
   }
   renderScene(); renderVitals(); renderClock(); renderFeedback(o, changed);
-  if ((a === "aden" || a === "drugs") && o.v !== "info") renderActions();
+  renderActions();
   announceFeedback(o);
   if (o.end) finishScenario(!o.endReason || o.endReason === "complete", o.endReason);
   if (window.innerWidth < 900) $("scnFeedback").scrollIntoView({ block: "start", behavior: prefersReduced() ? "auto" : "smooth" });
