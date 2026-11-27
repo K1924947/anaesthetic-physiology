@@ -1010,6 +1010,7 @@ var VQ = {
   nDig: ["bnfDig", "Contra-indications: ... supraventricular arrhythmias associated with accessory conducting pathways e.g. Wolff-Parkinson-White syndrome"],
   /* Special circumstances (checked in rcuk-special-circumstances-2025.txt) */
   gHyperkArrest: ["specG", "hyperkalaemic cardiac arrest: administer 10 mL 10% calcium chloride IV and 50 mmol sodium bicarbonate IV, through separate lines or with a flush in between."],
+  gInsulin: ["specG", "Give 10 units soluble insulin and 25 g glucose IV for treatment of moderate hyperkalaemia (6.0-6.4 mmol L-1) and severe hyperkalaemia (> 6.5 mmol L-1)."],
   gDecomp: ["specG", "Early and aggressive management of reversible causes (e.g. haemorrhage control, airway management, chest decompression) is essential for survival."]
 };
 var VER = {
@@ -1185,7 +1186,7 @@ var VER = {
   "req:s4:0": ["V", ["tNarrow"]], "req:s4:1": ["V", ["tNarrow", "nAden"]],
   "req:s5:0": ["V", ["gSed"]], "req:s5:1": ["V", ["tUnstable"]],
   "req:s6:0": ["V", ["tPoly", "nMg"]], "req:s6:1": ["V", ["tABCDE", "aCauses"]],
-  "req:h1:0": ["V", ["aStart"]], "req:h1:1": ["V", ["gAdrNon"]], "req:h1:2": ["V", ["aCauses"]], "req:h1:3": ["V", ["gHyperkArrest"]],
+  "req:h1:0": ["V", ["aStart"]], "req:h1:1": ["V", ["gAdrNon"]], "req:h1:2": ["V", ["aCauses"]], "req:h1:3": ["V", ["gHyperkArrest"]], "req:h1:4": ["V", ["gHyperkArrest", "gInsulin"], "Accepting insulin-glucose in place of sodium bicarbonate in arrest is a teaching choice agreed by Ed Kim; the RCUK hyperkalaemic arrest line names calcium chloride and sodium bicarbonate. For senior colleague review."],
   "req:h2:0": ["V", ["aStart"]], "req:h2:1": ["V", ["gAdrNon"]], "req:h2:2": ["V", ["aCauses"]], "req:h2:3": ["V", ["gDecomp"]],
   "req:h3:0": ["V", ["gAsap"]], "req:h3:1": ["V", ["gResume"]], "req:h3:2": ["V", ["gAdrSh"]], "req:h3:3": ["V", ["gAmio300"]],
   "req:h4:0": ["V", ["gAsap"]], "req:h4:1": ["V", ["gResume"]], "req:h4:2": ["V", ["gAdrNon"]],
@@ -3282,7 +3283,7 @@ var TXT = {
    (tachy V3 March 2026), and BNF monographs. Scripted shortcuts are tagged
    as simulation simplifications. */
 Object.assign(SRC, {
-  hyperkArrest: "RCUK 2025 Special circumstances guidelines (27 Oct 2025): in hyperkalaemic cardiac arrest, administer 10 mL 10% calcium chloride IV and 50 mmol sodium bicarbonate IV, through separate lines or with a flush in between. BNF calcium chloride (acute severe hyperkalaemia with ECG changes): 10 mL of calcium chloride 10%, repeat if no improvement in the ECG within 5 to 10 minutes.",
+  hyperkArrest: "RCUK 2025 Special circumstances guidelines (27 Oct 2025): in hyperkalaemic cardiac arrest, administer 10 mL 10% calcium chloride IV and 50 mmol sodium bicarbonate IV, through separate lines or with a flush in between. To shift potassium into cells: give 10 units soluble insulin and 25 g glucose IV for moderate and severe hyperkalaemia. BNF calcium chloride (acute severe hyperkalaemia with ECG changes): 10 mL of calcium chloride 10%, repeat if no improvement in the ECG within 5 to 10 minutes.",
   chestDecomp: "RCUK 2025 Special circumstances guidelines: always address tension pneumothorax among the reversible causes; where appropriate, prioritise treating reversible causes, even if chest compressions are briefly interrupted. In traumatic cardiac arrest, early and aggressive management of reversible causes (for example haemorrhage control, airway management, chest decompression) is essential for survival.",
   afEnergy: "RCUK 2025 Adult ALS guideline (peri-arrest): for atrial fibrillation, an initial synchronised shock at maximum defibrillator output, rather than an escalating approach, is a reasonable strategy based on current data.",
   broadStable: "RCUK Adult tachyarrhythmia algorithm (updated March 2026): broad and regular: treat as VT; synchronised shock(s); if sedation or anaesthesia risk is too high consider drug treatments: procainamide 10 to 15 mg/kg over 20 min, or if procainamide is not available or contraindicated give amiodarone 300 mg IV over 10 to 60 min, then 900 mg IV over 24 h; if drugs are ineffective, synchronised shock(s) with expert advice.",
@@ -3337,9 +3338,12 @@ Object.assign(TXT, {
   h1_cpr: T("CPR 30:2 is under way. In a non-shockable arrest, adrenaline 1 mg is due as soon as possible, and reversible causes should be treated.", "ALS: non-shockable", "adrNon", { outcome: "CPR 30:2 is under way.", nextStep: "In a non-shockable arrest, adrenaline 1 mg is due as soon as possible, and reversible causes should be treated." }),
   h1_shock: T("Do not shock asystole. It is a non-shockable rhythm.", "ALS: non-shockable", "als", { whyWrong: "This is asystole, a non-shockable rhythm, so a shock will not help." }),
   h1_causes: T("The history (missed dialysis, a very high potassium) points to hyperkalaemia as the reversible cause.", "ALS: identify and treat reversible causes", "causes", { outcome: "The history (missed dialysis, a very high potassium) points to hyperkalaemia as the reversible cause." }),
-  h1_calcium: T("Calcium chloride 10 mL of 10% IV given in hyperkalaemic cardiac arrest, to antagonise the membrane effect of high potassium. RCUK 2025 special circumstances also include 50 mmol sodium bicarbonate IV through a separate line. Insulin-glucose is used to shift potassium but is not modelled as a separate action here (simulation simplification).", "Special circumstances: hyperkalaemic cardiac arrest", "hyperkArrest", { outcome: "Calcium chloride 10 mL of 10% IV given in hyperkalaemic cardiac arrest, to antagonise the membrane effect of high potassium.", nextStep: "RCUK 2025 special circumstances also include 50 mmol sodium bicarbonate IV through a separate line. Continue ALS." }),
+  h1_calcium: T("Calcium chloride 10 mL of 10% IV given in hyperkalaemic cardiac arrest, to antagonise the membrane effect of high potassium. RCUK 2025 special circumstances pair it with 50 mmol sodium bicarbonate IV, through a separate line or with a flush in between, and give soluble insulin 10 units with glucose 25 g IV to shift potassium into cells. In this case calcium plus either sodium bicarbonate or insulin-glucose (or both) counts as complete treatment.", "Special circumstances: hyperkalaemic cardiac arrest", "hyperkArrest", { outcome: "Calcium chloride 10 mL of 10% IV given in hyperkalaemic cardiac arrest, to antagonise the membrane effect of high potassium.", nextStep: "Also give sodium bicarbonate 50 mmol IV or soluble insulin 10 units with glucose 25 g IV (either or both). Continue ALS." }),
   h1_calciumEarly: T("Calcium chloride is the right drug if this arrest is caused by hyperkalaemia. Naming the reversible cause first keeps the team aligned, but the dose itself is still indicated.", "Special circumstances: hyperkalaemic cardiac arrest", "hyperkArrest", { outcome: "Calcium chloride given.", whyWrong: "The reversible cause had not yet been named, but calcium is still indicated if hyperkalaemia is the cause." }),
-  h1_bicarb: T("Sodium bicarbonate 50 mmol is included with calcium in the RCUK 2025 special-circumstances treatment of hyperkalaemic cardiac arrest, through a separate line or with a flush in between. It is not required to complete this simulation (simulation simplification).", "Special circumstances: hyperkalaemic cardiac arrest", "hyperkArrest", { outcome: "Sodium bicarbonate given, which is included in the special-circumstances treatment of hyperkalaemic cardiac arrest.", nextStep: "It is not required to complete this simulation." }),
+  h1_bicarb: T("Sodium bicarbonate 50 mmol IV is part of the RCUK 2025 special-circumstances treatment of hyperkalaemic cardiac arrest, given through a separate line from calcium or with a flush in between. Calcium chloride is still required; with calcium, this completes the potassium treatment in this case.", "Special circumstances: hyperkalaemic cardiac arrest", "hyperkArrest", { outcome: "Sodium bicarbonate 50 mmol IV given, through a separate line or with a flush.", nextStep: "Make sure calcium chloride 10 mL of 10% IV has been given as well." }),
+  h1_insulin: T("Soluble insulin 10 units with glucose 25 g IV shifts potassium into cells (RCUK 2025 special circumstances, hyperkalaemia). RCUK adds a 10% glucose infusion at 50 mL/h for 5 h if the pre-treatment glucose is under 7 mmol/L. The RCUK hyperkalaemic arrest line names calcium chloride and sodium bicarbonate; in this simulation either sodium bicarbonate or insulin-glucose, or both, counts alongside calcium. Teaching choice, for senior colleague review.", "Special circumstances: hyperkalaemia, shift potassium into cells", "hyperkArrest", { outcome: "Soluble insulin 10 units with glucose 25 g IV given.", nextStep: "Make sure calcium chloride 10 mL of 10% IV has been given as well, and check the glucose." }),
+  a_insulin: T("Insulin-glucose shifts potassium into cells and is a hyperkalaemia treatment. Nothing in this case points to a high potassium, so it is not indicated here.", "ALS: identify and treat reversible causes", "causes", { whyWrong: "Insulin-glucose treats hyperkalaemia, and nothing here points to a high potassium." }),
+  p_insulin: T("Insulin-glucose shifts potassium into cells and is a hyperkalaemia treatment. It is not a step in the peri-arrest arrhythmia algorithms, and nothing in this case points to a high potassium.", "Peri-arrest: identify and treat reversible causes", "causes", { whyWrong: "Insulin-glucose treats hyperkalaemia, and nothing here points to a high potassium." }),
   h1_rosc: T("A pulse has returned. Immediately after ROSC: ABCDE assessment, aim SpO2 94 to 98% and a normal PaCO2, systolic blood pressure over 100 mmHg, a 12-lead ECG, identify and treat the cause, and temperature control. The potassium still needs to be shifted and removed.", "ALS: immediately after ROSC", "rosc", { outcome: "A pulse has returned.", nextStep: "Immediately after ROSC: ABCDE assessment, aim SpO2 94 to 98% and a normal PaCO2, systolic blood pressure over 100 mmHg, a 12-lead ECG, identify and treat the cause, and temperature control." }),
 
   h2_assess: T("Pulseless electrical activity: an organised rhythm but no pulse. This is a non-shockable arrest.", "ALS: non-shockable", "adrNon", { outcome: "Pulseless electrical activity: an organised rhythm but no pulse.", nextStep: "Resume CPR and give adrenaline as soon as possible, and treat the reversible cause." }),
@@ -3499,11 +3503,13 @@ HIDDEN_SCENARIOS.push(
     blurb: "A haemodialysis patient is unresponsive this morning.",
     scene: "A 61-year-old who usually has haemodialysis three times a week missed yesterday's session. The team was called to review them this morning. They are now unresponsive and not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for the first rhythm check.",
     start: { rhythm: { gen: "asystole" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
-    req: [["cpr", "CPR 30:2 without delay", "als"], ["adr", "Adrenaline 1 mg as soon as possible", "adrNon"], ["causes", "Identify the reversible cause (hyperkalaemia)", "causes"], ["calcium", "Calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest", "hyperkArrest"]],
+    req: [["cpr", "CPR 30:2 without delay", "als"], ["adr", "Adrenaline 1 mg as soon as possible", "adrNon"], ["causes", "Identify the reversible cause (hyperkalaemia)", "causes"], ["calcium", "Calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest", "hyperkArrest"], ["shiftK", "Sodium bicarbonate 50 mmol IV or insulin-glucose (either or both), as well as calcium", "hyperkArrest"]],
     due: function (st) {
       var out = hiddenDueArrestAdr(st);
       if ((!st.did.causes || !st.did.calcium) && (st.cpr || st.checked || (st.actionN || 0) >= 2)) {
         out.push(dueItem(st.did.causes ? "calcium" : "causes", st.did.causes ? "Calcium chloride 10 mL of 10% IV in hyperkalaemic cardiac arrest" : "Identify the reversible cause (hyperkalaemia)", "Think about reversible causes", "Have you thought about reversible causes?", st.did.causes ? "hyperkArrest" : "causes", st.did.causes ? "Special circumstances: hyperkalaemic cardiac arrest" : "ALS: identify and treat reversible causes"));
+      } else if (st.did.calcium && !st.did.shiftK) {
+        out.push(dueItem("shiftK", "Sodium bicarbonate 50 mmol IV or insulin-glucose (either or both), as well as calcium", "Review whether the treatment of this cause is complete", "Have you thought about whether the treatment of this cause is complete?", "hyperkArrest", "Special circumstances: hyperkalaemic cardiac arrest"));
       }
       return out;
     },
@@ -3518,7 +3524,7 @@ HIDDEN_SCENARIOS.push(
       if (a === "ff") {
         if (!st.cpr) return O("info", "a_ffNoCPR");
         st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
-        if (st.did.adr && st.did.calcium) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "hyperk" } }); }
+        if (st.did.adr && st.did.calcium && st.did.shiftK) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "hyperk" } }); }
         return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "asystole" } });
       }
       if (a === "assess") {
@@ -3530,7 +3536,7 @@ HIDDEN_SCENARIOS.push(
         }
         if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
         st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
-        if (st.did.adr && st.did.calcium) return O("ok", "h1_rosc", { end: true, pulse: true, cprStop: true, rhythm: { gen: "hyperk" }, phys: "roscHyperk", vit: roscVit });
+        if (st.did.adr && st.did.calcium && st.did.shiftK) return O("ok", "h1_rosc", { end: true, pulse: true, cprStop: true, rhythm: { gen: "hyperk" }, phys: "roscHyperk", vit: roscVit });
         return O("ok", "h1_assess", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
       }
       if (a === "cpr") { if (st.cpr) return O("info", "a_cprRunning"); st.did.cpr = 1; return O("ok", "h1_cpr", { cprStart: true }); }
@@ -3549,7 +3555,8 @@ HIDDEN_SCENARIOS.push(
         }
         return O(st.did.causes ? "ok" : "part", keys, { phys: "hyperk" });
       }
-      if (a === "bicarb") { st.did.bicarb = 1; return O("ok", "h1_bicarb"); }
+      if (a === "bicarb") { st.did.bicarb = 1; st.did.shiftK = 1; return O("ok", "h1_bicarb"); }
+      if (a === "insulin") { st.did.insulin = 1; st.did.shiftK = 1; return O("ok", "h1_insulin"); }
       if (a === "expert") return O("ok", "a_expert");
       return null;
     } }
@@ -4329,6 +4336,7 @@ function defaultEvent(a, label, resolved) {
     mg: "Magnesium 8 mmol (2 g) IV given.",
     fluid: "IV fluid bolus given.",
     bicarb: "Sodium bicarbonate IV given.",
+    insulin: "Soluble insulin 10 units with glucose 25 g IV given.",
     calcium: "Calcium chloride IV given.",
     decompress: "Chest decompression performed.",
     amioInf: "Amiodarone 300 mg IV infusion started.",
@@ -5006,6 +5014,7 @@ var ACT_EXTRA = [
   { id: "mg", label: "Magnesium 8 mmol (2 g) IV over 10 min" },
   { id: "fluid", label: "IV fluid bolus" },
   { id: "bicarb", label: "Sodium bicarbonate 50 mmol IV" },
+  { id: "insulin", label: "Soluble insulin 10 units with glucose 25 g IV" },
   { id: "calcium", label: "Calcium chloride IV" },
   { id: "amioInf", label: "Amiodarone 300 mg IV over 10 to 60 min" },
   { id: "amio1020", label: "Amiodarone 300 mg IV over 10 to 20 min" },
@@ -5019,7 +5028,7 @@ var ACT_EXTRA = [
   { id: "fibrin", label: "Fibrinolytic or thrombolytic drug" }
 ];
 var ACT = {}; ACTIONS.concat(ACT_EXTRA).forEach(function (a) { ACT[a.id] = a; });
-var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, drugs: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, charge: 5, clear: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, calcium: 20, decompress: 30, amioInf: 30, amio1020: 30, adrInf: 30, iso: 30, procain: 30, verap: 20, kcl: 20, lido100: 20, lido50: 20, fibrin: 30, padsAP: 20, oxygen: 20, pericardiocentesis: 30, resternotomy: 30 };
+var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, drugs: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, charge: 5, clear: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, insulin: 20, calcium: 20, decompress: 30, amioInf: 30, amio1020: 30, adrInf: 30, iso: 30, procain: 30, verap: 20, kcl: 20, lido100: 20, lido50: 20, fibrin: 30, padsAP: 20, oxygen: 20, pericardiocentesis: 30, resternotomy: 30 };
 function adenLabel(n) { return n === 0 ? "Adenosine 6 mg rapid IV" : n === 1 ? "Adenosine 12 mg rapid IV" : "Adenosine 18 mg (RCUK) or 12 mg (BNF) rapid IV"; }
 
 /* ===== Drugs and fluids panel (catalogue, chooser, dose resolution) ===== */
@@ -5086,6 +5095,11 @@ var DRUG_ITEMS = [
   { id: "bicarb", group: "electro", name: "Sodium bicarbonate", fixed: true, options: [
     { id: "bicarb", label: "50 mmol IV", event: "Sodium bicarbonate 50 mmol IV given." }
   ] },
+  { id: "insulin", group: "electro", name: "Insulin and glucose", fixed: true,
+    note: "RCUK 2025 special circumstances dose for moderate and severe hyperkalaemia. Check the glucose afterwards and follow local protocol.",
+    options: [
+      { id: "insulin", label: "Soluble insulin 10 units with glucose 25 g IV", event: "Soluble insulin 10 units with glucose 25 g IV given." }
+    ] },
   { id: "fluid", group: "fluid", name: "Crystalloid bolus", fixed: false, options: [
     { id: "fluid:saline", label: "0.9% sodium chloride bolus", event: "0.9% sodium chloride bolus given." },
     { id: "fluid:balanced", label: "Balanced crystalloid bolus", event: "Balanced crystalloid bolus given." }
@@ -5201,7 +5215,7 @@ function recentDrugEntries(st) {
   for (var i = acts.length - 1; i >= 0 && out.length < 3; i--) {
     var id = baseAct(acts[i].act);
     var found = DRUG_OPT_INDEX[acts[i].act] || DRUG_OPT_INDEX[id];
-    if (!found && id !== "aden" && !ACT_ALIAS[acts[i].act] && ["adr","amio300","amio150","amioInf","amio1020","atro","aden","mg","fluid","bicarb","calcium","adrInf","iso","procain","verap","kcl","lido100","lido50","fibrin"].indexOf(id) < 0) continue;
+    if (!found && id !== "aden" && !ACT_ALIAS[acts[i].act] && ["adr","amio300","amio150","amioInf","amio1020","atro","aden","mg","fluid","bicarb","insulin","calcium","adrInf","iso","procain","verap","kcl","lido100","lido50","fibrin"].indexOf(id) < 0) continue;
     var text = (acts[i].o && acts[i].o.event) || (acts[i].o && acts[i].o.label) || acts[i].text || acts[i].act;
     out.unshift({ t: acts[i].t, text: text });
   }
@@ -6631,7 +6645,7 @@ function applyDefibSafetyToShock(o, st) {
 function genericOutcome(a, st) {
   if (a === "charge" || a === "clear") return handleDefibSafety(a, st);
   if (!st.pulse) {
-    var m = { atro: "a_atro", aden: "a_aden", vagal: "a_vagal", sync: "a_sync", pace: "a_pace", mg: "a_mg", bicarb: "a_bicarb", calcium: "a_calcium", fluid: "a_fluid", observe: "a_observe", amio150: "a_amio150", amio300: "a_amio300", adr: "s1_adrEarly", ff: "a_ffNoCPR", decompress: "a_decompress", amioInf: "a_amioInf", amio1020: "a_amioInf", adrInf: "a_adrInf", iso: "a_iso", procain: "a_procain", verap: "a_verap", kcl: "a_kcl", lido100: "a_lido", lido50: "a_lido", fibrin: "a_fibrin", padsAP: "a_padsAP", oxygen: "a_oxygen", pericardiocentesis: "a_pericardiocentesis", resternotomy: "a_resternotomy" };
+    var m = { atro: "a_atro", aden: "a_aden", vagal: "a_vagal", sync: "a_sync", pace: "a_pace", mg: "a_mg", bicarb: "a_bicarb", insulin: "a_insulin", calcium: "a_calcium", fluid: "a_fluid", observe: "a_observe", amio150: "a_amio150", amio300: "a_amio300", adr: "s1_adrEarly", ff: "a_ffNoCPR", decompress: "a_decompress", amioInf: "a_amioInf", amio1020: "a_amioInf", adrInf: "a_adrInf", iso: "a_iso", procain: "a_procain", verap: "a_verap", kcl: "a_kcl", lido100: "a_lido", lido50: "a_lido", fibrin: "a_fibrin", padsAP: "a_padsAP", oxygen: "a_oxygen", pericardiocentesis: "a_pericardiocentesis", resternotomy: "a_resternotomy" };
     if (a === "expert") return O("ok", "a_expert");
     if (a === "causes") return O("ok", "a_causes");
     if (a === "cpr") { if (st.cpr) return O("info", "a_cprRunning"); return O("ok", "s1_cpr", { cprStart: true }); }
@@ -6644,7 +6658,7 @@ function genericOutcome(a, st) {
     }
     return O("bad", m[a] || "a_observe");
   }
-  var p = { cpr: "p_cpr", shock: "p_shock", adr: "p_adr", amio300: "p_amio", amio150: "p_amio150", atro: "p_atro", aden: "p_aden", vagal: "p_vagal", sync: "p_sync", pace: "p_pace", mg: "p_mg", fluid: "p_fluid", bicarb: "p_bicarb", calcium: "p_calcium", observe: "p_observe", expert: "p_expert", causes: "p_causes", ff: "a_ffNoCPR", assess: "a_assessAgain", decompress: "p_decompress", amioInf: "p_amioInf", amio1020: "p_amioInf", adrInf: "p_adrInf", iso: "p_iso", procain: "p_procain", verap: "p_verap", kcl: "p_kcl", lido100: "p_lido", lido50: "p_lido", fibrin: "p_fibrin", padsAP: "p_padsAP", oxygen: "p_oxygen", pericardiocentesis: "p_pericardiocentesis", resternotomy: "p_resternotomy" };
+  var p = { cpr: "p_cpr", shock: "p_shock", adr: "p_adr", amio300: "p_amio", amio150: "p_amio150", atro: "p_atro", aden: "p_aden", vagal: "p_vagal", sync: "p_sync", pace: "p_pace", mg: "p_mg", fluid: "p_fluid", bicarb: "p_bicarb", insulin: "p_insulin", calcium: "p_calcium", observe: "p_observe", expert: "p_expert", causes: "p_causes", ff: "a_ffNoCPR", assess: "a_assessAgain", decompress: "p_decompress", amioInf: "p_amioInf", amio1020: "p_amioInf", adrInf: "p_adrInf", iso: "p_iso", procain: "p_procain", verap: "p_verap", kcl: "p_kcl", lido100: "p_lido", lido50: "p_lido", fibrin: "p_fibrin", padsAP: "p_padsAP", oxygen: "p_oxygen", pericardiocentesis: "p_pericardiocentesis", resternotomy: "p_resternotomy" };
   var v = (a === "expert" || a === "causes") ? "ok" : (a === "ff" || a === "assess") ? "info" : "bad";
   return O(v, p[a]);
 }
@@ -7017,6 +7031,7 @@ function actionMatchesDue(a, id) {
   if (a === "adr" && id === "adrRepeat") return true;
   if (a === "sync" && id === "sync2") return true;
   if ((a === "adrInf" || a === "iso") && id === "pace") return true;
+  if ((a === "bicarb" || a === "insulin") && id === "shiftK") return true;
   if (a.indexOf("cause:") === 0 && id === "causes") return true;
   return false;
 }
@@ -8134,6 +8149,7 @@ var IDEAL_PATHS = {
     IP("adr", "Adrenaline 1 mg as soon as possible", "Adrenaline's alpha-1 vasoconstriction raises aortic diastolic pressure during CPR, and so coronary and cerebral perfusion pressure.", SRC_ALS),
     IP("causes", "Identify the reversible cause (hyperkalaemia)", "Name and treat reversible causes early. In this case the reversible cause is hyperkalaemia. Naming the cause can be done at any time once the arrest is recognised.", SRC_ALS_A, { orderFree: true }),
     IP("calcium", "Calcium chloride 10 mL of 10% IV", "Calcium antagonises the membrane effect of high potassium without immediately lowering the serum potassium.", SRC_SPEC, { after: ["causes"] }),
+    IP("bicarb", "Sodium bicarbonate 50 mmol IV or insulin-glucose (either or both)", "RCUK pairs calcium with sodium bicarbonate in hyperkalaemic arrest; insulin-glucose shifts potassium into cells. In this case either, or both, counts alongside calcium (teaching choice, for senior colleague review).", SRC_SPEC, ["insulin"], { after: ["causes"] }),
     IP("ff", "Continue CPR cycles, with adrenaline every 3 to 5 minutes", "After treating the cause, continue 2-minute cycles of CPR and repeat adrenaline every 3 to 5 minutes until there is a return of spontaneous circulation.", SRC_ALS),
     IP("assess", "Check rhythm and pulse (ROSC)", "Reassess the rhythm and pulse after treating the cause; a return of spontaneous circulation is the aim.", SRC_ALS_A)
   ],
@@ -8438,7 +8454,7 @@ var MODEL_ACTS = {
   s4: ["assess","ask:ecg12","nibp","vagal","aden:6","aden:12"],
   s5: ["assess","ask:ecg12","nibp","expert","charge","clear","sync","charge","clear","sync"],
   s6: ["assess","ask:ecg12","ask:gas","mg","cause:hypokalaemia"],
-  h1: ["assess","cpr","adr","ask:gas","cause:hyperkalaemia","calcium:arrest","ff","assess"],
+  h1: ["assess","cpr","adr","ask:gas","cause:hyperkalaemia","calcium:arrest","bicarb","ff","assess"],
   h2: ["assess","cpr","adr","ask:examine","cause:tension","decompress","ff","assess"],
   h3: ["assess","charge","clear","shock","cpr","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","adr","amio300","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","ff","assess"],
   h4: ["assess","charge","clear","shock","cpr","ff","assess","cpr","adr","ff","assess"],
