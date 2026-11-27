@@ -1066,7 +1066,7 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   const spanMm = upMm + downMm;
   const slim = hmm < 27.5;
   const minLabelPx = nameFs + 6, minIntervalPx = rowF + 10;
-  const nLabelRows = slim ? 0 : 2;
+  const nLabelRows = slim ? 0 : 3;
   // Give the waveform the millimetres it needs at 10 mm/mV first; shrink label and interval bands rather than flatten peaks.
   const waveNeedMm = spanMm + marginMm * 2;
   const preferLabelPx = slim ? minLabelPx : (labelTopPx + nLabelRows * (boxH + rowGap) + 1);
@@ -1118,7 +1118,10 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   const nameW = g.measureText(id).width;
   g.fillStyle = '#111'; g.fillRect(3, 3, nameW + 8, nameFs + 5);
   g.fillStyle = '#fff'; g.fillText(id, 7, 3 + nameFs);
-  if (slim || !I || !tr) return;
+  if (slim || !I || !tr) {
+    canvas.dataset.annots = JSON.stringify({ lead: id, cursorX, tAbs, labels: [], bar: null });
+    return;
+  }
   const X = t => (x0 + (t - tWin0) * MM_PER_MS) * px;
   const yTrace = t => (base - sampleLead(id, t) * MM_PER_MV) * px;
   const Yv = t => Math.max(traceTopMm * px + 2, Math.min((traceTopMm + traceHmm) * px - 2, yTrace(t)));
@@ -1143,13 +1146,19 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   let stMid = I.qOff + 40, stBest = 99;
   for (let t = I.qOff + 16; t < tPk - 12; t++) { const a1 = Math.abs(sampleLead(id, t)); if (a1 < stBest) { stBest = a1; stMid = t; } }
   // Label the beat that contains the cursor, using the shared recording's beat start.
+  // A callout and its leader appear only once that segment has started to be drawn,
+  // and the leader dot is clamped to already-printed ink, never ahead of the cursor.
   const b0 = REC.starts[beatIndexAt(tAbs)];
+  let tWaveOn = tPk;
+  for (let t = stMid + 8; t < tPk; t++) {
+    if (Math.abs(sampleLead(id, t)) > 0.04) { tWaveOn = t; break; }
+  }
   const features = [
-    { txt: 'P wave', t: b0 + pPk },
-    { txt: 'QRS', t: b0 + qrsPk },
-    { txt: 'ST', t: b0 + stMid },
-    { txt: 'T wave', t: b0 + tPk }
-  ].sort((a, b) => a.t - b.t);
+    { txt: 'P wave', t: b0 + pPk, start: b0 + I.pOn },
+    { txt: 'QRS', t: b0 + qrsPk, start: b0 + I.qOn },
+    { txt: 'ST', t: b0 + stMid, start: b0 + I.qOff },
+    { txt: 'T wave', t: b0 + tPk, start: b0 + tWaveOn }
+  ].filter(f => tAbs >= f.start).sort((a, b) => a.t - b.t);
   const font = tagF;
   const paperW = cssW;
   const boxes = [{ x0: 3, y0: 3, x1: 3 + nameW + 8, y1: 3 + nameFs + 5 }];
@@ -1159,25 +1168,43 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
     const w = g.measureText(txt).width + 8;
     return { x0: cx - w / 2, y0: cy - font, x1: cx + w / 2, y1: cy + 5, w, cy };
   };
+  // Keep the reserved band at two rows so the waveform scale does not change.
+  // If that band was squeezed away, overlay rows at the top of the paper.
+  // Use a third row when there is height, so P, QRS, ST and T can all sit
+  // on a finished beat instead of spilling onto blank paper to find space.
+  const overlayLabels = !slim && labelBandPx < boxH + 4;
   const rowYs = [];
   for (let i = 0; i < nLabelRows; i++) rowYs.push(labelTopPx + i * (boxH + rowGap) + font);
   const placed = [];
+  const cursorPad = 0.75;
+  const topBandY = cssH * 0.2;
   for (const f of features) {
-    const featX = X(f.t), featY = Yv(f.t);
+    const tDot = Math.min(f.t, tAbs);
+    const featX = X(tDot), featY = Yv(tDot);
     if (featX < 8 || featX > paperW - 8) continue;
+    if (featX > cursorX + cursorPad) continue;
     g.font = `700 ${font}px "Source Sans 3", Arial, sans-serif`;
     const tw = g.measureText(f.txt).width + 8;
-    let hit = null;
-    const dxs = [0, 14, -14, 28, -28, 42, -42];
+    const dxs = [0, -14, 14, -28, 28, -42, 42, -56, 56];
+    const candidates = [];
     for (const y of rowYs) {
       for (const dx of dxs) {
         const cx = Math.max(tw / 2 + 2, Math.min(paperW - tw / 2 - 2, featX + dx));
         const cand = boxAt(f.txt, cx, y);
-        if (cand.y1 > traceTopMm * px - 1) continue;
-        if (!overlaps(cand)) { hit = cand; break; }
+        if (cand.y0 < 2 || cand.y1 > cssH - 4) continue;
+        if (!overlayLabels && cand.y1 > traceTopMm * px - 1) continue;
+        if (cand.x0 > cursorX + cursorPad) continue;
+        const fullyLeft = cand.x1 <= cursorX + cursorPad;
+        const inTopBand = cand.y1 <= topBandY + 1;
+        // A box may straddle the cursor only in the top band, so blank paper
+        // to the right of the sweep stays clear of ink in the wave area.
+        if (!fullyLeft && !inTopBand) continue;
+        if (overlaps(cand)) continue;
+        candidates.push({ cand, fullyLeft, dx: Math.abs(dx) });
       }
-      if (hit) break;
     }
+    candidates.sort((a, b) => (a.fullyLeft === b.fullyLeft ? a.dx - b.dx : (a.fullyLeft ? -1 : 1)));
+    const hit = candidates.length ? candidates[0].cand : null;
     if (!hit) continue;
     f.featX = featX; f.featY = featY;
     placed.push({ f, featX, featY, b: hit });
@@ -1200,22 +1227,54 @@ function paintAnnotatedLead(canvas, cssW, cssH, leadId, sharedPx) {
   }
   const yTick = Math.min(cssH - rowF - 10, (traceTopMm + traceHmm + 0.4) * px);
   const yText = Math.min(cssH - 4, yTick + rowF + 6);
-  const beatInView = (b0 + I.tEnd) > tWin0 + 40 && (b0 + I.pOn) < tWin1 - 40;
-  if (beatInView) {
+  const tBar0 = b0 + I.pOn;
+  const tBar1 = Math.min(b0 + I.tEnd, tAbs);
+  const xA = X(tBar0), xB = Math.min(X(tBar1), cursorX);
+  const barInView = tAbs >= tBar0 && xB > xA + 1 && xA < paperW - 8 && xB > 8;
+  let bar = null;
+  if (barInView) {
     g.strokeStyle = '#111'; g.lineWidth = 1.2;
-    const marks = [b0 + I.pOn, b0 + I.pOff, b0 + I.qOn, b0 + I.qOff, b0 + I.tEnd];
+    const marks = [b0 + I.pOn, b0 + I.pOff, b0 + I.qOn, b0 + I.qOff, b0 + I.tEnd].filter(t => t <= tAbs + 0.5);
     g.beginPath();
-    g.moveTo(X(b0 + I.pOn), yTick); g.lineTo(X(b0 + I.tEnd), yTick);
-    for (const t of marks) { g.moveTo(X(t), yTick - 4); g.lineTo(X(t), yTick + 4); }
+    g.moveTo(xA, yTick); g.lineTo(xB, yTick);
+    for (const t of marks) {
+      const x = X(t);
+      if (x > cursorX + 0.75) continue;
+      g.moveTo(x, yTick - 4); g.lineTo(x, yTick + 4);
+    }
     g.stroke();
-    const rowTxt = `P ${I.P} ms    PR ${I.PR} ms    QRS ${I.QRS} ms    QT ${I.QT} ms`;
-    g.font = `700 ${rowF}px "Source Sans 3", Arial, sans-serif`;
-    const tw = g.measureText(rowTxt).width;
-    let cx = (X(b0 + I.pOn) + X(b0 + I.tEnd)) / 2;
-    cx = Math.max(tw / 2 + 4, Math.min(paperW - tw / 2 - 4, cx));
-    g.fillStyle = 'rgba(255,255,255,0.95)'; g.fillRect(cx - tw / 2 - 4, yText - rowF, tw + 8, rowF + 6);
-    g.fillStyle = '#111'; g.fillText(rowTxt, cx - tw / 2, yText);
+    const parts = [];
+    if (tAbs >= b0 + I.pOff) parts.push(`P ${I.P} ms`);
+    if (tAbs >= b0 + I.qOn) parts.push(`PR ${I.PR} ms`);
+    if (tAbs >= b0 + I.qOff) parts.push(`QRS ${I.QRS} ms`);
+    if (tAbs >= b0 + I.tEnd) parts.push(`QT ${I.QT} ms`);
+    let text = '', textX0 = null, textX1 = null;
+    if (parts.length) {
+      const rowTxt = parts.join('    ');
+      g.font = `700 ${rowF}px "Source Sans 3", Arial, sans-serif`;
+      const tw = g.measureText(rowTxt).width;
+      const pad = 4;
+      let left = (xA + xB) / 2 - tw / 2 - pad;
+      const boxW = tw + pad * 2;
+      // Keep the readout with the drawn bar, never starting on blank paper to the right of the cursor.
+      if (left + boxW > cursorX) left = cursorX - boxW;
+      if (left < 2) left = 2;
+      g.fillStyle = 'rgba(255,255,255,0.95)'; g.fillRect(left, yText - rowF, boxW, rowF + 6);
+      g.fillStyle = '#111'; g.fillText(rowTxt, left + pad, yText);
+      text = rowTxt;
+      textX0 = left;
+      textX1 = left + boxW;
+    }
+    bar = { x0: xA, x1: xB, y: yTick, marks: marks.map(t => X(t)), text, textX0, textX1 };
   }
+  canvas.dataset.annots = JSON.stringify({
+    lead: id, cursorX, tAbs,
+    labels: placed.map(p2 => ({
+      txt: p2.f.txt, t: Math.min(p2.f.t, tAbs), featX: p2.featX, featY: p2.featY,
+      x0: p2.b.x0, x1: p2.b.x1, y0: p2.b.y0, y1: p2.b.y1
+    })),
+    bar
+  });
 }
 
 function closeupLeadList() {
@@ -3861,6 +3920,11 @@ window.ecg3d = {
   beatStartsUntil: t => { ensureBeatsUntil(t); return REC.starts.filter(st => st <= t).slice(); },
   recording: () => ({ seed: REC.seed, rr0: REC.rr0, rsaAmp: REC.rsaAmp, rsaMs: REC.rsaMs, wanderMv: REC.wanderMv, wanderMs: REC.wanderMs, jitter: REC.jitter, starts: REC.starts.slice() }),
   closeupMeta: (idx = 0) => { const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); return c ? { ...c.dataset } : null; },
+  closeupAnnots: (idx = 0) => {
+    const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); if (!c) return null;
+    try { return JSON.parse(c.dataset.annots || 'null'); } catch (err) { return null; }
+  },
+  intervals: () => (INTERVALS ? { ...INTERVALS } : null),
   closeupWave: (idx = 0) => {
     const c = idx === 1 ? $('leadCloseup2') : $('leadCloseup'); if (!c) return null;
     const frame = c.parentElement;
