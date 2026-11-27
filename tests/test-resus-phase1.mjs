@@ -23,12 +23,13 @@ check("page loads without console errors", errors.length === 0, errors);
 // 1. Neutral chooser titles and no leftover hidden flags
 const titles = await page.evaluate(() => {
   const scn = window.__scn;
-  const pick = ["s1", "s6", "h9", "h6"].map((id) => ({ id, t: scn.listTitle(scn.all.find((s) => s.id === id)) }));
+  const pick = ["s1", "s6", "h9", "h6", "h14"].map((id) => ({ id, t: scn.listTitle(scn.all.find((s) => s.id === id)) }));
   const cards = Array.from(document.querySelectorAll("#scnGrid .scn-card-title")).map((e) => e.textContent);
   return { pick, cards, n: scn.all.length, listed: scn.listed.length, hiddenProps: scn.all.filter((s) => Object.prototype.hasOwnProperty.call(s, "hidden")).map((s) => s.id) };
 });
 const giveaway = /\b(vf|rosc|torsades|fibrillation|af|polymorphic|qt)\b/i;
-check("s1, s6, h9 and h6 chooser titles do not name the diagnosis", titles.pick.every((p) => p.t && !giveaway.test(p.t)) && titles.pick.every((p) => titles.cards.includes(p.t)), titles.pick);
+check("s1, s6, h9, h6 and h14 chooser titles do not name the diagnosis or the plot", titles.pick.every((p) => p.t && !giveaway.test(p.t) && !/changes|first rhythm/i.test(p.t)) && titles.pick.every((p) => titles.cards.includes(p.t)), titles.pick);
+check("h14 chooser title is neutral", titles.pick.find((p) => p.id === "h14").t === "Found unresponsive on a surgical ward", titles.pick);
 check("still 28 cases, all listed", titles.n === 28 && titles.listed === 28, { n: titles.n, listed: titles.listed });
 check("no scenario keeps a hidden flag", titles.hiddenProps.length === 0, titles.hiddenProps);
 
@@ -106,6 +107,20 @@ check("h14: an early check after signs of life confirms ROSC", h14.early.done &&
 check("h14: CPR for 2 minutes jumps to the end of the cycle and the check", h14.ff.done && h14.ff.pulse && h14.ff.clock === h14.ff.cs + 120 && h14.ff.last.includes("h14_ffCheck"), h14.ff);
 check("h14: treated during a pause, ROSC waits for a check and the prompt comes when CPR restarts", !h14.paused.cpr && h14.paused.pending && !h14.paused.pulse && !h14.paused.prompt && /Signs of life/.test(h14.resumed.prompt) && !h14.resumed.pulse, { paused: h14.paused, resumed: h14.resumed });
 
+const h14scene = await page.evaluate(() => {
+  const s = window.__scn;
+  s.setHints(false);
+  const scene = () => (document.getElementById("scnScene") || {}).textContent || "";
+  s.start("h14");
+  const opened = scene();
+  ["assess", "charge", "clear", "shock", "cpr"].forEach((a) => s.act(a));
+  const running = scene();
+  s.act("ff");
+  const paused = scene();
+  return { opened, running, paused };
+});
+check("h14: the scene says compressions are paused at the start and after a cycle check, and that they have been restarted once CPR is running", /Compressions are paused for a rhythm check/.test(h14scene.opened) && /Compressions have been restarted/.test(h14scene.running) && !/Compressions are paused/.test(h14scene.running) && /Compressions are paused for a rhythm check/.test(h14scene.paused), h14scene);
+
 // 6. Airway steps and waveform ETCO2
 const air = await page.evaluate(async () => {
   const s = window.__scn;
@@ -149,6 +164,35 @@ const roscEt = await page.evaluate(() => {
   return { before, after, prompt: (document.querySelector(".scn-signs") || {}).textContent || "" };
 });
 check("ETCO2 jumps with ROSC and the prompt names the ETCO2 rise", roscEt.after - roscEt.before >= 1.5 && /ETCO2 has risen sharply/.test(roscEt.prompt), roscEt);
+
+const h17rosc = await page.evaluate(() => {
+  const s = window.__scn;
+  s.setHints(false);
+  const last = () => { const l = s.sim.log.filter((x) => x.o).slice(-1)[0]; return { keys: l.o.keys, v: l.o.v }; };
+  const pre = ["assess", "cpr", "adr", "cause:hypoxia"];
+  s.start("h17"); pre.forEach((a) => s.act(a));
+  const earlyNoSigns = (() => { s.act("assess"); return last(); })();
+  s.start("h17"); pre.forEach((a) => s.act(a));
+  s.act("oxygen");
+  const afterOx = { cpr: s.sim.cpr, pulse: s.sim.pulse, rhythm: s.sim.rhythm.gen, pending: s.sim.roscPending, prompt: (document.querySelector(".scn-signs") || {}).textContent || "", done: s.sim.done };
+  s.act("assess");
+  const early = { done: s.sim.done, end: s.sim.endReason, pulse: s.sim.pulse, rhythm: s.sim.rhythm.gen, last: last().keys };
+  s.start("h17"); pre.forEach((a) => s.act(a));
+  s.act("oxygen");
+  const cs = s.sim.cycleStart;
+  s.act("ff");
+  const ff = { done: s.sim.done, end: s.sim.endReason, pulse: s.sim.pulse, clock: s.sim.clock, cs, last: last().keys };
+  s.start("h17"); ["assess", "cpr", "cause:hypoxia", "adr", "ff", "assess", "oxygen"].forEach((a) => s.act(a));
+  const paused = { cpr: s.sim.cpr, pending: s.sim.roscPending, pulse: s.sim.pulse, prompt: !!document.querySelector(".scn-signs") };
+  s.act("cpr");
+  const resumed = { prompt: (document.querySelector(".scn-signs") || {}).textContent || "", pulse: s.sim.pulse };
+  return { earlyNoSigns, afterOx, early, ff, paused, resumed };
+});
+check("h17: checking mid-cycle without signs of life is still an interruption", h17rosc.earlyNoSigns.keys.includes("a_interrupt"), h17rosc.earlyNoSigns);
+check("h17: re-siting the tube during CPR gives a signs-of-life prompt, no silent rhythm or pulse change", h17rosc.afterOx.cpr && !h17rosc.afterOx.pulse && h17rosc.afterOx.rhythm === "pea" && h17rosc.afterOx.pending && /Stop compressions and check rhythm and pulse/.test(h17rosc.afterOx.prompt) && !h17rosc.afterOx.done, h17rosc.afterOx);
+check("h17: an early check after signs of life confirms ROSC", h17rosc.early.done && h17rosc.early.end === "complete" && h17rosc.early.pulse && h17rosc.early.last.includes("h17_roscEarly"), h17rosc.early);
+check("h17: CPR for 2 minutes jumps to the end of the cycle and the check", h17rosc.ff.done && h17rosc.ff.pulse && h17rosc.ff.clock === h17rosc.ff.cs + 120 && h17rosc.ff.last.includes("h17_ffCheck"), h17rosc.ff);
+check("h17: treated during a pause, ROSC waits for a check and the prompt comes when CPR restarts", !h17rosc.paused.cpr && h17rosc.paused.pending && !h17rosc.paused.pulse && !h17rosc.paused.prompt && /Signs of life/.test(h17rosc.resumed.prompt) && !h17rosc.resumed.pulse, { paused: h17rosc.paused, resumed: h17rosc.resumed });
 
 // 7. Every model path still completes
 const models = await page.evaluate(() => {
