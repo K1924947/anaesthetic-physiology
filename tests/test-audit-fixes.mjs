@@ -286,6 +286,7 @@ const h7 = await page.evaluate(() => {
   const scene = scn.sim.scn.scene;
   scn.act("assess");
   scn.act("expert");
+  scn.act("pads");
   scn.act("charge");
   scn.act("clear");
   scn.act("sync");

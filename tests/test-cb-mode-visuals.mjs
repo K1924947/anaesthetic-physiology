@@ -198,6 +198,7 @@ if (SHOTS_DIR) await mkdir(SHOTS_DIR, { recursive: true });
 
   const defResus = await page.evaluate(() => ({
     monHead: getComputedStyle(document.querySelector(".mon-head")).fill,
+    monBg: getComputedStyle(document.querySelector(".defib-mon")).backgroundColor,
     paperMinor: getComputedStyle(document.documentElement).getPropertyValue("--ecg-minor").trim().toLowerCase()
   }));
 
@@ -206,12 +207,13 @@ if (SHOTS_DIR) await mkdir(SHOTS_DIR, { recursive: true });
 
   const cbResus = await page.evaluate(() => ({
     monHead: getComputedStyle(document.querySelector(".mon-head")).fill,
+    monBg: getComputedStyle(document.querySelector(".defib-mon")).backgroundColor,
     paperMinor: getComputedStyle(document.documentElement).getPropertyValue("--ecg-minor").trim().toLowerCase(),
     paperMajor: getComputedStyle(document.documentElement).getPropertyValue("--ecg-major").trim().toLowerCase()
   }));
 
-  check("Resus_Scenarios CB mode updates monitor sweep head colour",
-    rgbToHex(defResus.monHead) === "#184a63" && rgbToHex(cbResus.monHead) === "#005a9e",
+  check("Resus_Scenarios clinical monitor is dark with a light grey ECG sweep head, unchanged in CB mode",
+    rgbToHex(defResus.monHead) === "#ededed" && rgbToHex(cbResus.monHead) === "#ededed" && rgbToHex(defResus.monBg) === "#111111",
     { defResus, cbResus });
   check("Resus_Scenarios monitor ECG paper remains light orange in CB mode",
     cbResus.paperMinor === "#f8dfd2" && cbResus.paperMajor === "#edb497", cbResus);

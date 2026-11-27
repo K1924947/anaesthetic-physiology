@@ -266,6 +266,7 @@ const pulseCharge = await page.evaluate(() => {
   scn.start("s4");
   scn.act("assess");
   const s4assess = Object.assign(reasonOf("assess"), { fb: fb() });
+  scn.act("pads");
   scn.act("charge");
   const s4charge = Object.assign(reasonOf("charge"), { fb: fb() });
 
