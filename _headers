@@ -2,3 +2,5 @@
 # affect the live site even if it is later merged to main.
 /*
   X-Robots-Tag: noindex, nofollow
+/sw.js
+  Cache-Control: no-cache
