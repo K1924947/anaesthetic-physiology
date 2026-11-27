@@ -1920,7 +1920,7 @@ var SRC = {
   adrShock: "RCUK 2025 Adult ALS guideline: give adrenaline 1 mg after the third shock for a shockable rhythm; repeat 1 mg every 3 to 5 min whilst ALS continues. BNF adrenaline (cardiopulmonary resuscitation): adult 1 mg every 3 to 5 minutes.",
   adrNon: "RCUK 2025 Adult ALS guideline: give adrenaline 1 mg as soon as possible for a non-shockable rhythm; repeat 1 mg every 3 to 5 min. BNF adrenaline (cardiopulmonary resuscitation): adult 1 mg every 3 to 5 minutes.",
   amio: "RCUK 2025 Adult ALS guideline: amiodarone 300 mg IV after a total of three shocks; a further 150 mg after a total of five shocks. BNF amiodarone (VF or pulseless VT refractory to defibrillation): 300 mg, then 150 mg if required.",
-  pads: "RCUK 2025 Adult ALS algorithm: consider changing pads to antero-posterior after 3 shocks.",
+  pads: "RCUK Adult ALS Guidelines 2025 (published 27 October 2025): the antero-lateral position is the first-choice pad position; place the lateral (apical) pad directly below the armpit in the mid-axillary line. Consider a defibrillation vector change to the antero-posterior position after three failed shocks in a refractory shockable rhythm. RCUK 2025 Adult ALS algorithm: consider changing pads to antero-posterior after 3 shocks.",
   causes: "RCUK 2025 Adult ALS algorithm: identify and treat reversible causes early: hypoxia; hypovolaemia; hyper/hypokalaemia, -calcaemia, -magnesaemia, hypoglycaemia; hypo/hyperthermia; thrombosis (coronary or pulmonary); tension pneumothorax; toxins; tamponade.",
   fluid: "RCUK 2025 Adult ALS guideline: 'Give fluids during CPR only if cardiac arrest is caused by hypovolaemia.' Use isotonic saline or balanced crystalloids.",
   noRoutine: "RCUK 2025 Adult ALS guideline: 'Do not routinely give calcium, sodium bicarbonate or corticosteroids during cardiac arrest.'",
@@ -4355,7 +4355,7 @@ function defaultEvent(a, label, resolved) {
     iso: "Isoprenaline infusion started.",
     observe: "Observe and reassess later chosen.",
     nibp: "NIBP cycled.",
-    pads: "Defibrillator pads applied.",
+    pads: "Defibrillator pads applied in the antero-lateral position, with the lateral (apical) pad directly below the armpit in the mid-axillary line. After three failed shocks in a refractory shockable rhythm, consider a fresh set of pads in the antero-posterior position for a defibrillation vector change.",
     leads: "3-lead ECG attached.",
     spo2Probe: "SpO2 probe attached.",
     nibpCuff: "NIBP cuff attached.",
@@ -4375,7 +4375,8 @@ function defaultEvent(a, label, resolved) {
     adjunct: "Oropharyngeal or nasopharyngeal airway inserted.",
     bvm: "Bag-mask ventilation with high-flow oxygen at 30:2.",
     sga: "Supraglottic airway inserted by a skilled person; waveform capnography attached.",
-    ett: "Tracheal tube placed by a skilled person; waveform capnography attached."
+    ett: "Tracheal tube placed by a skilled person; waveform capnography attached.",
+    sgaLeak: "SGA leak: switched back to ventilation at 30:2."
   };
   if (ev[a]) return ev[a];
   return (label || a || "Action") + ".";
@@ -4387,9 +4388,9 @@ function defaultEvent(a, label, resolved) {
    (simulation simplification) and, with the rest of this block, are flagged in-page
    for senior colleague review. */
 Object.assign(SRC, {
-  airwaySteps: "RCUK 2025 Adult ALS guideline: 'During CPR, start with basic airway techniques and progress stepwise according to the skills of the rescuer until effective ventilation is achieved.' 'Deliver effective bag-mask ventilation breaths by optimising mask seal and airway patency, and if necessary, use a two-person technique for bag-mask ventilation.' 'Give each inspiratory breath over 1 s to achieve a visible chest rise.'",
-  advAirway: "RCUK 2025 Adult ALS guideline: 'Tracheal intubation should only be attempted by rescuers with a high success rate and with the use of continuous waveform capnography.' 'Aim for less than a 5 s interruption in chest compression for tracheal intubation.' 'A sustained ETCO2 trace on waveform capnography must be used to exclude oesophageal placement of the tracheal tube.' 'Once a tracheal tube or an SGA has been inserted, ventilate the lungs at a rate of 10 min-1 and continue chest compressions without pausing during ventilations. With an SGA, if gas leakage results in inadequate ventilation, pause compressions for ventilation using a compression-ventilation ratio of 30:2.'",
-  capnoRosc: "RCUK 2025 Adult ALS guideline: 'An increase in ETCO2 during CPR may indicate that ROSC has occurred. However, chest compression should not be interrupted based on this sign alone. Use a combination of clinical and physiological signs of ROSC (e.g. consciousness, purposeful movement, arterial waveform, rise in ETCO2) before stopping chest compressions for rhythm analysis, and if appropriate, a pulse check.'",
+  airwaySteps: "RCUK Adult ALS Guidelines 2025 (published 27 October 2025): 'During CPR, start with basic airway techniques and progress stepwise according to the skills of the rescuer until effective ventilation is achieved.' 'Deliver effective bag-mask ventilation breaths by optimising mask seal and airway patency, and if necessary, use a two-person technique for bag-mask ventilation.' 'Give each inspiratory breath over 1 s to achieve a visible chest rise.'",
+  advAirway: "RCUK Adult ALS Guidelines 2025 (published 27 October 2025): 'Tracheal intubation should only be attempted by rescuers with a high success rate and with the use of continuous waveform capnography.' A high success rate is more than 95% within two attempts. Videolaryngoscopy is preferable where it is immediately available. 'Aim for less than a 5 s interruption in chest compression for tracheal intubation.' 'A sustained ETCO2 trace on waveform capnography must be used to exclude oesophageal placement of the tracheal tube.' 'Once a tracheal tube or an SGA has been inserted, ventilate the lungs at a rate of 10 min-1 and continue chest compressions without pausing during ventilations. With an SGA, if gas leakage results in inadequate ventilation, pause compressions for ventilation using a compression-ventilation ratio of 30:2.' If standard airway strategies fail, trained rescuers should attempt surgical cricothyroidotomy.",
+  capnoRosc: "RCUK Adult ALS Guidelines 2025 (published 27 October 2025): 'An increase in ETCO2 during CPR may indicate that ROSC has occurred. However, chest compression should not be interrupted based on this sign alone. Use a combination of clinical and physiological signs of ROSC (e.g. consciousness, purposeful movement, arterial waveform, rise in ETCO2) before stopping chest compressions for rhythm analysis, and if appropriate, a pulse check.' Do not use a low ETCO2 alone as a reason to stop resuscitation.",
   capnoSim: "Simulation simplification: the ETCO2 numbers and capnography trace on this monitor are illustrative only and are for senior colleague review. RCUK 2025 Adult ALS guideline: 'Use waveform capnography to monitor the quality of CPR.' It suggests a pragmatic aim of an ETCO2 of at least 3.3 kPa (25 mmHg) during physiology-guided CPR."
 });
 Object.assign(TXT, {
@@ -4398,7 +4399,7 @@ Object.assign(TXT, {
   a_bvm: T("Bag-mask ventilation with high-flow oxygen at 30:2: two breaths after every 30 compressions, each over 1 s to a visible chest rise. Optimise the mask seal and use a two-person technique if needed. Avoid both too little and too much ventilation.", "ALS: bag-mask ventilation, 30:2", "airwaySteps", { outcome: "Bag-mask ventilation with oxygen at 30:2.", nextStep: "When a skilled person is ready, an SGA or tracheal tube can be placed with minimal interruption to compressions." }),
   a_bvmOpenFirst: T("Bag-mask ventilation works best once the airway is open. Use head tilt and chin lift or jaw thrust, and an airway adjunct if needed, then ventilate.", "ALS: airway, start basic and progress stepwise", "airwaySteps", { outcome: "Bag-mask ventilation started.", whyWrong: "Open the airway first, then ventilate with the bag-mask." }),
   a_sga: T("Supraglottic airway inserted with minimal interruption to compressions, and waveform capnography attached. Now give continuous compressions with ventilation at about 10 breaths a minute. If a leak makes ventilation inadequate, go back to pausing for ventilation at 30:2.", "ALS: SGA, then continuous compressions and 10 breaths a minute", "advAirway", { outcome: "Supraglottic airway in place; continuous compressions with about 10 breaths a minute.", nextStep: "Watch the waveform ETCO2: it reflects CPR quality and may rise sharply with ROSC." }),
-  a_ett: T("Tracheal tube placed by a skilled person with a high success rate, pausing compressions for less than 5 s. A sustained ETCO2 trace on waveform capnography confirms tracheal placement and excludes oesophageal intubation. Now give continuous compressions with ventilation at about 10 breaths a minute.", "ALS: tracheal intubation by a skilled person, pause under 5 s, confirm with waveform capnography", "advAirway", { outcome: "Tracheal tube placed; a sustained ETCO2 trace confirms tracheal placement.", nextStep: "Continuous compressions with about 10 breaths a minute. A flat trace would mean oesophageal placement until proven otherwise." }),
+  a_ett: T("Tracheal tube placed by a skilled person with a high success rate (more than 95% within two attempts), pausing compressions for less than 5 s. Videolaryngoscopy is preferable where it is immediately available. A sustained ETCO2 trace on waveform capnography confirms tracheal placement and excludes oesophageal intubation. Now give continuous compressions with ventilation at about 10 breaths a minute.", "ALS: tracheal intubation by a skilled person, pause under 5 s, confirm with waveform capnography", "advAirway", { outcome: "Tracheal tube placed; a sustained ETCO2 trace confirms tracheal placement.", nextStep: "Continuous compressions with about 10 breaths a minute. A flat trace would mean oesophageal placement until proven otherwise." }),
   a_advNoBasic: T("Start with basic airway techniques and bag-mask ventilation, then progress stepwise to an SGA or tracheal tube when a skilled person is ready. Oxygenation and ventilation come before an advanced airway.", "ALS: airway, start basic and progress stepwise", "airwaySteps", { outcome: "Advanced airway placed.", whyWrong: "Start with basic airway techniques and bag-mask ventilation, then progress stepwise." }),
   a_adjunctOpenFirst: T("Start with basic manoeuvres: head tilt and chin lift, or jaw thrust, then an oropharyngeal or nasopharyngeal airway if needed.", "ALS: airway, start basic and progress stepwise", "airwaySteps", { outcome: "Airway adjunct inserted.", whyWrong: "Open the airway with head tilt and chin lift, or jaw thrust, before inserting an adjunct." }),
   a_advHandsOff: T("Place an advanced airway while compressions continue, with a pause of less than 5 s, not during a rhythm check or a long hands-off period. An unnecessary prolonged compression pause counts as an interruption.", "ALS: tracheal intubation, pause under 5 s", "advAirway", { outcome: "Advanced airway placed.", whyWrong: "Place it while CPR continues, pausing compressions for less than 5 s. An unnecessary prolonged pause counts as an interruption." }),
@@ -4407,13 +4408,16 @@ Object.assign(TXT, {
   p_airway: T("Airway adjuncts, bag-mask ventilation and advanced airways in this simulation are for cardiac arrest. This patient has a pulse; assess the airway as part of ABCDE and give oxygen if it is needed.", "Peri-arrest: ABCDE assessment", "causes", { outcome: "Airway step noted, not scored." }),
   h17_flat: T("The capnography trace on the newly placed tube is flat. A sustained ETCO2 trace on waveform capnography must be used to exclude oesophageal placement of the tracheal tube, so a flat trace straight after a difficult intubation means unrecognised oesophageal intubation until proven otherwise. A tube in the trachea still shows a trace during CPR, even though the value is low.", "ALS: waveform capnography excludes oesophageal placement", "advAirway", { outcome: "Flat capnography trace on the new tube." }),
   h17_resite: T("The flat trace means the tube was in the oesophagus. It has been removed, the patient oxygenated with a bag-mask and 100% oxygen, and an airway re-sited by a skilled person. A sustained ETCO2 trace now confirms placement. Continue CPR with 100% oxygen.", "Special circumstances: hypoxia; ALS: confirm the tube with waveform capnography", "advAirway", { outcome: "Airway re-sited; a sustained ETCO2 trace confirms placement and 100% oxygen is given.", nextStep: "Continue CPR with 100% oxygen. If signs of life appear, stop and check rhythm and pulse; otherwise check at the end of the cycle." }),
-  h17_signs: T("Signs of life during CPR: purposeful movement and breathing, together with the other signs shown. Use a combination of clinical and physiological signs of ROSC, not ETCO2 alone, before stopping compressions for rhythm analysis and a pulse check.", "ALS: signs of ROSC during CPR", "capnoRosc", { outcome: "Signs of life appeared during CPR." }),
+  h17_signs: T("Signs of life during CPR: purposeful movement and breathing, together with the other signs shown. Use a combination of clinical and physiological signs of ROSC (consciousness, purposeful movement, an arterial waveform, and an ETCO2 rise) before stopping compressions for rhythm analysis and a pulse check. An ETCO2 rise alone is not a reason to stop compressions, and a low ETCO2 alone is not a reason to stop resuscitation.", "ALS: signs of ROSC during CPR", "capnoRosc", { outcome: "Signs of life appeared during CPR." }),
   h17_roscEarly: T("Compressions stopped for signs of life. The rhythm is organised and there is a pulse: ROSC. Continue ABCDE and the usual post-ROSC targets, and keep giving 100% oxygen with a confirmed airway.", "ALS: signs of ROSC during CPR; immediately after ROSC", "capnoRosc", { outcome: "ROSC confirmed at an early check for signs of life." }),
   h17_ffCheck: T("CPR continued to the end of the 2-minute cycle, then the rhythm and pulse check confirmed ROSC. With a combination of signs of life during CPR, it is reasonable to stop and check early instead.", "ALS: rhythm and pulse check at the end of the cycle", "capnoRosc", { outcome: "End of the cycle: rhythm and pulse checked, ROSC confirmed." }),
-  h14_signs: T("Signs of life during CPR: purposeful movement and breathing, together with the other signs shown. Use a combination of clinical and physiological signs of ROSC, not ETCO2 alone, before stopping compressions for rhythm analysis and a pulse check.", "ALS: signs of ROSC during CPR", "capnoRosc", { outcome: "Signs of life appeared during CPR." }),
+  h14_signs: T("Signs of life during CPR: purposeful movement and breathing, together with the other signs shown. Use a combination of clinical and physiological signs of ROSC (consciousness, purposeful movement, an arterial waveform, and an ETCO2 rise) before stopping compressions for rhythm analysis and a pulse check. An ETCO2 rise alone is not a reason to stop compressions, and a low ETCO2 alone is not a reason to stop resuscitation.", "ALS: signs of ROSC during CPR", "capnoRosc", { outcome: "Signs of life appeared during CPR." }),
   h14_roscEarly: T("Compressions stopped for signs of life. The rhythm is organised and there is a pulse: ROSC. Continue ABCDE and the usual post-ROSC targets, and keep treating the bleeding.", "ALS: signs of ROSC during CPR; immediately after ROSC", "capnoRosc", { outcome: "ROSC confirmed at an early check for signs of life." }),
   h14_ffCheck: T("CPR continued to the end of the 2-minute cycle, then the rhythm and pulse check confirmed ROSC. With a combination of signs of life during CPR, it is reasonable to stop and check early instead.", "ALS: rhythm and pulse check at the end of the cycle", "capnoRosc", { outcome: "End of the cycle: rhythm and pulse checked, ROSC confirmed." }),
-  a_pads: T("Defibrillator pads applied in the antero-lateral position. The monitor now shows the ECG from the pads, and a shock can be delivered if indicated.", "ALS: attach defibrillator pads", "als", { outcome: "Defibrillator pads applied." }),
+  a_pads: T("Defibrillator pads applied in the antero-lateral position, the first-choice position. Place the lateral (apical) pad directly below the armpit in the mid-axillary line. The monitor now shows the ECG from the pads, and a shock can be delivered if indicated.", "ALS: attach defibrillator pads in the antero-lateral position", "pads", { outcome: "Defibrillator pads applied in the antero-lateral position, with the lateral (apical) pad directly below the armpit in the mid-axillary line. After three failed shocks in a refractory shockable rhythm, consider a fresh set of pads in the antero-posterior position for a defibrillation vector change.", nextStep: "If a shockable rhythm persists after three failed shocks, consider a fresh set of pads in the antero-posterior position for a defibrillation vector change." }),
+  a_sgaLeak: T("The SGA is leaking and ventilation is inadequate, so pause compressions for ventilation at 30:2. Continuous compressions at about 10 breaths a minute can resume if a better seal is achieved or a tracheal tube is placed.", "ALS: SGA leak, pause for 30:2", "advAirway", { outcome: "Switched back to 30:2 because of an SGA leak." }),
+  a_sgaLeakNoSga: T("Switching back to 30:2 for a leak applies once a supraglottic airway is in place and ventilation is inadequate.", "ALS: SGA leak, pause for 30:2", "advAirway", { outcome: "30:2 considered.", whyWrong: "This step is for an SGA that is already in place and leaking." }),
+  a_sgaLeakEtt: T("A tracheal tube should give a sealed airway. If ventilation is inadequate, check the tube, the circuit and waveform ETCO2 rather than switching to 30:2 as for an SGA leak.", "ALS: SGA leak, pause for 30:2", "advAirway", { outcome: "30:2 considered.", whyWrong: "This 30:2 leak step is for a leaking SGA, not a tracheal tube." }),
   a_leads: T("3-lead ECG attached. The monitor now shows the ECG. Pads are still needed before a shock or pacing.", "Monitoring: 3-lead ECG", "als", { outcome: "3-lead ECG attached." }),
   a_spo2Probe: T("SpO2 probe attached. A pulse oximeter reading is shown only when there is a pulsatile signal; in arrest the trace is poor or unreadable. Values are illustrative.", "Monitoring: pulse oximetry", "als", { outcome: "SpO2 probe attached." }),
   a_nibpCuff: T("NIBP cuff attached. Cycle the cuff to obtain a blood pressure; in arrest it is typically unrecordable. The mean is shown as diastolic plus one third of the pulse pressure. Values are illustrative.", "Monitoring: NIBP", "als", { outcome: "NIBP cuff attached." }),
@@ -4427,7 +4431,7 @@ Object.assign(TXT, {
 Object.assign(VER, {
   a_airwayOpen: ["V", ["gAirStep"]], a_adjunct: ["V", ["gAirStep"]], a_bvm: ["V", ["gAirStep", "gBagMask", "gBreath1s", "aStart"]],
   a_bvmOpenFirst: ["V", ["gBagMask"]], a_adjunctOpenFirst: ["V", ["gAirStep"]], a_sga: ["V", ["gAdv10", "aAirway"]], a_ett: ["V", ["gTubeSkill", "gTube5s", "gEtco2Tube", "gAdv10"]],
-  a_advNoBasic: ["V", ["gAirStep"]], a_advHandsOff: ["V", ["gTube5s", "aMinInt"]], a_advAlready: ["V", ["gAdv10", "aAirway"]], a_airwayDone: ["V", ["gAirStep"]],
+  a_sgaLeak: ["V", ["gAdv10"]], a_sgaLeakNoSga: ["V", ["gAdv10"]], a_sgaLeakEtt: ["V", ["gAdv10"]], a_advNoBasic: ["V", ["gAirStep"]], a_advHandsOff: ["V", ["gTube5s", "aMinInt"]], a_advAlready: ["V", ["gAdv10", "aAirway"]], a_airwayDone: ["V", ["gAirStep"]],
   p_airway: ["S", [], "Simulation simplification: airway actions are modelled for cardiac arrest only."],
   h17_flat: ["V", ["gEtco2Tube"]], h17_resite: ["V", ["gEtco2Tube", "gTubeSkill"]], h17_signs: ["V", ["gCapnoRosc", "gResume"]], h17_roscEarly: ["V", ["gCapnoRosc", "aRosc"]], h17_ffCheck: ["V", ["gCapnoRosc", "aShock"]],
   h14_signs: ["V", ["gCapnoRosc", "gResume"]], h14_roscEarly: ["V", ["gCapnoRosc", "aRosc"]], h14_ffCheck: ["V", ["gCapnoRosc", "aShock"]],
@@ -4435,33 +4439,47 @@ Object.assign(VER, {
   h1_insulin: ["V", ["gInsulin", "gHyperkArrest"], "Accepting insulin-glucose in place of sodium bicarbonate in arrest is a teaching choice; for senior colleague review."]
 });
 /* New or changed clinical content in phase 1, shown in-page as for senior colleague review. */
-var REVIEW_KEYS = { a_airwayOpen: 1, a_adjunct: 1, a_adjunctOpenFirst: 1, a_bvm: 1, a_bvmOpenFirst: 1, a_sga: 1, a_ett: 1, a_advNoBasic: 1, a_advHandsOff: 1, a_advAlready: 1, a_airwayDone: 1, p_airway: 1, h17_flat: 1, h17_resite: 1, h17_signs: 1, h17_roscEarly: 1, h17_ffCheck: 1, h14_signs: 1, h14_roscEarly: 1, h14_ffCheck: 1, h1_calcium: 1, h1_bicarb: 1, h1_insulin: 1, a_insulin: 1, p_insulin: 1, a_spo2Probe: 1, a_nibpCuff: 1, a_pads: 1, a_leads: 1 };
+var REVIEW_KEYS = { a_airwayOpen: 1, a_adjunct: 1, a_adjunctOpenFirst: 1, a_bvm: 1, a_bvmOpenFirst: 1, a_sga: 1, a_ett: 1, a_sgaLeak: 1, a_sgaLeakNoSga: 1, a_sgaLeakEtt: 1, a_advNoBasic: 1, a_advHandsOff: 1, a_advAlready: 1, a_airwayDone: 1, p_airway: 1, h17_flat: 1, h17_resite: 1, h17_signs: 1, h17_roscEarly: 1, h17_ffCheck: 1, h14_signs: 1, h14_roscEarly: 1, h14_ffCheck: 1, h1_calcium: 1, h1_bicarb: 1, h1_insulin: 1, a_insulin: 1, p_insulin: 1, a_spo2Probe: 1, a_nibpCuff: 1, a_pads: 1, a_leads: 1 };
 function reviewTag(k) { return REVIEW_KEYS[k] ? " <span class='vtag tag-review'>For senior colleague review</span>" : ""; }
 function hasReviewKey(o) { return !!(o && o.keys && o.keys.some(function (k) { return REVIEW_KEYS[k]; })); }
 
-var AIRWAY_ACTS = { airwayOpen: 1, adjunct: 1, bvm: 1, sga: 1, ett: 1 };
+var AIRWAY_ACTS = { airwayOpen: 1, adjunct: 1, bvm: 1, sga: 1, ett: 1, sgaLeak: 1 };
 function initAirway(st, x) {
   var a = (x && x.airway) || {};
-  st.airway = { open: false, adjunct: false, bvm: false, adv: a.adv || "", oesoph: !!a.oesoph, capno: !!a.adv };
+  st.airway = { open: false, adjunct: false, bvm: false, adv: a.adv || "", oesoph: !!a.oesoph, capno: !!a.adv, leak: false };
+}
+function markAirwayDid(st, ids) {
+  if (!st.did) st.did = {};
+  (ids || []).forEach(function (id) { st.did[id] = 1; });
 }
 function airwayOutcome(a, st) {
   if (!AIRWAY_ACTS[a] || !st) return null;
   if (!st.airway) initAirway(st, null);
   var w = st.airway;
   if (st.pulse) return O("info", "p_airway");
-  if (a === "airwayOpen") { if (w.open || w.adv) return O("info", w.adv ? "a_advAlready" : "a_airwayDone"); w.open = true; return O("ok", "a_airwayOpen"); }
+  if (a === "airwayOpen") {
+    if (w.open || w.adv) { markAirwayDid(st, ["airwayOpen"]); return O("info", w.adv ? "a_advAlready" : "a_airwayDone"); }
+    w.open = true; markAirwayDid(st, ["airwayOpen"]); return O("ok", "a_airwayOpen");
+  }
   if (a === "adjunct") {
-    if (w.adjunct || w.adv) return O("info", w.adv ? "a_advAlready" : "a_airwayDone");
+    if (w.adjunct || w.adv) { markAirwayDid(st, ["adjunct"]); return O("info", w.adv ? "a_advAlready" : "a_airwayDone"); }
     var airwayOpen = w.open;
-    w.adjunct = true; w.open = true;
+    w.adjunct = true; w.open = true; markAirwayDid(st, ["adjunct"]);
     return airwayOpen ? O("ok", "a_adjunct") : O("part", ["a_adjunctOpenFirst", "a_adjunct"]);
   }
   if (a === "bvm") {
-    if (w.adv && !w.oesoph) return O("info", "a_advAlready");
-    if (w.bvm) return O("info", "a_airwayDone");
+    if (w.adv && !w.oesoph) { markAirwayDid(st, ["bvm"]); return O("info", "a_advAlready"); }
+    if (w.bvm) { markAirwayDid(st, ["bvm"]); return O("info", "a_airwayDone"); }
     var opened = w.open || w.adjunct;
-    w.bvm = true; w.open = true;
+    w.bvm = true; w.open = true; markAirwayDid(st, ["bvm"]);
     return opened ? O("ok", "a_bvm") : O("part", ["a_bvmOpenFirst", "a_bvm"]);
+  }
+  if (a === "sgaLeak") {
+    if (w.adv === "ett" && !w.oesoph) return O("part", "a_sgaLeakEtt");
+    if (w.adv !== "sga") return O("part", "a_sgaLeakNoSga");
+    if (w.leak) return O("info", "a_airwayDone");
+    w.leak = true;
+    return O("ok", "a_sgaLeak");
   }
   /* sga or ett */
   if (w.adv && w.oesoph) return null; /* the scenario handles a misplaced tube */
@@ -4471,7 +4489,8 @@ function airwayOutcome(a, st) {
   if (!st.cpr) o = O("part", ["a_advHandsOff", key]);
   else if (!w.bvm) o = O("part", ["a_advNoBasic", key]);
   else o = O("ok", key);
-  w.adv = a; w.capno = true; w.open = true;
+  w.adv = a; w.capno = true; w.open = true; w.leak = false;
+  markAirwayDid(st, ["sga", "ett"]);
   return o;
 }
 
@@ -4503,7 +4522,7 @@ function capnoSVG(es) {
 function etco2Cell(st) {
   var w = st.airway || {};
   var es = etco2State(st);
-  var airway = w.adv ? (w.adv === "ett" ? (w.oesoph ? "Tracheal tube (just placed)" : "Tracheal tube: continuous compressions, about 10 breaths/min") : "SGA: continuous compressions, about 10 breaths/min") : (w.bvm ? "Bag-mask, 30:2" : "No airway adjunct yet");
+  var airway = w.adv ? (w.adv === "ett" ? (w.oesoph ? "Tracheal tube (just placed)" : "Tracheal tube: continuous compressions, about 10 breaths/min") : (w.leak ? "SGA leak: ventilation at 30:2" : "SGA: continuous compressions, about 10 breaths/min")) : (w.bvm ? "Bag-mask, 30:2" : "No airway adjunct yet");
   var val, note;
   if (!es.on) { val = "No trace"; note = "Appears once an SGA or tracheal tube is in, with waveform capnography"; }
   else if (es.kind === "flat") { val = "Flat trace"; note = "No exhaled CO2 detected"; }
@@ -4520,8 +4539,8 @@ function showsEtco2(st) {
   return extrasFor(st).kind === "arrest";
 }
 function signsOfLifeText(st) {
-  var capno = !!(st.airway && st.airway.capno && !st.airway.oesoph);
-  return "Signs of life: the patient is making purposeful movements and starting to breathe" + (capno ? ", and the ETCO2 has risen sharply" : "") + ". Stop compressions and check rhythm and pulse now.";
+  var capno = !!(st.airway && st.airway.capno && !st.airway.oesoph && !st.airway.leak);
+  return "Signs of life: the patient is making purposeful movements and starting to breathe" + (capno ? ", and the ETCO2 has risen sharply" : "") + ". Stop compressions and check rhythm and pulse now. Do not stop compressions for an ETCO2 rise alone, and do not use a low ETCO2 alone as a reason to stop resuscitation.";
 }
 
 function initAttached(st) {
@@ -4879,9 +4898,10 @@ function renderMonitor() {
   if (!hasEcgSource(SIM) && !hasCapno(SIM)) {
     rrVal = "---"; rrUnit = "Off"; rrAria = "Respiratory rate not shown, no resp tracing";
   } else if (!pulse && hasCapno(SIM) && !w.oesoph) {
-    if (w.adv) { rrVal = "10"; rrUnit = "/min"; monCaptionPush(cap, "Ventilated rate about 10 breaths/min, illustrative"); }
+    if (w.adv && !w.leak) { rrVal = "10"; rrUnit = "/min"; monCaptionPush(cap, "Ventilated rate about 10 breaths/min, illustrative"); }
+    else if (w.leak) { rrVal = "30:2"; monCaptionPush(cap, "SGA leak, ventilation at 30:2, illustrative"); }
     else { rrVal = "30:2"; monCaptionPush(cap, "Bag-mask ventilation, 30:2, illustrative"); }
-    rrAria = "Respiratory rate " + (w.adv ? "10 /min, ventilated rate, illustrative" : "30:2, bag-mask ventilation, illustrative");
+    rrAria = "Respiratory rate " + ((w.adv && !w.leak) ? "10 /min, ventilated rate, illustrative" : (w.leak ? "30:2, SGA leak, illustrative" : "30:2, bag-mask ventilation, illustrative"));
   } else if (!pulse) {
     rrVal = "---"; rrUnit = "Off"; rrAria = "Respiratory rate not shown, not breathing";
     monCaptionPush(cap, "Not breathing");
@@ -4926,7 +4946,9 @@ function renderMonitor() {
     var etFlag = es.kind === "rosc" ? "Sharp rise" : es.kind === "cpr" ? "Low during CPR" : "Falling, compressions paused";
     etAria = "ETCO2 " + etVal + " kPa, " + etFlag + ". Airway: " + airway;
     monCaptionPush(cap, "ETCO2 " + etFlag.toLowerCase());
-    if (w.adv && !w.oesoph) monCaptionPush(cap, "Continuous compressions, about 10 breaths/min");
+    if (es.kind === "rosc" && !pulse) monCaptionPush(cap, "Do not stop compressions for an ETCO2 rise alone");
+    if (es.kind === "cpr") monCaptionPush(cap, "A low ETCO2 alone is not a reason to stop resuscitation");
+    if (w.adv && !w.oesoph && !w.leak) monCaptionPush(cap, "Continuous compressions, about 10 breaths/min");
   }
   monCaptionPush(cap, "Illustrative values, for senior colleague review");
   $("scnVitals").innerHTML =
@@ -5453,6 +5475,7 @@ var ACTIONS = [
   { id: "bvm", label: "Bag-mask ventilation with oxygen, 30:2", g: "Airway and breathing" },
   { id: "sga", label: "Supraglottic airway (skilled person)", g: "Airway and breathing" },
   { id: "ett", label: "Tracheal tube (skilled person, pause under 5 s)", g: "Airway and breathing" },
+  { id: "sgaLeak", label: "SGA leak: switch back to 30:2", g: "Airway and breathing" },
   { id: "drugs", label: "Drugs and fluids", g: "Drugs" }
 ];
 var ACT_EXTRA = [
@@ -5478,7 +5501,7 @@ var ACT_EXTRA = [
   { id: "fibrin", label: "Fibrinolytic or thrombolytic drug" }
 ];
 var ACT = {}; ACTIONS.concat(ACT_EXTRA).forEach(function (a) { ACT[a.id] = a; });
-var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, drugs: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, charge: 5, clear: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, insulin: 20, calcium: 20, decompress: 30, amioInf: 30, amio1020: 30, adrInf: 30, iso: 30, procain: 30, verap: 20, kcl: 20, lido100: 20, lido50: 20, fibrin: 30, padsAP: 20, oxygen: 20, pericardiocentesis: 30, resternotomy: 30, airwayOpen: 0, adjunct: 0, bvm: 0, sga: 0, ett: 0, pads: 0, leads: 0, spo2Probe: 0, nibpCuff: 0 };
+var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, drugs: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, charge: 5, clear: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, insulin: 20, calcium: 20, decompress: 30, amioInf: 30, amio1020: 30, adrInf: 30, iso: 30, procain: 30, verap: 20, kcl: 20, lido100: 20, lido50: 20, fibrin: 30, padsAP: 20, oxygen: 20, pericardiocentesis: 30, resternotomy: 30, airwayOpen: 0, adjunct: 0, bvm: 0, sga: 0, ett: 0, sgaLeak: 0, pads: 0, leads: 0, spo2Probe: 0, nibpCuff: 0 };
 function adenLabel(n) { return n === 0 ? "Adenosine 6 mg rapid IV" : n === 1 ? "Adenosine 12 mg rapid IV" : "Adenosine 18 mg (RCUK) or 12 mg (BNF) rapid IV"; }
 
 /* ===== Drugs and fluids panel (catalogue, chooser, dose resolution) ===== */
@@ -6166,12 +6189,32 @@ function scoredDecisionEntries(log) {
     return l && l.o && l.o.v !== "info" && !l.o.notScoredAgain;
   });
 }
-function decisionScoreFromLog(log, regCalls) {
+function arrestAirwayTeachSteps() {
+  return [
+    ["airwayOpen", "Open the airway (head tilt, chin lift or jaw thrust)", "airwaySteps", "ALS: airway, start basic and progress stepwise", "airwayTeach"],
+    ["adjunct", "Oropharyngeal or nasopharyngeal airway", "airwaySteps", "ALS: airway, start basic and progress stepwise", "airwayTeach"],
+    ["bvm", "Bag-mask ventilation with oxygen, 30:2", "airwaySteps", "ALS: bag-mask ventilation, 30:2", "airwayTeach"],
+    ["sga", "SGA or tracheal tube (skilled person, pause under 5 s, confirm with waveform ETCO2)", "advAirway", "ALS: advanced airway during CPR", "airwayTeach"]
+  ];
+}
+function isArrestAirwayCase(st) {
+  if (!st || !st.scn) return false;
+  var x = typeof extrasFor === "function" ? extrasFor(st) : {};
+  if (x.kind !== "arrest") return false;
+  if (x.airway && x.airway.adv) return false;
+  return true;
+}
+function arrestAirwayGaps(st) {
+  if (!isArrestAirwayCase(st)) return [];
+  return arrestAirwayTeachSteps().filter(function (r) { return !(st.did && st.did[r[0]]); });
+}
+function decisionScoreFromLog(log, regCalls, st) {
   var counted = scoredDecisionEntries(log);
   var raw = counted.reduce(function (n, l) {
     return n + (l.o.v === "ok" || l.o.v === "late" ? 1 : l.o.v === "part" ? 0.5 : 0);
   }, 0);
-  return { pts: Math.max(0, raw - REG_PENALTY * (regCalls || 0)), of: counted.length, raw: raw };
+  var gaps = st ? arrestAirwayGaps(st) : [];
+  return { pts: Math.max(0, raw - REG_PENALTY * (regCalls || 0)), of: counted.length + gaps.length, raw: raw, airwayGaps: gaps };
 }
 
 var R_SINUS_ROSC = { gen: "sinus_tachy", opts: { lo: 100, hi: 112 } };
@@ -7385,6 +7428,11 @@ function classifyReqSteps(st) {
     seen[d.id] = 1;
     missed.push([d.id, d.name, d.src, d.guideline]);
   });
+  arrestAirwayGaps(st).forEach(function (r) {
+    if (seen[r[0]]) return;
+    seen[r[0]] = 1;
+    notReached.push(r);
+  });
   return { missed: missed, notReached: notReached };
 }
 
@@ -8413,7 +8461,7 @@ function debriefReqItem(s, r, kind) {
     quotes = verQuotes(rk);
   }
   if (!quotes && src) quotes = esc(src);
-  var extra = kind === "notReached" ? "<p>This step was not yet due when the case ended, so it is not marked as missed.</p>" : "";
+  var extra = kind === "notReached" ? (r[4] === "airwayTeach" ? "<p>This airway step was not done. It is listed as not reached: it counts as 0 in the decision score and does not block ROSC.</p>" : "<p>This step was not yet due when the case ended, so it is not marked as missed.</p>") : "";
   var ca = kind === "missed" ? renderCorrectAnswer(correctAnswerForMissed(s, r)) : "";
   return "<li class='db-item db-bad'><p class='db-head'><span class='predict-mark' aria-hidden='true'>✗</span><span><strong>" + label + ":</strong> " + esc(r[1]) + tag + "</span></p>" + extra + ca + (g ? "<p class='scn-src'><strong>Guideline step:</strong> " + esc(g) + "</p>" : "") + sourceLinesBlock(quotes) + "</li>";
 }
@@ -8460,7 +8508,7 @@ function debriefEntryBody(l) {
 }
 function showDebrief() {
   var s = SIM.scn, acts = SIM.log.filter(function (l) { return l.o; });
-  var score = decisionScoreFromLog(SIM.log, SIM.regCalls || 0);
+  var score = decisionScoreFromLog(SIM.log, SIM.regCalls || 0, SIM);
   var counted = scoredDecisionEntries(SIM.log);
   var raw = score.raw, regN = SIM.regCalls || 0, pts = score.pts;
   var classified = classifyReqSteps(SIM);
@@ -8472,7 +8520,8 @@ function showDebrief() {
   var atroScoreNote = "";
   if (hasAtroCollapse) atroScoreNote += " A run of too-early repeat atropine doses counts as one decision; further too-early doses in the same run are logged as too soon but are not scored again.";
   if (hasOtherCollapse) atroScoreNote += " A repeated mistake counts as one decision: identical consecutive wrong clicks of the same action, or the same wrong action for the same reason later in the case, are logged but not scored again.";
-  html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct and correct but late score 1, partly right 0.5, not quite 0; noted actions are not scored." + atroScoreNote + " Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed below." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
+  var airwayNote = (score.airwayGaps && score.airwayGaps.length) ? " Airway steps that were not done are listed as not reached and count as 0 in the decision score; they do not block ROSC." : "";
+  html += "<p class='big-score'>" + pts + " of " + score.of + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct and correct but late score 1, partly right 0.5, not quite 0; noted actions are not scored." + atroScoreNote + " Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + airwayNote + (missed.length ? " Missed steps are listed below." : "") + (notReached.length ? " Steps that were not yet due, including undone airway teaching steps, are listed as not reached." : "") + "</p>";
   html += posterLineFor(s);
   html += renderLogCompare(s, SIM.log);
   if (missed.length) html += "<h3 class='viva-group'>Missed steps</h3><ul class='debrief-list'>" + missed.map(function (r) { return debriefReqItem(s, r, "missed"); }).join("") + "</ul>";
@@ -8611,7 +8660,7 @@ if ($("scnReg")) $("scnReg").addEventListener("click", callReg);
   });
 })();
 if ($("scnHints")) syncHintsToggle();
-window.__scn = { start: startScenario, random: randomScenario, startChallenge: startChallenge, challenge: function () { return { on: challenge.on, score: challenge.score, best: challengeBest(), justEnded: challenge.justEnded, lastScore: challenge.lastScore }; }, setChallengeBest: function (n) { saveChallengeBest(n); }, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; }, setClock: function (s) { if (SIM) { SIM.clock = s; if (typeof checkHandsOff === "function") checkHandsOff(); } }, score: function () { return decisionScoreFromLog((SIM && SIM.log) || [], (SIM && SIM.regCalls) || 0); }, markPacingPartlyRightAfterFourFailedAtropine: function (on) { if (arguments.length) MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE = !!on; return MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE; }, timing: { repeat: repeatIntervalWindow, cycle: cycleDrugWindow, adrRepeat: function () { return adrRepeatStatus(SIM); }, firstAdr: function () { return SIM ? (SIM.adrT && SIM.adrT.length ? adrRepeatStatus(SIM) : ((SIM.shocks || 0) >= 3 ? cycleDrugWindow(SIM.checksAfter3 || 0, SIM) : cycleDrugWindow(SIM.rhythmChecks || 0, SIM))) : null; }, dueSeverity: function () { return (outstandingSteps(SIM) || []).map(function (d) { return { id: d.id, severity: dueSeverity(SIM, d) }; }); } } };
+window.__scn = { start: startScenario, random: randomScenario, startChallenge: startChallenge, challenge: function () { return { on: challenge.on, score: challenge.score, best: challengeBest(), justEnded: challenge.justEnded, lastScore: challenge.lastScore }; }, setChallengeBest: function (n) { saveChallengeBest(n); }, act: doAction, enter: enterScenarioMode, exit: exitScenarioMode, debrief: showDebrief, finish: finishScenario, hints: hintsOn, setHints: setHints, callReg: callReg, restart: function () { if (SIM) startScenario(SIM.scn.id, SIM.random); }, pickCause: pickCause, ask: doAsk, due: function () { return outstandingSteps(SIM); }, useFakeTimers: function (on) { if (typeof useFakeAskTimers === "function") useFakeAskTimers(!!on); }, advanceTimers: function (ms) { if (typeof advanceAskTimers === "function") advanceAskTimers(ms); }, pending: function () { return typeof listAskPending === "function" ? listAskPending() : []; }, requestNibp: function () { if (typeof requestNIBPCycle === "function") requestNIBPCycle(); }, get sim() { return SIM; }, get base() { return SCENARIOS; }, get hidden() { return HIDDEN_SCENARIOS; }, get all() { return ALL_SCENARIOS; }, get listed() { return listedScenarios(); }, listTitle: listTitle, listIndex: listIndex, classify: function () { return classifyReqSteps(SIM); }, caps: function () { return SIM ? { reviews: SIM.reviews || 0, actions: SIM.actionN || 0, reviewSafety: reviewSafetyCap(SIM), actionSafety: actionSafetyCap(SIM), reviewsWhenReady: SIM.reviewsWhenReady, actionsWhenReady: SIM.actionsWhenReady, allRequiredAvailable: allRequiredAvailable(SIM) } : null; }, setClock: function (s) { if (SIM) { SIM.clock = s; if (typeof checkHandsOff === "function") checkHandsOff(); } }, score: function () { return decisionScoreFromLog((SIM && SIM.log) || [], (SIM && SIM.regCalls) || 0, SIM); }, markPacingPartlyRightAfterFourFailedAtropine: function (on) { if (arguments.length) MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE = !!on; return MARK_PACING_PARTLY_RIGHT_AFTER_FOUR_FAILED_ATROPINE; }, timing: { repeat: repeatIntervalWindow, cycle: cycleDrugWindow, adrRepeat: function () { return adrRepeatStatus(SIM); }, firstAdr: function () { return SIM ? (SIM.adrT && SIM.adrT.length ? adrRepeatStatus(SIM) : ((SIM.shocks || 0) >= 3 ? cycleDrugWindow(SIM.checksAfter3 || 0, SIM) : cycleDrugWindow(SIM.rhythmChecks || 0, SIM))) : null; }, dueSeverity: function () { return (outstandingSteps(SIM) || []).map(function (d) { return { id: d.id, severity: dueSeverity(SIM, d) }; }); } } };
 /* ===== Ideal pathway for each scenario (shown only in the debrief) ===== */
 var SRC_ALS = "RCUK 2025 Adult ALS guideline";
 var SRC_ALS_A = "RCUK 2025 Adult ALS algorithm";
@@ -8634,6 +8683,54 @@ function IP(id, label, why, src, alts, opts) {
     if (opts.after) o.after = opts.after;
   }
   return o;
+}
+
+
+var ARREST_AIRWAY_CASES = ["s1", "s2", "h1", "h2", "h3", "h4", "h9", "h13", "h14", "h15", "h16", "h18"];
+function arrestAirwayIdealBasic() {
+  return [
+    IP("airwayOpen", "Open the airway", "Start with basic manoeuvres: head tilt and chin lift, or jaw thrust.", SRC_ALS),
+    IP("adjunct", "Oropharyngeal or nasopharyngeal airway", "Add an oropharyngeal or nasopharyngeal airway if needed, then ventilate.", SRC_ALS, { after: ["airwayOpen"] }),
+    IP("bvm", "Bag-mask ventilation with oxygen, 30:2", "Give bag-mask ventilation with the highest feasible oxygen at 30:2, each breath over 1 s. Use a two-person technique if needed.", SRC_ALS, { after: ["airwayOpen", "adjunct"] })
+  ];
+}
+function arrestAirwayIdealAdv() {
+  return [
+    IP("sga", "SGA or tracheal tube (skilled person, pause under 5 s)", "Once bag-mask ventilation has been attempted, a skilled person may place an SGA or tracheal tube, pausing compressions for less than 5 s. Confirm a tracheal tube with a sustained waveform ETCO2 trace, then give continuous compressions at about 10 breaths a minute.", SRC_ALS, ["ett"], { after: ["bvm"] })
+  ];
+}
+function withArrestAirway(steps) {
+  var out = [], cprSeen = 0, basic = false, adv = false, i;
+  (steps || []).forEach(function (step) {
+    out.push(step);
+    if (step && step.id === "cpr") {
+      cprSeen++;
+      if (cprSeen === 1 && !basic) { out = out.concat(arrestAirwayIdealBasic()); basic = true; }
+      if (cprSeen === 2 && !adv) { out = out.concat(arrestAirwayIdealAdv()); adv = true; }
+    }
+  });
+  if (basic && !adv) {
+    for (i = out.length - 1; i >= 0; i--) {
+      if (out[i].id === "bvm") { out = out.slice(0, i + 1).concat(arrestAirwayIdealAdv(), out.slice(i + 1)); adv = true; break; }
+    }
+  }
+  return out;
+}
+function withModelAirway(acts) {
+  var out = [], cprSeen = 0, basic = false, adv = false, i;
+  (acts || []).forEach(function (a) {
+    out.push(a);
+    if (a === "cpr") {
+      cprSeen++;
+      if (cprSeen === 1 && !basic) { out.push("airwayOpen", "adjunct", "bvm"); basic = true; }
+      if (cprSeen === 2 && !adv) { out.push("sga"); adv = true; }
+    }
+  });
+  if (basic && !adv) {
+    i = out.indexOf("bvm");
+    if (i >= 0) { out.splice(i + 1, 0, "sga"); adv = true; }
+  }
+  return out;
 }
 
 var IDEAL_PATHS = {
@@ -8862,7 +8959,7 @@ var IDEAL_PATHS = {
     IP("adr", "Adrenaline 1 mg as soon as possible", "In a non-shockable arrest, give adrenaline 1 mg as soon as possible.", SRC_ALS),
     IP("causes", "Identify the reversible cause (hypovolaemia)", "Always address the reversible causes, including hypovolaemia.", SRC_SPEC),
     IP("fluid", "IV fluid for hypovolaemia", "Give fluids during CPR only if cardiac arrest is caused by hypovolaemia. Use either isotonic saline or balanced crystalloids.", SRC_ALS, ["fluid"]),
-    IP("assess", "Signs of life: stop and check rhythm and pulse", "When a combination of signs of life appears during CPR (purposeful movement, breathing, a sharp ETCO2 rise), stop compressions for a rhythm and pulse check. Otherwise check at the end of the 2-minute cycle.", SRC_ALS, ["ff"])
+    IP("assess", "Signs of life: stop and check rhythm and pulse", "When signs of life appear during CPR, use a combination of clinical and physiological signs (consciousness, purposeful movement, an arterial waveform, an ETCO2 rise) before stopping for a rhythm and pulse check. An ETCO2 rise alone is not a reason to stop compressions, and a low ETCO2 alone is not a reason to stop resuscitation. Otherwise check at the end of the 2-minute cycle.", SRC_ALS, ["ff"])
   ],
   h15: [
     IP("assess", "Check rhythm and pulse", "Confirm PEA, a non-shockable arrest.", SRC_ALS_A),
@@ -8890,7 +8987,7 @@ var IDEAL_PATHS = {
     IP("adr", "Adrenaline 1 mg as soon as possible", "In a non-shockable arrest, give adrenaline 1 mg as soon as possible.", SRC_ALS),
     IP("causes", "Identify the reversible cause (hypoxia)", "Always address hypoxia among the reversible causes.", SRC_SPEC),
     IP("oxygen", "100% oxygen and check the airway", "Treat life-threatening hypoxia with 100% oxygen. Ensure the airway is secure and exclude unrecognised oesophageal intubation: a flat capnography trace during CPR means the tube is in the oesophagus until proven otherwise.", SRC_SPEC, ["ett", "sga"]),
-    IP("assess", "Signs of life: stop and check rhythm and pulse", "When a combination of signs of life appears during CPR (purposeful movement, breathing, a sharp ETCO2 rise), stop compressions for a rhythm and pulse check. Otherwise check at the end of the 2-minute cycle.", SRC_ALS, ["ff"])
+    IP("assess", "Signs of life: stop and check rhythm and pulse", "When signs of life appear during CPR, use a combination of clinical and physiological signs (consciousness, purposeful movement, an arterial waveform, an ETCO2 rise) before stopping for a rhythm and pulse check. An ETCO2 rise alone is not a reason to stop compressions, and a low ETCO2 alone is not a reason to stop resuscitation. Otherwise check at the end of the 2-minute cycle.", SRC_ALS, ["ff"])
   ],
   h18: [
     IP("assess", "Check rhythm and pulse", "Confirm a non-shockable arrest.", SRC_ALS_A),
@@ -8950,6 +9047,10 @@ function stepMustFollow(first, second) {
   if (first.orderFree || second.orderFree) return false;
   return true;
 }
+ARREST_AIRWAY_CASES.forEach(function (id) {
+  if (IDEAL_PATHS[id]) IDEAL_PATHS[id] = withArrestAirway(IDEAL_PATHS[id]);
+});
+
 function markIdealPath(ideal, log) {
   var acts = (log || []).filter(function (l) { return l.o && l.act && !l.o.isNudge && !l.o.isReg; }).map(function (l) {
     return { id: idealActId(l.act), t: l.t };
@@ -9030,6 +9131,10 @@ var MODEL_ACTS = {
   h21: ["assess","ask:ecg12","nibp","expert","procain"],
   h22: ["assess","ask:ecg12","nibp","vagal","aden:6","aden:12"]
 };
+ARREST_AIRWAY_CASES.forEach(function (id) {
+  if (MODEL_ACTS[id]) MODEL_ACTS[id] = withModelAirway(MODEL_ACTS[id]);
+});
+
 var MODEL_LOG_CACHE = {};
 
 function isModelRequest(a) {
