@@ -6279,43 +6279,53 @@ HIDDEN_SCENARIOS.push(
       return out;
     },
     step: function (a, st) {
+      /* No silent rhythm change during CPR: ROSC is confirmed only at a rhythm and
+         pulse check, either at the end of the 2-minute cycle or at an early check
+         prompted by signs of life. CPR for 2 minutes jumps to the end of the cycle
+         and, once ROSC has happened, to that check. */
       var roscVit = { pulse: "Present, weak", bp: "84/50 mmHg", consc: "Unresponsive but breathing", threats: "Immediately post-ROSC" };
-      if (st.phase === "organised") {
-        if (a === "assess") return O("ok", "h14_rosc", { end: true, pulse: true, vit: roscVit, phys: "roscHypovol" });
-        if (a === "ff") return O("info", "a_ffNoCPR");
-        if (a === "cpr") return O("bad", "s1_roscCPR");
-        if (a === "shock") return O("bad", "s1_roscShock");
+      var roscRhythm = { gen: "sinus", opts: { rate: 100 } };
+      function roscReady() { return st.becamePea && st.did.fluid && st.did.causes; }
+      function markPending(o) {
+        if (!roscReady() || st.roscPending) return o;
+        st.roscPending = true;
+        if (st.cpr || o.cprStart) { o.signsOfLife = signsOfLifeText(st); o.keys = o.keys.concat("h14_signs"); }
+        return o;
       }
-      if (a === "cpr") { if (st.cpr) return O("info", "a_cprRunning"); return O("ok", "s1_cpr", { cprStart: true }); }
+      if (a === "cpr") {
+        if (st.cpr) return O("info", "a_cprRunning");
+        var co = O("ok", "s1_cpr", { cprStart: true });
+        if (st.roscPending) { co.signsOfLife = signsOfLifeText(st); co.keys = co.keys.concat("h14_signs"); }
+        return co;
+      }
       if (a === "ff") {
         if (!st.cpr) return O("info", "a_ffNoCPR");
         st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
+        if (st.roscPending) return O("ok", "h14_ffCheck", { end: true, pulse: true, cprStop: true, cycleCheck: true, rhythm: roscRhythm, phys: "roscHypovol", vit: roscVit });
         if (!st.becamePea && (st.shocks || 0) >= 1) {
           st.becamePea = true;
           return O("ok", "h14_nowPea", { cprStop: true, cycleCheck: true, rhythm: { gen: "pea", opts: { lo: 110, hi: 125 } } });
         }
-        if (st.becamePea && st.did.fluid && st.did.causes) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "pea", opts: { lo: 90, hi: 110 } } }); }
         return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: st.becamePea ? { gen: "pea", opts: { lo: 110, hi: 125 } } : { gen: "vf" } });
       }
       if (a === "assess") {
         if (!st.cpr) {
-          if (st.phase === "organised") return O("ok", "h14_rosc", { end: true, pulse: true, vit: roscVit, phys: "roscHypovol" });
           if (!st.checked) { st.checked = true; return O("ok", "s1_assess", { vit: { pulse: "Absent" } }); }
+          if (st.roscPending) return O("ok", "h14_rosc", { end: true, pulse: true, rhythm: roscRhythm, phys: "roscHypovol", vit: roscVit });
           if (st.monitorReady) {
             st.monitorReady = false;
-            if (st.becamePea && st.did.fluid && st.did.causes) return O("ok", "h14_rosc", { end: true, pulse: true, rhythm: { gen: "sinus", opts: { rate: 100 } }, phys: "roscHypovol", vit: roscVit });
             if (st.becamePea) return O("ok", "h14_nowPea", { vit: { pulse: "Absent" }, rhythm: { gen: "pea", opts: { lo: 110, hi: 125 } } });
             return O("ok", "n_noPulse", { vit: { pulse: "Absent" } });
           }
           return O("info", "a_assessAgain");
         }
+        if (st.roscPending) return O("ok", "h14_roscEarly", { end: true, pulse: true, cprStop: true, cycleCheck: true, rhythm: roscRhythm, phys: "roscHypovol", vit: roscVit });
         if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
         st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
         if (!st.becamePea && (st.shocks || 0) >= 1) {
           st.becamePea = true;
           return O("ok", "h14_nowPea", { cprStop: true, cycleCheck: true, rhythm: { gen: "pea", opts: { lo: 110, hi: 125 } }, vit: { pulse: "Absent" } });
         }
-        if (st.becamePea && st.did.fluid && st.did.causes) return O("ok", "h14_rosc", { end: true, pulse: true, cprStop: true, rhythm: { gen: "sinus", opts: { rate: 100 } }, phys: "roscHypovol", vit: roscVit });
         return O("ok", "n_noPulse", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
       }
       if (a === "shock") {
@@ -6328,8 +6338,8 @@ HIDDEN_SCENARIOS.push(
         if (!st.becamePea && (st.shocks || 0) < 3) return O("bad", "s1_adrEarly");
         return takeAdr(st, "s1_adr", "s1_adrRepeat", { kind: st.becamePea ? "non" : "post3", soonKey: "a_adrSoon", phys: "adr" });
       }
-      if (a === "causes") { st.did.causes = 1; return O("ok", "s2_causes"); }
-      if (a === "fluid") { st.fluid = true; st.did.fluid = 1; return O(st.did.causes ? "ok" : "part", st.did.causes ? "s2_fluid" : ["s2_fluidEarly", "s2_fluid"]); }
+      if (a === "causes") { st.did.causes = 1; return markPending(O("ok", "s2_causes")); }
+      if (a === "fluid") { st.fluid = true; st.did.fluid = 1; return markPending(O(st.did.causes ? "ok" : "part", st.did.causes ? "s2_fluid" : ["s2_fluidEarly", "s2_fluid"])); }
       if (a === "sync") return O("bad", "a_sync");
       return null;
     } },
@@ -8465,8 +8475,7 @@ var IDEAL_PATHS = {
     IP("adr", "Adrenaline 1 mg as soon as possible", "In a non-shockable arrest, give adrenaline 1 mg as soon as possible.", SRC_ALS),
     IP("causes", "Identify the reversible cause (hypovolaemia)", "Always address the reversible causes, including hypovolaemia.", SRC_SPEC),
     IP("fluid", "IV fluid for hypovolaemia", "Give fluids during CPR only if cardiac arrest is caused by hypovolaemia. Use either isotonic saline or balanced crystalloids.", SRC_ALS, ["fluid"]),
-    IP("ff", "CPR for 2 minutes", "Continue CPR after treating the cause, then reassess.", SRC_ALS),
-    IP("assess", "Check rhythm and pulse", "Look for ROSC after the cycle of CPR.", SRC_ALS_A)
+    IP("assess", "Signs of life: stop and check rhythm and pulse", "When a combination of signs of life appears during CPR (purposeful movement, breathing, a sharp ETCO2 rise), stop compressions for a rhythm and pulse check. Otherwise check at the end of the 2-minute cycle.", SRC_ALS, ["ff"])
   ],
   h15: [
     IP("assess", "Check rhythm and pulse", "Confirm PEA, a non-shockable arrest.", SRC_ALS_A),
@@ -8625,7 +8634,7 @@ var MODEL_ACTS = {
   h11: ["assess","ask:ecg12","nibp","expert","atro"],
   h12: ["assess","ask:ecg12","nibp","expert","atro"],
   h13: ["assess","charge","clear","shock","cpr","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","adr","amio300","padsAP","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","amio150","ff","assess"],
-  h14: ["assess","charge","clear","shock","cpr","ff","assess","cpr","adr","ask:gas","cause:hypovolaemia","fluid:saline","ff","assess"],
+  h14: ["assess","charge","clear","shock","cpr","ff","assess","cpr","adr","ask:gas","cause:hypovolaemia","fluid:saline","assess"],
   h15: ["assess","cpr","adr","ask:history","cause:thrombosis","fibrin","ff","cpr","ff","assess"],
   h16: ["assess","cpr","adr","ask:examine","cause:tamponade","resternotomy","ff","assess"],
   h17: ["assess","cpr","adr","ask:airway","cause:hypoxia","oxygen","ff","assess"],
