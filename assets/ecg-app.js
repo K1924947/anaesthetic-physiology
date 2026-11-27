@@ -3821,6 +3821,7 @@ HIDDEN_SCENARIOS.push(
     } },
 
   { id: "h6", idleNudge: true, group: "Tachycardia", title: "Unstable atrial fibrillation",
+    listTitle: "Breathless with a very fast pulse",
     blurb: "Known atrial fibrillation, now breathless, clammy and very tachycardic.",
     scene: "A 74-year-old with known atrial fibrillation arrives with sudden breathlessness and chest tightness for 20 minutes. Conscious, pale and clammy. The ventricular rate is very rapid. Monitoring, oxygen and IV access are in place; defibrillator pads are on.",
     start: { rhythm: { gen: "af", opts: { lo: 150, hi: 175 } }, pulse: true, vit: { pulse: "Present, irregular, rapid", bp: "78/48 mmHg", consc: "Conscious, clammy, chest pain", threats: "Shock; myocardial ischaemia" } },
@@ -3950,6 +3951,7 @@ HIDDEN_SCENARIOS.push(
     } },
 
   { id: "h9", group: "Cardiac arrest", title: "Pulseless torsades de pointes",
+    listTitle: "Sudden collapse in an inpatient",
     blurb: "An inpatient on several QT-prolonging drugs becomes unresponsive and pulseless.",
     scene: "A 69-year-old inpatient on several QT-prolonging drugs, with a potassium of 3.0 mmol/L this morning, becomes unresponsive and pulseless. CPR 30:2 has been started and pads are on. Compressions are paused for a rhythm check. The QT was already long on this morning's ECG.",
     start: { rhythm: { gen: "torsades", opts: {} }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
@@ -5694,6 +5696,7 @@ var R_SINUS_ROSC = { gen: "sinus_tachy", opts: { lo: 100, hi: 112 } };
 
 var SCENARIOS = [
   { id: "s1", group: "Cardiac arrest", title: "Shockable arrest: VF to ROSC",
+    listTitle: "Monitored collapse on a medical ward",
     blurb: "Collapse on a medical ward. Monitored arrest with a shockable rhythm.",
     scene: "A 68-year-old collapses on a medical ward. Unresponsive and not breathing normally. The resuscitation team is present, CPR 30:2 has been started and defibrillator pads are on. Compressions are paused for the first rhythm check.",
     start: { rhythm: { gen: "vf" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
@@ -5900,6 +5903,7 @@ var SCENARIOS = [
     } },
 
   { id: "s6", group: "Tachycardia", title: "Torsades de pointes",
+    listTitle: "Repeated light-headed spells",
     blurb: "Repeated light-headed spells in an inpatient on several drugs.",
     scene: "A 71-year-old inpatient taking several QT-prolonging drugs has repeated brief spells of light-headedness. The monitor alarms.",
     start: { rhythm: { gen: "torsades", opts: { runLen: 2.4 } }, pulse: true, vit: { pulse: "Present between runs", bp: "104/62 mmHg between runs", consc: "Alert, light-headed during runs", threats: "None sustained; runs are self-terminating" } },
