@@ -131,6 +131,8 @@ const air = await page.evaluate(async () => {
   s.start("s2"); s.act("assess"); s.act("ett"); out.ettHandsOff = last();
   s.start("s2"); s.act("assess"); s.act("cpr"); s.act("ett"); out.ettNoBasic = last();
   s.start("s2"); s.act("assess"); s.act("cpr"); out.noAirwayCell = cell();
+  s.start("s2"); s.act("assess"); s.act("cpr"); s.act("adjunct"); out.adjunctFirst = last();
+  s.start("s2"); s.act("assess"); s.act("cpr");
   ["airwayOpen", "adjunct", "bvm"].forEach((a) => s.act(a)); out.bvm = last(); out.bvmCell = cell();
   s.act("sga"); out.sga = last(); out.sgaCell = cell(); out.fb = document.getElementById("scnFeedback").innerText;
   s.act("ff");
@@ -145,12 +147,13 @@ const air = await page.evaluate(async () => {
 const kpa = (c) => c && parseFloat(c.val);
 check("an advanced airway during a hands-off pause is partly right", air.ettHandsOff.v === "part" && air.ettHandsOff.keys.includes("a_advHandsOff"), air.ettHandsOff);
 check("an advanced airway before basic steps and bag-mask is partly right", air.ettNoBasic.v === "part" && air.ettNoBasic.keys.includes("a_advNoBasic"), air.ettNoBasic);
+check("an airway adjunct before opening the airway is partly right", air.adjunctFirst && air.adjunctFirst.v === "part" && (air.adjunctFirst.keys || []).includes("a_adjunctOpenFirst"), air.adjunctFirst);
 check("stepwise basic airway, adjunct and bag-mask are correct", air.bvm.v === "ok" && air.bvm.keys.includes("a_bvm"), air.bvm);
 check("ETCO2 shows no trace before an advanced airway", air.noAirwayCell && air.noAirwayCell.val === "---" && /No capnography/i.test(air.noAirwayCell.aria || "") && air.bvmCell.val === "---", { a: air.noAirwayCell, b: air.bvmCell });
 check("SGA during CPR is correct and ETCO2 appears low with a waveform", air.sga.v === "ok" && kpa(air.sgaCell) >= 3 && kpa(air.sgaCell) <= 4 && air.sgaCell.svg && /about 10 breaths/.test(air.sgaCell.aria), air.sgaCell);
 check("ETCO2 falls when compressions pause", kpa(air.pausedCell) < kpa(air.sgaCell) && /paused/i.test(air.pausedCell.aria), air.pausedCell);
 check("airway steps are noted, not scored, when the patient has a pulse", air.pulseCase.v === "info" && air.pulseCell && air.pulseCell.val === "---", { case: air.pulseCase, cell: air.pulseCell });
-check("h17 starts with a flat capnography trace on the new tube", air.h17start && air.h17start.val === "Flat trace" && air.h17assess.keys.includes("h17_flat"), { cell: air.h17start, keys: air.h17assess.keys });
+check("h17 starts with a flat capnography trace on the new tube", air.h17start && (air.h17start.val === "0.0" || air.h17start.val === "Flat" || air.h17start.val === "Flat trace") && /flat/i.test(air.h17start.aria || "") && air.h17assess.keys.includes("h17_flat"), { cell: air.h17start, keys: air.h17assess.keys });
 check("h17: checking the airway re-sites the tube and a trace appears", air.h17fix.v === "ok" && air.h17fix.keys.includes("h17_resite") && kpa(air.h17cell) > 2, { fix: air.h17fix, cell: air.h17cell });
 check("new clinical content is tagged for senior colleague review (Show solution on)", /For senior colleague review/.test(air.fb), air.fb.slice(0, 200));
 const tagOff = await page.evaluate(() => { const s = window.__scn; s.setHints(false); s.start("s2"); s.act("assess"); s.act("cpr"); s.act("airwayOpen"); return document.getElementById("scnFeedback").innerText; });

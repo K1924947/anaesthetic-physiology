@@ -209,10 +209,10 @@ else fail("a shock during CPR ends the case as a harm, Show solution on or off",
 if (seq.pea.v === "bad" && !seq.peaDone) pass("unsynchronised shock in PEA remains Not quite and does not end the case", seq.pea);
 else fail("unsynchronised shock in PEA remains Not quite and does not end the case", { pea: seq.pea, peaDone: seq.peaDone });
 
-const hasCharge = seq.labels.some((b) => b.id === "charge" && /Charge defibrillator \(continue CPR if in progress\)/i.test(b.label));
-const hasClear = seq.labels.some((b) => b.id === "clear" && /Stop compressions, all clear/i.test(b.label));
-if (hasCharge && hasClear) pass("charge and clear actions are in the CPR and electrical group", seq.labels);
-else fail("charge and clear actions are in the CPR and electrical group", seq.labels);
+const hasCharge = seq.labels.some((b) => b.id === "charge" && /^Charge$|^Charge \(pads needed\)$/i.test(b.label));
+const hasClear = seq.labels.some((b) => b.id === "clear" && /Stop compressions, all clear|All clear \(pads needed\)/i.test(b.label));
+if (hasCharge && hasClear) pass("charge and clear actions are available in Circulation and defib", seq.labels);
+else fail("charge and clear actions are available in Circulation and defib", seq.labels);
 
 const pulseCharge = await page.evaluate(() => {
   const scn = window.__scn;
@@ -318,8 +318,8 @@ const s4not = pulseCharge.s4charge.v === "bad" && (pulseCharge.s4charge.keys || 
 if (s4not) pass("charging is not Correct when a shock is not the next step", { keys: pulseCharge.s4charge.keys, fb: (pulseCharge.s4charge.fb || "").slice(0, 240) });
 else fail("charging is not Correct when a shock is not the next step", pulseCharge.s4charge);
 
-if (pulseCharge.chargeLabel === "Charge defibrillator (continue CPR if in progress)") pass("charge button says continue CPR if in progress", pulseCharge.chargeLabel);
-else fail("charge button says continue CPR if in progress", pulseCharge.chargeLabel);
+if (pulseCharge.chargeLabel === "Charge" || pulseCharge.chargeLabel === "Charge (pads needed)") pass("charge button uses a short, clear label", pulseCharge.chargeLabel);
+else fail("charge button uses a short, clear label", pulseCharge.chargeLabel);
 
 await page.close();
 await browser.close();
