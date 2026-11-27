@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css?v=20261118">
-<link rel="stylesheet" href="assets/layout.css?v=20261121c">
+<link rel="stylesheet" href="assets/layout.css?v=20261127b">
 <script src="assets/theme.js?v=20261118"></script>
 </head>
 <body>
@@ -67,6 +67,46 @@
       </div>
     </section>
 
+    <section class="home-section waitlist" aria-labelledby="waitlist-h">
+      <h2 class="home-section-title" id="waitlist-h">Join the waitlist for Physio Lab Plus</h2>
+      <p class="home-section-lede">Free interactive tools for medical students and foundation doctors, with a planned Plus tier for deeper ECG practice, saved Resus progress and offline use. Leave your email and we will tell you when Plus is ready.</p>
+      <ul class="waitlist-benefits">
+        <li>Deeper ECG practice, including more work on conduction, the 3D tool used for pathology, and a timed rhythm exam mode.</li>
+        <li>Saved progress and debriefs on the ALS-level Resus scenarios, so you can pick up a case later and review what you did.</li>
+        <li>Offline use, so you can keep revising when you have no signal.</li>
+        <li>Extra quiz banks on ECG and, as they are built, on textbook-level respiratory physiology such as blood gases, spirometry and V/Q.</li>
+        <li>A first look when new Plus features go live, before they are offered more widely.</li>
+      </ul>
+      <p class="waitlist-planned">These are planned features, not yet on sale.</p>
+      <form id="waitlist-form" class="waitlist-form" novalidate>
+        <div class="waitlist-row">
+          <div class="waitlist-field">
+            <label for="waitlist-email">Email address</label>
+            <input type="email" id="waitlist-email" name="email" autocomplete="email" required maxlength="254">
+          </div>
+          <div class="waitlist-field">
+            <label for="waitlist-role">What are you studying? (optional)</label>
+            <select id="waitlist-role" name="role">
+              <option value="">Prefer not to say</option>
+              <option value="medical student (preclinical)">Medical student (preclinical)</option>
+              <option value="medical student (clinical)">Medical student (clinical)</option>
+              <option value="foundation doctor">Foundation doctor</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <p class="waitlist-consent">
+          <input type="checkbox" id="waitlist-consent" name="consent" required>
+          <label for="waitlist-consent">I agree to The Physio Lab storing my email address so it can email me about Physio Lab Plus and related updates. I have read the <a href="privacy">waitlist privacy notice</a>.</label>
+        </p>
+        <div class="waitlist-actions">
+          <button type="submit" class="waitlist-btn">Join the Plus waitlist</button>
+          <p id="waitlist-status" class="waitlist-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+      <p class="waitlist-legal">The Physio Lab is an educational resource. It is not clinical guidance, and it is not a substitute for formal teaching, local protocols or senior advice. It is not affiliated with, or accredited by, a royal college, the Resuscitation Council UK, or any medical school.</p>
+    </section>
+
     <details class="about-card" id="about">
       <summary class="about-summary"><h2 class="about-title" id="about-title">About</h2><span class="about-toggle" aria-hidden="true"></span></summary>
       <div class="about-cols">
@@ -93,10 +133,12 @@
       <span class="footer-item">The Physio Lab<span class="footer-dot" aria-hidden="true">·</span></span>
       <span class="footer-break" aria-hidden="true"></span>
       <span class="footer-item">Built for teaching<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item"><a class="footer-feedback" href="privacy">Privacy</a><span class="footer-dot" aria-hidden="true">·</span></span>
       <span class="footer-item"><a class="footer-feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="Give feedback, opens Google Forms in a new tab">Give feedback</a></span>
     </p>
   </footer>
 </div>
+<script src="assets/waitlist.js?v=20261127"></script>
 <script>
 (function () {
   var a = document.getElementById("about");

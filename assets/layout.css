@@ -384,3 +384,31 @@ footer .footer-left { margin: 0; gap: 4px 0; line-height: 1.5; }
 }
 .home-section-lede { margin: 0 0 16px; max-width: 40em; color: var(--muted); }
 .home-section .jcard-grid.topics { margin: 0; }
+
+/* Plus waitlist (home page) */
+.waitlist { margin-top: 8px; }
+.waitlist-benefits { margin: 0 0 6px; padding-left: 22px; font-size: 16px; line-height: 1.55; max-width: 66ch; }
+.waitlist-benefits li { margin: 4px 0; }
+.waitlist-planned { margin: 0 0 12px; font-size: 15px; font-weight: 700; color: var(--muted); }
+.waitlist-legal { margin: 12px 4px 0; font-size: 14px; line-height: 1.55; color: var(--muted); max-width: 72ch; }
+.placeholder { border: 1.5px dashed var(--text); border-radius: 4px; padding: 0 4px; font-weight: 700; }
+.waitlist-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 18px 24px; box-shadow: var(--shadow); }
+.waitlist-row { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 760px) { .waitlist-row { grid-template-columns: 3fr 2fr; } }
+.waitlist-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.waitlist-field label { font-family: var(--font-sans); font-size: 15px; font-weight: 700; color: var(--text); }
+.waitlist-field input, .waitlist-field select { font: inherit; font-size: 16px; min-height: 44px; padding: 8px 12px; color: var(--text); background: var(--surface); border: 2px solid var(--text); border-radius: 10px; width: 100%; box-sizing: border-box; }
+.waitlist-consent { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0 0; font-size: 15px; line-height: 1.5; color: var(--text); }
+.waitlist-consent input { flex: none; width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--primary); }
+.waitlist-consent a, .waitlist-status a { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.waitlist-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 14px; }
+.waitlist-btn { font-family: var(--font-sans); font-size: 16px; font-weight: 700; min-height: 44px; padding: 10px 20px; border-radius: var(--radius-pill); border: 2px solid var(--text); background: var(--primary); color: var(--on-primary); cursor: pointer; }
+.waitlist-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+.waitlist-btn:disabled { opacity: 0.6; cursor: wait; }
+.waitlist-status { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text); }
+.waitlist-status[data-kind="ok"]::before { content: "\2713  "; font-weight: 700; }
+.waitlist-status[data-kind="err"]::before { content: "\26A0  "; font-weight: 700; }
+.privacy-body { max-width: 68ch; }
+.privacy-body h2 { font-family: var(--font-serif); font-size: 22px; margin: 22px 0 6px; }
+.privacy-body p, .privacy-body li { font-size: 16px; line-height: 1.6; }
+.privacy-draft { border: 2px dashed var(--text); border-radius: 12px; padding: 10px 14px; margin: 8px 0 0; font-weight: 700; }
