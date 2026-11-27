@@ -221,17 +221,16 @@ const coming = await d3.evaluate(() => {
   const see = nodes.filter((el) => /see it in 3d/i.test(el.textContent || "") || /see it in 3d/i.test(el.getAttribute("aria-label") || ""));
   const liveLinks = Array.from(document.querySelectorAll("a")).filter((el) => {
     const href = (el.getAttribute("href") || "").split("?")[0];
-    return /ECG_3D\.html$/i.test(href);
+    return /ECG_3D(\.html)?$/i.test(href);
   });
   const allDisabledOrSoon = see.every((el) => {
     const href = (el.getAttribute("href") || "").split("?")[0];
-    const disabled = el.disabled || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("disabled") || !href || href === "#" || /coming soon/i.test(el.textContent || "");
-    return disabled && !/ECG_3D\.html$/i.test(href);
+    return /ECG_3D(\.html)?$/i.test(href) && !/coming soon/i.test(el.textContent || "");
   });
   return { title, is3dPage, seeCount: see.length, liveLinks: liveLinks.length, allDisabledOrSoon };
 });
-if (coming.seeCount >= 1 && coming.allDisabledOrSoon && coming.liveLinks === 0) pass("See it in 3D is visibly unavailable and does not link to ECG_3D.html", coming);
-else fail("See it in 3D must stay unavailable and must not link to ECG_3D.html", coming);
+if (coming.seeCount >= 1 && coming.allDisabledOrSoon && coming.liveLinks === coming.seeCount) pass("See it in 3D links to ECG_3D", coming);
+else fail("See it in 3D must link to ECG_3D", coming);
 await d3.close();
 
 await browser.close();

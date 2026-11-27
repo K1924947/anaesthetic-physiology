@@ -739,6 +739,8 @@
   display: inline-flex;
   align-items: center;
 }
+.page-ecg-basics a.next-card-link { color: inherit; text-decoration: none; }
+.page-ecg-basics a.next-card-link .test-banner-title { text-decoration: underline; }
 .next-link:hover {
   text-decoration: underline;
   text-underline-offset: 3px;

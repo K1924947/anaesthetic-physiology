@@ -26,7 +26,7 @@ const twoD = await page.evaluate(() => {
   const see = nodes.filter((el) => /see it in 3d/i.test(el.textContent || "") || /see it in 3d/i.test(el.getAttribute("aria-label") || ""));
   const liveLinks = Array.from(document.querySelectorAll("a")).filter((a) => {
     const href = (a.getAttribute("href") || "").split("?")[0];
-    return /ECG_3D\.html$/i.test(href);
+    return /ECG_3D(\.html)?$/i.test(href);
   }).map((a) => ({ href: a.getAttribute("href"), text: (a.textContent || "").trim().slice(0, 80) }));
   const coming = see.map((el) => ({
     tag: el.tagName,
@@ -41,17 +41,17 @@ const twoD = await page.evaluate(() => {
     seeCount: see.length,
     coming,
     liveLinks,
-    allComingSoon: see.length > 0 && see.every((el) => /coming soon/i.test(el.textContent || "") && !el.getAttribute("href"))
+    allLinked: see.length > 0 && see.every((el) => !/coming soon/i.test(el.textContent || "") && /ECG_3D(\.html)?$/i.test(el.getAttribute("href") || ""))
   };
 });
 if (twoD.title === "ECG Basics" && errors.length === 0) pass("2D ECG Basics loads with no errors", { errors, title: twoD.title });
 else fail("2D ECG Basics loads with no errors", { errors, twoD });
 if (twoD.indexable) pass("2D ECG Basics is indexable");
 else fail("2D ECG Basics is indexable", twoD);
-if (twoD.seeCount >= 1 && twoD.allComingSoon && twoD.liveLinks.length === 0) {
-  pass("See it in 3D is visibly unavailable and does not link to ECG_3D.html", twoD);
+if (twoD.seeCount >= 1 && twoD.allLinked && twoD.liveLinks.length === 2) {
+  pass("See it in 3D is a live link to ECG_3D", twoD);
 } else {
-  fail("See it in 3D is visibly unavailable and does not link to ECG_3D.html", twoD);
+  fail("See it in 3D is a live link to ECG_3D", twoD);
 }
 
 const hub = await page.evaluate(async (base) => {}, BASE);
