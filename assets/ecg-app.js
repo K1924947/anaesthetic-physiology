@@ -4666,7 +4666,7 @@ SweepLane.prototype.draw = function () {
 };
 SweepLane.prototype.frame = function (t, win) {
   this.t = t; if (win) this.win = win;
-  if (!this.running || (typeof prefersReduced === "function" && prefersReduced())) {
+  if (!this.running) {
     this.cn.setAttribute("width", this.W); this.co.setAttribute("width", 0); return;
   }
   var x = PAD + t * MMS, gap = 0.4 * MMS;
@@ -7263,7 +7263,7 @@ Monitor.prototype.frame = function () {
   this.head.style.display = ""; this.head.setAttribute("cx", x); this.head.setAttribute("cy", BASE - pts[k][1] * GAIN);
 };
 Monitor.prototype.start = function () {
-  if (prefersReduced()) { this.running = false; this.frame(); return; }
+  /* The sweep is the content (a live monitor), so it runs even with reduced motion. */
   if (this.running) return;
   this.running = true; var self = this, last = performance.now();
   function tick(now) {
