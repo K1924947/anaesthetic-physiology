@@ -4401,7 +4401,10 @@ Object.assign(TXT, {
   a_airwayDone: T("That airway step is already done. Progress stepwise according to the skills in the team.", "ALS: airway, start basic and progress stepwise", "airwaySteps", { outcome: "Airway step already done." }),
   p_airway: T("Airway adjuncts, bag-mask ventilation and advanced airways in this simulation are for cardiac arrest. This patient has a pulse; assess the airway as part of ABCDE and give oxygen if it is needed.", "Peri-arrest: ABCDE assessment", "causes", { outcome: "Airway step noted, not scored." }),
   h17_flat: T("The capnography trace on the newly placed tube is flat. A sustained ETCO2 trace on waveform capnography must be used to exclude oesophageal placement of the tracheal tube, so a flat trace straight after a difficult intubation means unrecognised oesophageal intubation until proven otherwise. A tube in the trachea still shows a trace during CPR, even though the value is low.", "ALS: waveform capnography excludes oesophageal placement", "advAirway", { outcome: "Flat capnography trace on the new tube." }),
-  h17_resite: T("The flat trace means the tube was in the oesophagus. It has been removed, the patient oxygenated with a bag-mask and 100% oxygen, and an airway re-sited by a skilled person. A sustained ETCO2 trace now confirms placement. Continue CPR with 100% oxygen.", "Special circumstances: hypoxia; ALS: confirm the tube with waveform capnography", "advAirway", { outcome: "Airway re-sited; a sustained ETCO2 trace confirms placement and 100% oxygen is given.", nextStep: "Continue CPR and reassess at the end of the cycle." }),
+  h17_resite: T("The flat trace means the tube was in the oesophagus. It has been removed, the patient oxygenated with a bag-mask and 100% oxygen, and an airway re-sited by a skilled person. A sustained ETCO2 trace now confirms placement. Continue CPR with 100% oxygen.", "Special circumstances: hypoxia; ALS: confirm the tube with waveform capnography", "advAirway", { outcome: "Airway re-sited; a sustained ETCO2 trace confirms placement and 100% oxygen is given.", nextStep: "Continue CPR with 100% oxygen. If signs of life appear, stop and check rhythm and pulse; otherwise check at the end of the cycle." }),
+  h17_signs: T("Signs of life during CPR: purposeful movement and breathing, together with the other signs shown. Use a combination of clinical and physiological signs of ROSC, not ETCO2 alone, before stopping compressions for rhythm analysis and a pulse check.", "ALS: signs of ROSC during CPR", "capnoRosc", { outcome: "Signs of life appeared during CPR." }),
+  h17_roscEarly: T("Compressions stopped for signs of life. The rhythm is organised and there is a pulse: ROSC. Continue ABCDE and the usual post-ROSC targets, and keep giving 100% oxygen with a confirmed airway.", "ALS: signs of ROSC during CPR; immediately after ROSC", "capnoRosc", { outcome: "ROSC confirmed at an early check for signs of life." }),
+  h17_ffCheck: T("CPR continued to the end of the 2-minute cycle, then the rhythm and pulse check confirmed ROSC. With a combination of signs of life during CPR, it is reasonable to stop and check early instead.", "ALS: rhythm and pulse check at the end of the cycle", "capnoRosc", { outcome: "End of the cycle: rhythm and pulse checked, ROSC confirmed." }),
   h14_signs: T("Signs of life during CPR: purposeful movement and breathing, together with the other signs shown. Use a combination of clinical and physiological signs of ROSC, not ETCO2 alone, before stopping compressions for rhythm analysis and a pulse check.", "ALS: signs of ROSC during CPR", "capnoRosc", { outcome: "Signs of life appeared during CPR." }),
   h14_roscEarly: T("Compressions stopped for signs of life. The rhythm is organised and there is a pulse: ROSC. Continue ABCDE and the usual post-ROSC targets, and keep treating the bleeding.", "ALS: signs of ROSC during CPR; immediately after ROSC", "capnoRosc", { outcome: "ROSC confirmed at an early check for signs of life." }),
   h14_ffCheck: T("CPR continued to the end of the 2-minute cycle, then the rhythm and pulse check confirmed ROSC. With a combination of signs of life during CPR, it is reasonable to stop and check early instead.", "ALS: rhythm and pulse check at the end of the cycle", "capnoRosc", { outcome: "End of the cycle: rhythm and pulse checked, ROSC confirmed." })
@@ -4411,12 +4414,12 @@ Object.assign(VER, {
   a_bvmOpenFirst: ["V", ["gBagMask"]], a_sga: ["V", ["gAdv10", "aAirway"]], a_ett: ["V", ["gTubeSkill", "gTube5s", "gEtco2Tube", "gAdv10"]],
   a_advNoBasic: ["V", ["gAirStep"]], a_advHandsOff: ["V", ["gTube5s", "aMinInt"]], a_advAlready: ["V", ["gAdv10", "aAirway"]], a_airwayDone: ["V", ["gAirStep"]],
   p_airway: ["S", [], "Simulation simplification: airway actions are modelled for cardiac arrest only."],
-  h17_flat: ["V", ["gEtco2Tube"]], h17_resite: ["V", ["gEtco2Tube", "gTubeSkill"]],
+  h17_flat: ["V", ["gEtco2Tube"]], h17_resite: ["V", ["gEtco2Tube", "gTubeSkill"]], h17_signs: ["V", ["gCapnoRosc", "gResume"]], h17_roscEarly: ["V", ["gCapnoRosc", "aRosc"]], h17_ffCheck: ["V", ["gCapnoRosc", "aShock"]],
   h14_signs: ["V", ["gCapnoRosc", "gResume"]], h14_roscEarly: ["V", ["gCapnoRosc", "aRosc"]], h14_ffCheck: ["V", ["gCapnoRosc", "aShock"]],
   h1_insulin: ["V", ["gInsulin", "gHyperkArrest"], "Accepting insulin-glucose in place of sodium bicarbonate in arrest is a teaching choice; for senior colleague review."]
 });
 /* New or changed clinical content in phase 1, shown in-page as for senior colleague review. */
-var REVIEW_KEYS = { a_airwayOpen: 1, a_adjunct: 1, a_bvm: 1, a_bvmOpenFirst: 1, a_sga: 1, a_ett: 1, a_advNoBasic: 1, a_advHandsOff: 1, a_advAlready: 1, a_airwayDone: 1, p_airway: 1, h17_flat: 1, h17_resite: 1, h14_signs: 1, h14_roscEarly: 1, h14_ffCheck: 1, h1_calcium: 1, h1_bicarb: 1, h1_insulin: 1, a_insulin: 1, p_insulin: 1 };
+var REVIEW_KEYS = { a_airwayOpen: 1, a_adjunct: 1, a_bvm: 1, a_bvmOpenFirst: 1, a_sga: 1, a_ett: 1, a_advNoBasic: 1, a_advHandsOff: 1, a_advAlready: 1, a_airwayDone: 1, p_airway: 1, h17_flat: 1, h17_resite: 1, h17_signs: 1, h17_roscEarly: 1, h17_ffCheck: 1, h14_signs: 1, h14_roscEarly: 1, h14_ffCheck: 1, h1_calcium: 1, h1_bicarb: 1, h1_insulin: 1, a_insulin: 1, p_insulin: 1 };
 function reviewTag(k) { return REVIEW_KEYS[k] ? " <span class='vtag tag-review'>For senior colleague review</span>" : ""; }
 function hasReviewKey(o) { return !!(o && o.keys && o.keys.some(function (k) { return REVIEW_KEYS[k]; })); }
 
@@ -6266,8 +6269,8 @@ HIDDEN_SCENARIOS.push(
 
 HIDDEN_SCENARIOS.push(
   { id: "h14", group: "Cardiac arrest", title: "VF then PEA from hypovolaemia",
-    listTitle: "A shockable arrest that changes",
-    blurb: "An arrest call after a bleed; the first rhythm may not last.",
+    listTitle: "Found unresponsive on a surgical ward",
+    blurb: "An arrest call after major abdominal surgery; the wound drain has filled with fresh blood.",
     scene: "A 49-year-old on a surgical ward, the day after major abdominal surgery, is found unresponsive and not breathing normally. The drain has filled with fresh blood. CPR 30:2 is under way and pads are on. Compressions are paused for a rhythm check.",
     start: { rhythm: { gen: "vf" }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
     req: [["shock", "Shock the first VF without delay", "shock"], ["cpr", "CPR 30:2", "als"], ["adr", "Adrenaline 1 mg as soon as the rhythm is non-shockable, or after the third shock if it stays shockable", "adrNon"], ["causes", "Identify the reversible cause (hypovolaemia)", "causes"], ["fluid", "IV fluid for hypovolaemia", "fluid"]],
@@ -6475,34 +6478,46 @@ HIDDEN_SCENARIOS.push(
       return out;
     },
     step: function (a, st) {
+      /* No silent rhythm change during CPR: ROSC is confirmed only at a rhythm and
+         pulse check, either at the end of the 2-minute cycle or at an early check
+         prompted by signs of life. CPR for 2 minutes jumps to the end of the cycle
+         and, once ROSC has happened, to that check. Same rule as h14, once the
+         tube is re-sited and hypoxia is treated. */
       var roscVit = { pulse: "Present", bp: "100/62 mmHg", consc: "Unresponsive but breathing, colour improving", threats: "Immediately post-ROSC" };
-      if (st.phase === "organised") {
-        if (a === "assess") return O("ok", "h17_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc" });
-        if (a === "ff") return O("info", "a_ffNoCPR");
-        if (a === "cpr") return O("bad", "s1_roscCPR");
-        if (a === "shock") return O("bad", "s1_roscShock");
+      var roscRhythm = { gen: "sinus", opts: { rate: 96 } };
+      var peaRhythm = { gen: "pea", opts: { lo: 40, hi: 50 } };
+      function roscReady() { return !!st.did.oxygen; }
+      function markPending(o) {
+        if (!roscReady() || st.roscPending) return o;
+        st.roscPending = true;
+        if (st.cpr || o.cprStart) { o.signsOfLife = signsOfLifeText(st); o.keys = o.keys.concat("h17_signs"); }
+        return o;
       }
-      if (a === "cpr") { if (st.cpr) return O("info", "a_cprRunning"); return O("ok", "s1_cpr", { cprStart: true }); }
+      if (a === "cpr") {
+        if (st.cpr) return O("info", "a_cprRunning");
+        var co = O("ok", "s1_cpr", { cprStart: true });
+        if (st.roscPending) { co.signsOfLife = signsOfLifeText(st); co.keys = co.keys.concat("h17_signs"); }
+        return co;
+      }
       if (a === "ff") {
         if (!st.cpr) return O("info", "a_ffNoCPR");
         st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
-        if (st.did.oxygen) { st.phase = "organised"; return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "pea", opts: { lo: 80, hi: 100 } } }); }
-        return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: { gen: "pea", opts: { lo: 40, hi: 50 } } });
+        if (st.roscPending) return O("ok", "h17_ffCheck", { end: true, pulse: true, cprStop: true, cycleCheck: true, rhythm: roscRhythm, phys: "rosc", vit: roscVit });
+        return O("ok", "n_skip", { cprStop: true, cycleCheck: true, rhythm: peaRhythm });
       }
       if (a === "assess") {
         if (!st.cpr) {
-          if (st.phase === "organised") return O("ok", "h17_rosc", { end: true, pulse: true, vit: roscVit, phys: "rosc" });
           if (!st.checked) { st.checked = true; return O("ok", st.airway && st.airway.oesoph ? ["s2_assess", "h17_flat"] : "s2_assess", { vit: { pulse: "Absent" } }); }
+          if (st.roscPending) return O("ok", "h17_rosc", { end: true, pulse: true, rhythm: roscRhythm, phys: "rosc", vit: roscVit });
           if (st.monitorReady) {
             st.monitorReady = false;
-            if (st.did.oxygen) return O("ok", "h17_rosc", { end: true, pulse: true, rhythm: { gen: "sinus", opts: { rate: 96 } }, phys: "rosc", vit: roscVit });
             return O("ok", "n_noPulse", { vit: { pulse: "Absent" } });
           }
           return O("info", "a_assessAgain");
         }
+        if (st.roscPending) return O("ok", "h17_roscEarly", { end: true, pulse: true, cprStop: true, cycleCheck: true, rhythm: roscRhythm, phys: "rosc", vit: roscVit });
         if (st.clock - st.cycleStart < 120) return O("bad", "a_interrupt");
         st.cycles = (st.cycles || 0) + 1; st.monitorReady = true;
-        if (st.did.oxygen) return O("ok", "h17_rosc", { end: true, pulse: true, cprStop: true, rhythm: { gen: "sinus", opts: { rate: 96 } }, phys: "rosc", vit: roscVit });
         return O("ok", "n_noPulse", { cprStop: true, cycleCheck: true, vit: { pulse: "Absent" } });
       }
       if (a === "adr") return takeAdr(st, "s2_adr", "s1_adrRepeat", { kind: "non", soonKey: "a_adrSoon", phys: "adr" });
@@ -6514,7 +6529,7 @@ HIDDEN_SCENARIOS.push(
         var okKey = a === "oxygen" ? "h17_oxygen" : "h17_resite";
         var keys = st.did.causes ? [okKey] : ["h17_oxygenEarly", okKey];
         if (wasOesoph && a === "oxygen") keys.push("h17_resite");
-        return O(st.did.causes ? "ok" : "part", keys);
+        return markPending(O(st.did.causes ? "ok" : "part", keys));
       }
       if (a === "shock") return O("bad", "s2_shock");
       if (a === "sync") return O("bad", "a_sync");
@@ -7414,6 +7429,19 @@ function renderScnChooser() {
   });
 }
 
+function renderScene() {
+  if (!SIM || !SIM.scn) return;
+  var el = $("scnScene");
+  if (!el) return;
+  var text = SIM.scn.scene || "";
+  if (SIM.scn.id === "h14") {
+    text = text.replace(/ Compressions are paused for a rhythm check\.$/, "");
+    if (SIM.pulse) text += " A pulse has returned.";
+    else if (SIM.cpr) text += " Compressions have been restarted.";
+    else text += " Compressions are paused for a rhythm check.";
+  }
+  el.innerHTML = "<strong>Scene</strong>" + esc(text);
+}
 function startScenario(id, random) {
   if (typeof clearAskPending === "function") clearAskPending();
   if (!random && challenge.on) {
@@ -7430,7 +7458,7 @@ function startScenario(id, random) {
   $("scnDebrief").classList.add("hidden"); $("scnPanels").classList.remove("hidden");
   var listN = listIndex(s);
   $("scnTitle").textContent = challenge.on ? "Challenge case" : random ? "Random case" : listN >= 0 ? "Scenario " + (listN + 1) + ": " + listTitle(s) : listTitle(s);
-  $("scnScene").innerHTML = "<strong>Scene</strong>" + esc(s.scene);
+  renderScene();
   $("scnLog").innerHTML = "";
   monitor = new Monitor($("scnMonitor"));
   SIM.sig = monitor.set(s.start.rhythm, false, false);
@@ -7688,7 +7716,7 @@ function doActionFinish(a, o, timeCost, rawAct) {
     if (o.end) finishScenario(!o.endReason || o.endReason === "complete", o.endReason);
     return;
   }
-  renderVitals(); renderClock(); renderFeedback(o, changed);
+  renderScene(); renderVitals(); renderClock(); renderFeedback(o, changed);
   if ((a === "aden" || a === "drugs") && o.v !== "info") renderActions();
   announceFeedback(o);
   if (o.end) finishScenario(!o.endReason || o.endReason === "complete", o.endReason);
@@ -8503,8 +8531,7 @@ var IDEAL_PATHS = {
     IP("adr", "Adrenaline 1 mg as soon as possible", "In a non-shockable arrest, give adrenaline 1 mg as soon as possible.", SRC_ALS),
     IP("causes", "Identify the reversible cause (hypoxia)", "Always address hypoxia among the reversible causes.", SRC_SPEC),
     IP("oxygen", "100% oxygen and check the airway", "Treat life-threatening hypoxia with 100% oxygen. Ensure the airway is secure and exclude unrecognised oesophageal intubation: a flat capnography trace during CPR means the tube is in the oesophagus until proven otherwise.", SRC_SPEC, ["ett", "sga"]),
-    IP("ff", "CPR for 2 minutes", "Continue CPR after treating the cause, then reassess.", SRC_ALS),
-    IP("assess", "Check rhythm and pulse", "Look for ROSC after the airway is corrected.", SRC_ALS_A)
+    IP("assess", "Signs of life: stop and check rhythm and pulse", "When a combination of signs of life appears during CPR (purposeful movement, breathing, a sharp ETCO2 rise), stop compressions for a rhythm and pulse check. Otherwise check at the end of the 2-minute cycle.", SRC_ALS, ["ff"])
   ],
   h18: [
     IP("assess", "Check rhythm and pulse", "Confirm a non-shockable arrest.", SRC_ALS_A),
@@ -8637,7 +8664,7 @@ var MODEL_ACTS = {
   h14: ["assess","charge","clear","shock","cpr","ff","assess","cpr","adr","ask:gas","cause:hypovolaemia","fluid:saline","assess"],
   h15: ["assess","cpr","adr","ask:history","cause:thrombosis","fibrin","ff","cpr","ff","assess"],
   h16: ["assess","cpr","adr","ask:examine","cause:tamponade","resternotomy","ff","assess"],
-  h17: ["assess","cpr","adr","ask:airway","cause:hypoxia","oxygen","ff","assess"],
+  h17: ["assess","cpr","adr","ask:airway","cause:hypoxia","oxygen","assess"],
   h18: ["assess","cpr","adr","ask:gas","cause:hypokalaemia","kcl","ff","assess"],
   h19: ["assess","ask:ecg12","nibp","expert","procain"],
   h20: ["assess","ask:ecg12","nibp","expert","charge","clear","sync","charge","clear","sync","charge","clear","sync","amio1020","charge","clear","sync"],
