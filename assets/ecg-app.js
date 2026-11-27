@@ -4355,6 +4355,10 @@ function defaultEvent(a, label, resolved) {
     iso: "Isoprenaline infusion started.",
     observe: "Observe and reassess later chosen.",
     nibp: "NIBP cycled.",
+    pads: "Defibrillator pads applied.",
+    leads: "3-lead ECG attached.",
+    spo2Probe: "SpO2 probe attached.",
+    nibpCuff: "NIBP cuff attached.",
     causes: "A reversible cause was named.",
     amio1020: "Amiodarone 300 mg IV over 10 to 20 min started.",
     procain: "Procainamide 10 to 15 mg/kg IV over 20 min started.",
@@ -4407,7 +4411,17 @@ Object.assign(TXT, {
   h17_ffCheck: T("CPR continued to the end of the 2-minute cycle, then the rhythm and pulse check confirmed ROSC. With a combination of signs of life during CPR, it is reasonable to stop and check early instead.", "ALS: rhythm and pulse check at the end of the cycle", "capnoRosc", { outcome: "End of the cycle: rhythm and pulse checked, ROSC confirmed." }),
   h14_signs: T("Signs of life during CPR: purposeful movement and breathing, together with the other signs shown. Use a combination of clinical and physiological signs of ROSC, not ETCO2 alone, before stopping compressions for rhythm analysis and a pulse check.", "ALS: signs of ROSC during CPR", "capnoRosc", { outcome: "Signs of life appeared during CPR." }),
   h14_roscEarly: T("Compressions stopped for signs of life. The rhythm is organised and there is a pulse: ROSC. Continue ABCDE and the usual post-ROSC targets, and keep treating the bleeding.", "ALS: signs of ROSC during CPR; immediately after ROSC", "capnoRosc", { outcome: "ROSC confirmed at an early check for signs of life." }),
-  h14_ffCheck: T("CPR continued to the end of the 2-minute cycle, then the rhythm and pulse check confirmed ROSC. With a combination of signs of life during CPR, it is reasonable to stop and check early instead.", "ALS: rhythm and pulse check at the end of the cycle", "capnoRosc", { outcome: "End of the cycle: rhythm and pulse checked, ROSC confirmed." })
+  h14_ffCheck: T("CPR continued to the end of the 2-minute cycle, then the rhythm and pulse check confirmed ROSC. With a combination of signs of life during CPR, it is reasonable to stop and check early instead.", "ALS: rhythm and pulse check at the end of the cycle", "capnoRosc", { outcome: "End of the cycle: rhythm and pulse checked, ROSC confirmed." }),
+  a_pads: T("Defibrillator pads applied in the antero-lateral position. The monitor now shows the ECG from the pads, and a shock can be delivered if indicated.", "ALS: attach defibrillator pads", "als", { outcome: "Defibrillator pads applied." }),
+  a_leads: T("3-lead ECG attached. The monitor now shows the ECG. Pads are still needed before a shock or pacing.", "Monitoring: 3-lead ECG", "als", { outcome: "3-lead ECG attached." }),
+  a_spo2Probe: T("SpO2 probe attached. A pulse oximeter reading is shown only when there is a pulsatile signal; in arrest the trace is poor or unreadable. Values are illustrative.", "Monitoring: pulse oximetry", "als", { outcome: "SpO2 probe attached." }),
+  a_nibpCuff: T("NIBP cuff attached. Cycle the cuff to obtain a blood pressure; in arrest it is typically unrecordable. The mean is shown as diastolic plus one third of the pulse pressure. Values are illustrative.", "Monitoring: NIBP", "als", { outcome: "NIBP cuff attached." }),
+  a_padsAlready: T("Defibrillator pads are already on.", "Monitoring", "als", { outcome: "Pads already on." }),
+  a_leadsAlready: T("The 3-lead ECG is already attached.", "Monitoring", "als", { outcome: "3-lead already attached." }),
+  a_spo2Already: T("The SpO2 probe is already attached.", "Monitoring", "als", { outcome: "SpO2 probe already attached." }),
+  a_cuffAlready: T("The NIBP cuff is already on.", "Monitoring", "als", { outcome: "NIBP cuff already on." }),
+  a_noPads: T("The defibrillator is not connected to the patient. Apply defibrillator pads first. A shock, a charge, or pacing cannot be delivered without pads.", "ALS: attach defibrillator pads", "als", { whyWrong: "Apply defibrillator pads before charging, shocking or pacing.", nextStep: "Apply defibrillator pads." }),
+  a_noCuff: T("The NIBP cuff is not on. Apply the cuff first, then cycle it.", "Monitoring: NIBP", "als", { whyWrong: "Apply the NIBP cuff first.", nextStep: "Apply the NIBP cuff, then cycle it." })
 });
 Object.assign(VER, {
   a_airwayOpen: ["V", ["gAirStep"]], a_adjunct: ["V", ["gAirStep"]], a_bvm: ["V", ["gAirStep", "gBagMask", "gBreath1s", "aStart"]],
@@ -4416,10 +4430,11 @@ Object.assign(VER, {
   p_airway: ["S", [], "Simulation simplification: airway actions are modelled for cardiac arrest only."],
   h17_flat: ["V", ["gEtco2Tube"]], h17_resite: ["V", ["gEtco2Tube", "gTubeSkill"]], h17_signs: ["V", ["gCapnoRosc", "gResume"]], h17_roscEarly: ["V", ["gCapnoRosc", "aRosc"]], h17_ffCheck: ["V", ["gCapnoRosc", "aShock"]],
   h14_signs: ["V", ["gCapnoRosc", "gResume"]], h14_roscEarly: ["V", ["gCapnoRosc", "aRosc"]], h14_ffCheck: ["V", ["gCapnoRosc", "aShock"]],
+  a_pads: ["T", []], a_leads: ["T", []], a_spo2Probe: ["T", []], a_nibpCuff: ["T", []], a_noPads: ["T", []], a_noCuff: ["T", []],
   h1_insulin: ["V", ["gInsulin", "gHyperkArrest"], "Accepting insulin-glucose in place of sodium bicarbonate in arrest is a teaching choice; for senior colleague review."]
 });
 /* New or changed clinical content in phase 1, shown in-page as for senior colleague review. */
-var REVIEW_KEYS = { a_airwayOpen: 1, a_adjunct: 1, a_bvm: 1, a_bvmOpenFirst: 1, a_sga: 1, a_ett: 1, a_advNoBasic: 1, a_advHandsOff: 1, a_advAlready: 1, a_airwayDone: 1, p_airway: 1, h17_flat: 1, h17_resite: 1, h17_signs: 1, h17_roscEarly: 1, h17_ffCheck: 1, h14_signs: 1, h14_roscEarly: 1, h14_ffCheck: 1, h1_calcium: 1, h1_bicarb: 1, h1_insulin: 1, a_insulin: 1, p_insulin: 1 };
+var REVIEW_KEYS = { a_airwayOpen: 1, a_adjunct: 1, a_bvm: 1, a_bvmOpenFirst: 1, a_sga: 1, a_ett: 1, a_advNoBasic: 1, a_advHandsOff: 1, a_advAlready: 1, a_airwayDone: 1, p_airway: 1, h17_flat: 1, h17_resite: 1, h17_signs: 1, h17_roscEarly: 1, h17_ffCheck: 1, h14_signs: 1, h14_roscEarly: 1, h14_ffCheck: 1, h1_calcium: 1, h1_bicarb: 1, h1_insulin: 1, a_insulin: 1, p_insulin: 1, a_spo2Probe: 1, a_nibpCuff: 1, a_pads: 1, a_leads: 1 };
 function reviewTag(k) { return REVIEW_KEYS[k] ? " <span class='vtag tag-review'>For senior colleague review</span>" : ""; }
 function hasReviewKey(o) { return !!(o && o.keys && o.keys.some(function (k) { return REVIEW_KEYS[k]; })); }
 
@@ -4503,6 +4518,165 @@ function signsOfLifeText(st) {
   return "Signs of life: the patient is making purposeful movements and starting to breathe" + (capno ? ", and the ETCO2 has risen sharply" : "") + ". Stop compressions and check rhythm and pulse now.";
 }
 
+function initAttached(st) {
+  var scene = (st.scn && st.scn.scene) || "";
+  var x = typeof extrasFor === "function" ? extrasFor(st) : {};
+  var pre = (st.scn && st.scn.start && st.scn.start.attached) || (x && x.attached) || {};
+  var pads = /pads are (on|still on)|defibrillator pads are (on|still on)/i.test(scene);
+  var mon = /Monitoring(?:, oxygen)? and /i.test(scene) || /on telemetry/i.test(scene);
+  st.attached = {
+    pads: pre.pads != null ? !!pre.pads : pads,
+    leads: pre.leads != null ? !!pre.leads : mon,
+    spo2: pre.spo2 != null ? !!pre.spo2 : mon,
+    nibp: pre.nibp != null ? !!pre.nibp : mon
+  };
+  if (st.attached.nibp && st.mon && st.mon.sys != null && st.pulse && !st.mon.lastNIBP) {
+    st.mon.lastNIBP = { sys: Math.round(st.mon.sys), dia: Math.round(st.mon.dia || 0), t: 0, seed: true };
+  }
+}
+function hasPads(st) { return !!(st && st.attached && st.attached.pads); }
+function hasEcgSource(st) {
+  if (!st || !st.attached) return true;
+  return !!(st.attached.pads || st.attached.leads);
+}
+function hasSpo2(st) { return !!(st && st.attached && st.attached.spo2); }
+function hasNibpCuff(st) { return !!(st && st.attached && st.attached.nibp); }
+function hasCapno(st) { return !!(st && st.airway && st.airway.capno); }
+var ATTACH_ACTS = { pads: 1, leads: 1, spo2Probe: 1, nibpCuff: 1 };
+var DEFIB_NEED_PADS = { shock: 1, sync: 1, charge: 1, clear: 1, padsAP: 1, pace: 1 };
+function attachOutcome(a, st) {
+  if (!st) return null;
+  if (!st.attached) initAttached(st);
+  if (DEFIB_NEED_PADS[a] && !st.attached.pads) return O("part", "a_noPads");
+  if (a === "nibp" && !st.attached.nibp) return O("info", "a_noCuff");
+  if (!ATTACH_ACTS[a]) return null;
+  var flag = a === "pads" ? "pads" : a === "leads" ? "leads" : a === "spo2Probe" ? "spo2" : "nibp";
+  var key = a === "pads" ? "a_pads" : a === "leads" ? "a_leads" : a === "spo2Probe" ? "a_spo2Probe" : "a_nibpCuff";
+  var already = a === "pads" ? "a_padsAlready" : a === "leads" ? "a_leadsAlready" : a === "spo2Probe" ? "a_spo2Already" : "a_cuffAlready";
+  if (st.attached[flag]) return O("info", already);
+  st.attached[flag] = true;
+  return O("ok", key);
+}
+function spo2Sample(st, t) {
+  if (!hasSpo2(st)) return null;
+  if (!st.pulse) return 0.04 + 0.03 * Math.sin(t * 13);
+  var hr = (st.mon && st.mon.hr) || (st.sig && st.sig.measure && st.sig.measure.rate) || 70;
+  var ph = ((t * hr / 60) % 1 + 1) % 1;
+  if (ph < 0.12) return Math.sin((ph / 0.12) * Math.PI);
+  var down = Math.exp(-((ph - 0.12) / 0.28) * 3) * 0.7;
+  if (ph > 0.22 && ph < 0.32) down += 0.12 * Math.sin(((ph - 0.22) / 0.1) * Math.PI);
+  return down;
+}
+function capnoSample(st, t) {
+  var es = typeof etco2State === "function" ? etco2State(st) : { on: false };
+  if (!es.on) return null;
+  if (es.kind === "flat" || !es.val) return 0;
+  var amp = Math.min(1, es.val / 7);
+  var period = (st.airway && st.airway.adv && !st.airway.oesoph) ? 6 : 2.4;
+  var ph = ((t % period) / period + 1) % 1;
+  var up = 0.12, plat = 0.42, down = 0.12;
+  if (ph < up) return amp * (ph / up);
+  if (ph < up + plat) return amp * (0.94 + 0.06 * ((ph - up) / plat));
+  if (ph < up + plat + down) return amp * (1 - (ph - up - plat) / down);
+  return 0;
+}
+function SweepLane(host, opts) {
+  this.host = host;
+  this.label = (opts && opts.label) || "";
+  this.colorClass = (opts && opts.colorClass) || "";
+  this.t = 0;
+  this.win = 10;
+  this.running = false;
+  host.innerHTML = "";
+  var W = PAD + 10 * MMS + 2, Hlane = 22, id = "ln" + (++uidN);
+  this.W = W; this.H = Hlane;
+  var svg = el("svg", { viewBox: "0 0 " + W + " " + Hlane, role: "img", "aria-label": this.label, preserveAspectRatio: "xMinYMin meet", "class": "mon-svg mon-svg-lane " + this.colorClass });
+  var defs = el("defs", {}, svg);
+  var cn = el("clipPath", { id: id + "cn" }, defs); this.cn = el("rect", { x: 0, y: 0, width: W, height: Hlane }, cn);
+  var co = el("clipPath", { id: id + "co" }, defs); this.co = el("rect", { x: W, y: 0, width: 0, height: Hlane }, co);
+  el("rect", { x: 0, y: 0, width: W, height: Hlane, "class": "defib-lane-bg" }, svg);
+  this.pOld = el("path", { "class": "defib-lane-wave", "clip-path": "url(#" + id + "co)" }, svg);
+  this.pNew = el("path", { "class": "defib-lane-wave", "clip-path": "url(#" + id + "cn)" }, svg);
+  this.tag = el("text", { "class": "defib-lane-tag", x: PAD + 1, y: 5 }, svg);
+  host.appendChild(svg);
+  this.cur = []; this.old = []; this.sample = null; this.offText = "";
+  this._base = Hlane - 3; this._gain = Hlane - 8;
+}
+SweepLane.prototype.setSampler = function (fn, offText, win) {
+  this.sample = fn;
+  this.offText = offText || "";
+  if (win) this.win = win;
+  this.rebuild();
+};
+SweepLane.prototype.rebuild = function (keepOld) {
+  var win = this.win, fn = this.sample, pts = [], i, n, t, y;
+  if (fn) {
+    n = Math.max(80, Math.round(win * 40));
+    for (i = 0; i <= n; i++) {
+      t = i * win / n;
+      y = fn(t);
+      pts.push([t, y == null ? 0 : y]);
+    }
+  }
+  this.cur = pts;
+  if (!keepOld) this.old = [];
+  this.tag.textContent = fn ? this.label : (this.offText || "");
+  this.draw();
+};
+SweepLane.prototype.draw = function () {
+  var base = this._base, gain = this._gain;
+  function d(pts) {
+    if (!pts || !pts.length) return "";
+    var i, out = "", x, y;
+    for (i = 0; i < pts.length; i++) {
+      x = PAD + pts[i][0] * MMS;
+      y = base - pts[i][1] * gain;
+      out += (i ? "L" : "M") + x.toFixed(2) + " " + y.toFixed(2);
+    }
+    return out;
+  }
+  this.pNew.setAttribute("d", d(this.cur));
+  this.pOld.setAttribute("d", d(this.old));
+  this.frame(this.t, this.win);
+};
+SweepLane.prototype.frame = function (t, win) {
+  this.t = t; if (win) this.win = win;
+  if (!this.running || (typeof prefersReduced === "function" && prefersReduced())) {
+    this.cn.setAttribute("width", this.W); this.co.setAttribute("width", 0); return;
+  }
+  var x = PAD + t * MMS, gap = 0.4 * MMS;
+  this.cn.setAttribute("width", x);
+  this.co.setAttribute("x", x + gap);
+  this.co.setAttribute("width", Math.max(0, this.W - x - gap));
+};
+function syncSweepLanes(st) {
+  if (!st) return;
+  var win = (typeof monitor !== "undefined" && monitor && monitor.win) || 10;
+  if (st.plethLane) {
+    st.plethLane.win = win;
+    st.plethLane.running = !!(typeof monitor !== "undefined" && monitor && monitor.running);
+    st.plethLane.setSampler(hasSpo2(st) ? function (t) { return spo2Sample(st, t); } : null, "Probe off", win);
+  }
+  if (st.capnoLane) {
+    st.capnoLane.win = win;
+    st.capnoLane.running = !!(typeof monitor !== "undefined" && monitor && monitor.running);
+    st.capnoLane.setSampler(hasCapno(st) ? function (t) { return capnoSample(st, t); } : null, "No capnography", win);
+  }
+}
+function defibNum(fam, extraClass, label, val, note, aria) {
+  return "<div class='defib-num defib-num-" + fam + (extraClass ? " " + extraClass : "") + "' aria-label='" + esc(aria || (label + " " + val + (note ? ". " + note : ""))) + "'><div class='defib-num-lab'>" + esc(label) + "</div><div class='stat-val defib-num-val'>" + esc(val) + "</div>" + (note ? "<div class='stat-note defib-num-note'>" + esc(note) + "</div>" : "") + "</div>";
+}
+function renderClinicalFindings(st) {
+  var host = $("scnClinical");
+  if (!host) return;
+  var v = (st && st.vit) || {};
+  function cell(label, val) {
+    return "<div class='stat'><div class='stat-val'>" + esc(val || "") + "</div><div class='stat-label'>" + esc(label) + "</div></div>";
+  }
+  host.innerHTML = cell("Conscious level", v.consc || "") + cell("Life-threatening features", v.threats || "");
+}
+
+
 function initScenarioExtras(st) {
   var x = extrasFor(st);
   var m = x.mon || {};
@@ -4527,6 +4701,7 @@ function initScenarioExtras(st) {
     labs: Object.assign({ k: 4.3, na: 140, ica: 1.20, hb: 134, lactate: 1.1, ph: 7.40, pco2: 5.3, po2: 12.4, glu: 5.6, temp: 36.8, mg: 0.85 }, x.labs || {})
   };
   initAirway(st, x);
+  initAttached(st);
   st.roscPending = false;
   if (typeof syncMonBpFromVit === "function") syncMonBpFromVit(st);
 }
@@ -4617,35 +4792,119 @@ function renderMonitor() {
   if (!SIM || !SIM.mon) { renderVitalsLegacy && renderVitalsLegacy(); return; }
   var m = SIM.mon, pulse = !!SIM.pulse;
   tickMonitor(SIM);
-  function cell(label, val, note, aria) {
-    var a = aria ? " aria-label='" + esc(aria) + "'" : "";
-    return "<div class='stat'" + a + "><div class='stat-val'>" + esc(val) + "</div><div class='stat-label'>" + esc(label) + (note ? " <span class='stat-note'>" + esc(note) + "</span>" : "") + "</div></div>";
+  if (!$("scnDefib")) {
+    function cell(label, val, note, aria) {
+      var a = aria ? " aria-label='" + esc(aria) + "'" : "";
+      return "<div class='stat'" + a + "><div class='stat-val'>" + esc(val) + "</div><div class='stat-label'>" + esc(label) + (note ? " <span class='stat-note'>" + esc(note) + "</span>" : "") + "</div></div>";
+    }
+    var hr = !pulse ? "No pulse" : (m.hr ? Math.round(m.hr) + " /min" : "Not yet checked");
+    var spo2 = !pulse ? "No trace" : (m.spo2 != null ? Math.round(m.spo2) + " %" : "No trace");
+    var rr = !pulse ? "Not breathing" : (m.rr != null ? Math.round(m.rr) + " /min" : "Not yet counted");
+    var nibp, nibpNote = "", nibpAria = "";
+    if (typeof isAskPending === "function" && isAskPending("nibp")) {
+      nibp = "Cycling…";
+      nibpNote = "Pending NIBP cycle";
+      nibpAria = "NIBP cycling";
+    } else if (!m.lastNIBP) {
+      nibp = "--/--";
+      nibpAria = "not yet measured";
+    } else if (!pulse || m.lastNIBP.unrecordable) {
+      nibp = "Unrecordable";
+      nibpNote = "Last cycled " + mmss(m.lastNIBP.t) + " · " + nibpAgeText(SIM, m.lastNIBP);
+      nibpAria = "NIBP unrecordable, last cycled " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP);
+    } else {
+      nibp = m.lastNIBP.sys + "/" + m.lastNIBP.dia + " mmHg";
+      nibpNote = "Last measured " + mmss(m.lastNIBP.t) + " (NIBP) · " + nibpAgeText(SIM, m.lastNIBP);
+      nibpAria = "NIBP " + nibp + ", last measured " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP);
+    }
+    var v = SIM.vit || {};
+    var html = cell("Heart rate", hr) + cell("SpO2", spo2, !pulse ? "No pulse: no pulse oximeter trace" : "") + cell("Respiratory rate", rr) + cell("NIBP", nibp, nibpNote, nibpAria);
+    if (showsEtco2(SIM)) html += etco2Cell(SIM);
+    html += cell("Conscious level", v.consc || "") + cell("Life-threatening features", v.threats || "");
+    $("scnVitals").innerHTML = html;
+    return;
   }
-  var hr = !pulse ? "No pulse" : (m.hr ? Math.round(m.hr) + " /min" : "Not yet checked");
-  var spo2 = !pulse ? "No trace" : (m.spo2 != null ? Math.round(m.spo2) + " %" : "No trace");
-  var rr = !pulse ? "Not breathing" : (m.rr != null ? Math.round(m.rr) + " /min" : "Not yet counted");
-  var nibp, nibpNote = "", nibpAria = "";
-  if (typeof isAskPending === "function" && isAskPending("nibp")) {
-    nibp = "Cycling…";
-    nibpNote = "Pending NIBP cycle";
-    nibpAria = "NIBP cycling";
+  var hrVal, hrNote, hrAria;
+  if (!hasEcgSource(SIM)) {
+    hrVal = "---"; hrNote = "No pads"; hrAria = "Heart rate not shown, no pads or leads";
+  } else if (!pulse) {
+    var gen = (SIM.rhythm && SIM.rhythm.gen) || "";
+    if (gen === "vf" || gen === "torsades") {
+      hrVal = "---"; hrNote = "No consistent QRS rate"; hrAria = "Heart rate not shown, no consistent QRS rate";
+    } else if (gen === "asystole") {
+      hrVal = "---"; hrNote = "No QRS detected"; hrAria = "Heart rate not shown, no QRS detected";
+    } else {
+      var rate = (SIM.sig && SIM.sig.measure && SIM.sig.measure.rate) || m.hrBase || 0;
+      hrVal = rate ? Math.round(rate) + " /min" : "---";
+      hrNote = "QRS rate; no pulse";
+      hrAria = "QRS rate " + hrVal + ", no pulse";
+    }
+  } else {
+    hrVal = m.hr ? Math.round(m.hr) + " /min" : "---";
+    hrNote = "From the ECG";
+    hrAria = "Heart rate " + hrVal;
+  }
+  var spo2Val, spo2Note, spo2Aria;
+  if (!hasSpo2(SIM)) {
+    spo2Val = "---"; spo2Note = "Probe off"; spo2Aria = "SpO2 not shown, probe off";
+  } else if (!pulse) {
+    spo2Val = "---"; spo2Note = "Poor trace: no pulsatile signal"; spo2Aria = "SpO2 unreadable, no pulsatile signal";
+  } else if (m.spo2 != null) {
+    spo2Val = Math.round(m.spo2) + " %"; spo2Note = "Pulse oximeter"; spo2Aria = "SpO2 " + spo2Val;
+  } else {
+    spo2Val = "---"; spo2Note = "No reading"; spo2Aria = "SpO2 no reading";
+  }
+  var rrVal, rrNote, rrAria;
+  var w = SIM.airway || {};
+  if (!hasEcgSource(SIM) && !hasCapno(SIM)) {
+    rrVal = "---"; rrNote = "No resp tracing"; rrAria = "Respiratory rate not shown, no resp tracing";
+  } else if (!pulse && hasCapno(SIM) && !w.oesoph) {
+    if (w.adv) { rrVal = "10 /min"; rrNote = "Ventilated rate, illustrative"; }
+    else { rrVal = "30:2"; rrNote = "Bag-mask ventilation, illustrative"; }
+    rrAria = "Respiratory rate " + rrVal + ", " + rrNote;
+  } else if (!pulse) {
+    rrVal = "---"; rrNote = "Not breathing"; rrAria = "Respiratory rate not shown, not breathing";
+  } else {
+    rrVal = m.rr != null ? Math.round(m.rr) + " /min" : "---";
+    rrNote = "Respiratory rate";
+    rrAria = "Respiratory rate " + rrVal;
+  }
+  var nibp, nibpNote = "", nibpAria = "", mean = "";
+  if (!hasNibpCuff(SIM)) {
+    nibp = "---"; nibpNote = "Cuff off"; nibpAria = "NIBP not shown, cuff off";
+  } else if (typeof isAskPending === "function" && isAskPending("nibp")) {
+    nibp = "Cycling…"; nibpNote = "Pending NIBP cycle"; nibpAria = "NIBP cycling";
   } else if (!m.lastNIBP) {
-    nibp = "--/--";
-    nibpAria = "not yet measured";
+    nibp = "---"; nibpNote = "Cuff on, not yet cycled"; nibpAria = "NIBP cuff on, not yet cycled";
   } else if (!pulse || m.lastNIBP.unrecordable) {
     nibp = "Unrecordable";
     nibpNote = "Last cycled " + mmss(m.lastNIBP.t) + " · " + nibpAgeText(SIM, m.lastNIBP);
     nibpAria = "NIBP unrecordable, last cycled " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP);
   } else {
-    nibp = m.lastNIBP.sys + "/" + m.lastNIBP.dia + " mmHg";
+    mean = Math.round(m.lastNIBP.dia + (m.lastNIBP.sys - m.lastNIBP.dia) / 3);
+    nibp = m.lastNIBP.sys + "/" + m.lastNIBP.dia + " (" + mean + ") mmHg";
     nibpNote = "Last measured " + mmss(m.lastNIBP.t) + " (NIBP) · " + nibpAgeText(SIM, m.lastNIBP);
-    nibpAria = "NIBP " + nibp + ", last measured " + mmss(m.lastNIBP.t) + ", " + nibpAgeText(SIM, m.lastNIBP);
+    nibpAria = "NIBP " + m.lastNIBP.sys + " over " + m.lastNIBP.dia + ", mean " + mean + ", last measured " + mmss(m.lastNIBP.t);
   }
-  var v = SIM.vit || {};
-  var html = cell("Heart rate", hr) + cell("SpO2", spo2, !pulse ? "No pulse: no pulse oximeter trace" : "") + cell("Respiratory rate", rr) + cell("NIBP", nibp, nibpNote, nibpAria);
-  if (showsEtco2(SIM)) html += etco2Cell(SIM);
-  html += cell("Conscious level", v.consc || "") + cell("Life-threatening features", v.threats || "");
-  $("scnVitals").innerHTML = html;
+  var es = etco2State(SIM);
+  var airway = w.adv ? (w.adv === "ett" ? (w.oesoph ? "Tracheal tube (just placed)" : "Tracheal tube: continuous compressions, about 10 breaths/min") : "SGA: continuous compressions, about 10 breaths/min") : (w.bvm ? "Bag-mask, 30:2" : "No airway adjunct yet");
+  var etVal, etNote, etAria;
+  if (!es.on) { etVal = "---"; etNote = "No capnography"; etAria = "ETCO2 not shown, no capnography"; }
+  else if (es.kind === "flat") { etVal = "Flat trace"; etNote = "No exhaled CO2 detected"; etAria = "ETCO2 flat trace, no exhaled CO2 detected. Airway: " + airway; }
+  else {
+    etVal = es.val.toFixed(1) + " kPa";
+    etNote = es.kind === "rosc" ? "Sharp rise" : es.kind === "cpr" ? "Low during CPR" : "Falling: compressions paused";
+    etAria = "ETCO2 " + etVal + ", " + etNote + ". Airway: " + airway;
+  }
+  etNote = etNote + ". Illustrative values, for senior colleague review";
+  $("scnVitals").innerHTML =
+    defibNum("ecg", "", "HR", hrVal, hrNote, hrAria) +
+    defibNum("nibp", "", "NIBP", nibp, nibpNote, nibpAria) +
+    defibNum("spo2", "", "SpO2", spo2Val, spo2Note, spo2Aria) +
+    defibNum("rr", "", "RR", rrVal, rrNote, rrAria) +
+    defibNum("etco2", "stat-etco2", "ETCO2", etVal, etNote, etAria + ". Illustrative values");
+  if (typeof renderClinicalFindings === "function") renderClinicalFindings(SIM);
+  if (typeof syncSweepLanes === "function") syncSweepLanes(SIM);
 }
 
 if (typeof SRC === "object") {
@@ -5134,8 +5393,12 @@ var ACTIONS = [
   { id: "expert", label: "Seek expert help", g: "Assess and call" },
   { id: "causes", label: "Identify reversible causes", g: "Assess and call" },
   { id: "ask", label: "Ask for / check", g: "Assess and call" },
-  { id: "nibp", label: "Cycle NIBP now", g: "Assess and call" },
   { id: "observe", label: "Observe and reassess later", g: "Assess and call" },
+  { id: "pads", label: "Apply defibrillator pads", g: "Monitoring" },
+  { id: "leads", label: "Apply 3-lead ECG", g: "Monitoring" },
+  { id: "spo2Probe", label: "Apply SpO2 probe", g: "Monitoring" },
+  { id: "nibpCuff", label: "Apply NIBP cuff", g: "Monitoring" },
+  { id: "nibp", label: "Cycle NIBP now", g: "Monitoring" },
   { id: "cpr", label: "Start CPR 30:2", g: "CPR and electrical" },
   { id: "ff", label: "CPR for 2 minutes", g: "CPR and electrical" },
   { id: "charge", label: "Charge defibrillator (continue CPR if in progress)", g: "CPR and electrical" },
@@ -5179,7 +5442,7 @@ var ACT_EXTRA = [
   { id: "fibrin", label: "Fibrinolytic or thrombolytic drug" }
 ];
 var ACT = {}; ACTIONS.concat(ACT_EXTRA).forEach(function (a) { ACT[a.id] = a; });
-var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, drugs: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, charge: 5, clear: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, insulin: 20, calcium: 20, decompress: 30, amioInf: 30, amio1020: 30, adrInf: 30, iso: 30, procain: 30, verap: 20, kcl: 20, lido100: 20, lido50: 20, fibrin: 30, padsAP: 20, oxygen: 20, pericardiocentesis: 30, resternotomy: 30, airwayOpen: 0, adjunct: 0, bvm: 0, sga: 0, ett: 0 };
+var ACT_TIME = { assess: 10, expert: 5, causes: 30, ask: 0, drugs: 0, nibp: 0, observe: 60, cpr: 5, skip: 0, charge: 5, clear: 5, shock: 15, sync: 30, pace: 60, vagal: 30, adr: 20, amio300: 20, amio150: 20, atro: 20, aden: 30, mg: 30, fluid: 30, bicarb: 20, insulin: 20, calcium: 20, decompress: 30, amioInf: 30, amio1020: 30, adrInf: 30, iso: 30, procain: 30, verap: 20, kcl: 20, lido100: 20, lido50: 20, fibrin: 30, padsAP: 20, oxygen: 20, pericardiocentesis: 30, resternotomy: 30, airwayOpen: 0, adjunct: 0, bvm: 0, sga: 0, ett: 0, pads: 0, leads: 0, spo2Probe: 0, nibpCuff: 0 };
 function adenLabel(n) { return n === 0 ? "Adenosine 6 mg rapid IV" : n === 1 ? "Adenosine 12 mg rapid IV" : "Adenosine 18 mg (RCUK) or 12 mg (BNF) rapid IV"; }
 
 /* ===== Drugs and fluids panel (catalogue, chooser, dose resolution) ===== */
@@ -6857,12 +7120,13 @@ function genericOutcome(a, st) {
 
 /* ===== Animated monitor ===== */
 function prefersReduced() { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
-function Monitor(host) {
+function Monitor(host, opts) {
   this.host = host; host.innerHTML = "";
   this.win = host.clientWidth && host.clientWidth < 620 ? 6 : 10;
   var W = PAD + this.win * MMS + 2, id = "mon" + (++uidN);
   this.W = W;
-  var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Live monitor, lead II. Rhythm changes are announced as text.", preserveAspectRatio: "xMinYMin meet", "class": "mon-svg" });
+  this.theme = (opts && opts.theme) || "";
+  var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": this.theme === "clinical" ? "Patient monitor ECG, lead II, sweeping in real time. The rhythm is announced as text, not named on the screen." : "Live monitor, lead II. Rhythm changes are announced as text.", preserveAspectRatio: "xMinYMin meet", "class": "mon-svg" + (this.theme === "clinical" ? " mon-svg-clinical" : "") });
   var defs = el("defs", {}, svg);
   var p1 = el("pattern", { id: id + "m", width: 1, height: 1, patternUnits: "userSpaceOnUse" }, defs);
   el("path", { d: "M1 0 V1 M0 1 H1", stroke: "var(--ecg-minor)", "stroke-width": 0.09, fill: "none" }, p1);
@@ -6891,9 +7155,16 @@ Monitor.prototype.set = function (spec, cpr, keepDrawn) {
   this.spec = spec; this.cprOn = cpr;
   var b = this.build(spec, cpr, Math.floor(Math.random() * 2147483647)), t = this.t;
   this.lastSig = b.s;
+  var connected = typeof hasEcgSource !== "function" || hasEcgSource(typeof SIM !== "undefined" ? SIM : null);
+  if (!connected) {
+    this.cur = []; this.old = [];
+    this.tag.textContent = "No pads";
+    this.draw();
+    return b.s;
+  }
   if (keepDrawn && this.cur && this.running) this.cur = this.cur.filter(function (p) { return p[0] < t; }).concat(b.pts.filter(function (p) { return p[0] >= t; }));
   else this.cur = b.pts;
-  this.tag.textContent = cpr ? "Compressions in progress: artefact on the trace" : "";
+  this.tag.textContent = cpr ? "Compressions in progress: artefact on the trace" : (this.theme === "clinical" ? "ECG lead II" : "");
   this.draw();
   return b.s;
 };
@@ -6907,7 +7178,9 @@ Monitor.prototype.frame = function () {
   var x = PAD + this.t * MMS, gap = 0.4 * MMS;
   this.cn.setAttribute("width", x);
   this.co.setAttribute("x", x + gap); this.co.setAttribute("width", Math.max(0, this.W - x - gap));
-  var pts = this.cur, k = Math.min(pts.length - 1, Math.max(0, Math.round(this.t * FS)));
+  var pts = this.cur || [];
+  if (!pts.length) { this.head.style.display = "none"; return; }
+  var k = Math.min(pts.length - 1, Math.max(0, Math.round(this.t * FS)));
   this.head.style.display = ""; this.head.setAttribute("cx", x); this.head.setAttribute("cy", BASE - pts[k][1] * GAIN);
 };
 Monitor.prototype.start = function () {
@@ -6917,8 +7190,9 @@ Monitor.prototype.start = function () {
   function tick(now) {
     if (!self.running) return;
     self.t += Math.min(0.1, (now - last) / 1000); last = now;
-    if (self.t >= self.win) { self.t -= self.win; self.old = self.cur; self.cur = self.build(self.spec, self.cprOn, Math.floor(Math.random() * 2147483647)).pts; self.draw(); }
+    if (self.t >= self.win) { self.t -= self.win; self.old = self.cur; self.cur = (self.spec && (typeof hasEcgSource !== "function" || hasEcgSource(typeof SIM !== "undefined" ? SIM : null))) ? self.build(self.spec, self.cprOn, Math.floor(Math.random() * 2147483647)).pts : []; self.draw(); if (self.onWrap) self.onWrap(self.t, self.win); }
     self.frame();
+    if (self.onFrame) self.onFrame(self.t, self.win);
     self.raf = requestAnimationFrame(tick);
   }
   this.raf = requestAnimationFrame(tick);
@@ -7460,10 +7734,23 @@ function startScenario(id, random) {
   $("scnTitle").textContent = challenge.on ? "Challenge case" : random ? "Random case" : listN >= 0 ? "Scenario " + (listN + 1) + ": " + listTitle(s) : listTitle(s);
   renderScene();
   $("scnLog").innerHTML = "";
-  monitor = new Monitor($("scnMonitor"));
+  monitor = new Monitor($("scnMonitor"), $("scnDefib") ? { theme: "clinical" } : null);
+  if ($("scnPleth") && $("scnCapnoWave") && typeof SweepLane === "function") {
+    SIM.plethLane = new SweepLane($("scnPleth"), { label: "SpO2 pleth", colorClass: "lane-spo2" });
+    SIM.capnoLane = new SweepLane($("scnCapnoWave"), { label: "ETCO2", colorClass: "lane-etco2" });
+    monitor.onFrame = function (t, win) {
+      if (SIM && SIM.plethLane) SIM.plethLane.frame(t, win);
+      if (SIM && SIM.capnoLane) SIM.capnoLane.frame(t, win);
+    };
+    monitor.onWrap = function () {
+      if (SIM && SIM.plethLane) { SIM.plethLane.old = SIM.plethLane.cur.slice(); SIM.plethLane.rebuild(true); }
+      if (SIM && SIM.capnoLane) { SIM.capnoLane.old = SIM.capnoLane.cur.slice(); SIM.capnoLane.rebuild(true); }
+    };
+  }
   SIM.sig = monitor.set(s.start.rhythm, false, false);
   SIM.rhythm = s.start.rhythm;
   monitor.start();
+  if (typeof syncSweepLanes === "function") syncSweepLanes(SIM);
   renderActions();
   logEvent(null, "Scenario started. " + s.scene.split(". ")[0] + ".");
   $("scnFeedback").innerHTML = "<p class='explain-kicker'>Feedback</p><p class='ep-wait'>Choose an action. Each choice is checked against the RCUK 2025 algorithms; the rhythm responds.</p>";
@@ -7591,13 +7878,16 @@ function doAction(a) {
     return;
   }
   if (a === "nibp") {
+    var cuffNeed = typeof attachOutcome === "function" ? attachOutcome("nibp", SIM) : null;
+    if (cuffNeed) { doActionFinish("nibp", cuffNeed, 0, rawAct); return; }
     if (typeof requestNIBPCycle === "function") requestNIBPCycle();
     return;
   }
-  var harm = typeof detectHarm === "function" ? detectHarm(a, SIM) : null;
   var label = (resolved && resolved.label) || (a === "aden" && resolved && resolved.dose ? ("Adenosine " + resolved.dose + " mg rapid IV") : (ACT[a] ? ACT[a].label : (rawAct || a)));
-  var o = (AIRWAY_ACTS[a] && airwayOutcome(a, SIM)) || SIM.scn.step(a, SIM) || genericOutcome(a, SIM);
-  if (a === "shock" || a === "sync") o = applyDefibSafetyToShock(o, SIM);
+  var o = (typeof attachOutcome === "function" && attachOutcome(a, SIM)) || (AIRWAY_ACTS[a] && airwayOutcome(a, SIM)) || SIM.scn.step(a, SIM) || genericOutcome(a, SIM);
+  var blockedByPads = !!(o && o.keys && o.keys.indexOf("a_noPads") >= 0);
+  if (!blockedByPads && (a === "shock" || a === "sync")) o = applyDefibSafetyToShock(o, SIM);
+  var harm = (!blockedByPads && typeof detectHarm === "function") ? detectHarm(a, SIM) : null;
   if (a === "ff" && !SIM.cpr && !SIM.pulse && SIM.phase !== "organised" && o.keys && o.keys.indexOf("a_ffNoCPR") >= 0) {
     o = O("ok", "n_skip", { cprStart: true, cprStop: true, cycleCheck: true });
   }
@@ -7705,7 +7995,7 @@ function doActionFinish(a, o, timeCost, rawAct) {
   if (o.separateNudge) logSeparateNudge(o);
   var changed = false;
   if (o.rhythm) { changed = !SIM.rhythm || o.rhythm.gen !== SIM.rhythm.gen || JSON.stringify(o.rhythm.opts || {}) !== JSON.stringify(SIM.rhythm.opts || {}); SIM.rhythm = o.rhythm; }
-  if (!MODEL_RUNNING && typeof monitor !== "undefined" && monitor && (o.rhythm || o.cprStart || o.cprStop)) {
+  if (!MODEL_RUNNING && typeof monitor !== "undefined" && monitor && (o.rhythm || o.cprStart || o.cprStop || (typeof ATTACH_ACTS !== "undefined" && ATTACH_ACTS[a]))) {
     SIM.sig = monitor.set(SIM.rhythm, SIM.cpr, true);
   }
   if (changed) {
@@ -8315,6 +8605,7 @@ var IDEAL_PATHS = {
   s3: [
     IP("assess", "Check rhythm and pulse", "Confirm the bradycardia and the life-threatening features. Monitoring and IV access are already in place.", SRC_BRADY),
     IP("atro", "Atropine 500 micrograms IV, repeated to a maximum of 3 mg", "Atropine 500 micrograms IV is first-line when life-threatening features are present. Assess the response after each dose. " + ATROPINE_SPACING_TEACHING + " " + ATROPINE_CHB_ALS_JUDGEMENT, SRC_BRADY, null, { orderFree: true }),
+    IP("pads", "Apply defibrillator pads", "Transcutaneous pacing needs defibrillator pads on the chest.", SRC_ALS),
     IP("pace", "Transcutaneous pacing, or an isoprenaline or adrenaline infusion", "If the response to atropine is unsatisfactory, use transcutaneous pacing, or an isoprenaline or adrenaline infusion, as an interim measure. These can run alongside repeat atropine; pacing does not have to wait until the full 3 mg has been given. Arrange expert help and transvenous pacing. " + ATROPINE_CHB_ALS_JUDGEMENT, SRC_BRADY, ["adrInf", "iso"]),
     IP("expert", "Seek expert help", "Seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true })
   ],
@@ -8422,13 +8713,16 @@ var IDEAL_PATHS = {
   h7: [
     IP("assess", "Check rhythm and pulse", "Confirm a stable regular broad complex tachycardia, with no life-threatening features.", SRC_TACHY),
     IP("expert", "Careful sedation or anaesthesia", "A conscious patient needs careful sedation or anaesthesia before synchronised cardioversion.", SRC_ALS, { orderFree: true }),
+    IP("pads", "Apply defibrillator pads", "Synchronised cardioversion needs defibrillator pads on the chest.", SRC_ALS),
     IP("charge", "Charge the defibrillator (continue CPR if in progress)", "Charge before the shock. Continue CPR if it is already in progress.", SRC_ALS),
     IP("clear", "All clear", "Check all is clear, then deliver the synchronised shock.", SRC_ALS),
     IP("sync", "Synchronised cardioversion", "The Adult tachyarrhythmia algorithm (V3 March 2026) lists synchronised shock(s) first for stable broad and regular tachycardia treated as VT. Drug treatments are only if sedation or anaesthesia risk is too high.", SRC_TACHY)
   ],
+
   h8: [
     IP("assess", "Check rhythm and pulse", "Confirm broad-complex complete heart block. There are no current life-threatening features, but there is a risk of asystole.", SRC_BRADY),
     IP("expert", "Seek expert help", "When there is a risk of asystole, the algorithm prompts you to seek expert help early and consider transvenous pacing. Calling for help early is correct and does not put later treatment out of order.", SRC_BRADY, { orderFree: true }),
+    IP("pads", "Apply defibrillator pads", "Transcutaneous pacing needs defibrillator pads on the chest.", SRC_ALS),
     IP("pace", "Transcutaneous pacing, or an adrenaline or isoprenaline infusion", "Use transcutaneous pacing, or an adrenaline or isoprenaline infusion, as a bridge if transvenous pacing is not immediately available, and seek expert help.", SRC_BRADY, ["adrInf", "iso"])
   ],
   h9: [
@@ -8644,7 +8938,7 @@ function renderIdealPath(s, log, opt) {
 var MODEL_ACTS = {
   s1: ["assess","charge","clear","shock","cpr","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","adr","amio300","ff","assess"],
   s2: ["assess","cpr","adr","ask:gas","cause:hypovolaemia","fluid","ff","assess"],
-  s3: ["assess","expert","ask:ecg12","nibp","atro","pace"],
+  s3: ["assess","expert","ask:ecg12","nibp","atro","pads","pace"],
   s4: ["assess","ask:ecg12","nibp","vagal","aden:6","aden:12"],
   s5: ["assess","ask:ecg12","nibp","expert","charge","clear","sync","charge","clear","sync"],
   s6: ["assess","ask:ecg12","ask:gas","mg","cause:hypokalaemia"],
@@ -8654,8 +8948,8 @@ var MODEL_ACTS = {
   h4: ["assess","charge","clear","shock","cpr","ff","assess","cpr","adr","ff","assess"],
   h5: ["assess","ask:ecg12","nibp","vagal","aden:6","aden:12","aden:18"],
   h6: ["assess","ask:ecg12","nibp","expert","charge","clear","sync","charge","clear","sync"],
-  h7: ["assess","ask:ecg12","nibp","expert","charge","clear","sync"],
-  h8: ["assess","expert","ask:ecg12","nibp","pace"],
+  h7: ["assess","ask:ecg12","nibp","expert","pads","charge","clear","sync"],
+  h8: ["assess","expert","ask:ecg12","nibp","pads","pace"],
   h9: ["assess","charge","clear","shock","cpr","mg","ff","assess"],
   h10: ["assess","ask:ecg12","nibp","expert","charge","clear","sync"],
   h11: ["assess","ask:ecg12","nibp","expert","atro"],
