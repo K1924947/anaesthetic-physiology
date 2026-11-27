@@ -5664,12 +5664,30 @@ function lastComparableLog(log) {
   }
   return null;
 }
+/* A repeated mistake is scored once. Two entries are the same mistake when the
+   action (ignoring the dose option) and the verdict match and either they are
+   consecutive clicks, or the feedback reason (keys) is identical anywhere earlier
+   in the case. Later repeats are logged as "not scored again". */
+function mistakeAct(act) { return typeof baseAct === "function" ? baseAct(act) : act; }
+function mistakeSig(act, o) { return mistakeAct(act) + "|" + o.v + "|" + (o.keys || []).join(","); }
+function sameMistakeEarlier(a, o) {
+  var sig = mistakeSig(a, o), log = SIM.log || [], i, l;
+  for (i = 0; i < log.length; i++) {
+    l = log[i];
+    if (!l || !l.o || !l.act || l.o.v !== o.v) continue;
+    if (l.o.notAction || l.o.isNudge || l.o.isReg) continue;
+    if (mistakeSig(l.act, l.o) === sig) return l;
+  }
+  return null;
+}
 function applyWrongClickCollapse(a, o) {
   if (!o || !SIM || !a) return o;
   if (o.v !== "bad" && o.v !== "part") return o;
   if (o.notScoredAgain) return o;
   var prev = lastComparableLog(SIM.log);
-  if (prev && prev.act === a && prev.o && prev.o.v === o.v) {
+  if (prev && !(mistakeAct(prev.act) === mistakeAct(a) && prev.o && prev.o.v === o.v)) prev = null;
+  if (!prev) prev = sameMistakeEarlier(a, o);
+  if (prev) {
     o.notScoredAgain = true;
     if ((o.logVerdict && /Too soon/.test(o.logVerdict)) || (prev.o.logVerdict && /Too soon/.test(prev.o.logVerdict))) {
       o.logVerdict = "Too soon (not scored again)";
@@ -7887,7 +7905,7 @@ function showDebrief() {
   var hasOtherCollapse = (SIM.log || []).some(function (l) { return l.o && l.o.notScoredAgain && l.act !== "atro"; });
   var atroScoreNote = "";
   if (hasAtroCollapse) atroScoreNote += " A run of too-early repeat atropine doses counts as one decision; further too-early doses in the same run are logged as too soon but are not scored again.";
-  if (hasOtherCollapse) atroScoreNote += " Identical consecutive wrong clicks of the same action count as one decision; further clicks in the same run are logged but are not scored again.";
+  if (hasOtherCollapse) atroScoreNote += " A repeated mistake counts as one decision: identical consecutive wrong clicks of the same action, or the same wrong action for the same reason later in the case, are logged but not scored again.";
   html += "<p class='big-score'>" + pts + " of " + counted.length + " decisions</p><p>" + ended + " at a simulated time of " + mmss(SIM.clock) + ". Correct and correct but late score 1, partly right 0.5, not quite 0; noted actions are not scored." + atroScoreNote + " Each time you call the reg, 0.5 is deducted from the decision score (minimum 0). Reg called: " + regN + "." + (missed.length ? " Missed steps are listed below." : "") + (notReached.length ? " Steps that were not yet due are listed as not reached." : "") + "</p>";
   html += posterLineFor(s);
   html += renderLogCompare(s, SIM.log);
