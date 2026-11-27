@@ -3490,10 +3490,11 @@ function hiddenDueArrestAdr(st, also) {
   return out.concat(also || []);
 }
 
+/* Historical name only: every case here is listed in the picker (see LIST_ORDER). */
 var HIDDEN_SCENARIOS = [];
 
 HIDDEN_SCENARIOS.push(
-  { id: "h1", hidden: true, group: "Cardiac arrest", title: "Asystole from hyperkalaemia",
+  { id: "h1", group: "Cardiac arrest", title: "Asystole from hyperkalaemia",
     listTitle: "Non-shockable arrest: asystole",
     blurb: "A haemodialysis patient is unresponsive this morning.",
     scene: "A 61-year-old who usually has haemodialysis three times a week missed yesterday's session. The team was called to review them this morning. They are now unresponsive and not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for the first rhythm check.",
@@ -3555,7 +3556,7 @@ HIDDEN_SCENARIOS.push(
 );
 
 HIDDEN_SCENARIOS.push(
-  { id: "h2", hidden: true, group: "Cardiac arrest", title: "PEA from tension pneumothorax",
+  { id: "h2", group: "Cardiac arrest", title: "PEA from tension pneumothorax",
     listTitle: "Non-shockable arrest: PEA on the high-dependency unit",
     blurb: "Unresponsive on the high-dependency unit shortly after a procedure.",
     scene: "A 58-year-old has just had a right internal jugular central line on the high-dependency unit. They suddenly become unresponsive and not breathing normally. The right chest is resonant, with no air entry, and the trachea is deviated to the left. CPR 30:2 is under way and pads are on. Compressions are paused for a rhythm check.",
@@ -3608,7 +3609,7 @@ HIDDEN_SCENARIOS.push(
 );
 
 HIDDEN_SCENARIOS.push(
-  { id: "h3", hidden: true, group: "Cardiac arrest", title: "Refractory VF: a longer shockable arrest",
+  { id: "h3", group: "Cardiac arrest", title: "Refractory VF: a longer shockable arrest",
     listTitle: "Shockable arrest: a longer VF arrest",
     blurb: "Collapse in the emergency department waiting room. This arrest will not be brief.",
     scene: "A 72-year-old collapses in the emergency department waiting room. Unresponsive and not breathing normally. The resuscitation team is present, CPR 30:2 has been started and defibrillator pads are on. Compressions are paused for the first rhythm check. This arrest will not be brief.",
@@ -3696,7 +3697,7 @@ HIDDEN_SCENARIOS.push(
 );
 
 HIDDEN_SCENARIOS.push(
-  { id: "h4", hidden: true, group: "Cardiac arrest", title: "VF converting to asystole",
+  { id: "h4", group: "Cardiac arrest", title: "VF converting to asystole",
     listTitle: "Cardiac arrest: the first rhythm may not last",
     blurb: "Found unresponsive in the hospital car park and brought in under CPR.",
     scene: "A 66-year-old is found unresponsive in the hospital car park and brought in under CPR. Pads are on. Compressions are paused for the first rhythm check. The first rhythm will not be the last.",
@@ -3781,7 +3782,7 @@ HIDDEN_SCENARIOS.push(
 );
 
 HIDDEN_SCENARIOS.push(
-  { id: "h5", hidden: true, idleNudge: true, group: "Tachycardia", title: "Stable SVT needing a third adenosine dose",
+  { id: "h5", idleNudge: true, group: "Tachycardia", title: "Stable SVT needing a third adenosine dose",
     listTitle: "Stable SVT",
     blurb: "Sudden palpitations in a young adult who looks well, with a similar episode before.",
     scene: "A 28-year-old attends with sudden palpitations for 40 minutes. Alert and talking, no chest pain, no breathlessness, blood pressure is normal. Monitoring and a large IV cannula are in place. A previous identical episode stopped only after a third dose of adenosine.",
@@ -3819,7 +3820,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h6", hidden: true, idleNudge: true, group: "Tachycardia", title: "Unstable atrial fibrillation",
+  { id: "h6", idleNudge: true, group: "Tachycardia", title: "Unstable atrial fibrillation",
     blurb: "Known atrial fibrillation, now breathless, clammy and very tachycardic.",
     scene: "A 74-year-old with known atrial fibrillation arrives with sudden breathlessness and chest tightness for 20 minutes. Conscious, pale and clammy. The ventricular rate is very rapid. Monitoring, oxygen and IV access are in place; defibrillator pads are on.",
     start: { rhythm: { gen: "af", opts: { lo: 150, hi: 175 } }, pulse: true, vit: { pulse: "Present, irregular, rapid", bp: "78/48 mmHg", consc: "Conscious, clammy, chest pain", threats: "Shock; myocardial ischaemia" } },
@@ -3855,7 +3856,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h7", hidden: true, idleNudge: true, group: "Tachycardia", title: "Stable broad-complex tachycardia",
+  { id: "h7", idleNudge: true, group: "Tachycardia", title: "Stable broad-complex tachycardia",
     blurb: "Palpitations for two hours in a patient who looks well, with a previous myocardial infarction.",
     scene: "A 57-year-old with a previous myocardial infarction attends with palpitations for two hours. Alert, talking, no chest pain, no breathlessness, blood pressure is 118/74 mmHg. Monitoring and IV access are in place. The patient is stable and suitable for careful sedation or anaesthesia if synchronised cardioversion is used; sedation or anaesthesia risk is not described as too high.",
     start: { rhythm: { gen: "vt" }, pulse: true, vit: { pulse: "Present, regular", bp: "118/74 mmHg", consc: "Alert, talking", threats: "None" } },
@@ -3896,7 +3897,7 @@ HIDDEN_SCENARIOS.push(
 );
 
 HIDDEN_SCENARIOS.push(
-  { id: "h8", hidden: true, idleNudge: true, group: "Bradycardia", title: "Broad-complex complete heart block, risk of asystole",
+  { id: "h8", idleNudge: true, group: "Bradycardia", title: "Broad-complex complete heart block, risk of asystole",
     listTitle: "Broad-complex bradycardia",
     blurb: "A pause on telemetry, then a slow broad rhythm; awake and only a little light-headed.",
     scene: "A 81-year-old is found to have a ventricular pause of 4 seconds on telemetry, then a slow broad rhythm. They are awake, a little light-headed, but not shocked or confused. Blood pressure is 102/60 mmHg. Monitoring and IV access are in place.",
@@ -3948,7 +3949,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h9", hidden: true, group: "Cardiac arrest", title: "Pulseless torsades de pointes",
+  { id: "h9", group: "Cardiac arrest", title: "Pulseless torsades de pointes",
     blurb: "An inpatient on several QT-prolonging drugs becomes unresponsive and pulseless.",
     scene: "A 69-year-old inpatient on several QT-prolonging drugs, with a potassium of 3.0 mmol/L this morning, becomes unresponsive and pulseless. CPR 30:2 has been started and pads are on. Compressions are paused for a rhythm check. The QT was already long on this morning's ECG.",
     start: { rhythm: { gen: "torsades", opts: {} }, pulse: false, vit: { pulse: "Not yet checked", bp: "Not recordable", consc: "Unresponsive, not breathing normally", threats: "Cardiac arrest" } },
@@ -4022,7 +4023,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h10", hidden: true, idleNudge: true, group: "Peri-arrest", title: "Post-ROSC deterioration into unstable VT",
+  { id: "h10", idleNudge: true, group: "Peri-arrest", title: "Post-ROSC deterioration into unstable VT",
     listTitle: "Deterioration immediately after ROSC",
     blurb: "Immediately after ROSC, the monitor changes and the blood pressure falls.",
     scene: "A 64-year-old has just had return of spontaneous circulation after a shockable arrest on the ward. ABCDE is under way. They open their eyes to voice. A minute later the monitor changes and the blood pressure falls. Defibrillator pads are still on.",
@@ -5936,7 +5937,7 @@ var SCENARIOS = [
 ];
 
 HIDDEN_SCENARIOS.push(
-  { id: "h11", hidden: true, idleNudge: true, group: "Bradycardia", title: "Narrow-complex complete heart block that responds to atropine",
+  { id: "h11", idleNudge: true, group: "Bradycardia", title: "Narrow-complex complete heart block that responds to atropine",
     listTitle: "Bradycardia with poor perfusion after a faint",
     blurb: "A faint on the ward, then a slow regular rhythm and low blood pressure.",
     scene: "A 68-year-old had a brief faint on the ward and is now awake but pale, sweaty and confused. Monitoring and IV access are in place. The blood pressure is 76/42 mmHg.",
@@ -5972,7 +5973,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h12", hidden: true, idleNudge: true, group: "Bradycardia", title: "Sinus bradycardia with life-threatening features that responds to atropine",
+  { id: "h12", idleNudge: true, group: "Bradycardia", title: "Sinus bradycardia with life-threatening features that responds to atropine",
     listTitle: "A slow sinus rhythm after a faint",
     blurb: "A faint after a bowel motion, now pale and hypotensive with a slow sinus rhythm.",
     scene: "A 71-year-old had a brief faint after a bowel motion. They are now awake but pale, sweaty and drowsy. Monitoring and IV access are in place. The blood pressure is 74/40 mmHg.",
@@ -6004,7 +6005,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h13", hidden: true, group: "Cardiac arrest", title: "Refractory VF needing a second antiarrhythmic dose and a pad-position change",
+  { id: "h13", group: "Cardiac arrest", title: "Refractory VF needing a second antiarrhythmic dose and a pad-position change",
     listTitle: "A prolonged shockable arrest",
     blurb: "A shockable arrest that is still shockable after the usual first drugs.",
     scene: "A 58-year-old collapses in a clinic waiting area. They are unresponsive and not breathing normally. CPR 30:2 has been started and pads are on in the antero-lateral position. Compressions are paused for the first rhythm check.",
@@ -6080,7 +6081,7 @@ HIDDEN_SCENARIOS.push(
 );
 
 HIDDEN_SCENARIOS.push(
-  { id: "h14", hidden: true, group: "Cardiac arrest", title: "VF then PEA from hypovolaemia",
+  { id: "h14", group: "Cardiac arrest", title: "VF then PEA from hypovolaemia",
     listTitle: "A shockable arrest that changes",
     blurb: "An arrest call after a bleed; the first rhythm may not last.",
     scene: "A 49-year-old on a surgical ward, the day after major abdominal surgery, is found unresponsive and not breathing normally. The drain has filled with fresh blood. CPR 30:2 is under way and pads are on. Compressions are paused for a rhythm check.",
@@ -6149,7 +6150,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h15", hidden: true, group: "Cardiac arrest", title: "PEA from suspected pulmonary embolism, treated with a fibrinolytic",
+  { id: "h15", group: "Cardiac arrest", title: "PEA from suspected pulmonary embolism, treated with a fibrinolytic",
     listTitle: "Non-shockable arrest after sudden collapse",
     blurb: "Sudden collapse after recent long-distance travel; an organised rhythm without a pulse.",
     scene: "A 62-year-old who arrived yesterday after a long-haul flight collapses with sudden breathlessness, then becomes unresponsive and is not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for a rhythm check.",
@@ -6210,7 +6211,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h16", hidden: true, group: "Cardiac arrest", title: "PEA after recent cardiac surgery, emergency re-sternotomy",
+  { id: "h16", group: "Cardiac arrest", title: "PEA after recent cardiac surgery, emergency re-sternotomy",
     listTitle: "Non-shockable arrest in the cardiac recovery area",
     blurb: "The second day after heart surgery, an organised rhythm without a pulse.",
     scene: "A 66-year-old is on the cardiac recovery unit, day 2 after coronary artery bypass grafts. They become unresponsive and are not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for a rhythm check. The chest drain output has increased.",
@@ -6267,7 +6268,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h17", hidden: true, group: "Cardiac arrest", title: "PEA from hypoxia, 100% oxygen and an airway check",
+  { id: "h17", group: "Cardiac arrest", title: "PEA from hypoxia, 100% oxygen and an airway check",
     listTitle: "Non-shockable arrest after a difficult intubation",
     blurb: "Just after intubation the patient is blue, with an organised rhythm and no pulse.",
     scene: "A 55-year-old has just been intubated on the ward after a difficult airway. They are deeply cyanosed, unresponsive and not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for a rhythm check.",
@@ -6321,7 +6322,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h18", hidden: true, group: "Cardiac arrest", title: "Hypokalaemic cardiac arrest treated with a potassium bolus",
+  { id: "h18", group: "Cardiac arrest", title: "Hypokalaemic cardiac arrest treated with a potassium bolus",
     listTitle: "Non-shockable arrest in a patient on diuretics",
     blurb: "An arrest in a patient on high-dose diuretics, with an organised or flat rhythm and no pulse.",
     scene: "A 74-year-old on high-dose loop and thiazide diuretics is found unresponsive and not breathing normally. CPR 30:2 has been started and pads are on. Compressions are paused for a rhythm check.",
@@ -6378,7 +6379,7 @@ HIDDEN_SCENARIOS.push(
 );
 
 HIDDEN_SCENARIOS.push(
-  { id: "h19", hidden: true, idleNudge: true, group: "Tachycardia", title: "Stable broad-complex tachycardia when sedation or anaesthesia risk is too high",
+  { id: "h19", idleNudge: true, group: "Tachycardia", title: "Stable broad-complex tachycardia when sedation or anaesthesia risk is too high",
     listTitle: "Regular broad-complex tachycardia in a frail patient",
     blurb: "A frail patient with palpitations who looks well, but sedation or anaesthesia would be high risk.",
     scene: "An 84-year-old with a previous myocardial infarction attends with palpitations for two hours. Alert, talking, no chest pain, no breathlessness, blood pressure is 124/72 mmHg. They are frail, had a full meal an hour ago, and the airway looks difficult. The team judges that sedation or anaesthesia risk is too high. Monitoring and IV access are in place.",
@@ -6418,7 +6419,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h20", hidden: true, idleNudge: true, group: "Tachycardia", title: "Unstable VT after three failed synchronised shocks",
+  { id: "h20", idleNudge: true, group: "Tachycardia", title: "Unstable VT after three failed synchronised shocks",
     listTitle: "Unstable broad-complex tachycardia that persists",
     blurb: "Chest pain and a fast regular broad rhythm that does not correct with the first shocks.",
     scene: "A 61-year-old with a previous myocardial infarction has chest pain and light-headedness. Conscious but pale and clammy. Blood pressure is 78/42 mmHg. Monitoring, oxygen and IV access are in place; defibrillator pads are on.",
@@ -6466,7 +6467,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h21", hidden: true, idleNudge: true, group: "Tachycardia", title: "Pre-excited atrial fibrillation",
+  { id: "h21", idleNudge: true, group: "Tachycardia", title: "Pre-excited atrial fibrillation",
     listTitle: "An irregular broad-complex tachycardia",
     blurb: "A young adult with palpitations and an irregular broad rhythm, looking reasonably well.",
     scene: "A 24-year-old with a history of an 'extra pathway' attends with sudden palpitations for 40 minutes. Alert and talking, no chest pain. Blood pressure is 108/70 mmHg. Monitoring and IV access are in place; defibrillator pads are on.",
@@ -6503,7 +6504,7 @@ HIDDEN_SCENARIOS.push(
       return null;
     } },
 
-  { id: "h22", hidden: true, idleNudge: true, group: "Tachycardia", title: "Known SVT with aberrant conduction",
+  { id: "h22", idleNudge: true, group: "Tachycardia", title: "Known SVT with aberrant conduction",
     listTitle: "Regular broad-complex tachycardia in a patient with known SVT",
     blurb: "Palpitations in someone whose previous SVT ECGs already showed wide complexes.",
     scene: "A 29-year-old with known SVT attends with sudden palpitations. Alert and talking, no chest pain, no breathlessness. Blood pressure is 122/76 mmHg. Previous 12-leads recorded during SVT showed the same wide complexes. Monitoring and a large IV cannula are in place.",
