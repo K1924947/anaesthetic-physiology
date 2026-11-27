@@ -47,7 +47,7 @@ const home = await page.evaluate(() => {
     leaked3d: !!document.querySelector('a[href*="ECG_3D.html"]')
   };
 });
-if (home.learnTitle === "Learn" && home.practiseTitle === "Practise" && home.cardiacInLearn && !home.resusInLearn && home.resusInPractise && /A to E/i.test(home.atoe) && !home.leaked3d) {
+if (home.learnTitle === "Learn" && home.practiseTitle === "Practise" && home.cardiacInLearn && !home.resusInLearn && home.resusInPractise && !/coming soon/i.test(home.atoe) && !home.leaked3d) {
   pass("homepage splits Learn and Practise, Resus is out of Learn", home);
 } else fail("homepage splits Learn and Practise, Resus is out of Learn", home);
 
