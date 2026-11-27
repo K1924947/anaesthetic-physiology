@@ -3,7 +3,7 @@
 // Run from the worktree root: PHYSIO_BASE=http://127.0.0.1:<port> node tests/test-phone-layout.mjs
 import pkg from "/usr/local/lib/pnpm/5/.pnpm/playwright-core@1.59.1/node_modules/playwright-core/index.js";
 import fs from "node:fs";
-const { chromium } = pkg;
+const { chromium, devices } = pkg;
 const BASE = process.env.PHYSIO_BASE || "http://127.0.0.1:8794";
 const results = [];
 function check(name, ok, extra) { results.push({ name, ok }); console.log(ok ? "PASS" : "FAIL", name, ok ? "" : JSON.stringify(extra, null, 1)); }
@@ -112,6 +112,29 @@ await rp.evaluate(() => document.querySelector(".pl-act-tab[data-group='Monitori
 const anim = await rp.evaluate(() => getComputedStyle(document.querySelector(".pl-dock")).animationName);
 check("reduced motion: the sheet does not animate", anim === "none", { anim });
 await rm.close();
+
+// Live monitor sweep on an iPhone 13, with and without Reduce Motion
+for (const motion of ["no-preference", "reduce"]) {
+  const ic = await browser.newContext({ ...devices["iPhone 13"], reducedMotion: motion });
+  const ip = await ic.newPage();
+  await ip.goto(BASE + "/Resus_Scenarios.html", { waitUntil: "domcontentloaded" });
+  await ip.waitForFunction(() => window.__scn && window.__scn.all);
+  await ip.evaluate(() => { window.__scn.setHints(false); window.__scn.start("s1"); });
+  await ip.waitForTimeout(600);
+  const read = () => ip.evaluate(() => {
+    const svg = document.querySelector("#scnMonitor svg");
+    const rects = svg.querySelectorAll("clipPath rect");
+    const head = svg.querySelector(".mon-head");
+    return { drawn: +rects[0].getAttribute("width"), eraseX: +rects[1].getAttribute("x"), full: +svg.viewBox.baseVal.width, head: +head.getAttribute("cx"), headShown: getComputedStyle(head).display !== "none" };
+  });
+  const s1 = await read();
+  await ip.waitForTimeout(1000);
+  const s2 = await read();
+  const moved = s2.drawn !== s1.drawn && (s2.drawn > s1.drawn || s2.drawn < 20);
+  check("iPhone 13 (" + motion + "): monitor ECG sweeps live with an erase gap ahead of the head",
+    moved && s2.drawn < s2.full - 2 && s2.eraseX > s2.drawn && s2.headShown && Math.abs(s2.head - s2.drawn) < 0.01, { s1, s2 });
+  await ic.close();
+}
 
 // Desktop untouched
 const dk = await browser.newPage({ viewport: { width: 1280, height: 900 } });
