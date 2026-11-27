@@ -147,7 +147,7 @@ const colOk = collapse.shocks.length === 3
   && collapse.shocks[0].v === "bad" && !collapse.shocks[0].notScored
   && collapse.shocks[1].notScored && /not scored again/i.test(collapse.shocks[1].log)
   && collapse.shocks[2].notScored
-  && collapse.score.of === 3; // assess ok, cpr ok, first shock bad; extras not scored
+  && collapse.score.of === 3 + ((collapse.score.airwayGaps || []).length); // assess ok, cpr ok, first shock bad; undone airway teaching steps count as 0
 if (colOk) pass("identical consecutive wrong shocks count once", collapse);
 else fail("identical consecutive wrong shocks count once", collapse);
 

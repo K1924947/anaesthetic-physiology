@@ -222,6 +222,82 @@ const ph = await phone.evaluate(async () => {
 check("phone: the source box is a visible tap toggle on the chooser", ph.chev !== "none" && ph.toggles, ph);
 check("phone: reference text in feedback is at least 14 px and nothing overflows sideways", ph.tagFs >= 14 && ph.srcFs >= 15 && ph.sw <= ph.vw, ph);
 
+// 8. ALS 2025: ETCO2 prompt, SGA leak, pads position, airway in the model and debrief
+const als2025 = await page.evaluate(() => {
+  const s = window.__scn;
+  const last = () => { const l = s.sim.log.filter((x) => x.o).slice(-1)[0]; return l ? { v: l.o.v, keys: l.o.keys || [], text: l.text, fb: (document.getElementById("scnFeedback") || {}).innerText || "", signs: l.o.signsOfLife || "" } : null; };
+  const cell = () => { const c = document.querySelector(".stat-etco2"); const rr = document.querySelector(".defib-num-rr"); return { et: c ? c.querySelector(".stat-val").textContent : "", rr: rr ? (rr.querySelector(".stat-val").textContent || "") : "", caption: (document.getElementById("scnMonCaption") || {}).textContent || "", aria: c ? c.getAttribute("aria-label") : "" }; };
+
+  s.setHints(false);
+  s.start("h14");
+  ["assess", "charge", "clear", "shock", "cpr", "ff", "assess", "cpr", "adr", "cause:hypovolaemia", "fluid:saline"].forEach((a) => s.act(a));
+  const signs = last();
+  const prompt = { ...cell(), signs: signs.signs, fb: signs.fb, keys: signs.keys, cpr: !!s.sim.cpr, pulse: !!s.sim.pulse, done: !!s.sim.done };
+
+  s.start("s2");
+  s.act("assess"); s.act("cpr"); s.act("sgaLeak");
+  const leakNoSga = last();
+  s.start("s2");
+  ["assess", "cpr", "airwayOpen", "adjunct", "bvm", "sga"].forEach((a) => s.act(a));
+  const afterSga = cell();
+  s.act("sgaLeak");
+  const leak = { ...last(), ...cell(), cpr: !!s.sim.cpr };
+
+  s.start("s6");
+  s.act("pads");
+  const pads = last();
+
+  const sources = ((document.getElementById("scnSourcesModal") || {}).innerText || "") + ((document.getElementById("scnSourceBox") || {}).innerText || "");
+
+  s.start("s1");
+  const oldPath = ["assess","charge","clear","shock","cpr","charge","ff","clear","shock","cpr","charge","ff","clear","shock","cpr","adr","amio300","ff","assess"];
+  oldPath.forEach((a) => { if (!s.sim.done) s.act(a); });
+  const noAirway = {
+    done: !!s.sim.done,
+    completed: !!s.sim.completed,
+    end: s.sim.endReason,
+    pulse: !!s.sim.pulse,
+    classify: s.classify(),
+    score: s.score()
+  };
+
+  const model = (window.__scnIdeal.modelActs.s1 || []);
+  const modelLog = window.__scnIdeal.runModel("s1") || [];
+  const modelComplete = modelLog.some((l) => /Scenario complete/.test(l.text || ""));
+
+  return { prompt, leakNoSga, afterSga, leak, pads, sources, noAirway, model, modelComplete };
+});
+check("the signs-of-life prompt needs clinical signs and teaches not to stop for ETCO2 alone",
+  als2025.prompt && /purposeful movements/i.test(als2025.prompt.signs || als2025.prompt.fb || "")
+  && /ETCO2 rise alone/i.test(als2025.prompt.signs || als2025.prompt.fb || "")
+  && /low ETCO2 alone/i.test(als2025.prompt.signs || als2025.prompt.fb || "")
+  && !als2025.prompt.done && als2025.prompt.cpr && !als2025.prompt.pulse
+  && (als2025.prompt.keys || []).includes("h14_signs"), als2025.prompt);
+check("an SGA leak switches ventilation back to 30:2 and is scored as correct",
+  als2025.leak && als2025.leak.v === "ok" && (als2025.leak.keys || []).includes("a_sgaLeak")
+  && als2025.leak.rr === "30:2" && /SGA leak/i.test(als2025.leak.caption)
+  && als2025.afterSga && als2025.afterSga.rr === "10"
+  && als2025.leakNoSga && als2025.leakNoSga.v === "part" && (als2025.leakNoSga.keys || []).includes("a_sgaLeakNoSga"), als2025);
+check("applying pads teaches the antero-lateral position with the lateral pad below the armpit in the mid-axillary line",
+  als2025.pads && als2025.pads.v === "ok" && /antero-lateral/i.test(als2025.pads.fb)
+  && /mid-axillary/i.test(als2025.pads.fb) && /below the armpit/i.test(als2025.pads.fb)
+  && /antero-posterior|vector change/i.test(als2025.pads.fb), als2025.pads);
+check("Sources cite the RCUK Adult ALS Guidelines 2025",
+  /Adult ALS Guidelines 2025/i.test(als2025.sources) && /27 October 2025/i.test(als2025.sources), als2025.sources.slice(0, 400));
+check("the s1 model answer includes first-cycle basic airway and a later advanced airway, and still completes",
+  als2025.model.indexOf("cpr") >= 0
+  && als2025.model.indexOf("airwayOpen") > als2025.model.indexOf("cpr")
+  && als2025.model.indexOf("adjunct") > als2025.model.indexOf("airwayOpen")
+  && als2025.model.indexOf("bvm") > als2025.model.indexOf("adjunct")
+  && als2025.model.indexOf("sga") > als2025.model.indexOf("bvm")
+  && als2025.modelComplete, als2025.model);
+check("missing airway does not block ROSC, shows as not reached, and costs points in the debrief",
+  als2025.noAirway.completed && als2025.noAirway.end === "complete" && als2025.noAirway.pulse
+  && (als2025.noAirway.classify.notReached || []).some((r) => r[0] === "airwayOpen")
+  && (als2025.noAirway.classify.notReached || []).some((r) => r[0] === "sga")
+  && als2025.noAirway.score.of > als2025.noAirway.score.pts
+  && (als2025.noAirway.score.airwayGaps || []).length >= 4, als2025.noAirway);
+
 await browser.close();
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length} passed, ${failed.length} failed, ${results.length} total`);
