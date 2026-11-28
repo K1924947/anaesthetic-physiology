@@ -8,7 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118f">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#184A63">
-<script src="assets/boot.js?v=20261128a"></script>
+<script src="assets/boot.js?v=20261128b"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118f">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,12 +18,12 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118f">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118f">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118f">
-<script src="assets/theme.js?v=20261128a"></script>
+<script src="assets/theme.js?v=20261128b"></script>
 <script src="assets/pwa.js?v=20261127" defer></script>
-<link rel="stylesheet" href="assets/ds.css?v=20261128a">
+<link rel="stylesheet" href="assets/ds.css?v=20261128b">
 <script src="assets/store.js?v=20261128a" defer></script>
 <script src="assets/resus-index.js?v=20261128a" defer></script>
-<script src="assets/app.js?v=20261128a" defer></script>
+<script src="assets/app.js?v=20261128b" defer></script>
 
 
 <style>
@@ -1120,7 +1120,7 @@ body.scn-popup-open { overflow: hidden; }
 <body>
 <a class="skip-link" href="#tool">Skip to the scenarios</a>
 <div class="page page-wide page-tool">
-  <header class="site-header tool-view-header">
+  <header class="site-header tool-view-header scn-about-header">
     <div class="site-header-top">
       <a class="site-mark" href="./">
         <img class="site-logo" src="assets/logo.svg?v=20261118f" width="20" height="20" alt="">
@@ -1143,13 +1143,14 @@ body.scn-popup-open { overflow: hidden; }
     </nav>
 
     <h1>Resus Scenarios</h1>
+    <details class="scn-about" id="scnAbout" open>
+      <summary>
+        <span>About these cases</span>
+        <span class="scn-about-kicker">Sources, disclaimer and how they work</span>
+      </summary>
+      <div class="scn-about-body">
     <p class="subtitle">Cardiac arrest and peri-arrest cases based on the RCUK algorithms.</p>
     <p class="scn-source-disclaimer">Not affiliated with or endorsed by Resuscitation Council UK. Rhythm recognition practice is on the <a href="ECG_Rhythm_Quiz">ECG Rhythms</a>.</p>
-  </header>
-
-  <main id="main">
-    <section id="tool" aria-label="Resuscitation scenarios">
-
       <details class="scn-source-box" id="scnSourceBox">
         <summary>
           <span class="scn-source-chevron" aria-hidden="true"></span>
@@ -1171,10 +1172,15 @@ body.scn-popup-open { overflow: hidden; }
         </ul>
         </div>
       </details>
-
-<div id="scnWrap">
                 <p class="scn-note">Simulation for teaching, not clinical guidance. <button type="button" class="scn-sources-btn" id="scnSourcesBtn">Sources and disclaimer</button></p>
                 <p class="scn-review-note">Some doses and regimens, including procainamide, the isoprenaline infusion rate and the potassium arrest bolus wording, are pending senior colleague review. New content is tagged <span class="vtag tag-review">For senior colleague review</span>. Requiring a charge-then-all-clear sequence before a synchronised shock is a teaching choice that mirrors the unsynchronised ALS defibrillation sequence; the tachyarrhythmia algorithm says synchronised cardioversion but does not spell out that charge step. Follow local protocol.</p>
+      </div>
+    </details>
+  </header>
+
+  <main id="main">
+    <section id="tool" aria-label="Resuscitation scenarios">
+<div id="scnWrap">
         <div class="scn-modal" id="scnSourcesModal" hidden aria-hidden="true">
           <div class="scn-modal-backdrop" id="scnSourcesBackdrop" tabindex="-1"></div>
           <div class="scn-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scnSourcesTitle">
@@ -1361,6 +1367,6 @@ body.scn-popup-open { overflow: hidden; }
     <p class="footer-disc">Spotted an error in a case, or a step that felt unfair? Use Give feedback and name the case number. Teaching simulation based on Resus Council UK 2025 adult ALS algorithms and the BNF. Not clinical guidance; follow local protocols and current guidelines.</p>
   </footer>
 </div>
-<script src="assets/ecg-app.js?v=20261128a"></script>
+<script src="assets/ecg-app.js?v=20261128b"></script>
 </body>
 </html>

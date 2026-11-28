@@ -242,11 +242,11 @@
   el("rect", { x: 179, y: 14, width: 26, height: 46, fill: "#fff" }, gRegions);
   el("path", { d: "M178,14 L178,57 M206,14 L206,57", stroke: GREY, "stroke-width": 1.6 }, gRegions);
   el("ellipse", { cx: 234, cy: 140, rx: 7, ry: 4, fill: "#fff", stroke: GREY, "stroke-width": 1, "stroke-dasharray": "2 2" }, gRegions);
-  el("path", { d: "M122,160.6 L426,139.6", stroke: "#6B7075", "stroke-width": 3.5, "stroke-linecap": "round" }, gRegions);
+  el("path", { d: "M122,160.6 L426,139.6", stroke: GREY, "stroke-width": 3.5, "stroke-linecap": "round" }, gRegions);
   [
     "M165,158 Q169,182 184,190 Q177,174 178,157 Z", "M235,153 Q231,177 216,186 Q223,170 222,154 Z",
     "M300,148 Q304,174 320,182 Q312,166 313,147 Z", "M385,142 Q381,168 365,176 Q373,160 371,143 Z"
-  ].forEach(function (d) { el("path", { d: d, fill: "#fff", stroke: "#6B7075", "stroke-width": 1.5, "stroke-linejoin": "round" }, gRegions); });
+  ].forEach(function (d) { el("path", { d: d, fill: "#fff", stroke: GREY, "stroke-width": 1.5, "stroke-linejoin": "round" }, gRegions); });
   [["RA", 198, 108], ["LA", 345, 104], ["RV", 195, 235], ["LV", 345, 322]].forEach(function (c) {
     el("text", { x: c[1], y: c[2], "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: INK, "font-family": "var(--font-sans)" }, gRegions).textContent = c[0];
   });
@@ -255,8 +255,8 @@
   // hexaxial wheel sits beside the chest wheel.
   var LC = { x: 276, y: 232 }, LR = 158;
   var gFocusAx = el("g", { "aria-hidden": "true" });
-  var focusAxLine = el("line", { stroke: "#7B8189", "stroke-width": 1.4, "stroke-dasharray": "6 5", opacity: 0 }, gFocusAx);
-  var focusAxPlus = el("circle", { r: 3, fill: "#7B8189", opacity: 0 }, gFocusAx);
+  var focusAxLine = el("line", { stroke: "var(--ecgc-ink-muted)", "stroke-width": 1.4, "stroke-dasharray": "6 5", opacity: 0 }, gFocusAx);
+  var focusAxPlus = el("circle", { r: 3, fill: "var(--ecgc-ink-muted)", opacity: 0 }, gFocusAx);
   var focusAxText = el("text", { "text-anchor": "middle", "font-size": 13, "font-weight": 600, "font-family": "var(--font-sans)", fill: INK, stroke: "#fff", "stroke-width": 4, "paint-order": "stroke", opacity: 0 }, gFocusAx);
 
   // Myocardium sample points (filled in by the model): blue dots = fast route, orange chevrons = slow cell to cell.
@@ -268,7 +268,7 @@
   var pathNodes = {};
   Object.keys(PATHS).forEach(function (p) {
     var w = p === "avn" ? 7 : FRONT[p] ? 1.4 : BUNDLE[p] ? 3.6 : ATRIAL[p] ? 3.2 : 2.6, fastW = ATRIAL[p] ? w + 1 : FRONT[p] ? 2.4 : 5;
-    var base = el("path", { d: PATHS[p], fill: "none", stroke: FRONT[p] ? "#8A9097" : BUNDLE[p] ? DARK : GREY, "stroke-width": w, "stroke-linecap": "round" }, gPaths);
+    var base = el("path", { d: PATHS[p], fill: "none", stroke: FRONT[p] ? GREY : BUNDLE[p] ? DARK : GREY, "stroke-width": w, "stroke-linecap": "round" }, gPaths);
     if (FRONT[p]) base.setAttribute("stroke-dasharray", BASE_DASH[p]);
     var act = el("path", { d: PATHS[p], fill: "none", stroke: BLUE, "stroke-width": fastW, "stroke-linecap": "round", "stroke-opacity": FRONT[p] ? .75 : 1, opacity: 0 }, gPaths);
     var len = act.getTotalLength();
@@ -333,7 +333,7 @@
     var c = COL[side[0]], list = side[1], step = (c.bot - c.top) / (list.length - 1), isL = side[0] === "L";
     list.forEach(function (l, i) {
       var y = c.top + i * step, tg = T(l[1], l[2]), tx0 = isL ? c.text + 4 : c.text - 4;
-      el("polyline", { points: tx0 + "," + (y - 4) + " " + c.elbow + "," + (y - 4) + " " + tg[0].toFixed(1) + "," + tg[1].toFixed(1), fill: "none", stroke: "#8A9097", "stroke-width": .8 }, gLab);
+      el("polyline", { points: tx0 + "," + (y - 4) + " " + c.elbow + "," + (y - 4) + " " + tg[0].toFixed(1) + "," + tg[1].toFixed(1), fill: "none", stroke: GREY, "stroke-width": .8 }, gLab);
       el("circle", { cx: tg[0].toFixed(1), cy: tg[1].toFixed(1), r: 1.8, fill: INK }, gLab);
       el("text", { x: c.text, y: y, "text-anchor": isL ? "end" : "start", "font-size": 12, "font-family": "var(--font-sans)", fill: INK }, gLab).textContent = l[0];
       if (l[3]) el("text", { x: c.text, y: y + 12, "text-anchor": isL ? "end" : "start", "font-size": 10, "font-family": "var(--font-sans)", fill: "var(--muted)" }, gLab).textContent = l[3];
@@ -766,7 +766,7 @@
 
   /* ---------- Muscle points on the heart ---------- */
   // Recovery front: short dark dashes across the front, small arrowheads (every second point) in its direction of travel.
-  var REC_C = "#383D44", gRec = el("g", { "aria-hidden": "true", "pointer-events": "none" });
+  var REC_C = "var(--ecgc-ink-muted)", gRec = el("g", { "aria-hidden": "true", "pointer-events": "none" });
   gPaths.parentNode.insertBefore(gRec, gPaths.nextSibling);
   var myoNodes = GRID.map(function (g, i) {
     var dot = el("circle", { cx: g.x, cy: g.y, r: 1.7, fill: BLUE, opacity: 0 }, gMyo);

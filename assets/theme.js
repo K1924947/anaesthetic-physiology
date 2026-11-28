@@ -121,6 +121,10 @@
     bind();
   }
 
+  /* Charts listen for themechange. Fire it again when light/dark changes so
+     traces, axes and labels are redrawn from the current tokens. */
+  window.addEventListener("schemechange", function () { apply(read()); });
+
   function ensurePatterns(svg) {
     if (!svg) return;
     var NS = "http://www.w3.org/2000/svg";

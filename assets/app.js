@@ -689,6 +689,85 @@
   }
 
   /* ---------- Boot ---------- */
+
+  /* On phones, start with About these cases closed so the list comes first.
+     Desktop keeps it open (the summary is hidden) so the 1024x553 first-screen test still fits. */
+  function buildResusAbout() {
+    var about = $("scnAbout");
+    if (!about) return;
+    function sync() {
+      if (isPhone()) about.open = false;
+      else about.open = true;
+    }
+    sync();
+    if (phoneMq && phoneMq.addEventListener) phoneMq.addEventListener("change", sync);
+    /* Desktop: do not collapse the about block, it is the page intro. */
+    about.addEventListener("toggle", function () {
+      if (!isPhone() && !about.open) about.open = true;
+    });
+  }
+
+  /* CAP, PV and Murmurs on phones: keep the graph full width and move the
+     scenario / try-this panels into a Controls bottom sheet. The nodes are
+     moved, not copied, so every existing handler keeps working. */
+  function buildToolControlsSheet() {
+    var controls = document.querySelector(".tool-controls");
+    if (!controls || $("scnStage")) return;
+    var home = document.createComment("tool-controls home");
+    if (controls.parentNode) controls.parentNode.insertBefore(home, controls);
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ds-btn ds-btn--primary app-ctrl-btn";
+    btn.id = "appCtrlBtn";
+    btn.setAttribute("aria-haspopup", "dialog");
+    btn.setAttribute("aria-expanded", "false");
+    btn.setAttribute("aria-controls", "appCtrlSheet");
+    btn.innerHTML = svg("menu", 20) + "<span>Controls</span>";
+    if (home.parentNode) home.parentNode.insertBefore(btn, home);
+
+    var backdrop = document.createElement("div");
+    backdrop.className = "ds-sheet-backdrop app-ctrl-backdrop";
+    backdrop.hidden = true;
+    var sheet = document.createElement("div");
+    sheet.className = "ds-sheet app-ctrl-sheet";
+    sheet.id = "appCtrlSheet";
+    sheet.setAttribute("role", "dialog");
+    sheet.setAttribute("aria-modal", "true");
+    sheet.setAttribute("aria-labelledby", "appCtrlSheetTitle");
+    sheet.hidden = true;
+    sheet.innerHTML = '<div class="ds-sheet-grip" aria-hidden="true"></div><div class="ds-sheet-head"><h2 class="ds-sheet-title" id="appCtrlSheetTitle">Controls</h2>' +
+      '<button type="button" class="ds-btn ds-btn--quiet app-ctrl-close" aria-label="Close controls">' + svg("cross", 20) + "<span>Close</span></button></div>" +
+      '<div class="app-ctrl-slot"></div>';
+    document.body.appendChild(backdrop);
+    document.body.appendChild(sheet);
+    var slot = sheet.querySelector(".app-ctrl-slot");
+
+    function openSheet() {
+      slot.appendChild(controls);
+      sheet.hidden = false; backdrop.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+      document.body.classList.add("app-ctrl-open");
+      var f = controls.querySelector("button, select, input, [tabindex]");
+      if (f) f.focus({ preventScroll: true });
+    }
+    function closeSheet(focusBack) {
+      if (sheet.hidden) return;
+      if (home.parentNode) home.parentNode.insertBefore(controls, home.nextSibling);
+      sheet.hidden = true; backdrop.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("app-ctrl-open");
+      if (focusBack) btn.focus({ preventScroll: true });
+    }
+    btn.addEventListener("click", function () { if (sheet.hidden) openSheet(); else closeSheet(false); });
+    backdrop.addEventListener("click", function () { closeSheet(true); });
+    sheet.querySelector(".app-ctrl-close").addEventListener("click", function () { closeSheet(true); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !sheet.hidden) { e.preventDefault(); closeSheet(true); }
+    });
+    if (phoneMq && phoneMq.addEventListener) phoneMq.addEventListener("change", function () { if (!isPhone()) closeSheet(false); });
+  }
+
   function init() {
     document.documentElement.classList.add("app-frame");
     remember();
@@ -699,6 +778,8 @@
     buildPractise();
     buildProgress();
     buildProfile();
+    buildResusAbout();
+    buildToolControlsSheet();
     if (SLUG === "Resus_Scenarios" || $("scnStage")) {
       buildResusDock();
       buildCaseMenu();

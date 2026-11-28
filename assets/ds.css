@@ -46,6 +46,7 @@
 
 /* ---------- Dark theme ---------- */
 html[data-scheme="dark"][data-ds="app"],
+html[data-scheme="dark"][data-ds="tool"],
 html[data-scheme="dark"] .app-topbar,
 html[data-scheme="dark"] .app-tabbar,
 html[data-scheme="dark"] .ds-dark-scope {
@@ -82,20 +83,57 @@ html[data-scheme="dark"] .ds-dark-scope {
   --ds-backdrop: rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }
-html[data-scheme="dark"][data-ds="tool"] body { background: #0E1116; }
-html[data-scheme="dark"][data-ds="tool"] .page { background: var(--bg); border-radius: var(--ds-r-lg); margin-top: var(--ds-s3); margin-bottom: var(--ds-s3); }
-/* ECG paper stays standard light paper inside dark pages */
+html[data-scheme="dark"][data-ds="tool"] body,
+/* Do not wrap tool pages in a light panel: it stole height from the 1280x800 fit and hid the charts in the dark. */
+html[data-scheme="dark"][data-ds="tool"] .page { background: var(--bg); color: var(--text); }
+/* ECG paper stays standard light paper, inside a light panel, in both themes.
+   The 3D heart stage keeps its calibrated cream background for the same reason. */
 html[data-scheme="dark"] .strip-scroll,
-html[data-scheme="dark"] .ds-light-scope {
-  --bg: #F6F3EE; --surface: #FFFFFF; --surface-2: #F6F3EE; --text: #1A2330; --muted: #4E5968; --primary: #184A63; --border: #D4D0C8;
+html[data-scheme="dark"] .ds-light-scope,
+html[data-scheme="dark"] .ds-paper,
+html[data-scheme="dark"] .ecg12-frame,
+html[data-scheme="dark"] .mini-frame,
+html[data-scheme="dark"] .zoom-frame,
+html[data-scheme="dark"] .page-ecg-basics .graph-card,
+html[data-scheme="dark"] .ecgc-lead,
+html[data-scheme="dark"] .page-ecg3d .stage,
+html[data-scheme="dark"] .page-ecg3d-revamp .stage {
+  --bg: #FFF9F5;
+  --surface: #FFFFFF;
+  --surface-2: #FFF9F5;
+  --text: #111111;
+  --muted: #4E5968;
+  --primary: #184A63;
+  --border: #E9A49B;
+  --ecg-paper: #FFF9F5;
+  --ecg-minor: #F8DFD2;
+  --ecg-major: #EDB497;
+  --ecg-ink: #111111;
   color-scheme: light;
+  background: var(--ecg-paper);
+  color: #111111;
+}
+/* Colour-blind + dark: keep one colour per family, but lighten the blues and oranges for contrast on dark surfaces. */
+html[data-scheme="dark"][data-theme="colour-blind"][data-ds="app"],
+html[data-scheme="dark"][data-theme="colour-blind"][data-ds="tool"] {
+  --primary: #7EB6F0;
+  --accent: #F2A65A;
+  --series-a: #7EB6F0;
+  --series-b: #F2A65A;
+  --series-c: #E58BD0;
+  --series-d: #EEF1F5;
+  --series-e: #AEB7C2;
+  --focus: #A6D1FF;
+  --on-primary: #0A1420;
+  --chip-bg: #1B2938;
+  --chip-text: #B5D7F8;
+  --chip-border: #7EB6F0;
 }
 
 /* ---------- Base ---------- */
 html { scroll-padding-top: calc(var(--ds-topbar-h) + 8px); }
 html.app-frame .page { z-index: auto; }
 html.app-frame a:hover { color: var(--primary); }
-html[data-scheme="dark"][data-ds="app"] body { background: var(--bg); color: var(--text); }
 :where(.ds-btn, .ds-chip, .ds-row, .ds-card, .app-icon-btn, .app-tab, .app-nav a, .ds-seg label):focus-visible { outline: 3px solid var(--ds-focus); outline-offset: 2px; }
 
 /* Hide the old per-page header bar: the app frame replaces it */
@@ -398,3 +436,269 @@ html[data-scheme="dark"][data-ds="app"] textarea { background: var(--surface-2);
   .app-results-link { position: absolute; right: 0; top: -10px; margin: 0; }
 }
 .app-hello, .app-hello .ds-h1, .app-hello .ds-lede, .app-hello .ds-kicker { text-align: left; }
+
+/* ---------- In-tool controls: one set of buttons, chips, sliders, selects, switches ----------
+   Existing class names stay so tool JS keeps working; the look matches the design system.
+   Teal is not used for chrome (hover, borders, focus). Clinical series colours are unchanged. */
+html.app-frame .try-btn,
+html.app-frame .tool-btn,
+html.app-frame .ecgc-btn,
+html.app-frame .ap-btn-secondary,
+html.app-frame .phase-btn,
+html.app-frame .mm-btn,
+html.app-frame .mm-man,
+html.app-frame .test-banner-cta,
+html.app-frame .scn-sources-btn,
+html.app-frame .revise-tabs [role="tab"],
+html.app-frame .labels-quick .t-btn,
+html.app-frame .lead-btn,
+html.app-frame .stage-bar .toggle-btn,
+html.app-frame .key-details-btn,
+html.app-frame .stage-info-btn {
+  appearance: none;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--ds-r-pill);
+  cursor: pointer;
+}
+html.app-frame .try-btn:hover,
+html.app-frame .tool-btn:hover,
+html.app-frame .ecgc-btn:hover,
+html.app-frame .ap-btn-secondary:hover,
+html.app-frame .phase-btn:hover,
+html.app-frame .test-banner-cta:hover,
+html.app-frame .revise-tabs [role="tab"]:hover,
+html.app-frame .lead-btn:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+html.app-frame .try-btn:focus-visible,
+html.app-frame .tool-btn:focus-visible,
+html.app-frame .ecgc-btn:focus-visible,
+html.app-frame .ap-btn-secondary:focus-visible,
+html.app-frame .phase-btn:focus-visible,
+html.app-frame .mm-btn:focus-visible,
+html.app-frame .test-banner-cta:focus-visible,
+html.app-frame .revise-tabs [role="tab"]:focus-visible,
+html.app-frame .lead-btn:focus-visible,
+html.app-frame .seg button:focus-visible,
+html.app-frame select:focus-visible,
+html.app-frame input[type="range"]:focus-visible,
+html.app-frame .stage-bar .toggle-btn:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+html.app-frame .try-btn[aria-pressed="true"],
+html.app-frame .phase-btn[aria-pressed="true"],
+html.app-frame .mm-btn[aria-pressed="true"],
+html.app-frame .mm-man[aria-pressed="true"],
+html.app-frame .lead-btn[aria-pressed="true"],
+html.app-frame .labels-quick .t-btn[aria-pressed="true"],
+html.app-frame .stage-bar .toggle-btn[aria-pressed="true"],
+html.app-frame .revise-tabs [role="tab"][aria-selected="true"],
+html.app-frame .test-banner-cta[aria-checked="true"],
+html.app-frame .test-banner.is-on .test-banner-cta,
+html.app-frame .seg button[aria-pressed="true"],
+html.app-frame .seg button[aria-checked="true"],
+html.app-frame .ecgc-cond-btn[aria-checked="true"] {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  font-weight: 800;
+}
+html.app-frame .seg button {
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+html.app-frame select,
+html.app-frame .page-tool input[type="text"],
+html.app-frame .page-tool input[type="number"] {
+  font-family: var(--font-sans);
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+}
+html.app-frame input[type="range"] {
+  accent-color: var(--primary);
+  min-height: 32px;
+}
+
+/* Cards and panels on tool pages follow the surface tokens */
+html.app-frame .graph-card,
+html.app-frame .scen-panel,
+html.app-frame .guide-panel,
+html.app-frame .explain-panel,
+html.app-frame .card,
+html.app-frame .test-banner,
+html.app-frame .key-card,
+html.app-frame .ecgc-heart,
+html.app-frame .ecgc-wheels,
+html.app-frame .ecgc-timeline,
+html.app-frame .ecgc-narr {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+html.app-frame .tool-section-title,
+html.app-frame .guide-heading,
+html.app-frame .ctl-label,
+html.app-frame .disclaimer,
+html.app-frame .loop-status,
+html.app-frame .tool-view-header h1,
+html.app-frame .tool-view-header .subtitle,
+html.app-frame .ecgc-titlebar h1,
+html.app-frame .ecgc-sub,
+html.app-frame .ecgc-rule,
+html.app-frame .ecgc-narr-title,
+html.app-frame .ecgc-readout,
+html.app-frame .k-rec {
+  color: var(--text);
+}
+html.app-frame .disclaimer,
+html.app-frame .ecgc-sub,
+html.app-frame .ecgc-qrs,
+html.app-frame .ecgc-narr-grid dt,
+html.app-frame .grade-note,
+html.app-frame .minor-label { color: var(--muted); }
+
+/* ---------- ECG Conduction: muted ink follows the theme. Blue, orange and magenta
+   stay the tool's own colours (already one per family) so clinical cues do not shift. ---------- */
+.page-ecgc { --ecgc-ink: var(--text, #111111); --ecgc-ink-muted: var(--muted, #4E5968); }
+html[data-scheme="dark"] .page-ecgc {
+  --ecgc-grey: #AEB7C2;
+  --ecgc-grey-soft: #1F2530;
+  --ecgc-ink: var(--text);
+  --ecgc-ink-muted: var(--muted);
+}
+
+/* ---------- ECG in 3D: chrome follows the theme; the stage and ECG frames stay cream paper ---------- */
+html[data-scheme="dark"] .page-ecg3d .lbl,
+html[data-scheme="dark"] .page-ecg3d-revamp .lbl {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--border);
+}
+html[data-scheme="dark"] .page-ecg3d .lbl.lead.sel,
+html[data-scheme="dark"] .page-ecg3d .lbl.cond.active,
+html[data-scheme="dark"] .page-ecg3d .lbl.node.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+html[data-scheme="dark"] .page-ecg3d .key-card,
+html[data-scheme="dark"] .page-ecg3d .lead-explain,
+html[data-scheme="dark"] .page-ecg3d .stage-bar,
+html[data-scheme="dark"] .page-ecg3d-revamp .dock,
+html[data-scheme="dark"] .page-ecg3d-revamp .panel {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+html[data-scheme="dark"] .page-ecg3d .key-card .key b,
+html[data-scheme="dark"] .page-ecg3d .lead-explain .le-head { color: var(--text); }
+
+/* ---------- Phone tool layouts (720 px or less) ---------- */
+@media (max-width: 720px) {
+  html.app-frame .page-tool { padding-left: 12px; padding-right: 12px; overflow-x: hidden; }
+  html.app-frame .page-tool .tool-hero,
+  html.app-frame .page-tool .tool-view { display: flex; flex-direction: column; gap: 12px; }
+  html.app-frame .page-tool .tool-stage { order: 0; min-width: 0; width: 100%; }
+  html.app-frame .page-tool .tool-side { order: 2; position: static; }
+  html.app-frame .page-tool .graph-card,
+  html.app-frame .page-tool .svg-wrap,
+  html.app-frame .page-tool svg,
+  html.app-frame .page-tool canvas { max-width: 100%; }
+  html.app-frame .page-tool .try-btn,
+  html.app-frame .page-tool .tool-btn,
+  html.app-frame .page-tool .ecgc-btn,
+  html.app-frame .page-tool .phase-btn,
+  html.app-frame .page-tool .mm-btn,
+  html.app-frame .page-tool .test-banner-cta,
+  html.app-frame .page-tool .seg button,
+  html.app-frame .page-tool .revise-tabs [role="tab"],
+  html.app-frame .page-tool .lead-btn,
+  html.app-frame .page-tool select,
+  html.app-frame .page-tool input[type="range"] {
+    min-height: 44px;
+  }
+  /* Conduction lead dropdowns stay compact on the paper itself */
+  html.app-frame .ecgc-lead-head select { min-height: 32px; height: auto; }
+  html.app-frame .page-ecgc { padding-left: 12px; padding-right: 12px; }
+  html.app-frame .ecgc-stage { grid-template-columns: 1fr; }
+  html.app-frame .ecgc-controls { gap: 8px; }
+  html.app-frame .ecgc-play { flex-wrap: wrap; }
+  html.app-frame .page-ecg3d .stage,
+  html.app-frame .page-ecg3d-revamp .stage { width: 100%; border-radius: var(--ds-r-md); }
+}
+
+/* Controls sheet (CAP, PV, Murmurs on phones): the graph stays full width, the scenario
+   and try-this panels open from a Controls button in a bottom sheet. */
+.app-ctrl-btn { display: none; }
+.app-ctrl-sheet[hidden], .app-ctrl-backdrop[hidden] { display: none; }
+.app-ctrl-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 75; max-height: 82vh; overflow: auto;
+  padding: 10px 16px calc(16px + var(--ds-safe-b)); border-radius: 22px 22px 0 0;
+  background: var(--surface); color: var(--text); border-top: 1px solid var(--border);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+  animation: ds-sheet-up 0.18s ease-out;
+}
+.app-ctrl-slot { min-width: 0; }
+.app-ctrl-sheet .tool-controls { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .app-ctrl-sheet { animation: none; } }
+@media (max-width: 720px) {
+  .app-ctrl-btn { display: inline-flex; width: 100%; margin: 0 0 12px; gap: 8px; }
+  /* Keep the graph first: the control panels live in the sheet, not in the page flow. */
+  .page-tool .tool-controls { display: none; }
+  .app-ctrl-sheet .tool-controls { display: grid; }
+  body.app-ctrl-open { overflow: hidden; }
+}
+
+/* ---------- Resus: compact About these cases on phones, so the case list comes first ---------- */
+.scn-about { margin: 0 0 12px; border: 0; background: transparent; }
+.scn-about > summary {
+  display: none;
+  list-style: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  align-items: center;
+  gap: 8px;
+}
+.scn-about > summary::-webkit-details-marker { display: none; }
+.scn-about > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.scn-about-kicker { font-weight: 400; color: var(--muted); }
+@media (min-width: 721px) {
+  /* Desktop: no extra chrome, same layout as before so 1024x553 still fits */
+  .scn-about > summary { display: none !important; }
+  .scn-about { margin: 0; }
+}
+@media (max-width: 720px) {
+  .page-tool:has(#scnChooserWrap) { display: flex; flex-direction: column; }
+  /* Compact About row, then the case list, then the footer */
+  .page-tool:has(#scnChooserWrap) > .site-header { order: 1; }
+  .page-tool:has(#scnChooserWrap) > main { order: 2; }
+  .page-tool:has(#scnChooserWrap) > footer { order: 3; }
+  .tool-view-header.scn-about-header h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .scn-about { order: 0; margin: 8px 0 0; }
+  .scn-about > summary { display: flex; }
+  .scn-about-body { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+  body.scn-case-running .scn-about { display: none; }
+  body.scn-case-running .page-tool:has(#scnChooserWrap) > .site-header { order: 0; }
+  body.scn-case-running .page-tool:has(#scnChooserWrap) > main { order: 1; }
+  body.scn-case-running .page-tool:has(#scnChooserWrap) > footer { order: 2; }
+}
