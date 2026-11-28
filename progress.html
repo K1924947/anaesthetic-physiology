@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-GB" data-ds="app">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Progress · The Physio Lab</title>
+<meta name="description" content="Your Resus scores, best per case and history, saved on this device.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#184A63">
+<script src="assets/boot.js?v=20261128a"></script>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css?v=20261118">
+<link rel="stylesheet" href="assets/layout.css?v=20261127b">
+<script src="assets/theme.js?v=20261128a"></script>
+<script src="assets/pwa.js?v=20261127" defer></script>
+<link rel="stylesheet" href="assets/ds.css?v=20261128a">
+<script src="assets/store.js?v=20261128a" defer></script>
+<script src="assets/resus-index.js?v=20261128a" defer></script>
+<script src="assets/app.js?v=20261128a" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="page page-wide app-page-wrap">
+  <header class="site-header">
+    <div class="site-header-top">
+      <a class="site-mark" href="./">
+        <img class="site-logo" src="assets/logo.svg?v=20261118" width="20" height="20" alt="">
+        <span class="site-mark-name">The Physio Lab</span>
+      </a>
+      <div class="header-actions">
+        <button type="button" id="colour-blind-toggle" class="cb-toggle" aria-pressed="false">
+          <span class="cb-switch" aria-hidden="true"></span>
+          <span class="cb-toggle-text">Colour-blind mode</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="app-page">
+    <div class="app-hello">
+      <p class="ds-kicker">Progress</p>
+      <h1 class="ds-h1">Your progress</h1>
+      <p class="ds-lede">Every Resus case you finish or end is saved here with the score and simulated time. It is kept on this device only.</p>
+    </div>
+
+    <section class="ds-section" aria-labelledby="progSumH">
+      <h2 class="ds-h2" id="progSumH">Summary</h2>
+      <div id="appProgStats"></div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="progBestH">
+      <h2 class="ds-h2" id="progBestH">Best score per case</h2>
+      <p class="ds-small">Tap a case to play it again.</p>
+      <div id="appProgBest"></div>
+    </section>
+
+    <section class="ds-section" id="history" aria-labelledby="progHistH">
+      <div class="ds-section-head"><h2 class="ds-h2" id="progHistH">History</h2></div>
+      <div id="appProgHistory"></div>
+      <p><button type="button" class="ds-btn ds-btn--danger" id="appClearHistory" hidden>Clear Resus history</button></p>
+    </section>
+  </main>
+
+  <footer>
+    <p class="footer-left">
+      <span class="footer-item">Dr Ed Kim<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item">The Physio Lab<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-break" aria-hidden="true"></span>
+      <span class="footer-item">Built for teaching<span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item"><a class="footer-feedback" href="privacy">Privacy</a><span class="footer-dot" aria-hidden="true">·</span></span>
+      <span class="footer-item"><a class="footer-feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSf4l2wWHzyrh2k_BOJ1YFn13PWgKmvEzHXuxePAqpYLk6wyxA/viewform?usp=publish-editor" target="_blank" rel="noopener" aria-label="Give feedback, opens Google Forms in a new tab">Give feedback</a></span>
+    </p>
+  </footer>
+</div>
+</body>
+</html>

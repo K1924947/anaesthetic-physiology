@@ -5,16 +5,17 @@
    - Only same-origin GET requests are handled. Everything else, including the
      waitlist POST to Supabase, goes straight to the network and is never cached.
    Bump CACHE_VERSION whenever you want old caches thrown away. */
-var CACHE_VERSION = "20261127-3";
+var CACHE_VERSION = "20261128-1";
 var CACHE = "physiolab-" + CACHE_VERSION;
 
 var PAGES = [
   "./", "cardiac", "respiratory", "privacy", "ECG_Basics", "ECG_Conduction", "ECG_3D",
-  "ECG_Rhythm_Quiz", "Cardiac_Action_Potential", "PV_Loop", "Cardiac_Murmurs", "Resus_Scenarios", "saved"
+  "ECG_Rhythm_Quiz", "Cardiac_Action_Potential", "PV_Loop", "Cardiac_Murmurs", "Resus_Scenarios", "saved",
+  "learn", "practise", "progress", "profile"
 ];
 var ASSETS = [
   "assets/site.css", "assets/layout.css", "assets/theme.js", "assets/pwa.js", "assets/waitlist.js",
-  "assets/app-shell.css", "assets/app-shell.js",
+  "assets/boot.js", "assets/store.js", "assets/ds.css", "assets/app.js", "assets/resus-index.js",
   "assets/logo.svg", "assets/favicon.svg", "assets/favicon-32.png", "assets/apple-touch-icon.png",
   "assets/icon-192.png", "assets/icon-512.png", "assets/icon-maskable-512.png",
   "assets/ecg-app.js", "assets/ecg-basics.css", "assets/ecg-basics.js",

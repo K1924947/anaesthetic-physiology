@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="en-GB" data-ds="app">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Resus Scenarios · The Physio Lab</title>
 <meta name="description" content="Cardiac arrest and peri-arrest cases based on the RCUK algorithms. Simulation for teaching, not clinical guidance.">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261118f">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#184A63">
+<script src="assets/boot.js?v=20261128a"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118f">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,10 +18,12 @@
 <link rel="stylesheet" href="assets/layout.css?v=20261118f">
 <link rel="stylesheet" href="assets/pv-core.css?v=20261118f">
 <link rel="stylesheet" href="assets/pv-tool.css?v=20261118f">
-<script src="assets/theme.js?v=20261118f"></script>
+<script src="assets/theme.js?v=20261128a"></script>
 <script src="assets/pwa.js?v=20261127" defer></script>
-<link rel="stylesheet" href="assets/app-shell.css?v=20261127m">
-<script src="assets/app-shell.js?v=20261127m" defer></script>
+<link rel="stylesheet" href="assets/ds.css?v=20261128a">
+<script src="assets/store.js?v=20261128a" defer></script>
+<script src="assets/resus-index.js?v=20261128a" defer></script>
+<script src="assets/app.js?v=20261128a" defer></script>
 
 
 <style>
@@ -1023,7 +1026,7 @@ body.scn-popup-open { overflow: hidden; }
 .correct-ans { margin: 8px 0 0; padding: 8px 10px; border: 1.5px solid var(--text); border-radius: 8px; background: var(--surface-2); font-size: 15px; }
 .correct-ans-src { display: inline; font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
 
-/* ===== Phone app layout (720 px or less): see assets/app-shell.css and app-shell.js ===== */
+/* ===== Phone app layout (720 px or less): see assets/ds.css and assets/app.js ===== */
 @media (max-width: 720px) {
   /* Chooser: the source box stays open but cannot fill the screen */
   .scn-source-box[open] > .scn-source-body { max-height: 24vh; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
@@ -1147,7 +1150,7 @@ body.scn-popup-open { overflow: hidden; }
   <main id="main">
     <section id="tool" aria-label="Resuscitation scenarios">
 
-      <details class="scn-source-box" id="scnSourceBox" open>
+      <details class="scn-source-box" id="scnSourceBox">
         <summary>
           <span class="scn-source-chevron" aria-hidden="true"></span>
           <span>
@@ -1358,6 +1361,6 @@ body.scn-popup-open { overflow: hidden; }
     <p class="footer-disc">Spotted an error in a case, or a step that felt unfair? Use Give feedback and name the case number. Teaching simulation based on Resus Council UK 2025 adult ALS algorithms and the BNF. Not clinical guidance; follow local protocols and current guidelines.</p>
   </footer>
 </div>
-<script src="assets/ecg-app.js?v=20261127r"></script>
+<script src="assets/ecg-app.js?v=20261128a"></script>
 </body>
 </html>
