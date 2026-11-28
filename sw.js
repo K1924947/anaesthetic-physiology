@@ -5,7 +5,7 @@
    - Only same-origin GET requests are handled. Everything else, including the
      waitlist POST to Supabase, goes straight to the network and is never cached.
    Bump CACHE_VERSION whenever you want old caches thrown away. */
-var CACHE_VERSION = "20261128-1";
+var CACHE_VERSION = "20261128-2";
 var CACHE = "physiolab-" + CACHE_VERSION;
 
 var PAGES = [

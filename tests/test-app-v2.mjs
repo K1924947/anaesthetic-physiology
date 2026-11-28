@@ -46,9 +46,17 @@ for (const cs of ["light", "dark"]) {
   await p.click("#appTheme");
   const after = await p.evaluate(() => ({ scheme: document.documentElement.dataset.scheme, stored: localStorage.getItem("physiolab:v1:prefs.theme"), pressed: document.getElementById("appTheme").getAttribute("aria-pressed") }));
   await p.goto(BASE + "/ECG_Basics.html", { waitUntil: "load" });
-  const tool = await p.evaluate(() => ({ first: window.__firstScheme, frame: getComputedStyle(document.querySelector(".app-topbar")).getPropertyValue("--surface").trim(), paper: getComputedStyle(document.querySelector(".page")).getPropertyValue("--surface").trim() }));
+  const tool = await p.evaluate(() => ({
+    first: window.__firstScheme,
+    frame: getComputedStyle(document.querySelector(".app-topbar")).getPropertyValue("--surface").trim(),
+    pageSurface: getComputedStyle(document.querySelector(".page")).getPropertyValue("--surface").trim(),
+    pageBg: getComputedStyle(document.querySelector(".page")).backgroundColor,
+    paper: getComputedStyle(document.documentElement).getPropertyValue("--ecg-paper").trim(),
+    paperCard: getComputedStyle(document.querySelector(".graph-card")).backgroundColor
+  }));
   check("top bar toggle switches to dark, is remembered, and the next page starts dark before first paint", btn0.pressed === "false" && btn0.label === "Dark theme" && after.scheme === "dark" && after.stored === '"dark"' && after.pressed === "true" && tool.first === "dark", { btn0, after, tool });
-  check("tool pages in dark: dark frame, tool content stays on light paper", /#171B22/i.test(tool.frame) && /#FFF/i.test(tool.paper), tool);
+  check("tool pages in dark: page and frame are dark, ECG paper stays light paper",
+    /#171B22/i.test(tool.frame) && /#171B22/i.test(tool.pageSurface) && tool.pageBg === "rgb(14, 17, 22)" && /#FFF9F5/i.test(tool.paper) && tool.paperCard === "rgb(255, 249, 245)", tool);
   await p.goto(BASE + "/profile.html", { waitUntil: "load" });
   const seg = await p.evaluate(() => Array.from(document.querySelectorAll("#appThemeSeg input")).map((i) => i.value + ":" + i.checked).join(","));
   await p.click("label[for=appThemeSystem]");
@@ -177,7 +185,12 @@ for (const cs of ["light", "dark"]) {
   for (const [page, sels] of [
     ["index", [".ds-h1", ".ds-lede", ".ds-card__title", ".ds-card__desc", ".ds-card__meta", ".ds-stat__lab", ".app-tab", ".app-brand-name", ".ds-link", ".jcard-meta", ".home-section-lede"]],
     ["progress", [".app-tab[aria-current]", ".ds-row__title", ".ds-row__sub", ".ds-small", ".ds-kicker"]],
-    ["profile", [".ds-seg label", ".app-setting-text span", ".ds-switch__state", ".ds-row__sub"]]
+    ["profile", [".ds-seg label", ".app-setting-text span", ".ds-switch__state", ".ds-row__sub"]],
+    ["Cardiac_Action_Potential", ["h1", ".subtitle", ".tool-section-title", ".try-btn", ".disclaimer"]],
+    ["PV_Loop", ["h1", ".subtitle", ".try-btn"]],
+    ["Cardiac_Murmurs", ["h1", ".subtitle"]],
+    ["ECG_Conduction", [".ecgc-sub", ".ecgc-btn", ".ecgc-rule"]],
+    ["ECG_Basics", ["h1", ".subtitle", ".tool-intro"]]
   ]) {
     await p.goto(BASE + "/" + page + ".html", { waitUntil: "load" });
     await p.waitForTimeout(150);
@@ -209,6 +222,52 @@ for (const cs of ["light", "dark"]) {
   const m = await p.evaluate(() => ({ mon: getComputedStyle(document.getElementById("scnDefib")).backgroundColor, paper: getComputedStyle(document.documentElement).getPropertyValue("--ecg-paper").trim() }));
   const dark = (s) => { const v = s.match(/\d+/g).map(Number); return v[0] + v[1] + v[2] < 200; };
   check("Resus " + cs + ": the monitor stays dark and ECG paper stays light paper", dark(m.mon) && /#FFF9F5/i.test(m.paper), m);
+  await c.close();
+}
+
+
+// ---------- ECG Conduction: colour-blind toggle lives in the shared top bar ----------
+{
+  const c = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const p = await c.newPage(); watch(p);
+  await p.goto(BASE + "/ECG_Conduction.html", { waitUntil: "load" });
+  const r = await p.evaluate(() => {
+    const btn = document.getElementById("colour-blind-toggle");
+    const bar = document.querySelector(".app-topbar");
+    return { inBar: !!(btn && bar && bar.contains(btn)), shown: btn && getComputedStyle(btn).display !== "none", pressed: btn && btn.getAttribute("aria-pressed") };
+  });
+  await p.click("#colour-blind-toggle");
+  const on = await p.evaluate(() => document.documentElement.dataset.theme);
+  await p.click("#colour-blind-toggle");
+  check("ECG Conduction: colour-blind toggle is in the top bar and works", r.inBar && r.shown && r.pressed === "false" && on === "colour-blind", r);
+  await c.close();
+}
+
+// ---------- Resus about: collapsed on phones so the case list comes first ----------
+{
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const p = await c.newPage(); watch(p);
+  await p.goto(BASE + "/Resus_Scenarios.html", { waitUntil: "load" });
+  await p.waitForFunction(() => window.__scn && window.__scn.all);
+  const r = await p.evaluate(() => {
+    const about = document.getElementById("scnAbout");
+    const sum = about && about.querySelector("summary");
+    const chooser = document.getElementById("scnChooserTitle") || document.querySelector(".scn-random");
+    const text = (about && about.innerText) || "";
+    return {
+      exists: !!about, open: about && about.open, sumShown: sum && getComputedStyle(sum).display !== "none",
+      sumTop: sum && Math.round(sum.getBoundingClientRect().top),
+      chooserTop: chooser && Math.round(chooser.getBoundingClientRect().top),
+      sumBottom: sum && Math.round(sum.getBoundingClientRect().bottom),
+      hasDisclaimer: /Not affiliated with or endorsed by Resuscitation Council UK/.test(about.querySelector(".scn-about-body") ? about.querySelector(".scn-about-body").textContent : ""),
+      hasAmber: /pending senior colleague review/.test(about.textContent),
+      sw: document.documentElement.scrollWidth, vw: innerWidth
+    };
+  });
+  check("Resus phone: a compact About these cases row sits above the case list, starts closed, disclaimer text is still there", r.exists && r.open === false && r.sumShown && r.sumTop < 140 && r.chooserTop > r.sumBottom && r.chooserTop < 280 && r.hasDisclaimer && r.hasAmber && r.sw <= r.vw, r);
+  await p.click("#scnAbout > summary");
+  const opened = await p.evaluate(() => document.getElementById("scnAbout").open);
+  check("Resus phone: opening About these cases reveals the disclaimer and amber notice", opened === true, { opened });
   await c.close();
 }
 
