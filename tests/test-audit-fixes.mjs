@@ -228,9 +228,10 @@ const chooserBox = await mobile.evaluate(() => {
     runningClass: document.body.classList.contains("scn-case-running")
   };
 });
-if (chooserBox.open && chooserBox.heading === "Learn from the source" && !chooserBox.runningClass) {
-  pass("source box is open on the chooser at 390 px", chooserBox);
-} else fail("source box is open on the chooser at 390 px", chooserBox);
+// App v2: on phones the chooser starts with the source box collapsed (it opens again in the debrief)
+if (chooserBox.open === false && chooserBox.heading === "Learn from the source" && !chooserBox.runningClass) {
+  pass("source box starts collapsed on the chooser at 390 px", chooserBox);
+} else fail("source box starts collapsed on the chooser at 390 px", chooserBox);
 
 await mobile.evaluate(() => {
   window.__scn.setHints(false);
