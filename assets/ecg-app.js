@@ -8252,8 +8252,9 @@ function syncSourceBox() {
   var mobile = false;
   try { mobile = window.matchMedia("(max-width: 700px)").matches; } catch (e) {}
   if (box.tagName === "DETAILS") {
+    /* Collapsed on the chooser and during a case (phones included); open again in the debrief. */
     if (running && mobile) box.open = false;
-    else if (!running && !inDebrief && !mobile) box.open = false;
+    else if (!running && !inDebrief) box.open = false;
     else box.open = true;
   }
 }
@@ -8513,6 +8514,17 @@ function showDebrief() {
   var raw = score.raw, regN = SIM.regCalls || 0, pts = score.pts;
   var classified = classifyReqSteps(SIM);
   var missed = classified.missed, notReached = classified.notReached;
+  /* Progress: tell the app frame about this attempt once (it saves it through the store). Scoring is unchanged. */
+  if (!SIM.resultSent && !(typeof MODEL_RUNNING !== "undefined" && MODEL_RUNNING)) {
+    SIM.resultSent = true;
+    try {
+      window.dispatchEvent(new CustomEvent("physio:resus-result", { detail: {
+        id: s.id, title: listTitle(s), n: listIndex(s) + 1, pts: pts, of: score.of, simSec: SIM.clock,
+        completed: !!SIM.completed, outcome: SIM.endReason || (SIM.completed ? "complete" : "ended"),
+        random: !!SIM.random, solution: !!hintsOn(), challenge: !!(challenge && challenge.on)
+      } }));
+    } catch (e) {}
+  }
   var html = "<p class='explain-kicker'>Debrief</p><h2 class='explain-title' id='scnDebriefTitle' tabindex='-1'>" + (SIM.random ? "Random case revealed: " : "") + esc(s.title) + "</h2>";
   var ended = SIM.endReason === "harm" ? "Patient harmed: scenario ended" : SIM.endReason === "handsOff" ? "Scenario ended: prolonged interruption to compressions" : SIM.endReason === "missedShock" ? "Scenario ended: the first shock was missed" : SIM.endReason === "missed" ? (function () { var n = (SIM.endedDue || []).map(function (d) { return d.name; }).filter(Boolean); return n.length ? "Scenario ended: key step missed. Missed: " + n.join("; ") : "Scenario ended: key step missed"; }()) : SIM.endReason === "cap" ? "Scenario ended: too many cycles without a resolution" : (SIM.completed ? "Scenario completed" : "Scenario ended early");
   var hasAtroCollapse = (SIM.log || []).some(function (l) { return l.o && l.act === "atro" && (l.o.notScoredAgain || l.o.logVerdict); });
