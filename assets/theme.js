@@ -179,6 +179,8 @@
   }
 
   window.PhysioTheme = {
+    /* Used by the Profile page switch, which is not the header toggle */
+    setColourBlind: function (on) { write(!!on); apply(!!on); },
     token: token,
     tokens: tokens,
     cue: cue,
